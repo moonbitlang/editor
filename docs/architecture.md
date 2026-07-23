@@ -260,6 +260,8 @@ internal/shell/server_host_native/main
 - `remote_protocol` is the reference app's versioned WebSocket JSON protocol,
   not LSP.
 - `server` validates/caches documents and routes file and language requests.
+  Each protocol connection owns one session-local document cache and watch map;
+  host/provider services and document-sync delivery remain server-scoped.
 - `server_host_native` provides filesystem/watch/HTTP/WebSocket effects and the
   current `moon ide hover`/`moon check` backend.
 - `workbench` adapts protocol payloads into `TextModel`, language providers,

@@ -7,8 +7,9 @@ Native effect adapter and executable backend for the reference shell.
 - `NativeServerHost` implements `server.ServerHost`: root-contained text reads,
   one-level directory reads, and polling watches (500 ms by default).
 - `run_native_editor_server` serves `web/dist` over HTTP and `/protocol` over
-  WebSocket. Each connection has one unbounded outbox and one socket writer, so
-  responses and concurrent watch/diagnostic pushes cannot interleave frames.
+  WebSocket. Each connection owns an isolated remote-server session, unbounded
+  outbox, and socket writer, so closing one connection cannot dispose another's
+  watches and concurrent watch/diagnostic pushes cannot interleave frames.
 - `MoonWorkspaceLanguageProvider` implements hover with
   `moon ide hover --output-json --no-check`. Definition, references, document
   symbols currently return no result.

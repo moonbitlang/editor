@@ -10,6 +10,9 @@ effects are supplied through `ServerHost`.
   `readonly-remote://workspace[/...]` namespace and safe root-relative paths.
 - `RemoteServer::with_language_providers` receives explicit hover, definition,
   references, and document-symbol providers.
+- `RemoteServer::new_session` shares those host/provider services and document
+  sync delivery while giving each protocol connection its own document cache
+  and watch map.
 - `handle_client_packet` resolves one tree level, opens/caches documents,
   starts or replaces watches, closes documents, and routes feature requests.
 - Feature requests use the cached URI/revision (a non-empty requested revision
@@ -18,7 +21,7 @@ effects are supplied through `ServerHost`.
 - Open and watch updates notify the optional document-sync listener used by the
   native diagnostics runner. Watch callbacks emit later packets; immediate
   request results are returned from `handle_client_packet`.
-- `dispose_watches` is the connection-teardown boundary.
+- `dispose_watches` is the connection-teardown boundary for that session only.
 
 Public supporting types are `ServerHost`, `ServerWatch`, host read/resolve
 results, URI parse results, and `RemoteServer` methods. This package belongs to

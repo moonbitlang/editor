@@ -148,6 +148,51 @@ async test "routes watch events to document changed packets" {
 }
 
 ///|
+async test "server sessions dispose only their own document watches" {
+  let host = FakeServerHost::new()
+  host.files.set("main.mbt", "pub fn main {}\n")
+  let template = test_remote_server("/workspace/", host)
+  let first = template.new_session()
+  let second = template.new_session()
+  let uri = expect_remote_uri("main.mbt")
+  let first_emitted = []
+  let second_emitted = []
+
+  ignore(
+    first.watch_document(
+      { id: "watch-first", uri },
+      packet => first_emitted.push(packet),
+      noop_watch_spawner,
+    ),
+  )
+  ignore(
+    second.watch_document(
+      { id: "watch-second", uri },
+      packet => second_emitted.push(packet),
+      noop_watch_spawner,
+    ),
+  )
+
+  host.files.set("main.mbt", "pub fn main { 1 }\n")
+  host.emit("main.mbt", Changed)
+  assert_eq(first_emitted.length(), 1)
+  assert_eq(second_emitted.length(), 1)
+
+  first.dispose_watches()
+  host.files.set("main.mbt", "pub fn main { 22 }\n")
+  host.emit("main.mbt", Changed)
+  assert_eq(first_emitted.length(), 1)
+  assert_eq(second_emitted.length(), 2)
+  match second_emitted[1] {
+    DocumentChanged(payload) => {
+      assert_eq(payload.id, "watch-second")
+      assert_eq(payload.document.text, "pub fn main { 22 }\n")
+    }
+    _ => fail("expected the remaining session's document change")
+  }
+}
+
+///|
 async test "notifies the document sync listener on open and watch change" {
   let host = FakeServerHost::new()
   host.files.set("main.mbt", "pub fn main {}\n")
@@ -299,7 +344,13 @@ struct FakeServerHost {
   files : Map[String, String]
   errors : Map[String, (@workspace.FileSystemProviderErrorCode, String)]
   directories : Map[String, Array[@workspace.WorkspaceStat]]
-  listeners : Map[String, async (@workspace.FileChangeType) -> Unit]
+  listeners : Map[String, Array[FakeWatchListener]]
+}
+
+///|
+struct FakeWatchListener {
+  listener : async (@workspace.FileChangeType) -> Unit
+  active : Ref[Bool]
 }
 
 ///|
@@ -319,7 +370,12 @@ async fn FakeServerHost::emit(
   change_type : @workspace.FileChangeType,
 ) -> Unit {
   match self.listeners.get(path) {
-    Some(listener) => listener(change_type)
+    Some(listeners) =>
+      for watch in listeners {
+        if watch.active.val {
+          (watch.listener)(change_type)
+        }
+      }
     None => ()
   }
 }
@@ -369,8 +425,13 @@ impl @server.ServerHost for FakeServerHost with fn watch_text_file(
   _spawn_watch,
 ) {
   let key = path.to_string()
-  self.listeners.set(key, listener)
-  ServerWatch(() => self.listeners.remove(key))
+  let active = Ref(true)
+  let watch = { listener, active }
+  match self.listeners.get(key) {
+    Some(listeners) => listeners.push(watch)
+    None => self.listeners.set(key, [watch])
+  }
+  ServerWatch(() => active.val = false)
 }
 
 ///|

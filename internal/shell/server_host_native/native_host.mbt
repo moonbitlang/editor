@@ -416,6 +416,7 @@ async fn handle_protocol_connection(
   request : @http.Request,
   conn : @http.ServerConnection,
 ) -> Unit {
+  let remote_server = remote_server.new_session()
   let ws = @websocket.from_http_server(request, conn)
   defer ws.close()
   // Watch tasks emit packets concurrently with request handling, and the

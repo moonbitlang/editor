@@ -186,3 +186,32 @@ test('updates and recovers watched fixture files from disk changes', async ({ pa
     await fs.writeFile(mainFixture, original, 'utf8');
   }
 });
+
+test('keeps one tab watch active after another tab disconnects', async ({
+  context,
+  page,
+}) => {
+  const original = await fs.readFile(mainFixture, 'utf8');
+  const remainingPage = await context.newPage();
+
+  try {
+    await Promise.all([page.goto('/'), remainingPage.goto('/')]);
+    await Promise.all([openMainFixture(page), openMainFixture(remainingPage)]);
+    await page.close();
+
+    await fs.writeFile(
+      mainFixture,
+      original.replace(
+        'println(event.message)',
+        'println("remaining tab still watched")',
+      ),
+      'utf8',
+    );
+    await expect(remainingPage.locator('.mtk5')).toContainText(
+      '"remaining tab still watched"',
+      { timeout: 7_000 },
+    );
+  } finally {
+    await fs.writeFile(mainFixture, original, 'utf8');
+  }
+});

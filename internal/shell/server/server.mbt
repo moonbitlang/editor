@@ -93,6 +93,24 @@ pub fn RemoteServer::with_language_providers(
 }
 
 ///|
+/// Creates one connection-scoped server session. Host/provider services and
+/// document-sync delivery remain server-scoped, while cached documents and
+/// watches are owned exclusively by the new connection.
+pub fn RemoteServer::new_session(self : RemoteServer) -> RemoteServer {
+  {
+    workspace_root: self.workspace_root,
+    host: self.host,
+    hover_provider: self.hover_provider,
+    definition_provider: self.definition_provider,
+    references_provider: self.references_provider,
+    document_symbol_provider: self.document_symbol_provider,
+    documents: Map::default(),
+    watches: Map::default(),
+    document_sync_listener: self.document_sync_listener,
+  }
+}
+
+///|
 /// Installs a listener notified whenever the server caches a fresh document
 /// snapshot (open or watch update). The native host uses it to schedule a
 /// `moon check` run without waiting for a feature request, so diagnostics are
