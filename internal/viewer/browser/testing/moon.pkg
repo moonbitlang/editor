@@ -1,0 +1,6 @@
+import {
+  "moonbit-community/editor/base/common" @base_common,
+  "moonbit-community/editor/viewer/common/model",
+}
+
+supported_targets = "js"

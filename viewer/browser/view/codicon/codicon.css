@@ -1,0 +1,55 @@
+/* Ported from vscode/src/vs/base/browser/ui/codicons/codicon/codicon.css
+   (the @font-face + base class), with the icon content rules the viewer
+   uses inlined from the codepoints in
+   vscode/src/vs/base/common/codiconsLibrary.ts — Monaco generates these
+   dynamically through the theme service's icon stylesheet
+   (iconsStyleSheet.ts), which the viewer does not port. codicon.ttf is the
+   vendored VS Code icon font (served as /codicon.ttf). */
+
+@font-face {
+  font-family: "codicon";
+  font-display: block;
+  src: url("/codicon.ttf") format("truetype");
+}
+
+.codicon[class*="codicon-"] {
+  font: normal normal normal 16px/1 codicon;
+  display: inline-block;
+  text-decoration: none;
+  text-rendering: auto;
+  text-align: center;
+  text-transform: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* codiconsLibrary.ts codepoints for the icons the viewer renders. */
+.codicon-chevron-down:before {
+  content: "\eab4";
+}
+
+.codicon-chevron-right:before {
+  content: "\eab6";
+}
+
+/* The folding icons registered in foldingDecorations.ts:
+   folding-expanded = chevron-down, folding-collapsed = chevron-right, and
+   the manual variants alias them (registerIcon(...) — Monaco emits these
+   through the theme service's icon stylesheet). */
+.codicon-folding-expanded:before {
+  content: "\eab4";
+}
+
+.codicon-folding-collapsed:before {
+  content: "\eab6";
+}
+
+.codicon-folding-manual-expanded:before {
+  content: "\eab4";
+}
+
+.codicon-folding-manual-collapsed:before {
+  content: "\eab6";
+}

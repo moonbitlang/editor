@@ -1,0 +1,71 @@
+/*
+ * Marker squiggle decorations, ported line-for-line from
+ * vscode/src/vs/editor/browser/widget/codeEditor/editor.css:81-120.
+ *
+ * The `border-bottom` double/dotted/dashed underline is Monaco's
+ * high-contrast-only fallback — the `*-border` color tokens default to `null`
+ * in normal (non-HC) themes, so this rule is correctly inert here (this
+ * viewer has no high-contrast theme; see view_lines.mbt's equivalent note).
+ * Likewise the `::before` layer fills the marked text with
+ * `editor*.background`, which is also `null` outside HC themes — inert in
+ * normal themes, ported for fidelity.
+ * The real, visible wavy squiggle is a runtime inline-SVG background image
+ * computed from `editor*.foreground` (`viewer/browser/view/
+ * squiggly_theme.mbt`, porting `codeEditorWidget.ts`'s
+ * `registerThemingParticipant`), injected as a separate stylesheet.
+ */
+
+.moonbit-viewer .squiggly-error {
+  border-bottom: 4px double var(--vscode-editorError-border);
+}
+
+.moonbit-viewer .squiggly-error::before {
+  display: block;
+  content: '';
+  width: 100%;
+  height: 100%;
+  background: var(--vscode-editorError-background);
+}
+
+.moonbit-viewer .squiggly-warning {
+  border-bottom: 4px double var(--vscode-editorWarning-border);
+}
+
+.moonbit-viewer .squiggly-warning::before {
+  display: block;
+  content: '';
+  width: 100%;
+  height: 100%;
+  background: var(--vscode-editorWarning-background);
+}
+
+.moonbit-viewer .squiggly-info {
+  border-bottom: 4px double var(--vscode-editorInfo-border);
+}
+
+.moonbit-viewer .squiggly-info::before {
+  display: block;
+  content: '';
+  width: 100%;
+  height: 100%;
+  background: var(--vscode-editorInfo-background);
+}
+
+.moonbit-viewer .squiggly-hint {
+  border-bottom: 2px dotted var(--vscode-editorHint-border);
+}
+
+.moonbit-viewer.showUnused .squiggly-unnecessary {
+  border-bottom: 2px dashed var(--vscode-editorUnnecessaryCode-border);
+}
+
+/* Generated from editorUnnecessaryCode.opacity (the color's alpha), the
+   `.squiggly-inline-unnecessary { opacity }` rule. */
+.moonbit-viewer.showUnused .squiggly-inline-unnecessary {
+  opacity: var(--vscode-editorUnnecessaryCode-opacity, 1);
+}
+
+.moonbit-viewer.showDeprecated .squiggly-inline-deprecated {
+  text-decoration: line-through;
+  text-decoration-color: var(--vscode-editor-foreground, inherit);
+}

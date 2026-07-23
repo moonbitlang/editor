@@ -1,0 +1,29 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit-community/editor/internal/viewer/markdown"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn render_markdown(String, language_id? : String, code_block_renderer? : (MarkdownCodeBlock, String?) -> String) -> MarkdownRenderFact
+
+pub fn render_tokenized_code_block(MarkdownCodeBlock, String?) -> String
+
+// Errors
+
+// Types and methods
+pub(all) struct MarkdownCodeBlock {
+  code : String
+  language_id : String?
+} derive(Eq, @debug.Debug)
+
+pub(all) struct MarkdownRenderFact {
+  html : String
+  has_code_block : Bool
+} derive(Eq, @debug.Debug)
+
+// Type aliases
+
+// Traits
+

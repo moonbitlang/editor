@@ -1,0 +1,74 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit-community/editor/internal/viewer/contrib/agent_feedback"
+
+import {
+  "moonbit-community/editor/base/common",
+  "moonbit-community/editor/viewer/common/agent_feedback_api",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn compare_session_editor_comments(SessionEditorComment, SessionEditorComment) -> Int
+
+pub fn get_accepted_agent_feedback_comment_count(Array[SessionEditorComment]) -> Int
+
+pub fn get_session_editor_comments(Array[@agent_feedback_api.AgentFeedback]) -> Array[SessionEditorComment]
+
+pub fn group_nearby_session_editor_comments(Array[SessionEditorComment], line_threshold? : Int) -> Array[Array[SessionEditorComment]]
+
+pub fn to_session_editor_comment_id(String) -> String
+
+// Errors
+
+// Types and methods
+pub struct AgentFeedbackService {
+  did_change_feedback : @common.Emitter[@agent_feedback_api.AgentFeedbackChangeEvent]
+  did_change_navigation : @common.Emitter[@common.Uri]
+  did_add_feedback : @common.Emitter[@agent_feedback_api.AgentFeedbackAddedEvent]
+  did_add_reply : @common.Emitter[@agent_feedback_api.AgentFeedbackReplyAddedEvent]
+  did_submit_feedback : @common.Emitter[@agent_feedback_api.AgentFeedbackSubmittedEvent]
+  items_by_resource : Map[String, Array[@agent_feedback_api.AgentFeedback]]
+  navigation_anchor_by_resource : Map[String, String]
+  enabled_resources : Map[String, Bool]
+  mut next_feedback_handle : Int
+}
+#alias(new, deprecated)
+pub fn AgentFeedbackService::AgentFeedbackService() -> Self
+pub fn AgentFeedbackService::accept_feedback(Self, @common.Uri, String) -> Unit
+pub fn AgentFeedbackService::add_feedback(Self, @common.Uri, @common.Range, String, kind? : @agent_feedback_api.AgentFeedbackKind, state? : @agent_feedback_api.AgentFeedbackState) -> @agent_feedback_api.AgentFeedback
+pub fn AgentFeedbackService::add_reply(Self, @common.Uri, String, String) -> Unit
+pub fn AgentFeedbackService::agent_feedback_handle(Self) -> @agent_feedback_api.AgentFeedbackHandle
+pub fn AgentFeedbackService::clear_feedback(Self, @common.Uri) -> Unit
+pub fn AgentFeedbackService::dispose(Self) -> Unit
+pub fn AgentFeedbackService::get_feedback(Self, @common.Uri) -> Array[@agent_feedback_api.AgentFeedback]
+pub fn AgentFeedbackService::get_navigation_bearing(Self, @common.Uri, Array[String]) -> @agent_feedback_api.AgentFeedbackNavigationBearing
+pub fn AgentFeedbackService::get_next_navigable_item(Self, @common.Uri, Array[String], next~ : Bool) -> String?
+pub fn AgentFeedbackService::is_feedback_enabled(Self, @common.Uri) -> Bool
+pub fn AgentFeedbackService::mark_feedback_submitted(Self, @common.Uri) -> Unit
+pub fn AgentFeedbackService::on_did_add_feedback(Self, (@agent_feedback_api.AgentFeedbackAddedEvent) -> Unit) -> @common.Disposable
+pub fn AgentFeedbackService::on_did_add_reply(Self, (@agent_feedback_api.AgentFeedbackReplyAddedEvent) -> Unit) -> @common.Disposable
+pub fn AgentFeedbackService::on_did_change_feedback(Self, (@agent_feedback_api.AgentFeedbackChangeEvent) -> Unit) -> @common.Disposable
+pub fn AgentFeedbackService::on_did_change_navigation(Self, (@common.Uri) -> Unit) -> @common.Disposable
+pub fn AgentFeedbackService::on_did_submit_feedback(Self, (@agent_feedback_api.AgentFeedbackSubmittedEvent) -> Unit) -> @common.Disposable
+pub fn AgentFeedbackService::remove_feedback(Self, @common.Uri, String) -> Unit
+pub fn AgentFeedbackService::set_feedback_enabled(Self, @common.Uri, Bool) -> Unit
+pub fn AgentFeedbackService::set_feedback_items(Self, @common.Uri, Array[@agent_feedback_api.AgentFeedback]) -> Unit
+pub fn AgentFeedbackService::set_feedback_resolved(Self, @common.Uri, String, Bool) -> Unit
+pub fn AgentFeedbackService::set_navigation_anchor(Self, @common.Uri, String?) -> Unit
+pub fn AgentFeedbackService::update_feedback(Self, @common.Uri, String, String) -> Unit
+
+pub struct SessionEditorComment {
+  id : String
+  source_id : String
+  kind : @agent_feedback_api.AgentFeedbackKind
+  resource : @common.Uri
+  range : @common.Range
+  text : String
+  replies : Array[String]
+  state : @agent_feedback_api.AgentFeedbackState
+} derive(@debug.Debug)
+
+// Type aliases
+
+// Traits
+

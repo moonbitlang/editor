@@ -1,0 +1,31 @@
+/* Ported from
+   vscode/src/vs/editor/browser/viewParts/viewCursors/viewCursors.css (base
+   rules) plus the caret color rule from the registerThemingParticipant in
+   viewCursors.ts:391-417, reduced to the reachable readonly arms: no blink
+   keyframes (the readonly product renders cursor-solid only), no multi-cursor
+   .cursor-primary/.cursor-secondary variants, and the runtime theme rules
+   become static var() CSS (the viewer's theming design — colors cascade from
+   the host's --vscode-* custom properties). editorCursor.background defaults
+   to null → caret.opposite(), which only colors block-cursor text (N-A for
+   the Line style); the editor background stands in for it. */
+.cursors-layer {
+  position: absolute;
+  top: 0;
+  /* Deviations from Monaco (which stacks by DOM order and hit-tests through
+     its own target classification): the port's layers carry explicit
+     z-indices (view-overlays 0 < view-lines 1 < caret 4 < contentWidgets 50),
+     while ViewZones deliberately keeps the source's DOM-order stacking. The
+     caret must not intercept the DOM caret hit-testing
+     (caretPositionFromPoint) the port's selection uses. */
+  z-index: 4;
+  pointer-events: none;
+}
+
+.cursors-layer > .cursor {
+  position: absolute;
+  overflow: hidden;
+  box-sizing: border-box;
+  background-color: var(--vscode-editorCursor-foreground);
+  border-color: var(--vscode-editorCursor-foreground);
+  color: var(--vscode-editor-background);
+}

@@ -1,0 +1,8 @@
+options(
+  targets: {
+    "platform_js.mbt": [ "js" ],
+    "platform_fallback.mbt": [ "native", "llvm", "wasm", "wasm-gc" ],
+    "process_js.mbt": [ "js" ],
+    "process_fallback.mbt": [ "native", "llvm", "wasm", "wasm-gc" ],
+  },
+)

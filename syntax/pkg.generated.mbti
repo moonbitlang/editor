@@ -1,0 +1,80 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit-community/editor/syntax"
+
+import {
+  "moonbit-community/editor/base/common",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn is_capitalized(StringView) -> Bool
+
+pub let tokenization_registry : TokenizationRegistry
+
+// Errors
+
+// Types and methods
+pub(all) enum HighlightTag {
+  Keyword
+  Identifier
+  String
+  Number
+  Comment
+  Punctuation
+  Plain
+  Operator
+  Delimiter
+  Type
+  Function
+  Variable
+  Constant
+  StringEscape
+  CommentDoc
+  Regexp
+  Tag
+  Attribute
+  Invalid
+} derive(Eq, @debug.Debug)
+pub impl Show for HighlightTag
+
+pub(all) struct LineToken {
+  start : Int
+  end : Int
+  tag : HighlightTag
+} derive(Eq, @debug.Debug)
+
+pub struct PlainTokenizer {
+}
+#alias(new, deprecated)
+pub fn PlainTokenizer::PlainTokenizer() -> Self
+pub impl LineTokenizer for PlainTokenizer
+
+pub struct TokenizationChangedEvent {
+  changed_languages : Array[String]
+  changed_color_map : Bool
+}
+
+pub struct TokenizationRegistry {
+  // private fields
+}
+#alias(new, deprecated)
+pub fn TokenizationRegistry::TokenizationRegistry() -> Self
+pub fn TokenizationRegistry::get(Self, String) -> &LineTokenizer?
+pub fn TokenizationRegistry::get_color_map(Self) -> Array[String]?
+pub fn TokenizationRegistry::get_default_background(Self) -> String?
+pub fn TokenizationRegistry::handle_change(Self, Array[String]) -> Unit
+pub fn TokenizationRegistry::is_resolved(Self, String) -> Bool
+pub fn TokenizationRegistry::on_did_change(Self, (TokenizationChangedEvent) -> Unit) -> @common.Disposable
+pub fn TokenizationRegistry::register(Self, String, &LineTokenizer) -> @common.Disposable
+pub fn TokenizationRegistry::set_color_map(Self, Array[String]) -> Unit
+
+pub(all) struct TokenizerState(String) derive(Eq, @debug.Debug)
+
+// Type aliases
+
+// Traits
+pub(open) trait LineTokenizer {
+  fn initial_state(Self) -> TokenizerState
+  fn tokenize_line(Self, String, TokenizerState) -> (Array[LineToken], TokenizerState)
+}
+

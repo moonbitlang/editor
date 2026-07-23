@@ -1,0 +1,8 @@
+import {
+  "moonbit-community/editor/base/common" @base_common,
+  "moonbitlang/core/json",
+}
+
+import {
+  "moonbitlang/async",
+} for "test"

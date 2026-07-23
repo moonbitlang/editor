@@ -1,0 +1,180 @@
+/* Whole-line Markdown is mounted as ordinary ViewZone content. Projection
+ * owns source-line removal; these rules never hide, overlay, or offset model
+ * text. The ViewZone owner writes the outer node's position, width, and fixed
+ * measured height. */
+.moonbit-viewer-markdown-comment {
+  box-sizing: border-box;
+  width: 100%;
+  /* The full-scroll-height .view-lines plane is z-index 1. Keep caller-owned
+   * Markdown input above it, but below editor cursors (4) and widgets (50+). */
+  z-index: 2;
+  color: var(--vscode-editor-foreground);
+  /* Give documentation its own quiet surface while leaving the stronger
+   * textCodeBlock background available for nested inline and fenced code. */
+  background: var(--vscode-editor-background);
+  background: color-mix(
+    in srgb,
+    var(--vscode-editor-foreground) 4%,
+    var(--vscode-editor-background)
+  );
+  font-family: var(--ui-font-family, var(--editor-font-family));
+  font-size: var(--editor-font-size);
+  line-height: 1.5;
+}
+
+/* Vertical and trailing padding belong to the measured inner target, so
+ * offsetHeight includes every content-space contribution used for ViewZone
+ * relayout. The leading edge stays flush with the editor's source rail. */
+.moonbit-viewer-markdown-comment-content {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 6px 12px 8px 0;
+  overflow-wrap: anywhere;
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: text;
+}
+
+.moonbit-viewer-markdown-comment-content > :first-child {
+  margin-top: 0;
+}
+
+.moonbit-viewer-markdown-comment-content > :last-child {
+  margin-bottom: 0;
+}
+
+.moonbit-viewer-markdown-comment-content p,
+.moonbit-viewer-markdown-comment-content ul,
+.moonbit-viewer-markdown-comment-content ol,
+.moonbit-viewer-markdown-comment-content blockquote,
+.moonbit-viewer-markdown-comment-content pre,
+.moonbit-viewer-markdown-comment-content .monaco-tokenized-source {
+  margin: 8px 0;
+}
+
+.moonbit-viewer-markdown-comment-content h1,
+.moonbit-viewer-markdown-comment-content h2,
+.moonbit-viewer-markdown-comment-content h3,
+.moonbit-viewer-markdown-comment-content h4,
+.moonbit-viewer-markdown-comment-content h5,
+.moonbit-viewer-markdown-comment-content h6 {
+  margin: 12px 0 6px;
+  color: var(--vscode-editor-foreground);
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.moonbit-viewer-markdown-comment-content h1 {
+  font-size: 1.5em;
+}
+
+.moonbit-viewer-markdown-comment-content h2 {
+  font-size: 1.3em;
+}
+
+.moonbit-viewer-markdown-comment-content h3 {
+  font-size: 1.15em;
+}
+
+.moonbit-viewer-markdown-comment-content ul,
+.moonbit-viewer-markdown-comment-content ol {
+  padding-left: 24px;
+}
+
+.moonbit-viewer-markdown-comment-content li + li {
+  margin-top: 3px;
+}
+
+.moonbit-viewer-markdown-comment-content blockquote {
+  padding-left: 10px;
+  border-left: 3px solid var(--vscode-editorWidget-border, var(--vscode-widget-border));
+  color: var(--vscode-descriptionForeground, var(--vscode-editor-foreground));
+}
+
+.moonbit-viewer-markdown-comment-content hr {
+  height: 1px;
+  margin: 10px 0;
+  border: 0;
+  background: var(--vscode-editorWidget-border, var(--vscode-widget-border));
+}
+
+.moonbit-viewer-markdown-comment-content a {
+  color: var(--vscode-textLink-foreground);
+  text-decoration: none;
+}
+
+.moonbit-viewer-markdown-comment-content a:hover {
+  color: var(--vscode-textLink-activeForeground);
+  text-decoration: underline;
+}
+
+.moonbit-viewer-markdown-comment-content img {
+  max-width: 100%;
+  height: auto;
+}
+
+.moonbit-viewer-markdown-comment-content .moonbit-viewer-markdown-diagram {
+  max-width: 100%;
+  max-height: min(50vh, 480px);
+  overflow: auto;
+}
+
+.moonbit-viewer-markdown-comment-content .moonbit-viewer-markdown-diagram > svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.moonbit-viewer-markdown-comment-content code,
+.moonbit-viewer-markdown-comment-content pre,
+.moonbit-viewer-markdown-comment-content .monaco-tokenized-source {
+  font-family: var(--monaco-monospace-font, var(--editor-font-family));
+}
+
+.moonbit-viewer-markdown-comment-content :not(pre) > code {
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: var(--vscode-textCodeBlock-background);
+}
+
+.moonbit-viewer-markdown-comment-content pre,
+.moonbit-viewer-markdown-comment-content .monaco-tokenized-source {
+  box-sizing: border-box;
+  max-width: 100%;
+  padding: 8px 10px;
+  overflow: auto;
+  border-radius: 3px;
+  background: var(--vscode-textCodeBlock-background);
+  color: var(--vscode-editor-foreground);
+  line-height: var(--editor-line-height);
+  tab-size: 4;
+}
+
+.moonbit-viewer-markdown-comment-content .monaco-tokenized-source {
+  white-space: pre;
+}
+
+.moonbit-viewer-markdown-comment-content pre code {
+  display: block;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  white-space: pre;
+}
+
+/* Tokenized code supplied by the shared renderer keeps the repository's
+ * global mtk color classes and editor token variables. */
+.moonbit-viewer-markdown-comment-content .view-line-content {
+  display: inline;
+  width: auto;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  white-space: inherit;
+}
+
+.moonbit-viewer-markdown-comment-content input[type="checkbox"] {
+  margin: 0 5px 0 0;
+  accent-color: var(--vscode-focusBorder);
+}

@@ -1,0 +1,7 @@
+/* The line-decorations gutter lane pieces (Monaco `linesDecorations.css` +
+   `glyphMargin.css` `.cldr`), inside the margin overlay rows: inline
+   left/width from `LinesDecorationsOverlay`, height from the row. */
+.margin-view-overlays .cldr {
+  position: absolute;
+  height: 100%;
+}

@@ -1,0 +1,57 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit-community/editor/viewer/common/core"
+
+import {
+  "moonbit-community/editor/base/common",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub let code_right_padding : Double
+
+pub fn column_from_visible_column(String, Int, Int) -> Int
+
+pub let editor_horizontal_scrollbar_size : Double
+
+pub let editor_vertical_scrollbar_size : Double
+
+pub fn next_indent_tab_stop(Int, Int) -> Int
+
+pub fn next_render_tab_stop(Int, Int) -> Int
+
+pub fn prev_indent_tab_stop(Int, Int) -> Int
+
+pub fn prev_render_tab_stop(Int, Int) -> Int
+
+pub fn to_statusbar_column(String, Int, Int) -> Int
+
+pub fn visible_column_from_column(String, Int, Int) -> Int
+
+// Errors
+
+// Types and methods
+pub struct Selection {
+  selection_start : @common.Position
+  position : @common.Position
+} derive(Eq, @debug.Debug)
+#alias(new, deprecated)
+pub fn Selection::Selection(@common.Position, @common.Position) -> Self
+pub fn Selection::direction(Self) -> SelectionDirection
+pub fn Selection::end(Self) -> @common.Position
+pub fn Selection::from_positions(@common.Position, @common.Position) -> Self
+pub fn Selection::get_position(Self) -> @common.Position
+pub fn Selection::get_selection_start(Self) -> @common.Position
+pub fn Selection::is_empty(Self) -> Bool
+pub fn Selection::set_end_position(Self, Int, Int) -> Self
+pub fn Selection::set_start_position(Self, Int, Int) -> Self
+pub fn Selection::start(Self) -> @common.Position
+
+pub(all) enum SelectionDirection {
+  LTR
+  RTL
+} derive(Eq, @debug.Debug)
+
+// Type aliases
+
+// Traits
+

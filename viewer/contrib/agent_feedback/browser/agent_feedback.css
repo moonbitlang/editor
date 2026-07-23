@@ -1,0 +1,523 @@
+/* Agent-feedback contrib styling: a transcription of vscode
+   sessions/contrib/agentFeedback/browser/media/agentFeedbackEditorInput.css.
+   The upstream file leans on the new design-token vars
+   (--vscode-spacing-*, --vscode-cornerRadius-*, --vscode-shadow-lg,
+   --vscode-icon-plus-content/-font-family); the viewer's theme.css carries
+   none of those, so they are inlined to their default values (spacing-size60
+   = 6px, size120 = 12px, size200 = 20px, cornerRadius-small/large = 2px/6px)
+   and the icons are the vendored codicon font (plus \ea60, send \ec0f —
+   codiconsLibrary.ts codepoints), following the comments.css precedent. */
+
+/* --- hover "+" gutter glyph -------------------------------------------- */
+
+.monaco-editor .agent-feedback-glyph {
+  cursor: pointer;
+  z-index: 10;
+}
+
+.margin-view-overlays .agent-feedback-glyph.line-hover {
+  margin-left: 12px;
+  /* Keep the lane element itself inside the gutter band: the upstream
+     20px-wide element would spill its click target past the gutter edge
+     into the text (the comments glyph's width recipe). The visible plus is
+     the ::before, drawn back over the lane. */
+  width: 4px !important;
+}
+
+.margin-view-overlays .agent-feedback-glyph.line-hover::before {
+  content: "\ea60";
+  font-family: "codicon";
+  font-size: 14px;
+  position: absolute;
+  height: 100%;
+  width: 18px;
+  left: -8px;
+  z-index: 10;
+  color: var(--vscode-editorGutter-commentGlyphForeground, var(--vscode-foreground));
+  background-color: var(--vscode-editorGutter-commentRangeForeground);
+  text-align: center;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  border-radius: 2px;
+}
+
+/* --- inline input widget ------------------------------------------------ */
+
+.agent-feedback-input-widget {
+  position: absolute;
+  z-index: 10000;
+  pointer-events: auto;
+  background-color: var(--vscode-panel-background, var(--vscode-editorWidget-background));
+  border: 1px solid var(--vscode-editorWidget-border, var(--vscode-contrastBorder, #454545));
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  border-radius: 6px;
+  padding: 4px;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  animation: agentFeedbackInputAppear 0.15s ease-out;
+}
+
+@keyframes agentFeedbackInputAppear {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-feedback-input-widget {
+    animation: none;
+    transform: none;
+  }
+}
+
+.agent-feedback-input-widget textarea {
+  background-color: var(--vscode-panel-background, var(--vscode-editorWidget-background));
+  border: none;
+  color: var(--vscode-input-foreground);
+  font: inherit;
+  font-size: 13px;
+  line-height: 22px;
+  border-radius: 2px;
+  padding: 0 0 0 6px;
+  outline: none;
+  min-width: 150px;
+  max-width: 400px;
+  resize: none;
+  overflow-y: hidden;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  box-sizing: border-box;
+  display: block;
+  flex: 1;
+}
+
+.agent-feedback-input-widget textarea:focus {
+  border-color: var(--vscode-focusBorder);
+  outline: none !important;
+}
+
+.agent-feedback-input-widget textarea::placeholder {
+  color: var(--vscode-input-placeholderForeground);
+}
+
+.agent-feedback-input-widget .agent-feedback-input-measure {
+  position: absolute;
+  visibility: hidden;
+  height: 0;
+  overflow: hidden;
+  white-space: pre;
+  font: inherit;
+  font-size: 13px;
+}
+
+.agent-feedback-input-widget .agent-feedback-input-actions {
+  display: flex;
+  align-items: center;
+  margin-left: 2px;
+  flex-shrink: 0;
+}
+
+.agent-feedback-input-widget .agent-feedback-input-action {
+  box-sizing: content-box;
+  width: 16px;
+  height: 16px;
+  padding: 3px;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--vscode-foreground);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.agent-feedback-input-widget .agent-feedback-input-action:hover:not([disabled]) {
+  background-color: var(--vscode-list-hoverBackground, rgba(90, 93, 94, 0.31));
+}
+
+.agent-feedback-input-widget .agent-feedback-input-action[disabled] {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.agent-feedback-input-widget .agent-feedback-input-action::before {
+  font-family: "codicon";
+  font-size: 16px;
+}
+
+.agent-feedback-input-widget .agent-feedback-input-action-add::before {
+  content: "\ea60";
+}
+
+.agent-feedback-input-widget .agent-feedback-input-action-send::before {
+  content: "\ec0f";
+}
+
+/* --- feedback speech-bubble widget --------------------------------------
+   Transcription of media/agentFeedbackEditorWidget.css with the design
+   tokens inlined (cornerRadius-large/small = 6px/2px, fontSize-label1/2/3 =
+   12px/11px/10px, fontWeight-semiBold = 600, charts-purple fallback
+   #b180d7) and codicon glyphs for the header/toggle/action icons. */
+
+.agent-feedback-widget {
+  position: absolute;
+  pointer-events: auto;
+  max-width: 280px;
+  min-width: 180px;
+  background-color: var(--vscode-editorWidget-background);
+  border: 1px solid var(--vscode-editorWidget-border, var(--vscode-contrastBorder, #454545));
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  font-size: 12px;
+  line-height: 1.4;
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+  z-index: 10;
+}
+
+.agent-feedback-widget.visible {
+  opacity: 1;
+}
+
+.agent-feedback-widget:focus {
+  outline: none;
+}
+
+.agent-feedback-widget-arrow {
+  display: none;
+}
+
+.agent-feedback-widget-header {
+  display: flex;
+  align-items: center;
+  padding: 4px 4px 4px 8px;
+  border-bottom: 1px solid var(--vscode-editorWidget-border, var(--vscode-widget-border));
+  border-radius: 6px 6px 0 0;
+  overflow: hidden;
+  cursor: pointer;
+  gap: 6px;
+}
+
+.agent-feedback-widget.collapsed .agent-feedback-widget-header {
+  border-bottom: none;
+  border-radius: 6px;
+}
+
+.agent-feedback-widget-header:hover {
+  background-color: var(--vscode-list-hoverBackground);
+}
+
+.agent-feedback-widget-icon::before {
+  content: "\ea6b";
+  font-family: "codicon";
+  font-size: 14px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.agent-feedback-widget-title {
+  font-weight: 600;
+  line-height: 16px;
+  color: var(--vscode-foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.agent-feedback-widget-spacer {
+  flex: 1;
+}
+
+.agent-feedback-widget-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--vscode-foreground);
+  opacity: 0.7;
+  transition: opacity 0.1s;
+}
+
+.agent-feedback-widget-toggle:hover {
+  opacity: 1;
+  background-color: var(--vscode-toolbar-hoverBackground);
+}
+
+.agent-feedback-widget-toggle::before {
+  font-family: "codicon";
+  font-size: 14px;
+}
+
+.agent-feedback-widget-toggle-down::before {
+  content: "\eab4";
+}
+
+.agent-feedback-widget-toggle-up::before {
+  content: "\eab7";
+}
+
+.agent-feedback-widget-body {
+  transition: max-height 0.2s ease-in-out, padding 0.2s ease-in-out;
+  border-radius: 0 0 6px 6px;
+  overflow: hidden;
+}
+
+.agent-feedback-widget-body.collapsed {
+  max-height: 0;
+  overflow: hidden;
+  padding: 0;
+}
+
+.agent-feedback-widget-item {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 4px 8px 8px;
+  border-bottom: 1px solid var(--vscode-editorWidget-border, var(--vscode-widget-border));
+  cursor: pointer;
+  position: relative;
+  gap: 6px;
+}
+
+.agent-feedback-widget-item:last-child {
+  border-bottom: none;
+}
+
+.agent-feedback-widget-item:hover {
+  background-color: var(--vscode-list-hoverBackground);
+}
+
+.agent-feedback-widget-item.focused {
+  background-color: var(--vscode-list-activeSelectionBackground);
+  color: var(--vscode-list-activeSelectionForeground);
+}
+
+.agent-feedback-widget-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.agent-feedback-widget-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.agent-feedback-widget-item-actions {
+  margin-left: auto;
+  flex: 0 0 auto;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  display: flex;
+  gap: 2px;
+}
+
+.agent-feedback-widget-item:hover .agent-feedback-widget-item-actions {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.agent-feedback-widget-action {
+  width: 16px;
+  height: 16px;
+  padding: 2px;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--vscode-foreground);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.agent-feedback-widget-action:hover {
+  background-color: var(--vscode-toolbar-hoverBackground);
+}
+
+.agent-feedback-widget-action::before {
+  font-family: "codicon";
+  font-size: 14px;
+}
+
+.agent-feedback-widget-action-reply::before {
+  content: "\eac7";
+}
+
+.agent-feedback-widget-action-edit::before {
+  content: "\ea73";
+}
+
+.agent-feedback-widget-action-remove::before {
+  content: "\ea76";
+}
+
+.agent-feedback-widget-item-type {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  border-radius: 2px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  background: color-mix(in srgb, var(--vscode-charts-purple, #b180d7) 22%, var(--vscode-editorWidget-background));
+  color: var(--vscode-charts-purple, #b180d7);
+}
+
+.agent-feedback-widget-line-info {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--vscode-descriptionForeground);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.agent-feedback-widget-text {
+  color: var(--vscode-foreground);
+  word-wrap: break-word;
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: text;
+}
+
+.agent-feedback-widget-text p,
+.agent-feedback-widget-reply-text p {
+  margin: 0;
+}
+
+.agent-feedback-widget-text code,
+.agent-feedback-widget-reply-text code {
+  font-family: var(--monaco-monospace-font, monospace);
+  font-size: 10px;
+  padding: 1px 4px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--vscode-editorWidget-border, var(--vscode-widget-border)) 25%, transparent);
+}
+
+.agent-feedback-widget .agent-feedback-widget-text .moonbit-viewer-markdown-diagram,
+.agent-feedback-widget .agent-feedback-widget-reply-text .moonbit-viewer-markdown-diagram {
+  max-width: 100%;
+  max-height: min(50vh, 480px);
+  overflow: auto;
+}
+
+.agent-feedback-widget .agent-feedback-widget-text .moonbit-viewer-markdown-diagram > svg,
+.agent-feedback-widget .agent-feedback-widget-reply-text .moonbit-viewer-markdown-diagram > svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+/* Gutter decoration for the hovered item's range indicator */
+.agent-feedback-widget-range-glyph {
+  margin-left: 8px;
+  z-index: 5;
+  border-left: 2px solid var(--vscode-editorGutter-modifiedBackground, #0078d4);
+}
+
+.agent-feedback-widget-text.editing {
+  padding: 0 4px 0 0;
+}
+
+.agent-feedback-widget-edit-textarea {
+  width: 100%;
+  min-height: 22px;
+  padding: 4px 6px;
+  border: 1px solid var(--vscode-focusBorder);
+  border-radius: 2px;
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.4;
+  resize: none;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.agent-feedback-widget-edit-textarea:focus {
+  outline: none;
+  border-color: var(--vscode-focusBorder);
+}
+
+.agent-feedback-widget-replies {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.agent-feedback-widget-reply {
+  padding-top: 4px;
+  border-top: 1px dashed color-mix(in srgb, var(--vscode-editorWidget-border, var(--vscode-widget-border)) 60%, transparent);
+}
+
+.agent-feedback-widget-reply-text {
+  color: var(--vscode-foreground);
+  word-wrap: break-word;
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: text;
+}
+
+.agent-feedback-widget-add-reply {
+  padding-top: 4px;
+  border-top: 1px dashed color-mix(in srgb, var(--vscode-editorWidget-border, var(--vscode-widget-border)) 60%, transparent);
+}
+
+.agent-feedback-widget-add-reply .agent-feedback-widget-edit-textarea::placeholder {
+  color: var(--vscode-input-placeholderForeground);
+  opacity: 1;
+}
+
+.agent-feedback-widget-actions-bar {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.agent-feedback-widget-actions-bar button {
+  flex: 1;
+  padding: 2px 10px;
+  width: auto;
+  font-size: 11px;
+  line-height: 18px;
+  border: none;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.agent-feedback-widget-button-accept {
+  background: var(--vscode-charts-purple, #b180d7);
+  color: var(--vscode-button-foreground, #ffffff);
+}
+
+.agent-feedback-widget-button-accept:hover {
+  background: color-mix(in srgb, var(--vscode-charts-purple, #b180d7) 85%, var(--vscode-foreground));
+}
+
+.agent-feedback-widget-button-delete {
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+}
+
+.agent-feedback-widget-button-delete:hover {
+  background: var(--vscode-button-secondaryHoverBackground);
+}

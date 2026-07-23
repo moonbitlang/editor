@@ -1,0 +1,85 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit-community/editor/viewer/common/agent_feedback_api"
+
+import {
+  "moonbit-community/editor/base/common",
+  "moonbitlang/core/debug",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+pub(all) struct AgentFeedback {
+  id : String
+  text : String
+  resource : @common.Uri
+  range : @common.Range
+  kind : AgentFeedbackKind
+  replies : Array[String]
+  state : AgentFeedbackState
+} derive(@debug.Debug)
+
+pub(all) struct AgentFeedbackAddedEvent {
+  feedback : AgentFeedback
+  has_existing_feedback_for_file : Bool
+} derive(@debug.Debug)
+
+pub(all) struct AgentFeedbackChangeEvent {
+  resource : @common.Uri
+  feedback_items : Array[AgentFeedback]
+} derive(@debug.Debug)
+
+pub struct AgentFeedbackHandle {
+  // private fields
+}
+#alias(new, deprecated)
+pub fn AgentFeedbackHandle::AgentFeedbackHandle(on_did_change_feedback~ : ((AgentFeedbackChangeEvent) -> Unit) -> @common.Disposable, on_did_change_navigation~ : ((@common.Uri) -> Unit) -> @common.Disposable, is_feedback_enabled~ : (@common.Uri) -> Bool, get_feedback~ : (@common.Uri) -> Array[AgentFeedback], get_navigation_bearing~ : (@common.Uri, Array[String]) -> AgentFeedbackNavigationBearing, add_feedback~ : (@common.Uri, @common.Range, String, AgentFeedbackKind?, AgentFeedbackState?) -> AgentFeedback, mark_feedback_submitted~ : (@common.Uri) -> Unit, remove_feedback~ : (@common.Uri, String) -> Unit, accept_feedback~ : (@common.Uri, String) -> Unit, set_navigation_anchor~ : (@common.Uri, String?) -> Unit, update_feedback~ : (@common.Uri, String, String) -> Unit, add_reply~ : (@common.Uri, String, String) -> Unit) -> Self
+pub fn AgentFeedbackHandle::accept_feedback(Self, @common.Uri, String) -> Unit
+pub fn AgentFeedbackHandle::add_feedback(Self, @common.Uri, @common.Range, String, kind? : AgentFeedbackKind, state? : AgentFeedbackState) -> AgentFeedback
+pub fn AgentFeedbackHandle::add_reply(Self, @common.Uri, String, String) -> Unit
+pub fn AgentFeedbackHandle::get_feedback(Self, @common.Uri) -> Array[AgentFeedback]
+pub fn AgentFeedbackHandle::get_navigation_bearing(Self, @common.Uri, Array[String]) -> AgentFeedbackNavigationBearing
+pub fn AgentFeedbackHandle::is_feedback_enabled(Self, @common.Uri) -> Bool
+pub fn AgentFeedbackHandle::mark_feedback_submitted(Self, @common.Uri) -> Unit
+pub fn AgentFeedbackHandle::on_did_change_feedback(Self, (AgentFeedbackChangeEvent) -> Unit) -> @common.Disposable
+pub fn AgentFeedbackHandle::on_did_change_navigation(Self, (@common.Uri) -> Unit) -> @common.Disposable
+pub fn AgentFeedbackHandle::remove_feedback(Self, @common.Uri, String) -> Unit
+pub fn AgentFeedbackHandle::set_navigation_anchor(Self, @common.Uri, String?) -> Unit
+pub fn AgentFeedbackHandle::update_feedback(Self, @common.Uri, String, String) -> Unit
+
+pub(all) enum AgentFeedbackKind {
+  UserReview
+  AgentReview
+} derive(Eq, @debug.Debug)
+
+pub(all) struct AgentFeedbackNavigationBearing {
+  active_idx : Int
+  total_count : Int
+} derive(Eq, @debug.Debug)
+
+pub(all) struct AgentFeedbackReplyAddedEvent {
+  feedback : AgentFeedback
+  reply_count : Int
+} derive(@debug.Debug)
+
+pub(all) enum AgentFeedbackState {
+  Created
+  Accepted
+  Submitted
+  Resolved
+} derive(Eq, @debug.Debug)
+
+pub(all) struct AgentFeedbackSubmittedEvent {
+  resource : @common.Uri
+  items : Array[AgentFeedback]
+  user_count : Int
+  agent_review_count : Int
+  reply_count : Int
+} derive(@debug.Debug)
+
+// Type aliases
+
+// Traits
+

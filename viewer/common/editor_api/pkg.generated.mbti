@@ -1,0 +1,101 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit-community/editor/viewer/common/editor_api"
+
+import {
+  "moonbit-community/editor/base/common",
+  "moonbit-community/editor/viewer/common/core",
+  "moonbitlang/core/debug",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+pub(all) enum CursorChangeReason {
+  NotSet
+  ContentFlush
+  RecoverFromMarkers
+  Explicit
+  Paste
+  Undo
+  Redo
+} derive(Eq, @debug.Debug)
+
+pub(all) struct CursorPositionChangedEvent {
+  position : @common.Position
+  secondary_positions : Array[@common.Position]
+  reason : CursorChangeReason
+  source : String
+} derive(@debug.Debug)
+
+pub(all) struct CursorSelectionChangedEvent {
+  selection : @core.Selection
+  secondary_selections : Array[@core.Selection]
+  model_version_id : Int
+  old_selections : Array[@core.Selection]?
+  old_model_version_id : Int
+  source : String
+  reason : CursorChangeReason
+} derive(@debug.Debug)
+
+pub(all) struct ModelChangedEvent {
+  old_model_url : @common.Uri?
+  new_model_url : @common.Uri?
+} derive(@debug.Debug)
+
+pub(all) enum RenderLineHighlight {
+  None
+  Gutter
+  Line
+  All
+} derive(Eq, @debug.Debug)
+
+pub(all) enum RenderValidationDecorations {
+  Editable
+  On
+  Off
+} derive(Eq, @debug.Debug)
+
+pub(all) enum RenderWhitespace {
+  None
+  Boundary
+  Selection
+  Trailing
+  All
+} derive(Eq, @debug.Debug)
+
+pub(all) struct ScrollEvent {
+  scroll_top : Double
+  scroll_left : Double
+  scroll_width : Double
+  scroll_height : Double
+  scroll_top_changed : Bool
+  scroll_left_changed : Bool
+  scroll_width_changed : Bool
+  scroll_height_changed : Bool
+} derive(@debug.Debug)
+
+pub(all) struct ScrolledVisiblePosition {
+  top : Double
+  left : Double
+  height : Double
+} derive(Eq, @debug.Debug)
+
+pub(all) enum ShowFoldingControls {
+  Always
+  Never
+  Mouseover
+} derive(Eq, @debug.Debug)
+
+pub(all) enum WrappingIndent {
+  None
+  Same
+  Indent
+  DeepIndent
+} derive(Eq, @debug.Debug)
+
+// Type aliases
+
+// Traits
+

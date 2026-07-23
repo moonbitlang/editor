@@ -1,0 +1,42 @@
+/* Ported from vscode/src/vs/editor/browser/viewParts/selections/selections.css
+   (cslr = core selections layer rendering) plus the .monaco-editor-background
+   piece color (Monaco's editor-wide background class, reused by the
+   reverse-corner white layer). Pieces sit inside the per-line overlay rows
+   and stretch to the row via inline `top:0;bottom:0`. */
+.lines-content .cslr {
+  position: absolute;
+}
+
+/* Monaco paints the selection opaque, behind the text (see .view-overlays
+   z-index). No element opacity: overlapping/merged pieces never stack into
+   darker patches, and the color matches the editor's selectionBackground. */
+.selected-text {
+  background: var(--vscode-editor-selectionBackground);
+}
+
+/* Inverse ("reverse rounded") corner pieces, painted in the editor background
+   so a staircased selection edge reads as a smooth curve. */
+.monaco-editor-background {
+  background: var(--vscode-editor-background);
+}
+
+.top-left-radius {
+  border-top-left-radius: 3px;
+}
+
+.bottom-left-radius {
+  border-bottom-left-radius: 3px;
+}
+
+.top-right-radius {
+  border-top-right-radius: 3px;
+}
+
+.bottom-right-radius {
+  border-bottom-right-radius: 3px;
+}
+
+.view-line-content ::selection,
+.view-line-content::selection {
+  background: var(--vscode-editor-selectionBackground);
+}

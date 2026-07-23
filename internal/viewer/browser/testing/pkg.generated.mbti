@@ -1,0 +1,75 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit-community/editor/internal/viewer/browser/testing"
+
+import {
+  "moonbit-community/editor/base/common",
+  "moonbit-community/editor/viewer/common/model",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn has_model(String) -> Bool
+
+pub fn on_did_build_view_model(String, (ViewModelBuiltObservation) -> Unit) -> @common.Disposable
+
+pub fn on_did_observe_scroll_frame(String, (ScrollFrameObservation) -> Unit) -> @common.Disposable
+
+pub fn on_did_render_model(String, (ModelRenderedObservation) -> Unit) -> @common.Disposable
+
+pub fn on_did_resolve_hover(String, (HoverResolvedObservation) -> Unit) -> @common.Disposable
+
+pub fn publish_hover_resolved(String, HoverResolvedObservation) -> Unit
+
+pub fn publish_model_rendered(String, ModelRenderedObservation) -> Unit
+
+pub fn publish_scroll_frame(String, ScrollFramePhase, Double, Double) -> Unit
+
+pub fn publish_view_model_built(String, ViewModelBuiltObservation) -> Unit
+
+pub fn register_viewer(String, has_model~ : () -> Bool, set_hidden_areas~ : (Array[@common.Range], String?, Bool) -> Unit) -> @common.Disposable
+
+pub fn set_hidden_areas(String, Array[@common.Range], source? : String, force_update? : Bool) -> Bool
+
+pub fn unregister_viewer(String) -> Unit
+
+// Errors
+
+// Types and methods
+pub(all) struct HoverResolvedObservation {
+  ok : Bool
+  revision : String
+} derive(Eq, @debug.Debug)
+
+pub(all) struct ModelRenderedObservation {
+  model : @model.TextModel
+  line_count : Int
+  rendered_lines : Int
+  patch_ms : Double
+  fresh : Bool
+} derive(@debug.Debug)
+
+pub(all) struct ScrollFrameObservation {
+  viewer_id : String
+  phase : ScrollFramePhase
+  scroll_top : Double
+  scroll_left : Double
+} derive(Eq, @debug.Debug)
+
+pub(all) enum ScrollFramePhase {
+  StateCommitted
+  RenderStarted
+  RenderFinished
+} derive(Eq, @debug.Debug)
+
+pub(all) struct ViewModelBuiltObservation {
+  model : @model.TextModel
+  line_count : Int
+  token_count : Int
+  tokenize_ms : Double
+  build_ms : Double
+} derive(@debug.Debug)
+
+// Type aliases
+
+// Traits
+

@@ -1,0 +1,124 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit-community/editor/internal/viewer/contrib/agent_feedback/browser"
+
+import {
+  "moonbit-community/editor/base/common",
+  "moonbit-community/editor/internal/viewer/contrib/agent_feedback",
+  "moonbit-community/rabbita/dom",
+}
+
+// Values
+pub let input_max_width_editor_fraction : Double
+
+// Errors
+
+// Types and methods
+pub(all) struct AgentFeedbackEditorInputContribution {
+  mut widget : AgentFeedbackInputWidget?
+  mut visible : Bool
+  mut pinned_range : @common.Range?
+  mut anchor_position : @common.Position?
+  mut prefer_below : Bool
+  mut hover_line_number : Int
+  mut hover_decoration_ids : Array[String]
+  mut lane_base_width : Int?
+  mut mouse_down : Bool
+  mut suppress_selection_change_once : Bool
+}
+pub fn AgentFeedbackEditorInputContribution::AgentFeedbackEditorInputContribution() -> Self
+pub fn AgentFeedbackEditorInputContribution::reset_model_state(Self) -> Unit
+
+pub struct AgentFeedbackEditorWidget {
+  host : AgentFeedbackEditorWidgetHost
+  id : String
+  comments : Array[@agent_feedback.SessionEditorComment]
+  drafts : Map[String, String]
+  root : @dom.Element
+  header : @dom.Element
+  title : @dom.Element
+  toggle : @dom.Element
+  body : @dom.Element
+  item_nodes : Map[String, @dom.Element]
+  reply_textareas : Map[String, @dom.Element]
+  mut expanded : Bool
+  mut disposed : Bool
+  mut start_line : Int
+  // private fields
+}
+#alias(new, deprecated)
+pub fn AgentFeedbackEditorWidget::AgentFeedbackEditorWidget(AgentFeedbackEditorWidgetHost, String, Array[@agent_feedback.SessionEditorComment], Map[String, String], focused_reply? : String) -> Self
+pub fn AgentFeedbackEditorWidget::anchor_line(Self) -> Int
+pub fn AgentFeedbackEditorWidget::clear_focus(Self) -> Unit
+pub fn AgentFeedbackEditorWidget::collapse(Self) -> Unit
+pub fn AgentFeedbackEditorWidget::comment_ids(Self) -> Array[String]
+pub fn AgentFeedbackEditorWidget::contains_feedback(Self, String) -> Bool
+pub fn AgentFeedbackEditorWidget::expand(Self) -> Unit
+pub fn AgentFeedbackEditorWidget::focus_feedback(Self, String) -> Unit
+pub fn AgentFeedbackEditorWidget::focused_reply_comment_id(Self) -> String?
+pub fn AgentFeedbackEditorWidget::get_dom_node(Self) -> @dom.Element
+pub fn AgentFeedbackEditorWidget::is_expanded(Self) -> Bool
+pub fn AgentFeedbackEditorWidget::mark_disposed(Self) -> Unit
+pub fn AgentFeedbackEditorWidget::measured_header_height(Self) -> Double
+pub fn AgentFeedbackEditorWidget::measured_height(Self) -> Double
+pub fn AgentFeedbackEditorWidget::measured_width(Self) -> Double
+pub fn AgentFeedbackEditorWidget::set_anchor_line(Self, Int) -> Unit
+pub fn AgentFeedbackEditorWidget::set_position(Self, Double, Double) -> Unit
+pub fn AgentFeedbackEditorWidget::widget_id(Self) -> String
+
+pub(all) struct AgentFeedbackEditorWidgetContribution {
+  widgets : Array[AgentFeedbackEditorWidget]
+  reply_drafts : Map[String, String]
+  mut widget_id_pool : Int
+  mut highlight_decoration_ids : Array[String]
+}
+pub fn AgentFeedbackEditorWidgetContribution::AgentFeedbackEditorWidgetContribution() -> Self
+pub fn AgentFeedbackEditorWidgetContribution::reset_model_state(Self) -> Unit
+
+pub(all) struct AgentFeedbackEditorWidgetHost {
+  on_remove : (@agent_feedback.SessionEditorComment) -> Unit
+  on_accept : (@agent_feedback.SessionEditorComment) -> Unit
+  on_edit : (@agent_feedback.SessionEditorComment, String) -> Unit
+  on_reply : (@agent_feedback.SessionEditorComment, String) -> Unit
+  on_click : (@agent_feedback.SessionEditorComment) -> Unit
+  on_hover : (@agent_feedback.SessionEditorComment) -> Unit
+  on_hover_end : () -> Unit
+  on_did_expand : (String) -> Unit
+  on_layout : (String) -> Unit
+}
+
+pub struct AgentFeedbackInputWidget {
+  host : AgentFeedbackInputWidgetHost
+  root : @dom.Element
+  textarea : @dom.Element
+  measure : @dom.Element
+  action : @dom.Element
+  mut showing_alt : Bool
+}
+#alias(new, deprecated)
+pub fn AgentFeedbackInputWidget::AgentFeedbackInputWidget(AgentFeedbackInputWidgetHost) -> Self
+pub fn AgentFeedbackInputWidget::auto_size(Self) -> Unit
+pub fn AgentFeedbackInputWidget::clear_input(Self) -> Unit
+pub fn AgentFeedbackInputWidget::focus_input(Self) -> Unit
+pub fn AgentFeedbackInputWidget::get_dom_node(Self) -> @dom.Element
+pub fn AgentFeedbackInputWidget::has_text(Self) -> Bool
+pub fn AgentFeedbackInputWidget::hide(Self) -> Unit
+pub fn AgentFeedbackInputWidget::measured_height(Self) -> Double
+pub fn AgentFeedbackInputWidget::measured_width(Self) -> Double
+pub fn AgentFeedbackInputWidget::set_placeholder(Self, String) -> Unit
+pub fn AgentFeedbackInputWidget::set_position(Self, Double, Double) -> Unit
+pub fn AgentFeedbackInputWidget::show(Self) -> Unit
+pub fn AgentFeedbackInputWidget::value(Self) -> String
+
+pub(all) struct AgentFeedbackInputWidgetHost {
+  on_add : () -> Unit
+  on_add_and_submit : () -> Unit
+  on_cancel : () -> Unit
+  on_layout : () -> Unit
+  on_blur_empty : () -> Unit
+  content_width : () -> Double
+}
+
+// Type aliases
+
+// Traits
+

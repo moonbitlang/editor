@@ -1,0 +1,14 @@
+import {
+  "moonbit-community/editor/base/browser" @base_browser,
+  "moonbit-community/editor/base/common" @base_common,
+  "moonbit-community/editor/language",
+  "moonbit-community/editor/viewer/browser" @editor_browser,
+  "moonbit-community/editor/internal/viewer/browser/view",
+  "moonbit-community/editor/internal/viewer/browser/markdown" @browser_markdown,
+  "moonbit-community/editor/viewer/common/view_model",
+  "moonbit-community/editor/internal/viewer/contrib/hover",
+  "moonbit-community/editor/internal/viewer/ui/scrollbar",
+  "moonbit-community/rabbita/dom" @rdom,
+}
+
+supported_targets = "js"

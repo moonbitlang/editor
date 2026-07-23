@@ -1,0 +1,8 @@
+import {
+  "moonbit-community/editor/base/common" @base_common,
+  "moonbit-community/editor/viewer/common/editor_api",
+}
+
+import {
+  "moonbitlang/core/double",
+} for "wbtest"

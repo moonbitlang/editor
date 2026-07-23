@@ -1,0 +1,13 @@
+.overlayWidgets {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+}
+
+.overflowingOverlayWidgets {
+  position: absolute;
+  inset: 0;
+  z-index: 80;
+  pointer-events: none;
+}

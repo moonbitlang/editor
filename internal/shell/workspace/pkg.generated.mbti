@@ -1,0 +1,183 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit-community/editor/internal/shell/workspace"
+
+import {
+  "moonbit-community/editor/base/common",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn infer_language_id(String) -> String
+
+pub async fn read_document(&FileSystemProvider, @common.Uri) -> DocumentReadResult
+
+pub fn revision_from_text(String) -> String
+
+pub fn watch_file(&FileSystemProvider, @common.Uri, (Array[FileChange]) -> Unit) -> FileWatch
+
+// Errors
+
+// Types and methods
+pub(all) enum DocumentChange {
+  DocumentInvalidated(uri~ : @common.Uri, known_revision~ : String?)
+  DocumentUpdated(DocumentSnapshot)
+  DocumentDeleted(@common.Uri)
+  DocumentChangeFailed(uri~ : @common.Uri, error~ : DocumentError)
+} derive(@debug.Debug)
+
+pub struct DocumentContent {
+  text : String
+  display_name : String
+  language_id : String
+  revision : String
+} derive(@debug.Debug)
+pub fn DocumentContent::DocumentContent(String, display_name? : String, language_id? : String, revision? : String) -> Self
+
+pub struct DocumentError {
+  code : FileSystemProviderErrorCode
+  message : String
+  uri : @common.Uri?
+} derive(@debug.Debug)
+pub fn DocumentError::DocumentError(FileSystemProviderErrorCode, String, uri? : @common.Uri) -> Self
+pub fn DocumentError::from_file_system_error(FileSystemProviderError) -> Self
+pub fn DocumentError::status(Self) -> Int
+pub fn DocumentError::to_file_system_error(Self) -> FileSystemProviderError
+pub impl ToJson for DocumentError
+
+pub(all) enum DocumentReadResult {
+  DocumentLoaded(DocumentSnapshot)
+  DocumentNotFound(@common.Uri)
+  DocumentReadFailed(DocumentError)
+} derive(@debug.Debug)
+pub impl ToJson for DocumentReadResult
+
+pub struct DocumentSnapshot {
+  uri : @common.Uri
+  display_name : String
+  language_id : String
+  revision : String
+  text : String
+  line_starts : Array[Int]
+} derive(@debug.Debug)
+pub fn DocumentSnapshot::DocumentSnapshot(@common.Uri, String, String, String, String) -> Self
+pub fn DocumentSnapshot::from_content(@common.Uri, DocumentContent) -> Self
+pub fn DocumentSnapshot::length(Self) -> Int
+pub fn DocumentSnapshot::line_at_offset(Self, Int) -> Int
+pub fn DocumentSnapshot::line_count(Self) -> Int
+pub fn DocumentSnapshot::line_end_offset(Self, Int) -> Int
+pub fn DocumentSnapshot::line_start_offset(Self, Int) -> Int
+pub fn DocumentSnapshot::line_text(Self, Int) -> String
+pub fn DocumentSnapshot::offset_at_position(Self, @common.Position) -> Int
+pub fn DocumentSnapshot::position_at_offset(Self, Int) -> @common.Position
+pub fn DocumentSnapshot::slice(Self, @common.OffsetRange) -> String
+pub impl ToJson for DocumentSnapshot
+
+pub(all) struct FileChange {
+  uri : @common.Uri
+  change_type : FileChangeType
+} derive(@debug.Debug)
+pub impl ToJson for FileChange
+
+pub(all) enum FileChangeType {
+  Created
+  Changed
+  Deleted
+} derive(Eq, @debug.Debug)
+pub fn FileChangeType::to_string(Self) -> String
+
+pub(all) enum FileReadResult {
+  FileReadOk(DocumentContent)
+  FileReadError(FileSystemProviderError)
+} derive(@debug.Debug)
+
+pub struct FileSystemProviderError {
+  code : FileSystemProviderErrorCode
+  message : String
+  uri : @common.Uri?
+} derive(@debug.Debug)
+pub fn FileSystemProviderError::FileSystemProviderError(FileSystemProviderErrorCode, String, uri? : @common.Uri) -> Self
+pub fn FileSystemProviderError::status(Self) -> Int
+pub impl ToJson for FileSystemProviderError
+
+pub(all) enum FileSystemProviderErrorCode {
+  FileNotFound
+  FileExists
+  FileNotADirectory
+  IsDirectory
+  NoPermissions
+  Unavailable
+  InvalidUri
+  InvalidData
+} derive(Eq, @debug.Debug)
+pub fn FileSystemProviderErrorCode::from_string(String) -> Self
+pub fn FileSystemProviderErrorCode::to_string(Self) -> String
+
+pub(all) struct FileWatch {
+  dispose : () -> Unit
+}
+pub fn FileWatch::dispose(Self) -> Unit
+
+pub(all) enum SourceError {
+  MissingPath
+  InvalidPath
+} derive(Eq, @debug.Debug)
+pub fn SourceError::to_string(Self) -> String
+
+pub struct SourcePath {
+  value : String
+} derive(Eq, @debug.Debug)
+pub fn SourcePath::display_name(Self) -> String
+pub fn SourcePath::file_uri(Self) -> @common.Uri
+pub fn SourcePath::normalize_root_relative_path(String) -> SourcePathResult
+pub fn SourcePath::to_string(Self) -> String
+
+pub enum SourcePathResult {
+  ParsedSourcePath(SourcePath)
+  SourcePathError(SourceError)
+} derive(Eq, @debug.Debug)
+
+pub struct WatchOptions {
+  recursive : Bool
+  excludes : Array[String]
+} derive(@debug.Debug)
+pub fn WatchOptions::default() -> Self
+
+pub(all) enum WorkspaceEntryKind {
+  File
+  Directory
+} derive(Eq, @debug.Debug)
+pub fn WorkspaceEntryKind::from_string(String) -> Self?
+pub fn WorkspaceEntryKind::to_string(Self) -> String
+
+pub(all) enum WorkspaceResolveResult {
+  WorkspaceResolved(WorkspaceStat)
+  WorkspaceResolveError(FileSystemProviderError)
+} derive(@debug.Debug)
+
+pub(all) struct WorkspaceStat {
+  uri : @common.Uri
+  name : String
+  kind : WorkspaceEntryKind
+  children : Array[WorkspaceStat]?
+} derive(@debug.Debug)
+
+// Type aliases
+
+// Traits
+pub(open) trait DocumentProvider {
+  async fn read(Self, @common.Uri) -> DocumentReadResult
+  fn watch(Self, @common.Uri, (DocumentChange) -> Unit) -> @common.Disposable
+  fn close(Self, @common.Uri) -> Unit
+}
+
+pub(open) trait FileSystemProvider {
+  fn scheme(Self) -> String
+  async fn read_file(Self, @common.Uri) -> FileReadResult
+  fn watch(Self, @common.Uri, WatchOptions, (Array[FileChange]) -> Unit) -> FileWatch
+}
+
+pub(open) trait WorkspaceTreeProvider {
+  fn root(Self) -> @common.Uri
+  async fn resolve(Self, @common.Uri) -> WorkspaceResolveResult
+}
+

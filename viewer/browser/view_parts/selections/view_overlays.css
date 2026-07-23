@@ -1,0 +1,18 @@
+.view-overlays {
+  position: absolute;
+  top: 0;
+  left: 0;
+  /* Selection paints behind the text (below .view-lines, z-index 1), matching
+     Monaco: the glyphs render on top of an opaque selection background. */
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* The per-line overlay rows (`ViewOverlayLine`), Monaco `editor.css`:
+   `.monaco-editor .view-overlays > div, .monaco-editor .margin-view-overlays
+   > div { position: absolute; width: 100%; }`. */
+.view-overlays > div,
+.margin-view-overlays > div {
+  position: absolute;
+  width: 100%;
+}

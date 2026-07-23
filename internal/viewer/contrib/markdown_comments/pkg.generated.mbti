@@ -1,0 +1,27 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit-community/editor/internal/viewer/contrib/markdown_comments"
+
+import {
+  "moonbit-community/editor/language",
+  "moonbit-community/editor/platform/log",
+  "moonbit-community/editor/viewer/common/languages",
+  "moonbit-community/editor/viewer/common/model",
+}
+
+// Values
+pub fn detect_markdown_comments(@model.TextModel, @languages.CommentRule) -> Array[@language.MarkdownCommentBlock]
+
+pub fn detect_markdown_comments_in_snapshot(@model.TextSnapshot, @languages.CommentRule) -> Array[@language.MarkdownCommentBlock]
+
+pub fn normalize_markdown_comment_blocks(Array[@language.MarkdownCommentBlock], Int, @log.LogHandle) -> Array[@language.MarkdownCommentBlock]
+
+pub fn resolve_markdown_comment_blocks(@model.TextModel, @languages.LanguageHandle, @log.LogHandle) -> Array[@language.MarkdownCommentBlock]
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

@@ -1,0 +1,24 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit-community/editor/viewer/common"
+
+import {
+  "moonbit-community/editor/viewer/common/editor_api",
+  "moonbit-community/editor/viewer/common/view_layout",
+  "moonbit-community/editor/viewer/common/view_model",
+}
+
+// Values
+pub fn escape_html(String) -> String
+
+pub fn render_line_class() -> String
+
+pub fn render_line_html(@view_model.ViewLineData, Array[@view_layout.LineDecoration], render_whitespace? : @editor_api.RenderWhitespace, render_control_characters? : Bool) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

@@ -1,0 +1,630 @@
+// Port of `vscode/src/vs/editor/contrib/folding/browser/foldingRanges.ts`
+// (checked-in vscode submodule): the
+// compact `FoldingRegions` store (parallel packed u32 arrays + bit fields),
+// the `FoldingRegion` accessor, `FoldRange`/`FoldSource`, and the
+// `sanitizeAndMerge` reconciliation of provider ranges with user/previous
+// fold state.
+
+///|
+/// A plain line range — Monaco's `ILineRange` (`foldingRanges.ts:8`).
+pub(all) struct LineRange {
+  start_line_number : Int
+  end_line_number : Int
+} derive(Eq, Debug)
+
+///|
+/// Where a fold range came from — `FoldSource` (`foldingRanges.ts:13`).
+pub enum FoldSource {
+  Provider
+  UserDefined
+  Recovered
+} derive(Eq, Debug)
+
+///|
+/// `foldSourceAbbr` (`foldingRanges.ts:19`), the one-character source tag of
+/// the debug string format.
+fn FoldSource::abbr(self : FoldSource) -> String {
+  match self {
+    Provider => " "
+    UserDefined => "u"
+    Recovered => "r"
+  }
+}
+
+///|
+/// One fold range with its state — Monaco's `FoldRange`
+/// (`foldingRanges.ts:25`). `type_` is Monaco's `type` (a MoonBit keyword),
+/// the `FoldingRangeKind` id a provider attached. `is_collapsed` and
+/// `source` are mutable because `sanitizeAndMerge` rewrites them in place.
+pub struct FoldRange {
+  start_line_number : Int
+  end_line_number : Int
+  type_ : String?
+  mut is_collapsed : Bool
+  mut source : FoldSource
+} derive(Eq, Debug)
+
+///|
+/// `MAX_FOLDING_REGIONS` (`foldingRanges.ts:33`).
+pub const MAX_FOLDING_REGIONS : Int = 0xFFFF
+
+///|
+/// `MAX_LINE_NUMBER` (`foldingRanges.ts:34`).
+pub const MAX_LINE_NUMBER : Int = 0xFFFFFF
+
+///|
+/// `MASK_INDENT` (`foldingRanges.ts:36`): the top byte of each packed u32,
+/// which stores half of the parent index.
+const MASK_INDENT : UInt = 0xFF000000
+
+///|
+/// A packed bit set — Monaco's `BitField` (`foldingRanges.ts:38`).
+priv struct BitField {
+  states : FixedArray[UInt]
+}
+
+///|
+fn BitField::new(size : Int) -> BitField {
+  { states: FixedArray::make((size + 31) / 32, 0U) }
+}
+
+///|
+fn BitField::get(self : BitField, index : Int) -> Bool {
+  let array_index = index / 32
+  let bit = index % 32
+  (self.states[array_index] & (1U << bit)) != 0
+}
+
+///|
+fn BitField::set(self : BitField, index : Int, new_state : Bool) -> Unit {
+  let array_index = index / 32
+  let bit = index % 32
+  let value = self.states[array_index]
+  if new_state {
+    self.states[array_index] = value | (1U << bit)
+  } else {
+    self.states[array_index] = value & (1U << bit).lnot()
+  }
+}
+
+///|
+/// The compact fold-range store — Monaco's `FoldingRegions`
+/// (`foldingRanges.ts:63`). Start/end line numbers live in the low 24 bits
+/// of two parallel u32 arrays; once parents are computed the top byte of
+/// each packs half of the region's parent index. Collapse and
+/// user-defined/recovered source state live in bit fields.
+pub struct FoldingRegions {
+  priv start_indexes : FixedArray[UInt]
+  priv end_indexes : FixedArray[UInt]
+  priv collapse_states : BitField
+  priv user_defined_states : BitField
+  priv recovered_states : BitField
+  priv mut parents_computed : Bool
+  priv types : Array[String?]?
+}
+
+///|
+/// The `FoldingRegions` constructor (`foldingRanges.ts:73`). Aborts on
+/// mismatched or oversized inputs like the source's `throw`.
+#alias(new, deprecated)
+pub fn FoldingRegions::FoldingRegions(
+  start_indexes : FixedArray[UInt],
+  end_indexes : FixedArray[UInt],
+  types? : Array[String?],
+) -> FoldingRegions {
+  if start_indexes.length() != end_indexes.length() ||
+    start_indexes.length() > MAX_FOLDING_REGIONS {
+    abort("invalid startIndexes or endIndexes size")
+  }
+  {
+    start_indexes,
+    end_indexes,
+    collapse_states: BitField::new(start_indexes.length()),
+    user_defined_states: BitField::new(start_indexes.length()),
+    recovered_states: BitField::new(start_indexes.length()),
+    parents_computed: false,
+    types,
+  }
+}
+
+///|
+/// `ensureParentIndices` (`foldingRanges.ts:86`): lazily packs each region's
+/// parent index into the top bytes of the start (low half) and end (high
+/// half) words, walking the pre-sorted list with a containment stack.
+fn FoldingRegions::ensure_parent_indices(self : FoldingRegions) -> Unit {
+  if self.parents_computed {
+    return
+  }
+  self.parents_computed = true
+  let parent_indexes : Array[Int] = []
+  let is_inside_last = (start_line_number : Int, end_line_number : Int) => {
+    let index = parent_indexes[parent_indexes.length() - 1]
+    self.get_start_line_number(index) <= start_line_number &&
+    self.get_end_line_number(index) >= end_line_number
+  }
+  for i in 0..<self.start_indexes.length() {
+    let start_line_number = self.start_indexes[i].reinterpret_as_int()
+    let end_line_number = self.end_indexes[i].reinterpret_as_int()
+    if start_line_number > MAX_LINE_NUMBER || end_line_number > MAX_LINE_NUMBER {
+      abort(
+        "startLineNumber or endLineNumber must not exceed \{MAX_LINE_NUMBER}",
+      )
+    }
+    while parent_indexes.length() > 0 &&
+          !is_inside_last(start_line_number, end_line_number) {
+      parent_indexes.pop() |> ignore
+    }
+    let parent_index = if parent_indexes.length() > 0 {
+      parent_indexes[parent_indexes.length() - 1]
+    } else {
+      -1
+    }
+    parent_indexes.push(i)
+    self.start_indexes[i] = (start_line_number + ((parent_index & 0xFF) << 24)).reinterpret_as_uint()
+    self.end_indexes[i] = (end_line_number + ((parent_index & 0xFF00) << 16)).reinterpret_as_uint()
+  }
+}
+
+///|
+/// Number of regions — the `length` getter (`foldingRanges.ts:111`).
+pub fn FoldingRegions::length(self : FoldingRegions) -> Int {
+  self.start_indexes.length()
+}
+
+///|
+/// `getStartLineNumber` (`foldingRanges.ts:115`).
+pub fn FoldingRegions::get_start_line_number(
+  self : FoldingRegions,
+  index : Int,
+) -> Int {
+  (self.start_indexes[index] & MAX_LINE_NUMBER.reinterpret_as_uint()).reinterpret_as_int()
+}
+
+///|
+/// `getEndLineNumber` (`foldingRanges.ts:119`).
+pub fn FoldingRegions::get_end_line_number(
+  self : FoldingRegions,
+  index : Int,
+) -> Int {
+  (self.end_indexes[index] & MAX_LINE_NUMBER.reinterpret_as_uint()).reinterpret_as_int()
+}
+
+///|
+/// `getType` (`foldingRanges.ts:123`).
+pub fn FoldingRegions::get_type(self : FoldingRegions, index : Int) -> String? {
+  match self.types {
+    Some(types) => types[index]
+    None => None
+  }
+}
+
+///|
+/// `hasTypes` (`foldingRanges.ts:127`).
+pub fn FoldingRegions::has_types(self : FoldingRegions) -> Bool {
+  self.types is Some(_)
+}
+
+///|
+/// `isCollapsed` (`foldingRanges.ts:131`).
+pub fn FoldingRegions::is_collapsed(self : FoldingRegions, index : Int) -> Bool {
+  self.collapse_states.get(index)
+}
+
+///|
+/// `setCollapsed` (`foldingRanges.ts:135`).
+pub fn FoldingRegions::set_collapsed(
+  self : FoldingRegions,
+  index : Int,
+  new_state : Bool,
+) -> Unit {
+  self.collapse_states.set(index, new_state)
+}
+
+///|
+/// `getSource` (`foldingRanges.ts:155`).
+pub fn FoldingRegions::get_source(
+  self : FoldingRegions,
+  index : Int,
+) -> FoldSource {
+  if self.user_defined_states.get(index) {
+    UserDefined
+  } else if self.recovered_states.get(index) {
+    Recovered
+  } else {
+    Provider
+  }
+}
+
+///|
+/// `setSource` (`foldingRanges.ts:164`).
+pub fn FoldingRegions::set_source(
+  self : FoldingRegions,
+  index : Int,
+  source : FoldSource,
+) -> Unit {
+  match source {
+    UserDefined => {
+      self.user_defined_states.set(index, true)
+      self.recovered_states.set(index, false)
+    }
+    Recovered => {
+      self.user_defined_states.set(index, false)
+      self.recovered_states.set(index, true)
+    }
+    Provider => {
+      self.user_defined_states.set(index, false)
+      self.recovered_states.set(index, false)
+    }
+  }
+}
+
+///|
+/// `setCollapsedAllOfType` (`foldingRanges.ts:177`).
+pub fn FoldingRegions::set_collapsed_all_of_type(
+  self : FoldingRegions,
+  type_ : String,
+  new_state : Bool,
+) -> Bool {
+  let mut has_changed = false
+  match self.types {
+    Some(types) =>
+      for i in 0..<types.length() {
+        if types[i] is Some(t) && t == type_ {
+          self.set_collapsed(i, new_state)
+          has_changed = true
+        }
+      }
+    None => ()
+  }
+  has_changed
+}
+
+///|
+/// `toRegion` (`foldingRanges.ts:190`).
+pub fn FoldingRegions::to_region(
+  self : FoldingRegions,
+  index : Int,
+) -> FoldingRegion {
+  { ranges: self, index }
+}
+
+///|
+/// `getParentIndex` (`foldingRanges.ts:194`): reassembles the packed parent
+/// from the two top bytes; `MAX_FOLDING_REGIONS` decodes back to "no parent".
+pub fn FoldingRegions::get_parent_index(
+  self : FoldingRegions,
+  index : Int,
+) -> Int {
+  self.ensure_parent_indices()
+  let parent = ((self.start_indexes[index] & MASK_INDENT) >> 24) +
+    ((self.end_indexes[index] & MASK_INDENT) >> 16)
+  if parent.reinterpret_as_int() == MAX_FOLDING_REGIONS {
+    return -1
+  }
+  parent.reinterpret_as_int()
+}
+
+///|
+/// `contains` (`foldingRanges.ts:203`).
+pub fn FoldingRegions::contains(
+  self : FoldingRegions,
+  index : Int,
+  line : Int,
+) -> Bool {
+  self.get_start_line_number(index) <= line &&
+  self.get_end_line_number(index) >= line
+}
+
+///|
+/// `findIndex` (`foldingRanges.ts:207`): the last region starting at or
+/// before `line`, `-1` when none.
+fn FoldingRegions::find_index(self : FoldingRegions, line : Int) -> Int {
+  let mut low = 0
+  let mut high = self.start_indexes.length()
+  if high == 0 {
+    return -1 // no children
+  }
+  while low < high {
+    let mid = (low + high) / 2
+    if line < self.get_start_line_number(mid) {
+      high = mid
+    } else {
+      low = mid + 1
+    }
+  }
+  low - 1
+}
+
+///|
+/// `findRange` (`foldingRanges.ts:223`): the innermost region containing
+/// `line`, walking parents outward; `-1` when none.
+pub fn FoldingRegions::find_range(self : FoldingRegions, line : Int) -> Int {
+  let mut index = self.find_index(line)
+  if index >= 0 {
+    let end_line_number = self.get_end_line_number(index)
+    if end_line_number >= line {
+      return index
+    }
+    index = self.get_parent_index(index)
+    while index != -1 {
+      if self.contains(index, line) {
+        return index
+      }
+      index = self.get_parent_index(index)
+    }
+  }
+  -1
+}
+
+///|
+/// The `toString` debug format (`foldingRanges.ts:242`):
+/// `[<source><+|->] <start>/<end>` joined with `, `.
+pub impl Show for FoldingRegions with fn output(self, logger) {
+  let parts : Array[String] = []
+  for i in 0..<self.length() {
+    let collapsed = if self.is_collapsed(i) { "+" } else { "-" }
+    parts.push(
+      "[\{self.get_source(i).abbr()}\{collapsed}] \{self.get_start_line_number(i)}/\{self.get_end_line_number(i)}",
+    )
+  }
+  logger.write_string(parts.join(", "))
+}
+
+///|
+/// `toFoldRange` (`foldingRanges.ts:250`).
+pub fn FoldingRegions::to_fold_range(
+  self : FoldingRegions,
+  index : Int,
+) -> FoldRange {
+  {
+    start_line_number: (self.start_indexes[index] &
+    MAX_LINE_NUMBER.reinterpret_as_uint()).reinterpret_as_int(),
+    end_line_number: (self.end_indexes[index] &
+    MAX_LINE_NUMBER.reinterpret_as_uint()).reinterpret_as_int(),
+    type_: self.get_type(index),
+    is_collapsed: self.is_collapsed(index),
+    source: self.get_source(index),
+  }
+}
+
+///|
+/// `fromFoldRanges` (`foldingRanges.ts:260`).
+pub fn FoldingRegions::from_fold_ranges(
+  ranges : Array[FoldRange],
+) -> FoldingRegions {
+  let ranges_length = ranges.length()
+  let start_indexes = FixedArray::make(ranges_length, 0U)
+  let end_indexes = FixedArray::make(ranges_length, 0U)
+  let types : Array[String?] = []
+  let mut got_types = false
+  for i in 0..<ranges_length {
+    let range = ranges[i]
+    start_indexes[i] = range.start_line_number.reinterpret_as_uint()
+    end_indexes[i] = range.end_line_number.reinterpret_as_uint()
+    types.push(range.type_)
+    if range.type_ is Some(_) {
+      got_types = true
+    }
+  }
+  let regions = FoldingRegions(
+    start_indexes,
+    end_indexes,
+    types?=if got_types { Some(types) } else { None },
+  )
+  for i in 0..<ranges_length {
+    if ranges[i].is_collapsed {
+      regions.set_collapsed(i, true)
+    }
+    regions.set_source(i, ranges[i].source)
+  }
+  regions
+}
+
+///|
+/// The `FoldingRegions | FoldRange[]` parameter union of `sanitizeAndMerge`
+/// (`foldingRanges.ts:302-303`), made explicit for MoonBit.
+pub enum FoldRangesOrRegions {
+  Regions(FoldingRegions)
+  Ranges(Array[FoldRange])
+}
+
+///|
+fn FoldRangesOrRegions::at(self : FoldRangesOrRegions, i : Int) -> FoldRange? {
+  match self {
+    Regions(regions) =>
+      if i < regions.length() {
+        Some(regions.to_fold_range(i))
+      } else {
+        None
+      }
+    Ranges(ranges) => if i < ranges.length() { Some(ranges[i]) } else { None }
+  }
+}
+
+///|
+/// `sanitizeAndMerge` (`foldingRanges.ts:301`): merges the provider list
+/// (`ranges_a`, always complete) with the previously-collapsed/user list
+/// (`ranges_b`, which wins on overlap), dropping invalid entries — see the
+/// source's contract comment. Both inputs must be pre-sorted on
+/// `start_line_number`.
+pub fn FoldingRegions::sanitize_and_merge(
+  ranges_a : FoldRangesOrRegions,
+  ranges_b : FoldRangesOrRegions,
+  max_line_number : Int?,
+  selection? : SelectedLines,
+) -> Array[FoldRange] {
+  // `maxLineNumber ?? Number.MAX_VALUE`: any Int line number qualifies.
+  let max_line_number = max_line_number.unwrap_or(0x7FFFFFFF)
+  let mut index_a = 0
+  let mut index_b = 0
+  let mut next_a = ranges_a.at(0)
+  let mut next_b = ranges_b.at(0)
+  let stacked_ranges : Array[FoldRange] = []
+  let mut top_stacked_range : FoldRange? = None
+  let mut prev_line_number = 0
+  let result_ranges : Array[FoldRange] = []
+  while next_a is Some(_) || next_b is Some(_) {
+    let mut use_range : FoldRange? = None
+    // `nextB && (!nextA || nextA.startLineNumber >= nextB.startLineNumber)`
+    let b_is_next = match (next_a, next_b) {
+      (_, None) => false
+      (None, Some(_)) => true
+      (Some(a_range), Some(b_range)) =>
+        a_range.start_line_number >= b_range.start_line_number
+    }
+    if b_is_next {
+      guard next_b is Some(b) else { break }
+      if next_a is Some(a_range) &&
+        a_range.start_line_number == b.start_line_number {
+        if b.source == UserDefined {
+          // a user defined range (possibly unfolded)
+          use_range = Some(b)
+        } else {
+          // a previously folded range or a (possibly unfolded) recovered
+          // range
+          use_range = Some(a_range)
+          // stays collapsed if the range still has the same number of
+          // lines or the selection is not in the range or after it
+          a_range.is_collapsed = b.is_collapsed &&
+            (
+              a_range.end_line_number == b.end_line_number ||
+              !(selection is Some(sel) &&
+              (sel.starts_inside)(
+                a_range.start_line_number + 1,
+                a_range.end_line_number + 1,
+              ))
+            )
+          a_range.source = Provider
+        }
+        index_a += 1 // not necessary, just for speed
+        next_a = ranges_a.at(index_a)
+      } else {
+        use_range = Some(b)
+        if b.is_collapsed && b.source == Provider {
+          // a previously collapsed range
+          b.source = Recovered
+        }
+      }
+      index_b += 1
+      next_b = ranges_b.at(index_b)
+    } else {
+      guard next_a is Some(a_range) else { break }
+      // nextA is next. The user folded B set takes precedence and we
+      // sometimes need to look ahead in it to check for an upcoming
+      // conflict.
+      let mut scan_index = index_b
+      let mut prescan_b = next_b
+      for ;; {
+        match prescan_b {
+          None => {
+            use_range = Some(a_range)
+            break // no conflict, use this nextA
+          }
+          Some(b_range) => {
+            if b_range.start_line_number > a_range.end_line_number {
+              use_range = Some(a_range)
+              break // no conflict, use this nextA
+            }
+            if b_range.source == UserDefined &&
+              b_range.end_line_number > a_range.end_line_number {
+              // we found a user folded range, it wins
+              break // without setting use_range, so this nextA gets skipped
+            }
+            scan_index += 1
+            prescan_b = ranges_b.at(scan_index)
+          }
+        }
+      }
+      index_a += 1
+      next_a = ranges_a.at(index_a)
+    }
+    if use_range is Some(range) {
+      while top_stacked_range is Some(top) &&
+            top.end_line_number < range.start_line_number {
+        top_stacked_range = stacked_ranges.pop()
+      }
+      if range.end_line_number > range.start_line_number &&
+        range.start_line_number > prev_line_number &&
+        range.end_line_number <= max_line_number &&
+        !(top_stacked_range is Some(top) &&
+        top.end_line_number < range.end_line_number) {
+        result_ranges.push(range)
+        prev_line_number = range.start_line_number
+        if top_stacked_range is Some(top) {
+          stacked_ranges.push(top)
+        }
+        top_stacked_range = Some(range)
+      }
+    }
+  }
+  result_ranges
+}
+
+///|
+/// A region handle over the compact store — Monaco's `FoldingRegion`
+/// (`foldingRanges.ts:395`).
+pub struct FoldingRegion {
+  priv ranges : FoldingRegions
+  priv index : Int
+}
+
+///|
+/// The `startLineNumber` getter.
+pub fn FoldingRegion::start_line_number(self : FoldingRegion) -> Int {
+  self.ranges.get_start_line_number(self.index)
+}
+
+///|
+/// The `endLineNumber` getter.
+pub fn FoldingRegion::end_line_number(self : FoldingRegion) -> Int {
+  self.ranges.get_end_line_number(self.index)
+}
+
+///|
+/// The `regionIndex` getter.
+pub fn FoldingRegion::region_index(self : FoldingRegion) -> Int {
+  self.index
+}
+
+///|
+/// The `parentIndex` getter.
+pub fn FoldingRegion::parent_index(self : FoldingRegion) -> Int {
+  self.ranges.get_parent_index(self.index)
+}
+
+///|
+/// The `isCollapsed` getter.
+pub fn FoldingRegion::is_collapsed(self : FoldingRegion) -> Bool {
+  self.ranges.is_collapsed(self.index)
+}
+
+///|
+/// `containedBy` (`foldingRanges.ts:420`).
+pub fn FoldingRegion::contained_by(
+  self : FoldingRegion,
+  range : LineRange,
+) -> Bool {
+  range.start_line_number <= self.start_line_number() &&
+  range.end_line_number >= self.end_line_number()
+}
+
+///|
+/// `containsLine` (`foldingRanges.ts:423`).
+pub fn FoldingRegion::contains_line(
+  self : FoldingRegion,
+  line_number : Int,
+) -> Bool {
+  self.start_line_number() <= line_number &&
+  line_number <= self.end_line_number()
+}
+
+///|
+/// `hidesLine` (`foldingRanges.ts:426`): the fold hides every line after its
+/// (still visible) header.
+pub fn FoldingRegion::hides_line(
+  self : FoldingRegion,
+  line_number : Int,
+) -> Bool {
+  self.start_line_number() < line_number &&
+  line_number <= self.end_line_number()
+}

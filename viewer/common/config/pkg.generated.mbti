@@ -1,0 +1,95 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit-community/editor/viewer/common/config"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub let default_linux_font_family : String
+
+pub let default_mac_font_family : String
+
+pub let default_windows_font_family : String
+
+pub let editor_font_defaults : EditorFontDefaults
+
+pub let editor_font_ligatures_off : String
+
+pub let font_variation_off : String
+
+pub let font_variation_translate : String
+
+pub let golden_line_height_ratio : Double
+
+pub let minimum_line_height : Int
+
+// Errors
+
+// Types and methods
+pub struct BareFontInfo {
+  pixel_ratio : Double
+  font_family : String
+  font_weight : String
+  font_size : Double
+  font_feature_settings : String
+  font_variation_settings : String
+  line_height : Int
+  letter_spacing : Double
+} derive(Eq, @debug.Debug)
+pub fn BareFontInfo::create(font_family~ : String, font_weight~ : String, font_size~ : Double, font_feature_settings~ : String, font_variation_settings~ : String, line_height~ : Double, letter_spacing~ : Double, pixel_ratio~ : Double) -> Self
+pub fn BareFontInfo::get_id(Self) -> String
+pub fn BareFontInfo::get_massaged_font_family(Self) -> String
+
+pub struct EditorFontDefaults {
+  font_family : String
+  font_weight : String
+  font_size : Double
+  line_height : Double
+  letter_spacing : Double
+} derive(Eq, @debug.Debug)
+
+pub(all) struct EditorLayoutInfo {
+  width : Double
+  height : Double
+  glyph_margin_left : Double
+  glyph_margin_width : Double
+  line_numbers_left : Double
+  line_numbers_width : Double
+  decorations_left : Double
+  decorations_width : Double
+  content_left : Double
+  content_width : Double
+  horizontal_scrollbar_height : Double
+  vertical_scrollbar_width : Double
+} derive(Eq, @debug.Debug)
+
+pub(all) struct FontInfo {
+  pixel_ratio : Double
+  font_family : String
+  font_weight : String
+  font_size : Double
+  font_feature_settings : String
+  font_variation_settings : String
+  line_height : Int
+  letter_spacing : Double
+  is_trusted : Bool
+  is_monospace : Bool
+  typical_halfwidth_character_width : Double
+  typical_fullwidth_character_width : Double
+  can_use_halfwidth_rightwards_arrow : Bool
+  space_width : Double
+  middot_width : Double
+  wsmiddot_width : Double
+  max_digit_width : Double
+} derive(Eq, @debug.Debug)
+pub fn FontInfo::bare(Self) -> BareFontInfo
+pub fn FontInfo::default() -> Self
+pub fn FontInfo::equals(Self, Self) -> Bool
+pub fn FontInfo::estimated(BareFontInfo) -> Self
+pub fn FontInfo::get_id(Self) -> String
+
+// Type aliases
+
+// Traits
+

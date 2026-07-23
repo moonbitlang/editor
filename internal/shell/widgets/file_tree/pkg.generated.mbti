@@ -1,0 +1,27 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit-community/editor/internal/shell/widgets/file_tree"
+
+import {
+  "moonbit-community/editor/base/common",
+  "moonbit-community/editor/internal/shell/workspace",
+  "moonbit-community/rabbita/cmd",
+  "moonbit-community/rabbita/html",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+pub struct FileTree {
+  // private fields
+}
+pub fn FileTree::FileTree(&@workspace.WorkspaceTreeProvider, on_open~ : (@common.Uri) -> Unit) -> Self
+pub fn FileTree::refresh(Self) -> @cmd.Cmd
+pub fn FileTree::set_active(Self, @common.Uri) -> @cmd.Cmd
+pub fn FileTree::view(Self) -> @html.Html
+
+// Type aliases
+
+// Traits
+

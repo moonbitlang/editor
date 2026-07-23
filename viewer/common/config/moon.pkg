@@ -1,0 +1,3 @@
+import {
+  "moonbit-community/editor/base/common" @base_common,
+}

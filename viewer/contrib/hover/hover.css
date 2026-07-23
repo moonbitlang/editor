@@ -1,0 +1,231 @@
+.hoverHighlight {
+  background: var(--vscode-editor-hoverHighlightBackground);
+}
+
+/* Monaco-shaped editor hover, anchored as an overflowing content widget.
+ * Positioned by an exact `top`/`left` computed in JS (the content-widget
+ * layer's `_layoutBoxInPage` port), not a CSS transform — a transform-based
+ * "shift up by own height" trick was tried here previously and reproducibly
+ * corrupted this element's background paint in Chromium under the sizing
+ * cluster's synchronous style churn.
+ * No `min-width`: the constructor's `minimumWidth = 150` is
+ * `_resizableNode.minSize`, a sash-drag clamp only (sashes unported) — the
+ * layout pass always sizes this wrapper and `.monaco-hover` identically, and
+ * a CSS floor on the wrapper alone leaves a dead strip past the hover.
+ * `z-index: 50` transcribes `_resizableNode.domNode.style.zIndex = '50'`. */
+.monaco-resizable-hover {
+  position: absolute;
+  z-index: 50;
+  pointer-events: auto;
+  cursor: default;
+  user-select: text;
+  box-sizing: content-box;
+  border: 1px solid var(--vscode-editorHoverWidget-border);
+  border-radius: var(--vscode-cornerRadius-large);
+  background-color: var(--vscode-editorHoverWidget-background);
+}
+
+/* Monaco `hoverWidget.css`: a hidden hover keeps its DOM mounted; `fade-in`
+ * replays only on the hidden→shown transition. */
+.monaco-hover.hidden {
+  display: none;
+}
+
+/* `position: absolute` per `hoverWidget.css:8` — the sizing pass measures
+ * the hover shrink-to-fit inside the editor-sized wrapper
+ * (`_removeConstraintsRenderNormally`); a relatively positioned block would
+ * stretch to the wrapper width instead. */
+.monaco-hover {
+  position: absolute;
+  box-sizing: border-box;
+  overflow: hidden;
+  white-space: var(--vscode-hover-whiteSpace, normal);
+  color: var(--vscode-editorHoverWidget-foreground);
+  background-color: var(--vscode-editorHoverWidget-background);
+  border: 1px solid var(--vscode-editorHoverWidget-border);
+  border-radius: var(--vscode-cornerRadius-large);
+  box-shadow: 0 2px 8px var(--vscode-shadow-hover);
+  font: var(--editor-font-size) / 1.5 var(--ui-font-family);
+}
+
+.monaco-resizable-hover > .monaco-hover {
+  border: none;
+  border-radius: inherit;
+}
+
+.monaco-hover:focus {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
+}
+
+.monaco-hover.fade-in {
+  animation: hover-fade-in 80ms ease-out;
+}
+
+@keyframes hover-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.monaco-hover-content {
+  overflow: auto;
+  scrollbar-width: none;
+}
+
+.monaco-hover-content::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.hover-row {
+  padding: 0;
+  border-radius: var(--vscode-cornerRadius-large);
+  display: flex;
+}
+
+.hover-row-contents {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.markdown-hover {
+  min-width: 0;
+}
+
+.hover-contents {
+  padding: 4px 8px;
+}
+
+.monaco-hover .markdown-hover > .hover-contents:not(.code-hover-contents) {
+  max-width: var(--vscode-hover-maxWidth, 500px);
+  overflow-wrap: break-word;
+}
+
+.hover-plaintext {
+  white-space: pre-wrap;
+}
+
+.hover-contents p,
+.hover-contents ul,
+.hover-contents ol,
+.hover-contents blockquote {
+  margin: 8px 0;
+}
+
+.hover-contents p:first-child,
+.hover-contents ul:first-child,
+.hover-contents ol:first-child,
+.hover-contents blockquote:first-child {
+  margin-top: 0;
+}
+
+.hover-contents p:last-child,
+.hover-contents ul:last-child,
+.hover-contents ol:last-child,
+.hover-contents blockquote:last-child {
+  margin-bottom: 0;
+}
+
+.hover-contents ul,
+.hover-contents ol {
+  padding-left: 20px;
+}
+
+.hover-contents li {
+  margin: 2px 0;
+}
+
+.hover-contents code {
+  padding: 0 0.4em;
+  border-radius: 3px;
+  background: var(--vscode-textCodeBlock-background);
+  font-family: var(--monaco-monospace-font);
+}
+
+.monaco-hover .markdown-hover .hover-contents .moonbit-viewer-markdown-diagram {
+  max-width: 100%;
+  overflow: auto;
+}
+
+.monaco-hover .markdown-hover .hover-contents .moonbit-viewer-markdown-diagram > svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+/* No box styling (background/padding/radius): the editor hover renders
+ * tokenized code directly on the widget background; `textCodeBlock-background`
+ * applies only to inline `code` above. The font-family stands in for Monaco's
+ * `applyFontInfo` on the code element (`editorMarkdownCodeBlockRenderer.ts`). */
+.monaco-tokenized-source {
+  font-family: var(--monaco-monospace-font);
+  white-space: var(--vscode-hover-sourceWhiteSpace, pre-wrap);
+}
+
+.monaco-hover .monaco-tokenized-source .view-line-content {
+  display: inline;
+  width: auto;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  white-space: inherit;
+  cursor: inherit;
+}
+
+.hover-contents a {
+  color: var(--vscode-textLink-foreground);
+  text-decoration: none;
+}
+
+.hover-contents a:hover {
+  color: var(--vscode-textLink-activeForeground);
+  text-decoration: underline;
+}
+
+.hover-contents hr {
+  height: 1px;
+  margin: 4px -8px -4px;
+  border: 0;
+  background: var(--vscode-editorHoverWidget-border);
+}
+
+.monaco-hover .hover-row.hover-row-with-copy {
+  position: relative;
+  padding-right: 20px;
+}
+
+.monaco-hover .hover-copy-button {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 4px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--vscode-foreground);
+  opacity: 0;
+}
+
+.monaco-hover .hover-row-with-copy:hover .hover-copy-button,
+.monaco-hover .hover-row-with-copy:focus-within .hover-copy-button {
+  opacity: 1;
+}
+
+.monaco-hover .hover-copy-button:hover {
+  background-color: var(--vscode-toolbar-hoverBackground);
+  cursor: pointer;
+}
+
+.monaco-hover .hover-copy-button:focus {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
+}

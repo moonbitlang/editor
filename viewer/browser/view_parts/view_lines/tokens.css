@@ -1,0 +1,74 @@
+/* Monaco theme color map (`mtk<colorId>`). These mirror the byte-for-byte
+   output of `view_model.token_theme_style_block(default_token_color_map())`:
+   the production token model classes each span as `mtk<foregroundColorId>`
+   (see `view_model/token_theme.mbt`), and the renderer resolves the color
+   here. Color ids match `default_token_color_map`. */
+.mtk1 {
+  color: var(--vscode-editor-foreground);
+}
+
+.mtk2 {
+  color: var(--vscode-editor-background);
+}
+
+.mtk3 {
+  color: var(--vscode-token-keyword);
+}
+
+.mtk4 {
+  color: var(--vscode-token-variable);
+}
+
+.mtk5 {
+  color: var(--vscode-token-string);
+}
+
+.mtk6 {
+  color: var(--vscode-token-number);
+}
+
+.mtk7 {
+  color: var(--vscode-token-comment);
+}
+
+.mtk8 {
+  color: var(--vscode-token-punctuation);
+}
+
+.mtk9 {
+  color: var(--vscode-token-type);
+}
+
+.mtk10 {
+  color: var(--vscode-token-function);
+}
+
+.mtk11 {
+  color: var(--vscode-token-string-escape);
+}
+
+.mtk12 {
+  color: var(--vscode-token-regexp);
+}
+
+.mtk13 {
+  color: var(--vscode-token-invalid);
+}
+
+/* Font-style modifiers emitted alongside `mtk<n>` (see
+   `TokenMetadata::get_class_name_from_metadata`). */
+.mtki {
+  font-style: italic;
+}
+
+.mtkb {
+  font-weight: bold;
+}
+
+.mtku {
+  text-decoration: underline;
+}
+
+.mtks {
+  text-decoration: line-through;
+}

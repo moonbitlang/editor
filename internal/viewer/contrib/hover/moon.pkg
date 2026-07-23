@@ -1,0 +1,17 @@
+import {
+  "moonbit-community/editor/base/common" @base_common,
+  "moonbit-community/editor/language",
+  "moonbit-community/editor/viewer/common/model",
+  "moonbit-community/editor/viewer/common/languages",
+  "moonbit-community/editor/viewer/common/markers",
+  "moonbit-community/editor/viewer/common/view_model",
+  "moonbit-community/editor/internal/viewer/markdown",
+}
+
+import {
+  "moonbit-community/editor/platform/log",
+  "moonbit-community/editor/syntax",
+  "moonbitlang/async",
+} for "wbtest"
+
+supported_targets = "js+native"

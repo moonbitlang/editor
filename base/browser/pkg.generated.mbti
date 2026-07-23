@@ -1,0 +1,90 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit-community/editor/base/browser"
+
+import {
+  "moonbit-community/editor/base/common",
+  "moonbit-community/rabbita/dom",
+}
+
+// Values
+pub fn device_pixel_ratio() -> Double
+
+pub fn element_client_height(@dom.Element) -> Double
+
+pub fn element_client_width(@dom.Element) -> Double
+
+pub fn element_contains(@dom.Element, @dom.Element) -> Bool
+
+pub fn element_contains_active_element(@dom.Element) -> Bool
+
+pub fn element_has_focus(@dom.Element) -> Bool
+
+pub fn element_offset_height(@dom.Element) -> Double
+
+pub fn element_offset_width(@dom.Element) -> Double
+
+pub fn event_target_has_matching_ancestor(@dom.Event, @dom.Element, String) -> Bool
+
+pub fn event_target_is(@dom.Event, @dom.Element) -> Bool
+
+pub fn focus_prevent_scroll(@dom.Element) -> Unit
+
+pub fn monotonic_now_ms() -> Double
+
+pub fn mouse_event_pointer_id(@dom.MouseEvent) -> Int
+
+pub fn native_selection_has_endpoint_in_matching_ancestor(@dom.Element, String) -> Bool
+
+pub fn queue_microtask(() -> Unit) -> Unit
+
+pub fn remove_element(@dom.Element) -> Unit
+
+pub fn run_at_this_or_schedule_at_next_animation_frame(() -> Unit, priority? : Int) -> @common.Disposable
+
+pub fn schedule_at_next_animation_frame(() -> Unit, priority? : Int) -> @common.Disposable
+
+pub fn schedule_timeout(() -> Unit, Int) -> @common.Disposable
+
+pub fn set_style_property(@dom.Element, String, String) -> Unit
+
+pub fn wall_clock_now_ms() -> Double
+
+// Errors
+
+// Types and methods
+pub struct GlobalPointerMoveMonitor {
+  // private fields
+}
+#alias(new, deprecated)
+pub fn GlobalPointerMoveMonitor::GlobalPointerMoveMonitor() -> Self
+pub fn GlobalPointerMoveMonitor::dispose(Self) -> Unit
+pub fn GlobalPointerMoveMonitor::is_monitoring(Self) -> Bool
+pub fn GlobalPointerMoveMonitor::start_monitoring(Self, @dom.Element, Int, Int, (@dom.MouseEvent) -> Unit, (@dom.Event?) -> Unit) -> Unit
+pub fn GlobalPointerMoveMonitor::stop_monitoring(Self, Bool, browser_event? : @dom.Event) -> Unit
+
+pub struct StandardMouseEvent {
+  browser_event : @dom.MouseEvent
+  left_button : Bool
+  middle_button : Bool
+  right_button : Bool
+  buttons : Int
+  target : @dom.Element?
+  detail : Int
+  posx : Double
+  posy : Double
+  ctrl_key : Bool
+  shift_key : Bool
+  alt_key : Bool
+  meta_key : Bool
+  timestamp : Double
+  default_prevented : Bool
+}
+#alias(new, deprecated)
+pub fn StandardMouseEvent::StandardMouseEvent(@dom.MouseEvent) -> Self
+pub fn StandardMouseEvent::prevent_default(Self) -> Unit
+pub fn StandardMouseEvent::stop_propagation(Self) -> Unit
+
+// Type aliases
+
+// Traits
+

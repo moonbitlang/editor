@@ -1,0 +1,158 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit-community/editor/viewer"
+
+import {
+  "moonbit-community/editor/base/common",
+  "moonbit-community/editor/platform/log",
+  "moonbit-community/editor/viewer/browser",
+  "moonbit-community/editor/viewer/common/agent_feedback_api",
+  "moonbit-community/editor/viewer/common/config",
+  "moonbit-community/editor/viewer/common/core",
+  "moonbit-community/editor/viewer/common/editor_api",
+  "moonbit-community/editor/viewer/common/languages",
+  "moonbit-community/editor/viewer/common/markers",
+  "moonbit-community/editor/viewer/common/model",
+  "moonbit-community/editor/viewer/common/quick_diff_api",
+  "moonbit-community/rabbita/dom",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn overlay_widget(String, @dom.Element) -> @browser.OverlayWidget
+
+pub fn view_zone(Int, @dom.Element, after_column? : Int, after_column_affinity? : @model.PositionAffinity, show_in_hidden_areas? : Bool, ignore_hidden_area_source? : String, ordinal? : Int, suppress_mouse_down? : Bool, height_in_lines? : Double, height_in_px? : Double, min_width_in_px? : Double, margin_dom_node? : @dom.Element, on_dom_node_top? : (Double) -> Unit raise, on_computed_height? : (Double) -> Unit raise) -> @browser.ViewZone
+
+// Errors
+
+// Types and methods
+pub struct EditorDecorationsCollection {
+  // private fields
+}
+pub fn EditorDecorationsCollection::append(Self, Array[@model.ModelDeltaDecoration]) -> Array[String]
+pub fn EditorDecorationsCollection::clear(Self) -> Unit
+pub fn EditorDecorationsCollection::get_range(Self, Int) -> @common.Range?
+pub fn EditorDecorationsCollection::get_ranges(Self) -> Array[@common.Range]
+pub fn EditorDecorationsCollection::length(Self) -> Int
+pub fn EditorDecorationsCollection::set(Self, Array[@model.ModelDeltaDecoration]) -> Array[String]
+
+pub struct Viewer {
+  // private fields
+}
+pub fn Viewer::add_overlay_widget(Self, @browser.OverlayWidget) -> Unit
+pub fn Viewer::change_view_zones(Self, (@browser.ViewZoneChangeAccessor) -> Unit raise) -> Unit
+pub fn Viewer::create(@dom.Element, services? : ViewerServices, options? : ViewerOptions) -> Self
+pub fn Viewer::create_decorations_collection(Self, decorations? : Array[@model.ModelDeltaDecoration]) -> EditorDecorationsCollection
+pub fn Viewer::delta_decorations(Self, Array[String], Array[@model.ModelDeltaDecoration]) -> Array[String]
+pub fn Viewer::dispose(Self) -> Unit
+pub fn Viewer::focus(Self) -> Unit
+pub fn Viewer::get_bottom_for_line_number(Self, Int) -> Double
+pub fn Viewer::get_container_dom_node(Self) -> @dom.Element
+pub fn Viewer::get_content_height(Self) -> Double
+pub fn Viewer::get_content_width(Self) -> Double
+pub fn Viewer::get_decorations_in_range(Self, @common.Range) -> Array[@model.ModelDecoration]
+pub fn Viewer::get_dom_node(Self) -> @dom.Element?
+pub fn Viewer::get_editor_type(Self) -> String
+pub fn Viewer::get_id(Self) -> String
+pub fn Viewer::get_layout_info(Self) -> @config.EditorLayoutInfo
+pub fn Viewer::get_line_decorations(Self, Int) -> Array[@model.ModelDecoration]
+pub fn Viewer::get_line_height_for_position(Self, @common.Position) -> Double
+pub fn Viewer::get_model(Self) -> @model.TextModel?
+pub fn Viewer::get_offset_for_column(Self, Int, Int) -> Double
+pub fn Viewer::get_options(Self) -> ViewerOptions
+pub fn Viewer::get_position(Self) -> @common.Position?
+pub fn Viewer::get_scroll_height(Self) -> Double
+pub fn Viewer::get_scroll_left(Self) -> Double
+pub fn Viewer::get_scroll_top(Self) -> Double
+pub fn Viewer::get_scroll_width(Self) -> Double
+pub fn Viewer::get_scrolled_visible_position(Self, @common.Position) -> @editor_api.ScrolledVisiblePosition?
+pub fn Viewer::get_selection(Self) -> @core.Selection?
+pub fn Viewer::get_selections(Self) -> Array[@core.Selection]?
+pub fn Viewer::get_top_for_line_number(Self, Int, include_view_zones? : Bool) -> Double
+pub fn Viewer::get_top_for_position(Self, Int, Int) -> Double
+pub fn Viewer::get_value(Self) -> String
+pub fn Viewer::get_visible_column_from_position(Self, @common.Position) -> Int
+pub fn Viewer::get_visible_ranges(Self) -> Array[@common.Range]
+pub fn Viewer::get_width_of_line(Self, Int) -> Double
+pub fn Viewer::handle_initialized(Self) -> Unit
+pub fn Viewer::has_text_focus(Self) -> Bool
+pub fn Viewer::has_widget_focus(Self) -> Bool
+pub fn Viewer::layout(Self) -> Unit
+pub fn Viewer::on_did_change_cursor_position(Self, (@editor_api.CursorPositionChangedEvent) -> Unit) -> @common.Disposable
+pub fn Viewer::on_did_change_cursor_selection(Self, (@editor_api.CursorSelectionChangedEvent) -> Unit) -> @common.Disposable
+pub fn Viewer::on_did_change_hidden_areas(Self, () -> Unit) -> @common.Disposable
+pub fn Viewer::on_did_change_model(Self, (@editor_api.ModelChangedEvent) -> Unit) -> @common.Disposable
+pub fn Viewer::on_did_change_model_content(Self, (@model.ModelContentChangedEvent) -> Unit) -> @common.Disposable
+pub fn Viewer::on_did_change_view_zones(Self, () -> Unit) -> @common.Disposable
+pub fn Viewer::on_did_dispose(Self, () -> Unit) -> @common.Disposable
+pub fn Viewer::on_did_scroll_change(Self, (@editor_api.ScrollEvent) -> Unit) -> @common.Disposable
+pub fn Viewer::on_mouse_down(Self, (@browser.EditorMouseEvent) -> Unit) -> @common.Disposable
+pub fn Viewer::on_mouse_leave(Self, (@browser.PartialEditorMouseEvent) -> Unit) -> @common.Disposable
+pub fn Viewer::on_mouse_move(Self, (@browser.EditorMouseEvent) -> Unit) -> @common.Disposable
+pub fn Viewer::on_mouse_up(Self, (@browser.EditorMouseEvent) -> Unit) -> @common.Disposable
+pub fn Viewer::remove_decorations(Self, Array[String]) -> Unit
+pub fn Viewer::remove_overlay_widget(Self, @browser.OverlayWidget) -> Unit
+pub fn Viewer::restore_view_state(Self, ViewerViewState?) -> Unit
+pub fn Viewer::reveal_line(Self, Int) -> Unit
+pub fn Viewer::reveal_line_in_center(Self, Int) -> Unit
+pub fn Viewer::reveal_line_in_center_if_outside_viewport(Self, Int) -> Unit
+pub fn Viewer::reveal_line_near_top(Self, Int) -> Unit
+pub fn Viewer::reveal_lines(Self, Int, Int) -> Unit
+pub fn Viewer::reveal_lines_in_center(Self, Int, Int) -> Unit
+pub fn Viewer::reveal_lines_in_center_if_outside_viewport(Self, Int, Int) -> Unit
+pub fn Viewer::reveal_lines_near_top(Self, Int, Int) -> Unit
+pub fn Viewer::reveal_position(Self, @common.Position) -> Unit
+pub fn Viewer::reveal_position_in_center(Self, @common.Position) -> Unit
+pub fn Viewer::reveal_position_in_center_if_outside_viewport(Self, @common.Position) -> Unit
+pub fn Viewer::reveal_position_near_top(Self, @common.Position) -> Unit
+pub fn Viewer::reveal_range(Self, @common.Range) -> Unit
+pub fn Viewer::reveal_range_at_top(Self, @common.Range) -> Unit
+pub fn Viewer::reveal_range_in_center(Self, @common.Range) -> Unit
+pub fn Viewer::reveal_range_in_center_if_outside_viewport(Self, @common.Range) -> Unit
+pub fn Viewer::reveal_range_near_top(Self, @common.Range) -> Unit
+pub fn Viewer::reveal_range_near_top_if_outside_viewport(Self, @common.Range) -> Unit
+pub fn Viewer::save_view_state(Self) -> ViewerViewState?
+pub fn Viewer::set_model(Self, @model.TextModel?) -> Unit
+pub fn Viewer::set_position(Self, @common.Position, source? : String) -> Unit
+pub fn Viewer::set_scroll_left(Self, Double) -> Unit
+pub fn Viewer::set_scroll_position(Self, scroll_top? : Double, scroll_left? : Double) -> Unit
+pub fn Viewer::set_scroll_top(Self, Double) -> Unit
+pub fn Viewer::set_selection(Self, @core.Selection, source? : String) -> Unit
+pub fn Viewer::set_selections(Self, Array[@core.Selection], source? : String, reason? : @editor_api.CursorChangeReason) -> Unit
+pub fn Viewer::set_value(Self, String) -> Unit
+pub fn Viewer::update_options(Self, ViewerOptions) -> Unit
+
+pub struct ViewerOptions {
+  // private fields
+} derive(Eq, @debug.Debug)
+pub fn ViewerOptions::ViewerOptions(soft_wrap? : Bool, tab_size? : Int, wrapping_indent? : @editor_api.WrappingIndent, render_whitespace? : @editor_api.RenderWhitespace, render_control_characters? : Bool, render_line_highlight? : @editor_api.RenderLineHighlight, render_line_highlight_only_when_focus? : Bool, render_validation_decorations? : @editor_api.RenderValidationDecorations, theme? : String, placeholder? : String, line_decorations_width? : Int, line_numbers_min_chars? : Int, folding? : Bool, show_folding_controls? : @editor_api.ShowFoldingControls, folding_highlight? : Bool, folding_maximum_regions? : Int, unfold_on_click_after_end_of_line? : Bool, smooth_scrolling? : Bool, show_unused? : Bool, show_deprecated? : Bool, font_family? : String, font_weight? : String, font_size? : Double, line_height? : Double, letter_spacing? : Double) -> Self
+pub fn ViewerOptions::default() -> Self
+pub fn ViewerOptions::line_height(Self) -> Double
+pub fn ViewerOptions::soft_wrap(Self) -> Bool
+pub fn ViewerOptions::with_line_decorations_width(Self, Int) -> Self
+pub fn ViewerOptions::with_line_height(Self, Double) -> Self
+pub fn ViewerOptions::with_line_numbers_min_chars(Self, Int) -> Self
+pub fn ViewerOptions::with_placeholder(Self, String) -> Self
+pub fn ViewerOptions::with_render_control_characters(Self, Bool) -> Self
+pub fn ViewerOptions::with_render_line_highlight(Self, @editor_api.RenderLineHighlight) -> Self
+pub fn ViewerOptions::with_render_line_highlight_only_when_focus(Self, Bool) -> Self
+pub fn ViewerOptions::with_render_validation_decorations(Self, @editor_api.RenderValidationDecorations) -> Self
+pub fn ViewerOptions::with_render_whitespace(Self, @editor_api.RenderWhitespace) -> Self
+pub fn ViewerOptions::with_soft_wrap(Self, Bool) -> Self
+pub fn ViewerOptions::with_tab_size(Self, Int) -> Self
+pub fn ViewerOptions::with_theme(Self, String) -> Self
+
+pub struct ViewerServices {
+  // private fields
+}
+#alias(new, deprecated)
+pub fn ViewerServices::ViewerServices(languages? : @languages.LanguageHandle, markers? : @markers.MarkerDecorationsSource, agent_feedback? : @agent_feedback_api.AgentFeedbackHandle, quick_diff? : @quick_diff_api.QuickDiffHandle, log_service? : @log.LogHandle) -> Self
+pub fn ViewerServices::dispose(Self) -> Unit
+
+pub struct ViewerViewState {
+  // private fields
+} derive(@debug.Debug)
+
+// Type aliases
+
+// Traits
+

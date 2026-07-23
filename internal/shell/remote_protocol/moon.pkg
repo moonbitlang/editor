@@ -1,0 +1,6 @@
+import {
+  "moonbit-community/editor/base/common" @base_common,
+  "moonbit-community/editor/language",
+  "moonbit-community/editor/internal/shell/workspace",
+  "moonbitlang/core/json",
+}

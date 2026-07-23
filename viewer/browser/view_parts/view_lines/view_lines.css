@@ -1,0 +1,46 @@
+/* Monaco's sole synthetic-scroll rail. The editor-scrollable wrapper starts
+   after the margin; cached top/left writes move this 2^24px surface. */
+.lines-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+}
+
+.view-lines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  user-select: none;
+}
+
+.view-line {
+  position: absolute;
+  left: 0;
+  /* top and height are written inline by the recycler (18px lines). */
+  white-space: pre;
+}
+
+.view-line-content {
+  display: inline-block;
+  width: max-content;
+  margin: 0;
+  padding: 0 16px 0 0;
+  color: var(--vscode-editor-foreground);
+  font: var(--editor-font-size) / var(--editor-line-height)
+    var(--editor-font-family);
+  white-space: pre;
+  cursor: text;
+}
+
+/* Rendered-whitespace parts (`·`/`→`), Monaco `viewLines.css:74-81`: the
+   faded `editorWhitespace.foreground` overrides the token color. */
+.monaco-editor .mtkw {
+  color: var(--vscode-editorWhitespace-foreground, #e3e4e229) !important;
+}
+
+.monaco-editor .mtkz {
+  display: inline-block;
+  color: var(--vscode-editorWhitespace-foreground, #e3e4e229) !important;
+}

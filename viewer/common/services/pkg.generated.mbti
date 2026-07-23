@@ -1,0 +1,24 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit-community/editor/viewer/common/services"
+
+// Values
+pub let language_id_codec : LanguageIdCodec
+
+// Errors
+
+// Types and methods
+pub struct LanguageIdCodec {
+  language_id_to_language : Array[String]
+  language_to_language_id : Map[String, Int]
+  mut next_language_id : Int
+}
+#alias(new, deprecated)
+pub fn LanguageIdCodec::LanguageIdCodec() -> Self
+pub fn LanguageIdCodec::decode_language_id(Self, Int) -> String
+pub fn LanguageIdCodec::encode_language_id(Self, String) -> Int
+pub fn LanguageIdCodec::register(Self, String) -> Int
+
+// Type aliases
+
+// Traits
+

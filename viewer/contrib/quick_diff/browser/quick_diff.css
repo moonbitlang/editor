@@ -1,0 +1,89 @@
+/* Port of `vscode/src/vs/workbench/contrib/scm/browser/media/
+   dirtydiffDecorator.css` (vscode checked-in source), trimmed to the classes the
+   viewer emits: `primary` only, no `pattern`/`secondary` variants (single
+   provider, no gutter-pattern setting) and no peek-widget/`monaco-workbench`
+   motion rules. The `QuickDiffWorkbenchController` dynamic stylesheet's
+   defaults — gutter width 3px, visibility `always` (opacity 1) — are baked
+   in (`quickDiffDecorator.ts:289-308`). */
+
+.monaco-editor .dirty-diff-glyph {
+  margin-left: 5px;
+  z-index: 5;
+}
+
+.monaco-editor .dirty-diff-glyph:before {
+  position: absolute;
+  content: '';
+  height: 100%;
+  width: 0;
+  left: -2px;
+}
+
+.monaco-editor .dirty-diff-added,
+.monaco-editor .dirty-diff-modified {
+  border-left-width: 3px;
+}
+
+.monaco-editor .dirty-diff-added,
+.monaco-editor .dirty-diff-modified,
+.monaco-editor .dirty-diff-deleted {
+  opacity: 1;
+}
+
+.monaco-editor .dirty-diff-added:not(.pattern) {
+  border-left-style: solid;
+}
+
+.monaco-editor .dirty-diff-added.primary {
+  border-left-color: var(--vscode-editorGutter-addedBackground);
+}
+
+.monaco-editor .dirty-diff-added.primary:before {
+  background: var(--vscode-editorGutter-addedBackground);
+}
+
+.monaco-editor .dirty-diff-modified:not(.pattern) {
+  border-left-style: solid;
+}
+
+.monaco-editor .dirty-diff-modified.primary {
+  border-left-color: var(--vscode-editorGutter-modifiedBackground);
+}
+
+.monaco-editor .dirty-diff-modified.primary:before {
+  background: var(--vscode-editorGutter-modifiedBackground);
+}
+
+.monaco-editor .margin:hover .dirty-diff-added,
+.monaco-editor .margin:hover .dirty-diff-modified,
+.monaco-editor .margin:hover .dirty-diff-deleted {
+  opacity: 1;
+}
+
+.monaco-editor .dirty-diff-deleted:after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  box-sizing: border-box;
+  width: 4px;
+  height: 0;
+  z-index: 9;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  pointer-events: none;
+}
+
+.monaco-editor .dirty-diff-deleted.primary:after {
+  border-left: 4px solid var(--vscode-editorGutter-deletedBackground);
+}
+
+.monaco-editor .dirty-diff-deleted:before {
+  background: var(--vscode-editorGutter-deletedBackground);
+  margin-left: 3px;
+  height: 0;
+  bottom: 0;
+}
+
+.monaco-editor .dirty-diff-deleted.primary:before {
+  background: var(--vscode-editorGutter-deletedBackground);
+}

@@ -1,0 +1,55 @@
+/* Ported from
+   vscode/src/vs/editor/browser/viewParts/currentLineHighlight/currentLineHighlight.css
+   plus the registerThemingParticipant rules (currentLineHighlight.ts:237-264),
+   as static var() CSS (the viewer's theming design). Covers both the content
+   overlay (this package) and the margin overlay (view_parts/margin), like the
+   Monaco source file. Deviations:
+   - editor.inactiveLineHighlightBackground defaults to
+     editor.lineHighlightBackground and both are null in the shipped themes,
+     so the unfocused background rule is omitted;
+   - Monaco emits the border rules only when no (opaque) background color is
+     defined (cLH:253-263) — statically true for the shipped themes, which
+     define only --vscode-editor-lineHighlightBorder. */
+
+.monaco-editor .view-overlays .current-line {
+  display: block;
+  position: absolute;
+  left: 0;
+  top: 0;
+  box-sizing: border-box;
+  height: 100%;
+  pointer-events: none;
+}
+
+.monaco-editor .margin-view-overlays .current-line {
+  display: block;
+  position: absolute;
+  left: 0;
+  top: 0;
+  box-sizing: border-box;
+  height: 100%;
+  pointer-events: none;
+}
+
+.monaco-editor
+  .margin-view-overlays
+  .current-line.current-line-margin.current-line-margin-both {
+  border-right: 0;
+}
+
+.monaco-editor.focused .view-overlays .current-line {
+  background-color: var(--vscode-editor-lineHighlightBackground, transparent);
+}
+
+.monaco-editor.focused .margin-view-overlays .current-line-margin {
+  background-color: var(--vscode-editor-lineHighlightBackground, transparent);
+  border: none;
+}
+
+.monaco-editor .view-overlays .current-line-exact {
+  border: 2px solid var(--vscode-editor-lineHighlightBorder);
+}
+
+.monaco-editor .margin-view-overlays .current-line-exact-margin {
+  border: 2px solid var(--vscode-editor-lineHighlightBorder);
+}

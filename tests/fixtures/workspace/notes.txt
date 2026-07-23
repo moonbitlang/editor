@@ -1,0 +1,5 @@
+Fixture notes for the readonly viewer.
+
+This file infers the plaintext language id, which has no registered
+tokenizer, so the browser specs use it to assert default/plain rendering:
+value = 42 and FixtureError stay generic here.

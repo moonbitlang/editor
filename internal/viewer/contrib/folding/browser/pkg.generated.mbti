@@ -1,0 +1,209 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit-community/editor/internal/viewer/contrib/folding/browser"
+
+import {
+  "moonbit-community/editor/base/common",
+  "moonbit-community/editor/viewer/common/core",
+  "moonbit-community/editor/viewer/common/editor_api",
+  "moonbit-community/editor/viewer/common/languages",
+  "moonbit-community/editor/viewer/common/model",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub const FOLDING_CONTROLLER_ID : String = "editor.contrib.folding"
+
+pub const ID_INDENT_PROVIDER : String = "indent"
+
+pub const MAX_FOLDING_REGIONS : Int = 0xFFFF
+
+pub const MAX_LINE_NUMBER : Int = 0xFFFFFF
+
+pub fn compute_ranges(@model.TextModel, Bool, markers? : @languages.FoldingMarkers, folding_ranges_limit? : FoldingLimitReporter, tab_size? : Int) -> FoldingRegions
+
+pub fn get_next_fold_line(Int, FoldingModel) -> Int?
+
+pub fn get_parent_fold_line(Int, FoldingModel) -> Int?
+
+pub fn get_previous_fold_line(Int, FoldingModel) -> Int?
+
+pub fn set_collapse_state_at_level(FoldingModel, Int, Bool, Array[Int]) -> Unit
+
+pub fn set_collapse_state_for_matching_lines(FoldingModel, (String) -> Bool, Bool) -> Unit
+
+pub fn set_collapse_state_for_rest(FoldingModel, Bool, Array[Int]) -> Unit
+
+pub fn set_collapse_state_for_type(FoldingModel, String, Bool) -> Unit
+
+pub fn set_collapse_state_levels_down(FoldingModel, Bool, levels? : Int, line_numbers? : Array[Int]) -> Unit
+
+pub fn set_collapse_state_levels_up(FoldingModel, Bool, Int, Array[Int]) -> Unit
+
+pub fn set_collapse_state_up(FoldingModel, Bool, Array[Int]) -> Unit
+
+pub fn to_selected_lines(Array[@core.Selection]) -> SelectedLines
+
+pub fn toggle_collapse_state(FoldingModel, Int, Array[Int]) -> Unit
+
+// Errors
+
+// Types and methods
+pub struct FoldRange {
+  start_line_number : Int
+  end_line_number : Int
+  type_ : String?
+  mut is_collapsed : Bool
+  mut source : FoldSource
+} derive(Eq, @debug.Debug)
+
+pub enum FoldRangesOrRegions {
+  Regions(FoldingRegions)
+  Ranges(Array[FoldRange])
+}
+
+pub enum FoldSource {
+  Provider
+  UserDefined
+  Recovered
+} derive(Eq, @debug.Debug)
+
+pub(all) struct FoldingController {
+  mut folding_model : FoldingModel?
+  mut hidden_range_model : HiddenRangeModel?
+  mut folding_decoration_provider : FoldingDecorationProvider?
+  mut range_provider : IndentRangeProvider?
+  mut mouse_down_info : FoldingMouseDownInfo?
+  local_to_dispose : Array[@common.Disposable]
+}
+pub fn FoldingController::FoldingController() -> Self
+pub fn FoldingController::clear_local(Self) -> Unit
+
+pub struct FoldingDecorationAccess {
+  // private fields
+}
+
+pub struct FoldingDecorationProvider {
+  mut show_folding_controls : @editor_api.ShowFoldingControls
+  mut show_folding_highlights : Bool
+  // private fields
+}
+#alias(new, deprecated)
+pub fn FoldingDecorationProvider::FoldingDecorationProvider(@model.TextModel, owner_id? : Int) -> Self
+pub fn FoldingDecorationProvider::access(Self) -> FoldingDecorationAccess
+pub fn FoldingDecorationProvider::update_options(Self, show_folding_controls~ : @editor_api.ShowFoldingControls, show_folding_highlights~ : Bool) -> Unit
+
+pub(all) struct FoldingLimitReporter {
+  limit : () -> Int
+  update : (Int, Int?) -> Unit
+}
+
+pub struct FoldingModel {
+  // private fields
+}
+#alias(new, deprecated)
+pub fn FoldingModel::FoldingModel(@model.TextModel, FoldingDecorationAccess) -> Self
+pub fn FoldingModel::dispose(Self) -> Unit
+pub fn FoldingModel::get_all_regions_at_line(Self, Int, filter? : (FoldingRegion, Int) -> Bool) -> Array[FoldingRegion]
+pub fn FoldingModel::get_region_at_line(Self, Int) -> FoldingRegion?
+pub fn FoldingModel::get_regions_inside(Self, FoldingRegion?, filter? : RegionFilter) -> Array[FoldingRegion]
+pub fn FoldingModel::on_did_change(Self, (FoldingModelChangeEvent) -> Unit) -> @common.Disposable
+pub fn FoldingModel::regions(Self) -> FoldingRegions
+pub fn FoldingModel::remove_manual_ranges(Self, Array[LineRange]) -> Unit
+pub fn FoldingModel::text_model(Self) -> @model.TextModel
+pub fn FoldingModel::toggle_collapse_state(Self, Array[FoldingRegion]) -> Unit
+pub fn FoldingModel::update(Self, FoldingRegions, selection? : SelectedLines) -> Unit
+pub fn FoldingModel::update_post(Self, FoldingRegions) -> Unit
+
+pub struct FoldingModelChangeEvent {
+  model : FoldingModel
+  collapse_state_changed : Array[FoldingRegion]?
+}
+
+pub(all) struct FoldingMouseDownInfo {
+  line_number : Int
+  icon_clicked : Bool
+}
+
+pub struct FoldingRegion {
+  // private fields
+}
+pub fn FoldingRegion::contained_by(Self, LineRange) -> Bool
+pub fn FoldingRegion::contains_line(Self, Int) -> Bool
+pub fn FoldingRegion::end_line_number(Self) -> Int
+pub fn FoldingRegion::hides_line(Self, Int) -> Bool
+pub fn FoldingRegion::is_collapsed(Self) -> Bool
+pub fn FoldingRegion::parent_index(Self) -> Int
+pub fn FoldingRegion::region_index(Self) -> Int
+pub fn FoldingRegion::start_line_number(Self) -> Int
+
+pub struct FoldingRegions {
+  // private fields
+}
+#alias(new, deprecated)
+pub fn FoldingRegions::FoldingRegions(FixedArray[UInt], FixedArray[UInt], types? : Array[String?]) -> Self
+pub fn FoldingRegions::contains(Self, Int, Int) -> Bool
+pub fn FoldingRegions::find_range(Self, Int) -> Int
+pub fn FoldingRegions::from_fold_ranges(Array[FoldRange]) -> Self
+pub fn FoldingRegions::get_end_line_number(Self, Int) -> Int
+pub fn FoldingRegions::get_parent_index(Self, Int) -> Int
+pub fn FoldingRegions::get_source(Self, Int) -> FoldSource
+pub fn FoldingRegions::get_start_line_number(Self, Int) -> Int
+pub fn FoldingRegions::get_type(Self, Int) -> String?
+pub fn FoldingRegions::has_types(Self) -> Bool
+pub fn FoldingRegions::is_collapsed(Self, Int) -> Bool
+pub fn FoldingRegions::length(Self) -> Int
+pub fn FoldingRegions::sanitize_and_merge(FoldRangesOrRegions, FoldRangesOrRegions, Int?, selection? : SelectedLines) -> Array[FoldRange]
+pub fn FoldingRegions::set_collapsed(Self, Int, Bool) -> Unit
+pub fn FoldingRegions::set_collapsed_all_of_type(Self, String, Bool) -> Bool
+pub fn FoldingRegions::set_source(Self, Int, FoldSource) -> Unit
+pub fn FoldingRegions::to_fold_range(Self, Int) -> FoldRange
+pub fn FoldingRegions::to_region(Self, Int) -> FoldingRegion
+pub impl Show for FoldingRegions
+
+pub struct HiddenRangeModel {
+  // private fields
+}
+#alias(new, deprecated)
+pub fn HiddenRangeModel::HiddenRangeModel(FoldingModel) -> Self
+pub fn HiddenRangeModel::adjust_selections(Self, Array[@core.Selection]) -> Bool
+pub fn HiddenRangeModel::dispose(Self) -> Unit
+pub fn HiddenRangeModel::has_ranges(Self) -> Bool
+pub fn HiddenRangeModel::hidden_ranges(Self) -> Array[@common.Range]
+pub fn HiddenRangeModel::is_hidden(Self, Int) -> Bool
+pub fn HiddenRangeModel::on_did_change(Self, (Array[@common.Range]) -> Unit) -> @common.Disposable
+
+pub struct IndentRangeProvider {
+  // private fields
+}
+#alias(new, deprecated)
+pub fn IndentRangeProvider::IndentRangeProvider(@model.TextModel, @languages.LanguageHandle, FoldingLimitReporter, tab_size? : Int) -> Self
+pub fn IndentRangeProvider::compute(Self) -> FoldingRegions
+pub fn IndentRangeProvider::dispose(Self) -> Unit
+pub fn IndentRangeProvider::id(Self) -> String
+
+pub(all) struct LineRange {
+  start_line_number : Int
+  end_line_number : Int
+} derive(Eq, @debug.Debug)
+
+pub struct RangesCollector {
+  // private fields
+}
+#alias(new, deprecated)
+pub fn RangesCollector::RangesCollector(FoldingLimitReporter) -> Self
+pub fn RangesCollector::insert_first(Self, Int, Int, Int) -> Unit
+pub fn RangesCollector::to_indent_ranges(Self, @model.TextModel, tab_size? : Int) -> FoldingRegions
+
+pub(all) enum RegionFilter {
+  RegionFilter((FoldingRegion) -> Bool)
+  RegionFilterWithLevel((FoldingRegion, Int) -> Bool)
+}
+
+pub struct SelectedLines {
+  starts_inside : (Int, Int) -> Bool
+}
+
+// Type aliases
+
+// Traits
+

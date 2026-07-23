@@ -1,0 +1,17 @@
+import {
+  "moonbit-community/editor/base/browser" @base_browser,
+  "moonbit-community/editor/base/common" @base_common,
+  "moonbit-community/editor/platform/log",
+  "moonbit-community/editor/viewer/browser" @editor_browser,
+  "moonbit-community/editor/viewer/common" @viewer_common,
+  "moonbit-community/editor/viewer/common/core",
+  "moonbit-community/editor/viewer/common/editor_api",
+  "moonbit-community/editor/viewer/common/markers",
+  "moonbit-community/editor/viewer/common/model",
+  "moonbit-community/editor/viewer/common/view_layout",
+  "moonbit-community/editor/viewer/common/view_model",
+  "moonbit-community/editor/internal/viewer/ui/scrollbar",
+  "moonbit-community/rabbita/dom" @rdom,
+}
+
+supported_targets = "js"

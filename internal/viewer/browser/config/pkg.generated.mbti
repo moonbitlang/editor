@@ -1,0 +1,27 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit-community/editor/internal/viewer/browser/config"
+
+import {
+  "moonbit-community/editor/base/common",
+  "moonbit-community/rabbita/dom",
+}
+
+// Values
+pub fn apply_font_info(@dom.Element, @moonbit-community/editor/viewer/common/config.BareFontInfo) -> Unit
+
+pub fn font_measurements() -> FontMeasurementsImpl
+
+// Errors
+
+// Types and methods
+pub struct FontMeasurementsImpl {
+  // private fields
+}
+pub fn FontMeasurementsImpl::clear_all_font_infos(Self) -> Unit
+pub fn FontMeasurementsImpl::on_did_change(Self, () -> Unit) -> @common.Disposable
+pub fn FontMeasurementsImpl::read_font_info(Self, @moonbit-community/editor/viewer/common/config.BareFontInfo) -> @moonbit-community/editor/viewer/common/config.FontInfo
+
+// Type aliases
+
+// Traits
+

@@ -1,0 +1,83 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit-community/editor/platform/log"
+
+import {
+  "moonbitlang/core/debug",
+  "moonbitlang/core/ref",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+pub(all) struct LogEntry {
+  level : LogLevel
+  category : String
+  message : String
+  details : Array[(String, String)]
+} derive(Eq, @debug.Debug)
+
+pub struct LogHandle {
+  // private fields
+}
+pub fn LogHandle::error(Self, String, String, details? : Array[(String, String)]) -> Unit
+pub fn LogHandle::warn(Self, String, String, details? : Array[(String, String)]) -> Unit
+
+pub(all) enum LogLevel {
+  Off
+  Trace
+  Debug
+  Info
+  Warning
+  Error
+} derive(Eq, @debug.Debug)
+pub fn LogLevel::is_warning_or_error(Self) -> Bool
+pub fn LogLevel::label(Self) -> String
+
+pub struct LogService {
+  level : LogLevel
+  logger : &Logger
+}
+#alias(new, deprecated)
+pub fn LogService::LogService(level? : LogLevel, logger? : &Logger) -> Self
+pub fn LogService::debug(Self, String, String, details? : Array[(String, String)]) -> Unit
+pub fn LogService::error(Self, String, String, details? : Array[(String, String)]) -> Unit
+pub fn LogService::flush(Self) -> Unit
+pub fn LogService::info(Self, String, String, details? : Array[(String, String)]) -> Unit
+pub fn LogService::log(Self, LogEntry) -> Unit
+pub fn LogService::log_handle(Self) -> LogHandle
+pub fn LogService::trace(Self, String, String, details? : Array[(String, String)]) -> Unit
+pub fn LogService::warn(Self, String, String, details? : Array[(String, String)]) -> Unit
+
+pub struct MemoryLogger {
+  entries : Array[LogEntry]
+  flush_count : @ref.Ref[Int]
+}
+#alias(new, deprecated)
+pub fn MemoryLogger::MemoryLogger() -> Self
+pub fn MemoryLogger::entries(Self) -> Array[LogEntry]
+pub fn MemoryLogger::flush_count(Self) -> Int
+pub impl Logger for MemoryLogger
+
+pub struct MultiplexLogger {
+  loggers : Array[&Logger]
+}
+#alias(new, deprecated)
+pub fn MultiplexLogger::MultiplexLogger(Array[&Logger]) -> Self
+pub impl Logger for MultiplexLogger
+
+pub struct NullLogger {
+}
+#alias(new, deprecated)
+pub fn NullLogger::NullLogger() -> Self
+pub impl Logger for NullLogger
+
+// Type aliases
+
+// Traits
+pub(open) trait Logger {
+  fn log(Self, LogEntry) -> Unit
+  fn flush(Self) -> Unit
+}
+

@@ -1,0 +1,135 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit-community/editor/internal/viewer/contrib/hover/browser"
+
+import {
+  "moonbit-community/editor/base/common",
+  "moonbit-community/editor/internal/viewer/browser/view",
+  "moonbit-community/editor/internal/viewer/contrib/hover",
+  "moonbit-community/editor/internal/viewer/ui/scrollbar",
+  "moonbit-community/editor/language",
+  "moonbit-community/editor/viewer/common/view_model",
+  "moonbit-community/rabbita/dom",
+}
+
+// Values
+pub let content_hover_widget_id : String
+
+pub fn find_anchor_candidates(Array[@hover.HoverParticipantHandle], @moonbit-community/editor/viewer/browser.MouseTarget, Double, initial_mouse_pos_x? : Double, initial_mouse_pos_y? : Double) -> Array[@hover.HoverAnchor]
+
+pub fn hover_available_space_above(Double, Double) -> Double
+
+pub fn hover_available_space_below(Double, Double, Double, Double) -> Double
+
+pub fn hover_max_height(Double) -> Double
+
+pub fn hover_max_width(Double) -> Double
+
+pub fn hover_on_event(@hover.HoverController, EditorEvent, EditorContext, sticky_mouse_getting_closer? : Bool) -> (@hover.HoverEffect, @hover.HoverController)
+
+pub fn hover_prefer_above(Double, Double, Double, Bool) -> Bool
+
+pub let hover_prefer_above_default : Bool
+
+// Errors
+
+// Types and methods
+pub(all) struct ContentHoverController {
+  mut hover : @hover.HoverController
+  mut hover_react_pending : Bool
+  mut hover_react_token : Int
+  mut hover_pending_target : @moonbit-community/editor/viewer/browser.MouseTarget?
+  mut hover_async_debouncer : @hover.HoverDebouncer
+  mut hover_sync_debouncer : @hover.HoverDebouncer
+  mut hover_loading_debouncer : @hover.HoverDebouncer
+  mut hover_is_mouse_down : Bool
+  hover_settings : @hover.HoverSettings
+  mut hover_keep_open : Bool
+  mut hover_ignore_mouse_events : Bool
+  mut hover_mouse_posx : Double
+  mut hover_mouse_posy : Double
+  mut hover_last_modifiers : @hover.EventModifiers
+  hover_mouse_closer : @hover.MouseCloserState
+  mut hover_notified_token : Int
+  mut hover_decoration_ids : Array[String]
+  mut hover_decoration_range : @common.Range?
+  // private fields
+}
+pub fn ContentHoverController::ContentHoverController() -> Self
+pub fn ContentHoverController::begin_request(Self, @language.CancellationTokenSource, Int) -> Unit
+pub fn ContentHoverController::cancel_all_timers(Self) -> Unit
+pub fn ContentHoverController::cancel_operation_timers(Self) -> Unit
+pub fn ContentHoverController::cancel_react(Self) -> Unit
+pub fn ContentHoverController::cancel_request(Self) -> Unit
+pub fn ContentHoverController::finish_request(Self, Int) -> Unit
+pub fn ContentHoverController::install_async_timer(Self, @common.Disposable) -> Unit
+pub fn ContentHoverController::install_loading_timer(Self, @common.Disposable) -> Unit
+pub fn ContentHoverController::install_react_timer(Self, @common.Disposable) -> Unit
+pub fn ContentHoverController::install_sync_timer(Self, @common.Disposable) -> Unit
+pub fn ContentHoverController::record_pointer(Self, Double, Double, @hover.EventModifiers) -> Unit
+pub fn ContentHoverController::reset_model_state(Self) -> Unit
+
+pub struct ContentHoverWidget {
+  wrapper : @dom.Element
+  hover : @dom.Element
+  scrollable : @scrollbar.ScrollableElementDom
+  host : ContentHoverWidgetHost
+  mut rendered_hover : RenderedContentHover?
+  mut position_preference : @view.ContentWidgetPositionPreference?
+  // private fields
+}
+#alias(new, deprecated)
+pub fn ContentHoverWidget::ContentHoverWidget(ContentHoverWidgetHost) -> Self
+pub fn ContentHoverWidget::content_widget_handle(Self) -> @view.ContentWidgetHandle
+pub fn ContentHoverWidget::dispose(Self) -> Unit
+pub fn ContentHoverWidget::go_to_bottom(Self) -> Unit
+pub fn ContentHoverWidget::go_to_top(Self) -> Unit
+pub fn ContentHoverWidget::handle_contents_changed(Self) -> Unit
+pub fn ContentHoverWidget::hide(Self) -> Unit
+pub fn ContentHoverWidget::is_visible(Self) -> Bool
+pub fn ContentHoverWidget::page_down(Self) -> Unit
+pub fn ContentHoverWidget::page_up(Self) -> Unit
+pub fn ContentHoverWidget::scroll_down(Self) -> Unit
+pub fn ContentHoverWidget::scroll_left(Self) -> Unit
+pub fn ContentHoverWidget::scroll_right(Self) -> Unit
+pub fn ContentHoverWidget::scroll_up(Self) -> Unit
+pub fn ContentHoverWidget::show(Self, RenderedContentHover) -> Unit
+
+pub(all) struct ContentHoverWidgetHost {
+  root : @dom.Element
+  layout_content_widget : () -> Unit
+  render_now : () -> Unit
+  focus_editor : () -> Unit
+  scrolled_visible_position_top : (@common.Position) -> Double
+  line_height : () -> Double
+  keep_hover_open : () -> Unit
+  handle_mouseleave : (Double, Double) -> Unit
+  handle_keydown : (@dom.Event, @dom.KeyboardEvent) -> Unit
+  hook_scrollable_scrollbar_input : (@scrollbar.ScrollableElementDom, @scrollbar.ScrollableElementOwner) -> Unit
+}
+
+pub(all) struct EditorContext {
+  view_model : @view_model.ViewModel?
+  participants : Array[@hover.HoverParticipantHandle]
+  typical_halfwidth_character_width : Double
+  mouse_posx : Double?
+  mouse_posy : Double?
+  show_at_position : @common.Position?
+  content_hover_visible : Bool
+}
+
+pub(all) enum EditorEvent {
+  MouseMoved(@moonbit-community/editor/viewer/browser.MouseTarget)
+  EscapePressed
+}
+
+pub(all) struct RenderedContentHover {
+  show_at_position : @common.Position
+  show_at_secondary_position : @common.Position
+  parts : Array[@hover.HoverPart]
+  language_id : String
+}
+
+// Type aliases
+
+// Traits
+

@@ -1,0 +1,81 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit-community/editor/viewer/common/diff"
+
+import {
+  "moonbit-community/editor/base/common",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn get_default() -> DefaultLinesDiffComputer
+
+// Errors
+
+// Types and methods
+pub(all) struct Change {
+  original_start_line_number : Int
+  original_end_line_number : Int
+  modified_start_line_number : Int
+  modified_end_line_number : Int
+} derive(Eq, @debug.Debug)
+
+pub struct DefaultLinesDiffComputer {
+} derive(Eq, @debug.Debug)
+#alias(new, deprecated)
+pub fn DefaultLinesDiffComputer::DefaultLinesDiffComputer() -> Self
+pub fn DefaultLinesDiffComputer::compute_diff(Self, Array[String], Array[String], LinesDiffComputerOptions) -> LinesDiff
+
+pub struct DetailedLineRangeMapping {
+  original : @common.LineRange
+  modified : @common.LineRange
+  inner_changes : Array[RangeMapping]?
+} derive(Eq, @debug.Debug)
+pub fn DetailedLineRangeMapping::DetailedLineRangeMapping(@common.LineRange, @common.LineRange, Array[RangeMapping]?) -> Self
+pub fn DetailedLineRangeMapping::flip(Self) -> Self
+pub fn DetailedLineRangeMapping::to_string(Self) -> String
+pub impl Show for DetailedLineRangeMapping
+
+pub struct LineRangeMapping {
+  original : @common.LineRange
+  modified : @common.LineRange
+} derive(Eq, @debug.Debug)
+pub fn LineRangeMapping::LineRangeMapping(@common.LineRange, @common.LineRange) -> Self
+pub fn LineRangeMapping::changed_line_count(Self) -> Int
+pub fn LineRangeMapping::flip(Self) -> Self
+pub fn LineRangeMapping::inverse(Array[Self], Int, Int) -> Array[Self]
+pub fn LineRangeMapping::join(Self, Self) -> Self
+pub fn LineRangeMapping::to_string(Self) -> String
+pub impl Show for LineRangeMapping
+
+pub struct LinesDiff {
+  changes : Array[DetailedLineRangeMapping]
+  moves : Array[MovedText]
+  hit_timeout : Bool
+} derive(Eq, @debug.Debug)
+
+pub(all) struct LinesDiffComputerOptions {
+  ignore_trim_whitespace : Bool
+  max_computation_time_ms : Int
+  compute_moves : Bool
+} derive(Eq, @debug.Debug)
+
+pub struct MovedText {
+  line_range_mapping : LineRangeMapping
+  changes : Array[DetailedLineRangeMapping]
+} derive(Eq, @debug.Debug)
+pub fn MovedText::MovedText(LineRangeMapping, Array[DetailedLineRangeMapping]) -> Self
+pub fn MovedText::flip(Self) -> Self
+
+pub struct RangeMapping {
+  original_range : @common.Range
+  modified_range : @common.Range
+} derive(Eq, @debug.Debug)
+pub fn RangeMapping::RangeMapping(@common.Range, @common.Range) -> Self
+pub fn RangeMapping::flip(Self) -> Self
+pub fn RangeMapping::to_string(Self) -> String
+pub impl Show for RangeMapping
+
+// Type aliases
+
+// Traits
+

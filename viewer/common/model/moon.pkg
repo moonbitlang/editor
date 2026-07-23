@@ -1,0 +1,6 @@
+import {
+  "moonbit-community/editor/base/common" @base_common,
+  "moonbit-community/editor/syntax",
+  "moonbit-community/editor/viewer/common/services",
+  "moonbit-community/editor/viewer/common/tokens" @common_tokens,
+}

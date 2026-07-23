@@ -1,0 +1,119 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit-community/editor/internal/viewer/ui/scrollbar"
+
+import {
+  "moonbit-community/editor/base/common",
+  "moonbit-community/editor/viewer/common/view_layout",
+  "moonbit-community/rabbita/dom",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn drag_coord(@dom.MouseEvent, Bool) -> Double
+
+pub fn global_mouse_wheel_classifier() -> MouseWheelClassifier
+
+pub fn mouse_wheel_scroll_deltas(StandardWheelEvent, alt_key? : Bool, shift_key? : Bool, mouse_wheel_scroll_sensitivity? : Double, fast_scroll_sensitivity? : Double, scroll_predominant_axis? : Bool) -> (Double, Double)
+
+pub fn number_as_pixels(CssLength) -> String
+
+// Errors
+
+// Types and methods
+pub struct CachedDomNode {
+  // private fields
+}
+#alias(new, deprecated)
+pub fn CachedDomNode::CachedDomNode(@dom.Element) -> Self
+pub fn CachedDomNode::element(Self) -> @dom.Element
+pub fn CachedDomNode::set_contain(Self, String) -> Unit
+pub fn CachedDomNode::set_height(Self, CssLength) -> Unit
+pub fn CachedDomNode::set_layer_hinting(Self, Bool) -> Unit
+pub fn CachedDomNode::set_left(Self, CssLength) -> Unit
+pub fn CachedDomNode::set_line_height(Self, CssLength) -> Unit
+pub fn CachedDomNode::set_position(Self, String) -> Unit
+pub fn CachedDomNode::set_top(Self, CssLength) -> Unit
+pub fn CachedDomNode::set_width(Self, CssLength) -> Unit
+
+pub(all) enum CssLength {
+  Pixels(Double)
+  Raw(String)
+} derive(Eq, @debug.Debug)
+
+pub struct MouseWheelClassifier {
+  // private fields
+}
+#alias(new, deprecated)
+pub fn MouseWheelClassifier::MouseWheelClassifier() -> Self
+pub fn MouseWheelClassifier::accept(Self, Double, Double, Double) -> Unit
+pub fn MouseWheelClassifier::accept_standard_wheel_event(Self, StandardWheelEvent) -> Unit
+pub fn MouseWheelClassifier::is_physical_mouse_wheel(Self) -> Bool
+
+pub struct ScrollableElementDom {
+  wrapper : @dom.Element
+  content : @dom.Element
+  vertical_bar : @dom.Element
+  vertical_slider : @dom.Element
+  horizontal_bar : @dom.Element
+  horizontal_slider : @dom.Element
+  left_shadow : @dom.Element
+  top_shadow : @dom.Element
+  top_left_shadow : @dom.Element
+  vertical_size : Double
+  horizontal_size : Double
+  vertical_state : @view_layout.ScrollbarState
+  horizontal_state : @view_layout.ScrollbarState
+  mut vertical_revealed : Bool
+  mut horizontal_revealed : Bool
+  mut vertical_fade : Bool
+  mut horizontal_fade : Bool
+  mut mouse_is_over : Bool
+  mut is_dragging : Bool
+  mut hide_generation : Int
+  mut hide_timeout : @common.Disposable?
+  mut disposed : Bool
+}
+#alias(new, deprecated)
+pub fn ScrollableElementDom::ScrollableElementDom(String, vertical_size? : Double, horizontal_size? : Double, content? : @dom.Element) -> Self
+pub fn ScrollableElementDom::desired_position_from_track(Self, vertical~ : Bool, @dom.MouseEvent) -> Double
+pub fn ScrollableElementDom::dispose(Self) -> Unit
+pub fn ScrollableElementDom::drag_ended(Self) -> Unit
+pub fn ScrollableElementDom::drag_started(Self) -> Unit
+pub fn ScrollableElementDom::mouse_entered(Self) -> Unit
+pub fn ScrollableElementDom::mouse_left(Self) -> Unit
+pub fn ScrollableElementDom::native_page_delta(Self) -> Double
+pub fn ScrollableElementDom::native_scroll_by(Self, delta_left? : Double, delta_top? : Double) -> Unit
+pub fn ScrollableElementDom::native_scroll_to(Self, vertical~ : Bool, Double) -> Unit
+pub fn ScrollableElementDom::reveal_for_scroll(Self) -> Unit
+pub fn ScrollableElementDom::set_slider_active(Self, vertical~ : Bool, Bool) -> Unit
+pub fn ScrollableElementDom::set_wrapper_class(Self, String) -> Unit
+pub fn ScrollableElementDom::slider(Self, Bool) -> @dom.Element
+pub fn ScrollableElementDom::state(Self, Bool) -> @view_layout.ScrollbarState
+pub fn ScrollableElementDom::track(Self, Bool) -> @dom.Element
+pub fn ScrollableElementDom::update_from_model(Self, @view_layout.ScrollDimensions, @view_layout.ScrollPosition, horizontal_left? : Double) -> Unit
+pub fn ScrollableElementDom::update_from_native_content(Self) -> Unit
+
+pub(all) enum ScrollableElementOwner {
+  EditorScrollableElement
+  HoverScrollableElement
+}
+
+pub(all) struct ScrollbarDrag {
+  owner : ScrollableElementOwner
+  vertical : Bool
+  start_coord : Double
+  start_orthogonal_coord : Double
+  initial_state : @view_layout.ScrollbarState
+}
+
+pub struct StandardWheelEvent {
+  delta_x : Double
+  delta_y : Double
+}
+#alias(new, deprecated)
+pub fn StandardWheelEvent::StandardWheelEvent(@dom.WheelEvent) -> Self
+
+// Type aliases
+
+// Traits
+

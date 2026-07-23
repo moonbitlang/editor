@@ -1,0 +1,235 @@
+///| Pure-piece tests for the `DecorationsOverlay` port
+/// (`decorations_overlay.mbt`), covering the plan's overlay matrix rows with
+/// an injected fake measurement (no browser DOM pins, per the 2026-07-02
+/// conformance-suite decision): filter/sort stability, whole-line spanning
+/// partially-visible ranges, same-class touching merge, the `showIfCollapsed`
+/// pullback at endColumn=1, collapsed-range half-width widening, and
+/// `shouldFillLineOnLineBreak`.
+
+///|
+fn overlay_dec(
+  range : @base_common.Range,
+  class_name : String,
+  z_index? : Int = 0,
+  is_whole_line? : Bool = false,
+  show_if_collapsed? : Bool = false,
+  should_fill_line_on_line_break? : Bool = false,
+) -> @view_model.ViewModelDecoration {
+  {
+    range,
+    options: ModelDecorationOptions(
+      class_name,
+      z_index~,
+      is_whole_line~,
+      show_if_collapsed~,
+      should_fill_line_on_line_break~,
+      description="test",
+    ),
+  }
+}
+
+///|
+/// 7px-per-column monospace fake of the measurement seam: one rect per call.
+fn fake_measure(
+  line_number : Int,
+  start_column0 : Int,
+  end_column0 : Int,
+) -> Array[(Double, Double)] {
+  ignore(line_number)
+  [
+    (
+      start_column0.to_double() * 7.0,
+      (end_column0 - start_column0).to_double() * 7.0,
+    ),
+  ]
+}
+
+///|
+fn pieces_for(
+  decorations : Array[@view_model.ViewModelDecoration],
+  visible_start? : Int = 1,
+  visible_end? : Int = 3,
+  max_column? : Int = 11,
+) -> Array[DecorationOverlayPiece] {
+  compute_decoration_overlay_pieces(
+    decorations,
+    visible_start,
+    visible_end,
+    _line => max_column,
+    fake_measure,
+    7.0,
+  )
+}
+
+///|
+test "keeps className only and sorts by zIndex, className, range starts" {
+  let sorted = filter_and_sort_overlay_decorations([
+    overlay_dec(Range(2, 1, 2, 3), "bbb"),
+    overlay_dec(Range(1, 1, 1, 3), ""), // dropped: no className
+    overlay_dec(Range(1, 4, 1, 6), "aaa", z_index=10),
+    overlay_dec(Range(1, 2, 1, 3), "aaa"),
+    overlay_dec(Range(1, 1, 1, 3), "aaa"),
+  ])
+  let keys = sorted.map(d => {
+    (
+      d.options.z_index,
+      d.options.class_name,
+      d.range.start_line_number,
+      d.range.start_column,
+    )
+  })
+  debug_inspect(
+    keys,
+    content=(
+      #|[
+      #|  (0, "aaa", 1, 1),
+      #|  (0, "aaa", 1, 2),
+      #|  (0, "bbb", 2, 1),
+      #|  (10, "aaa", 1, 4),
+      #|]
+    ),
+  )
+}
+
+///|
+test "whole-line decorations clamp to the visible window as width:100% pieces" {
+  let pieces = pieces_for([
+    overlay_dec(Range(2, 3, 9, 4), "wl", is_whole_line=true),
+  ])
+  debug_inspect(
+    pieces,
+    content=(
+      #|[
+      #|  {
+      #|    line_index: 1,
+      #|    class_name: "wl",
+      #|    left: 0,
+      #|    width: None,
+      #|    whole_line: true,
+      #|  },
+      #|  {
+      #|    line_index: 2,
+      #|    class_name: "wl",
+      #|    left: 0,
+      #|    width: None,
+      #|    whole_line: true,
+      #|  },
+      #|]
+    ),
+  )
+}
+
+///|
+test "same-class touching ranges merge into one flushed decoration" {
+  // (1,2)-(1,4) touches (1,4)-(1,6): merged => one measured piece spanning
+  // columns 2..6 (left 7px, width 28px).
+  let pieces = pieces_for([
+    overlay_dec(Range(1, 2, 1, 4), "m"),
+    overlay_dec(Range(1, 4, 1, 6), "m"),
+  ])
+  debug_inspect(
+    pieces,
+    content=(
+      #|[
+      #|  {
+      #|    line_index: 0,
+      #|    class_name: "m",
+      #|    left: 7,
+      #|    width: Some(28),
+      #|    whole_line: false,
+      #|  },
+      #|]
+    ),
+  )
+}
+
+///|
+test "different classes do not merge" {
+  let pieces = pieces_for([
+    overlay_dec(Range(1, 2, 1, 4), "a"),
+    overlay_dec(Range(1, 4, 1, 6), "b"),
+  ])
+  assert_eq(pieces.length(), 2)
+}
+
+///|
+test "showIfCollapsed pulls an endColumn=1 range back to the previous line" {
+  // Range (1,3)-(2,1) with showIfCollapsed becomes (1,3)-(1,maxCol(1)):
+  // a single piece on line 1 measured to column 11, none on line 2.
+  let pieces = pieces_for([
+    overlay_dec(Range(1, 3, 2, 1), "sq", show_if_collapsed=true),
+  ])
+  debug_inspect(
+    pieces,
+    content=(
+      #|[
+      #|  {
+      #|    line_index: 0,
+      #|    class_name: "sq",
+      #|    left: 14,
+      #|    width: Some(56),
+      #|    whole_line: false,
+      #|  },
+      #|]
+    ),
+  )
+}
+
+///|
+test "collapsed range widens to a centered half-width" {
+  // measure yields a zero-width caret rect at 70px; Math.round centering:
+  // center=round(70)=70, left=max(0, round(70-3.5))=67 (JS rounds half up),
+  // width=7.
+  let pieces = compute_decoration_overlay_pieces(
+    [overlay_dec(Range(1, 11, 1, 11), "sq", show_if_collapsed=true)],
+    1,
+    1,
+    _line => 11,
+    fake_measure,
+    7.0,
+  )
+  debug_inspect(
+    pieces,
+    content=(
+      #|[
+      #|  {
+      #|    line_index: 0,
+      #|    class_name: "sq",
+      #|    left: 67,
+      #|    width: Some(7),
+      #|    whole_line: false,
+      #|  },
+      #|]
+    ),
+  )
+}
+
+///|
+test "shouldFillLineOnLineBreak expands continuing lines to width:100%" {
+  let pieces = pieces_for([
+    overlay_dec(Range(1, 2, 2, 4), "fill", should_fill_line_on_line_break=true),
+  ])
+  // Line 1 continues on the next line => width:100%; line 2 is the range end
+  // => measured width.
+  debug_inspect(
+    pieces,
+    content=(
+      #|[
+      #|  {
+      #|    line_index: 0,
+      #|    class_name: "fill",
+      #|    left: 7,
+      #|    width: None,
+      #|    whole_line: false,
+      #|  },
+      #|  {
+      #|    line_index: 1,
+      #|    class_name: "fill",
+      #|    left: 0,
+      #|    width: Some(21),
+      #|    whole_line: false,
+      #|  },
+      #|]
+    ),
+  )
+}

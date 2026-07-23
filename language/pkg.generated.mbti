@@ -1,0 +1,118 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit-community/editor/language"
+
+import {
+  "moonbit-community/editor/base/common",
+  "moonbit-community/editor/viewer/common/model",
+  "moonbitlang/core/debug",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+pub struct CancellationToken {
+  // private fields
+}
+pub fn CancellationToken::cancel(Self) -> Unit
+pub fn CancellationToken::cancelled() -> Self
+pub fn CancellationToken::is_cancellation_requested(Self) -> Bool
+pub fn CancellationToken::new() -> Self
+pub fn CancellationToken::none() -> Self
+pub fn CancellationToken::on_cancellation_requested(Self, () -> Unit, disposables? : Array[@common.Disposable]) -> @common.Disposable
+
+pub struct CancellationTokenSource {
+  // private fields
+}
+#alias(new, deprecated)
+pub fn CancellationTokenSource::CancellationTokenSource(parent? : CancellationToken, schedule? : (() -> Unit) -> @common.Disposable) -> Self
+pub fn CancellationTokenSource::cancel(Self) -> Unit
+pub fn CancellationTokenSource::dispose(Self, cancel? : Bool) -> Unit
+pub fn CancellationTokenSource::token(Self) -> CancellationToken
+
+pub(all) struct Diagnostic {
+  range : @common.Range
+  severity : DiagnosticSeverity
+  message : String
+  tags : Array[DiagnosticTag]?
+} derive(@debug.Debug)
+
+pub(all) enum DiagnosticSeverity {
+  Error
+  Warning
+  Info
+  Hint
+} derive(Eq, @debug.Debug)
+pub fn DiagnosticSeverity::label(Self) -> String
+
+pub(all) enum DiagnosticTag {
+  Unnecessary
+  Deprecated
+} derive(Eq, @debug.Debug)
+pub fn DiagnosticTag::label(Self) -> String
+
+pub(all) struct DocumentSymbol {
+  name : String
+  kind : String
+  range : @common.Range
+} derive(@debug.Debug)
+
+pub(all) struct Hover {
+  range : @common.Range
+  contents : Array[HoverContent]
+} derive(@debug.Debug)
+
+pub(all) enum HoverContent {
+  PlainText(String)
+  Markdown(String)
+} derive(Eq, @debug.Debug)
+
+pub struct LanguageFilter {
+  language : String?
+  scheme : String?
+  pattern : String?
+} derive(@debug.Debug)
+pub fn LanguageFilter::LanguageFilter(language? : String, scheme? : String, pattern? : String) -> Self
+pub fn LanguageFilter::matches(Self, @model.TextModel) -> Bool
+
+pub(all) enum LanguageSelector {
+  LanguageId(String)
+  LanguageFilter(LanguageFilter)
+  LanguageSelectorList(Array[LanguageSelector])
+} derive(@debug.Debug)
+pub fn LanguageSelector::matches(Self, @model.TextModel) -> Bool
+
+pub(all) struct Location {
+  uri : @common.Uri
+  range : @common.Range
+} derive(@debug.Debug)
+
+pub(all) struct MarkdownCommentBlock {
+  line_range : @common.LineRange
+  markdown : String
+} derive(Eq, @debug.Debug)
+
+// Type aliases
+
+// Traits
+pub(open) trait DefinitionProvider {
+  async fn provide_definition(Self, @model.TextModel, @common.Position, CancellationToken) -> Location?
+}
+
+pub(open) trait DocumentSymbolProvider {
+  async fn provide_document_symbols(Self, @model.TextModel, CancellationToken) -> Array[DocumentSymbol]
+}
+
+pub(open) trait HoverProvider {
+  async fn provide_hover(Self, @model.TextModel, @common.Position, CancellationToken) -> Hover?
+}
+
+pub(open) trait MarkdownCommentProvider {
+  fn provide_markdown_comments(Self, @model.TextModel) -> Array[MarkdownCommentBlock] raise
+}
+
+pub(open) trait ReferencesProvider {
+  async fn provide_references(Self, @model.TextModel, @common.Position, CancellationToken) -> Array[Location]
+}
+

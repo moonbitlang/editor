@@ -1,0 +1,19 @@
+import {
+  "moonbit-community/editor/base/common" @base_common,
+  "moonbit-community/editor/viewer/common/config",
+  "moonbit-community/editor/viewer/common/core",
+  "moonbit-community/editor/viewer/common/cursor",
+  "moonbit-community/editor/viewer/common/editor_api",
+  "moonbit-community/editor/viewer/common/model",
+  "moonbit-community/editor/viewer/common/tokens",
+  "moonbit-community/editor/viewer/common/view_layout",
+  "moonbitlang/core/json",
+}
+
+import {
+  "moonbit-community/editor/syntax",
+} for "test"
+
+import {
+  "moonbit-community/editor/syntax",
+} for "wbtest"

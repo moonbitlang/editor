@@ -1,0 +1,174 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit-community/editor/internal/viewer/browser/controller"
+
+import {
+  "moonbit-community/editor/base/common",
+  "moonbit-community/editor/internal/viewer/browser/view",
+  "moonbit-community/editor/internal/viewer/ui/scrollbar",
+  "moonbit-community/editor/viewer/browser",
+  "moonbit-community/editor/viewer/common/config",
+  "moonbit-community/editor/viewer/common/core",
+  "moonbit-community/editor/viewer/common/view_layout",
+  "moonbit-community/editor/viewer/common/view_model",
+  "moonbit-community/rabbita/dom",
+  "moonbitlang/core/debug",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+pub struct DragScrolling {
+  // private fields
+}
+pub fn DragScrolling::dispose(Self) -> Unit
+pub fn DragScrolling::set_dispatch(Self, (@browser.MouseTarget, Bool, NavigationCommandRevealType) -> Unit) -> Unit
+pub fn DragScrolling::start(Self, @browser.MouseTarget, @browser.EditorDomMouseEvent) -> Unit
+pub fn DragScrolling::stop(Self) -> Unit
+
+pub struct HitTestContext {
+  view_model : @view_model.ViewModel
+  layout_info : @config.EditorLayoutInfo
+  view_dom_node : @dom.Element
+  line_height : Int
+  typical_halfwidth_character_width : Double
+  last_render_data : PointerHandlerLastRenderData
+  // private fields
+}
+#alias(new, deprecated)
+pub fn HitTestContext::HitTestContext(@view_model.ViewModel, PointerHandlerHelper, PointerHandlerLastRenderData) -> Self
+pub fn HitTestContext::find_attribute(Self, @dom.Element, String) -> String?
+pub fn HitTestContext::get_current_scroll_left(Self) -> Double
+pub fn HitTestContext::get_current_scroll_top(Self) -> Double
+pub fn HitTestContext::get_full_line_range_at_coord(Self, Double) -> (@common.Range, Bool)
+pub fn HitTestContext::get_line_number_at_vertical_offset(Self, Double) -> Int
+pub fn HitTestContext::get_line_width(Self, Int) -> Double
+pub fn HitTestContext::get_position_from_dom_info(Self, @dom.Element, Int) -> @common.Position?
+pub fn HitTestContext::get_vertical_offset_for_line_number(Self, Int) -> Double
+pub fn HitTestContext::get_zone_at_coord(Self, Double) -> @browser.MouseTargetViewZoneData?
+pub fn HitTestContext::is_after_lines(Self, Double) -> Bool
+pub fn HitTestContext::is_in_bottom_padding(Self, Double) -> Bool
+pub fn HitTestContext::is_in_top_padding(Self, Double) -> Bool
+pub fn HitTestContext::is_rtl(Self, Int) -> Bool
+pub fn HitTestContext::visible_range_for_position(Self, Int, Int) -> @view.HorizontalPosition?
+
+pub struct HitTestRequest {
+  editor_pos : @browser.EditorPagePosition
+  pos : @browser.PageCoordinates
+  relative_pos : @browser.CoordinatesRelativeToEditor
+  mouse_vertical_offset : Double
+  is_in_margin_area : Bool
+  is_in_content_area : Bool
+  mouse_content_horizontal_offset : Double
+  // private fields
+}
+#alias(new, deprecated)
+pub fn HitTestRequest::HitTestRequest(HitTestContext, @browser.EditorPagePosition, @browser.PageCoordinates, @browser.CoordinatesRelativeToEditor, @dom.Element?) -> Self
+pub fn HitTestRequest::fulfill_content_empty(Self, @common.Position, @browser.MouseTargetContentEmptyData) -> @browser.MouseTarget
+pub fn HitTestRequest::fulfill_content_text(Self, @common.Position, @common.Range?, @browser.MouseTargetContentTextData) -> @browser.MouseTarget
+pub fn HitTestRequest::fulfill_content_widget(Self, String) -> @browser.MouseTarget
+pub fn HitTestRequest::fulfill_margin(Self, @browser.MouseTargetType, @common.Position, @common.Range, @browser.MouseTargetMarginData) -> @browser.MouseTarget
+pub fn HitTestRequest::fulfill_overlay_widget(Self, String) -> @browser.MouseTarget
+pub fn HitTestRequest::fulfill_scrollbar(Self, @common.Position) -> @browser.MouseTarget
+pub fn HitTestRequest::fulfill_unknown(Self, position? : @common.Position) -> @browser.MouseTarget
+pub fn HitTestRequest::fulfill_view_zone(Self, @browser.MouseTargetType, @common.Position, @browser.MouseTargetViewZoneData) -> @browser.MouseTarget
+pub fn HitTestRequest::switch_to_hit_test_target(Self) -> Unit
+pub fn HitTestRequest::target(Self) -> @dom.Element?
+pub fn HitTestRequest::target_path(Self) -> Bytes
+pub fn HitTestRequest::would_benefit_from_hit_test_target_switch(Self) -> Bool
+
+pub(all) struct MouseDispatchData {
+  position : @common.Position
+  mouse_column : Int
+  reveal_type : NavigationCommandRevealType
+  started_on_line_numbers : Bool
+  in_selection_mode : Bool
+  mouse_down_count : Int
+  alt_key : Bool
+  ctrl_key : Bool
+  meta_key : Bool
+  shift_key : Bool
+  left_button : Bool
+  middle_button : Bool
+  on_injected_text : Bool
+}
+
+pub struct MouseDownState {
+  // private fields
+}
+#alias(new, deprecated)
+pub fn MouseDownState::MouseDownState() -> Self
+pub fn MouseDownState::alt_key(Self) -> Bool
+pub fn MouseDownState::count(Self) -> Int
+pub fn MouseDownState::ctrl_key(Self) -> Bool
+pub fn MouseDownState::left_button(Self) -> Bool
+pub fn MouseDownState::meta_key(Self) -> Bool
+pub fn MouseDownState::middle_button(Self) -> Bool
+pub fn MouseDownState::shift_key(Self) -> Bool
+pub fn MouseDownState::started_on_line_numbers(Self) -> Bool
+pub fn MouseDownState::try_set_count(Self, Int, @common.Position, now? : Double) -> Unit
+
+pub struct MouseHandler {
+  // private fields
+}
+#alias(new, deprecated)
+pub fn MouseHandler::MouseHandler(PointerHandlerHelper) -> Self
+pub fn MouseHandler::cancel_selection(Self) -> Unit
+pub fn MouseHandler::dispose(Self) -> Unit
+pub fn MouseHandler::get_target_at_client_point(Self, Double, Double) -> @browser.MouseTarget?
+pub fn MouseHandler::handle_editor_wheel(Self, @dom.Event, @dom.WheelEvent) -> Bool
+pub fn MouseHandler::hook_browser_desperate_reveal(Self) -> Unit
+pub fn MouseHandler::hook_scrollable_scrollbar_input(Self, @scrollbar.ScrollableElementDom, @scrollbar.ScrollableElementOwner) -> Unit
+
+pub struct MouseTargetFactory {
+  // private fields
+}
+#alias(new, deprecated)
+pub fn MouseTargetFactory::MouseTargetFactory(PointerHandlerHelper) -> Self
+pub fn MouseTargetFactory::create_mouse_target(Self, PointerHandlerLastRenderData, @browser.EditorPagePosition, @browser.PageCoordinates, @browser.CoordinatesRelativeToEditor, @dom.Element?) -> @browser.MouseTarget
+pub fn MouseTargetFactory::get_mouse_column(Self, @browser.CoordinatesRelativeToEditor) -> Int
+pub fn MouseTargetFactory::mouse_target_is_widget(Self, @browser.EditorDomMouseEvent) -> Bool
+
+pub(all) enum NavigationCommandRevealType {
+  Regular
+  Minimal
+  None
+} derive(Eq, @debug.Debug)
+
+pub(all) struct PointerHandlerHelper {
+  view_dom_node : @dom.Element
+  lines_content_dom_node : @dom.Element
+  view_lines_dom_node : @dom.Element
+  focus_text_area : () -> Unit
+  get_last_render_data : () -> PointerHandlerLastRenderData
+  render_now : () -> Unit
+  should_suppress_mouse_down_on_view_zone : (String) -> Bool
+  get_position_from_dom_info : (@dom.Element, Int) -> @common.Position?
+  visible_range_for_position : (Int, Int) -> @view.HorizontalPosition?
+  get_line_width : (Int) -> Double
+  view_model : () -> @view_model.ViewModel?
+  get_layout_info : () -> @config.EditorLayoutInfo
+  get_font_info : () -> @config.FontInfo
+  get_current_selection : () -> @core.Selection?
+  dispatch_mouse : (MouseDispatchData) -> Unit
+  emit_mouse_down : (@browser.EditorDomMouseEvent, @browser.MouseTarget) -> Unit
+  emit_mouse_up : (@browser.EditorDomMouseEvent, @browser.MouseTarget) -> Unit
+  emit_mouse_move : (@browser.EditorDomMouseEvent, @browser.MouseTarget) -> Unit
+  emit_mouse_drag : (@browser.EditorDomMouseEvent, @browser.MouseTarget) -> Unit
+  emit_mouse_leave : (@browser.EditorDomMouseEvent) -> Unit
+  overflow_guard : @dom.Element
+  editor_scrollable : @scrollbar.ScrollableElementDom
+  hover_scrollable : () -> @scrollbar.ScrollableElementDom?
+  view_layout : () -> @view_layout.ViewLayout?
+  schedule_render : () -> Unit
+}
+
+pub(all) struct PointerHandlerLastRenderData {
+  last_view_cursors_render_data : Array[@view.ViewCursorRenderData]
+}
+
+// Type aliases
+
+// Traits
+

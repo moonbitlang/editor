@@ -1,0 +1,121 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+}
+
+.editor-shell {
+  /* Pin the workbench to the viewport so the code viewer is the scroll
+     container; line virtualization windows against its height. */
+  height: 100vh;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  background: var(--vscode-editor-background);
+  color: var(--vscode-foreground);
+  font-family: var(--ui-font-family);
+}
+
+.editor-main {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(180px, 240px) minmax(0, 1fr);
+}
+
+.topbar {
+  min-height: 35px;
+  padding: 6px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--vscode-titleBar-border);
+  background: var(--vscode-titleBar-activeBackground);
+  color: var(--vscode-titleBar-activeForeground);
+  font-size: var(--ui-font-size);
+}
+
+.source-title {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.source-title strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.source-title span {
+  flex: 0 0 auto;
+  opacity: 0.7;
+}
+
+.source-status {
+  flex: 0 0 auto;
+  opacity: 0.85;
+}
+
+.source-status-ready {
+  color: var(--vscode-titleBar-activeForeground);
+}
+
+.source-status-loading,
+.source-status-stale {
+  color: var(--vscode-editorWarning-foreground);
+}
+
+.source-status-missing,
+.source-status-error {
+  color: var(--vscode-editorError-foreground);
+}
+
+.topbar strong {
+  margin-right: 10px;
+}
+
+/* The stable element the workbench renders for the viewer island; the
+   island attaches its own DOM inside and the shell never renders
+   children into it. */
+.viewer-host {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  background: var(--vscode-editor-background);
+}
+
+.diagnostics {
+  min-height: 22px;
+  /* A diagnostic flood must not squeeze the editor out of the viewport. */
+  max-height: 25vh;
+  overflow: auto;
+  padding: 2px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--vscode-sideBar-border);
+  background: var(--vscode-sideBar-background);
+  color: var(--vscode-sideBar-foreground);
+  font-size: 12px;
+}
+
+.diagnostic-item {
+  padding: 1px 6px;
+  color: var(--vscode-editorWarning-foreground);
+}
+
+@media (max-width: 680px) {
+  .editor-main {
+    grid-template-columns: 148px minmax(0, 1fr);
+  }
+
+  .topbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

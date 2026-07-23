@@ -1,0 +1,7 @@
+import {
+  "moonbit-community/editor/base/common" @base_common,
+  "moonbit-community/editor/internal/viewer/markdown" @markdown_core,
+  "moonbit-community/rabbita/dom" @rdom,
+}
+
+supported_targets = "js"

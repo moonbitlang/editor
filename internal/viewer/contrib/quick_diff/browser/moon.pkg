@@ -1,0 +1,7 @@
+import {
+  "moonbit-community/editor/viewer/common/diff",
+  "moonbit-community/editor/viewer/common/model",
+  "moonbit-community/editor/internal/viewer/contrib/quick_diff/common" @quick_diff,
+}
+
+supported_targets = "js"

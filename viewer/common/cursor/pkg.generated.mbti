@@ -1,0 +1,127 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit-community/editor/viewer/common/cursor"
+
+import {
+  "moonbit-community/editor/base/common",
+  "moonbit-community/editor/viewer/common/core",
+  "moonbit-community/editor/viewer/common/editor_api",
+  "moonbit-community/editor/viewer/common/model",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn move_to(CursorsController, @common.Position) -> Unit
+
+pub fn move_to_select(CursorsController, @common.Position) -> Unit
+
+// Errors
+
+// Types and methods
+pub struct Cursor {
+  mut model_state : SingleCursorState
+  mut view_state : SingleCursorState
+}
+#alias(new, deprecated)
+pub fn Cursor::Cursor() -> Self
+pub fn Cursor::set_model_state(Self, CursorContext, SingleCursorState) -> Unit
+
+pub struct CursorContext {
+  // private fields
+}
+#alias(new, deprecated)
+pub fn CursorContext::CursorContext(view_to_model~ : (@common.Position) -> @common.Position, view_range_to_model~ : (@common.Range) -> @common.Range, model_to_view~ : (@common.Position) -> @common.Position) -> Self
+pub fn CursorContext::model_to_view(Self, @common.Position) -> @common.Position
+pub fn CursorContext::view_to_model(Self, @common.Position) -> @common.Position
+
+type CursorModelState derive(Eq)
+
+pub struct CursorState {
+  model_state : SingleCursorState
+  view_state : SingleCursorState
+} derive(Eq, @debug.Debug)
+#alias(new, deprecated)
+pub fn CursorState::CursorState(SingleCursorState, SingleCursorState) -> Self
+pub fn CursorState::from_model_selection(@core.Selection) -> PartialCursorState
+pub fn CursorState::from_model_selections(Array[@core.Selection]) -> Array[PartialCursorState]
+pub fn CursorState::from_model_state(SingleCursorState) -> PartialCursorState
+pub fn CursorState::from_view_state(SingleCursorState) -> PartialCursorState
+
+pub struct CursorStateChange {
+  old_selections : Array[@core.Selection]?
+  selections : Array[@core.Selection]
+  old_model_version_id : Int
+  model_version_id : Int
+  source : String
+  reason : @editor_api.CursorChangeReason
+  reached_max_cursor_count : Bool
+  has_outgoing_event : Bool
+} derive(@debug.Debug)
+
+pub struct CursorsController {
+  model : @model.TextModel
+  mut known_model_version_id : Int
+  mut context : CursorContext
+  mut cursor : Cursor
+  mut is_handling : Bool
+}
+#alias(new, deprecated)
+pub fn CursorsController::CursorsController(@model.TextModel, CursorContext) -> Self
+pub fn CursorsController::get_model_selection(Self) -> @core.Selection
+pub fn CursorsController::get_primary_cursor_state(Self) -> CursorState
+pub fn CursorsController::get_view_selection(Self) -> @core.Selection
+pub fn CursorsController::model_state(Self) -> SingleCursorState
+pub fn CursorsController::move_to(Self, @common.Position, Bool, source? : String, reason? : @editor_api.CursorChangeReason) -> CursorStateChange?
+pub fn CursorsController::on_model_content_changed(Self, @model.InternalModelContentChangeEvent) -> CursorStateChange?
+pub fn CursorsController::set_context(Self, CursorContext) -> Unit
+pub fn CursorsController::set_cursor_state(Self, PartialCursorState?, source? : String, reason? : @editor_api.CursorChangeReason) -> CursorStateChange?
+pub fn CursorsController::set_model_cursor_state(Self, SingleCursorState, source? : String, reason? : @editor_api.CursorChangeReason) -> CursorStateChange?
+pub fn CursorsController::set_view_cursor_state(Self, SingleCursorState, source? : String, reason? : @editor_api.CursorChangeReason) -> CursorStateChange?
+pub fn CursorsController::view_state(Self) -> SingleCursorState
+
+pub enum PartialCursorState {
+  FullCursorState(CursorState)
+  ModelCursorState(PartialModelCursorState)
+  ViewCursorState(PartialViewCursorState)
+} derive(Eq, @debug.Debug)
+pub fn PartialCursorState::model_state(Self) -> SingleCursorState?
+pub fn PartialCursorState::view_state(Self) -> SingleCursorState?
+
+pub struct PartialModelCursorState {
+  model_state : SingleCursorState
+  view_state : SingleCursorState?
+} derive(Eq, @debug.Debug)
+#alias(new, deprecated)
+pub fn PartialModelCursorState::PartialModelCursorState(SingleCursorState) -> Self
+
+pub struct PartialViewCursorState {
+  model_state : SingleCursorState?
+  view_state : SingleCursorState
+} derive(Eq, @debug.Debug)
+#alias(new, deprecated)
+pub fn PartialViewCursorState::PartialViewCursorState(SingleCursorState) -> Self
+
+pub(all) enum SelectionStartKind {
+  Simple
+  Word
+  Line
+} derive(Eq, @debug.Debug)
+
+pub struct SingleCursorState {
+  selection_start_start : @common.Position
+  selection_start_end : @common.Position
+  selection_start_kind : SelectionStartKind
+  selection_start_leftover_visible_columns : Int
+  position : @common.Position
+  leftover_visible_columns : Int
+} derive(Eq, @debug.Debug)
+#alias(new, deprecated)
+pub fn SingleCursorState::SingleCursorState(@common.Position, @common.Position, SelectionStartKind, @common.Position, selection_start_leftover_visible_columns? : Int, leftover_visible_columns? : Int) -> Self
+pub fn SingleCursorState::collapsed(@common.Position) -> Self
+pub fn SingleCursorState::has_selection(Self) -> Bool
+pub fn SingleCursorState::moved(Self, Bool, @common.Position, leftover_visible_columns? : Int) -> Self
+pub fn SingleCursorState::selection(Self) -> @core.Selection
+
+// Type aliases
+
+// Traits
+

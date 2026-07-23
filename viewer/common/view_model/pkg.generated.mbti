@@ -1,0 +1,386 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit-community/editor/viewer/common/view_model"
+
+import {
+  "moonbit-community/editor/base/common",
+  "moonbit-community/editor/viewer/common/config",
+  "moonbit-community/editor/viewer/common/core",
+  "moonbit-community/editor/viewer/common/cursor",
+  "moonbit-community/editor/viewer/common/editor_api",
+  "moonbit-community/editor/viewer/common/model",
+  "moonbit-community/editor/viewer/common/tokens",
+  "moonbit-community/editor/viewer/common/view_layout",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn create_model_line_projection(ModelLineProjectionData?, Bool) -> ModelLineProjection
+
+pub fn dedup_margin_decorations(Int, Int, Array[DecorationToRender]) -> Array[Array[String]]
+
+pub fn filter_validation_decorations(@editor_api.RenderValidationDecorations) -> Bool
+
+pub fn lines_decorations_to_render(Array[ViewModelDecoration]) -> Array[DecorationToRender]
+
+pub let monospace_line_breaks_computer_factory : MonospaceLineBreaksComputerFactory
+
+pub fn render_line_input_from_view_line_data(ViewLineData, line_decorations? : Array[@view_layout.LineDecoration], space_width? : Double, render_whitespace? : @editor_api.RenderWhitespace, render_control_characters? : Bool, vertical_scrollbar_size? : Double) -> @view_layout.RenderLineInput
+
+pub fn view_line_rendering_data_from_view_line_data(ViewLineData, line_decorations? : Array[@view_layout.LineDecoration], tab_size? : Int) -> @view_layout.ViewLineRenderingData
+
+pub fn viewport_data_from_view_model(ViewModel, @view_layout.LineWindow, line_height~ : Int, layout? : @view_layout.ViewLayout, partial_viewport? : @view_layout.PartialViewLinesViewportData) -> @view_layout.ViewportData
+
+// Errors
+
+// Types and methods
+pub enum CoordinatesConverter {
+  Projected(ViewModelLinesFromProjectedModel)
+}
+pub fn CoordinatesConverter::model_position_is_visible(Self, @common.Position) -> Bool
+pub fn CoordinatesConverter::model_position_to_view_position(Self, @common.Position, affinity? : @model.PositionAffinity) -> @common.Position
+pub fn CoordinatesConverter::model_range_to_view_range(Self, @common.Range, affinity? : @model.PositionAffinity) -> @common.Range
+pub fn CoordinatesConverter::view_position_to_model_position(Self, @common.Position) -> @common.Position
+pub fn CoordinatesConverter::view_range_to_model_range(Self, @common.Range) -> @common.Range
+
+type CursorEventDispatcher
+
+pub(all) enum CursorMoveDirection {
+  Left
+  Right
+  Up
+  Down
+  PrevBlankLine
+  NextBlankLine
+  WrappedLineStart
+  WrappedLineFirstNonWhitespaceCharacter
+  WrappedLineColumnCenter
+  WrappedLineEnd
+  WrappedLineLastNonWhitespaceCharacter
+  ViewPortTop
+  ViewPortCenter
+  ViewPortBottom
+  ViewPortIfOutside
+} derive(Eq, @debug.Debug)
+pub fn CursorMoveDirection::as_simple(Self) -> SimpleMoveDirection?
+
+pub(all) enum CursorMoveUnit {
+  None
+  Line
+  WrappedLine
+  Character
+  HalfLine
+  FoldedLine
+} derive(Eq, @debug.Debug)
+
+pub(all) struct CursorStateChangedEvent {
+  kind : OutgoingViewModelEventKind
+  old_selections : Array[@core.Selection]?
+  selections : Array[@core.Selection]
+  old_model_version_id : Int
+  model_version_id : Int
+  source : String
+  reason : @editor_api.CursorChangeReason
+  reached_max_cursor_count : Bool
+} derive(@debug.Debug)
+pub fn CursorStateChangedEvent::is_no_op(Self) -> Bool
+
+pub struct DecorationToRender {
+  start_line_number : Int
+  end_line_number : Int
+  class_name : String
+  z_index : Int
+} derive(Eq, @debug.Debug)
+
+pub struct HiddenAreasChangedOutgoingEvent {
+  kind : OutgoingViewModelEventKind
+} derive(@debug.Debug)
+#alias(new, deprecated)
+pub fn HiddenAreasChangedOutgoingEvent::HiddenAreasChangedOutgoingEvent() -> Self
+pub fn HiddenAreasChangedOutgoingEvent::is_no_op(Self) -> Bool
+
+pub struct InjectedText {
+  position : @common.Position
+  text : String
+  class_name : String
+  source_index : Int
+} derive(Eq, @debug.Debug)
+pub fn InjectedText::InjectedText(@common.Position, String, String, source_index? : Int) -> Self
+
+pub struct LineBreaksComputer {
+  // private fields
+}
+pub fn LineBreaksComputer::add_request(Self, Int, String, Array[InjectedText]) -> Unit
+pub fn LineBreaksComputer::finalize(Self) -> Array[ModelLineProjectionData?]
+
+pub enum ModelLineProjection {
+  Identity
+  Hidden
+  Projected(ModelLineProjectionData, is_visible~ : Bool)
+}
+pub fn ModelLineProjection::get_model_column_of_view_position(Self, Int, Int) -> Int
+pub fn ModelLineProjection::get_view_line_content(Self, @model.TextModel, Int, Int) -> String
+pub fn ModelLineProjection::get_view_line_count(Self) -> Int
+pub fn ModelLineProjection::get_view_line_data(Self, @model.TextModel, Int, Int, Int) -> ViewLineData
+pub fn ModelLineProjection::get_view_line_max_column(Self, @model.TextModel, Int, Int) -> Int
+pub fn ModelLineProjection::get_view_line_min_column(Self, Int) -> Int
+pub fn ModelLineProjection::get_view_position_of_model_position(Self, Int, Int, affinity? : @model.PositionAffinity) -> @common.Position
+pub fn ModelLineProjection::injected_text_index_at(Self, Int, Int) -> Int
+pub fn ModelLineProjection::is_visible(Self) -> Bool
+pub fn ModelLineProjection::normalize_position(Self, Int, @common.Position, @model.PositionAffinity) -> @common.Position
+pub fn ModelLineProjection::set_visible(Self, Bool) -> Self
+
+pub struct ModelLineProjectionData {
+  model_line_number : Int
+  line_length : Int
+  projected_line : ProjectedTextLine
+  segments : Array[ModelLineProjectionSegment]
+} derive(Eq, @debug.Debug)
+pub fn ModelLineProjectionData::ModelLineProjectionData(Int, Int, ProjectedTextLine, Array[ModelLineProjectionSegment]) -> Self
+pub fn ModelLineProjectionData::segment_at_view_line_index(Self, Int) -> ModelLineProjectionSegment
+pub fn ModelLineProjectionData::view_line_count(Self) -> Int
+pub fn ModelLineProjectionData::view_line_index_for_model_column(Self, Int) -> Int
+pub fn ModelLineProjectionData::view_line_index_for_projected_column(Self, Int, affinity? : @model.PositionAffinity) -> Int
+
+pub struct ModelLineProjectionSegment {
+  model_line_number : Int
+  start_offset : Int
+  end_offset : Int
+  start_column : Int
+  end_column : Int
+  start_visible_column : Double
+  continues_with_wrapped_line : Bool
+  wrapped_text_indent_length : Int
+} derive(Eq, @debug.Debug)
+
+pub struct ModelTokensChangedOutgoingEvent {
+  kind : OutgoingViewModelEventKind
+  event : @model.ModelTokensChangedEvent
+}
+#alias(new, deprecated)
+pub fn ModelTokensChangedOutgoingEvent::ModelTokensChangedOutgoingEvent(@model.ModelTokensChangedEvent) -> Self
+pub fn ModelTokensChangedOutgoingEvent::is_no_op(Self) -> Bool
+
+pub struct MonospaceLineBreaksComputerFactory {
+  // private fields
+}
+#alias(new, deprecated)
+pub fn MonospaceLineBreaksComputerFactory::MonospaceLineBreaksComputerFactory(String, String) -> Self
+pub fn MonospaceLineBreaksComputerFactory::create() -> Self
+pub fn MonospaceLineBreaksComputerFactory::create_line_breaks_computer(Self, font_info~ : @config.FontInfo, tab_size~ : Int, wrapping_column~ : Int, wrapping_indent~ : @editor_api.WrappingIndent, word_break? : WordBreak) -> LineBreaksComputer
+
+pub(all) enum OutgoingViewModelEventKind {
+  ViewZonesChanged
+  HiddenAreasChanged
+  CursorStateChanged
+  ModelTokensChanged
+} derive(Eq, @debug.Debug)
+
+pub struct ProjectedLinePart {
+  start : Int
+  end : Int
+  kind : ProjectedLinePartKind
+} derive(Eq, @debug.Debug)
+
+pub enum ProjectedLinePartKind {
+  SourceSegment(model_start~ : Int, model_end~ : Int)
+  InjectedSegment(model_column~ : Int, injected_text_index~ : Int, class_name~ : String)
+} derive(Eq, @debug.Debug)
+
+pub struct ProjectedTextLine {
+  text : String
+  model_line_length : Int
+  model_columns : Array[Int]
+  injected_text_indices : Array[Int]
+  model_to_projected_columns : Array[Int]
+  parts : Array[ProjectedLinePart]
+} derive(Eq, @debug.Debug)
+pub fn ProjectedTextLine::from_injected_text(String, Array[InjectedText]) -> Self
+pub fn ProjectedTextLine::identity(String) -> Self
+pub fn ProjectedTextLine::injected_text_index_at_projected_column(Self, Int) -> Int
+pub fn ProjectedTextLine::model_column_to_projected_column(Self, Int, affinity? : @model.PositionAffinity) -> Int
+pub fn ProjectedTextLine::normalize_projected_column_around_injections(Self, Int, @model.PositionAffinity) -> Int
+pub fn ProjectedTextLine::projected_column_to_model_column(Self, Int) -> Int
+
+pub struct SimpleMoveArguments {
+  direction : SimpleMoveDirection
+  unit : CursorMoveUnit
+  select : Bool
+  value : Int
+} derive(Eq, @debug.Debug)
+#alias(new, deprecated)
+pub fn SimpleMoveArguments::SimpleMoveArguments(SimpleMoveDirection, CursorMoveUnit, Bool, Int) -> Self
+
+pub(all) enum SimpleMoveDirection {
+  Left
+  Right
+  Up
+  Down
+  PrevBlankLine
+  NextBlankLine
+  WrappedLineStart
+  WrappedLineFirstNonWhitespaceCharacter
+  WrappedLineColumnCenter
+  WrappedLineEnd
+  WrappedLineLastNonWhitespaceCharacter
+} derive(Eq, @debug.Debug)
+
+pub struct ViewDecorationsCollection {
+  decorations : Array[ViewModelDecoration]
+  // private fields
+}
+
+pub struct ViewLineData {
+  content : String
+  continues_with_wrapped_line : Bool
+  min_column : Int
+  max_column : Int
+  start_visible_column : Int
+  tokens : @tokens.ViewLineTokens
+  inline_decorations : Array[@view_layout.InlineDecoration]
+}
+
+pub struct ViewModel {
+  model : @model.TextModel
+  mut options : ViewModelOptions
+  lines : ViewModelLinesFromProjectedModel
+  cursor_event_dispatcher : CursorEventDispatcher
+  cursor : @cursor.CursorsController
+  view_layout : @view_layout.ViewLayout
+  mut decorations : ViewModelDecorations
+  coordinates_converter : CoordinatesConverter
+  // private fields
+}
+pub fn ViewModel::ViewModel(@model.TextModel) -> Self
+pub fn ViewModel::change_whitespace(Self, (@view_layout.WhitespaceChangeAccessor) -> Unit) -> Bool
+pub fn ViewModel::clamp_window(Self, @view_layout.LineWindow) -> @view_layout.LineWindow
+pub fn ViewModel::coordinates_converter(Self) -> CoordinatesConverter
+pub fn ViewModel::cursor_page_size(Self) -> Int
+pub fn ViewModel::decorations(Self) -> ViewModelDecorations
+pub fn ViewModel::dispose(Self) -> Unit
+pub fn ViewModel::emit_view_zones_changed(Self) -> Unit
+pub fn ViewModel::get_hidden_areas(Self) -> Array[@common.Range]
+pub fn ViewModel::get_injected_text_at(Self, @common.Position) -> InjectedText?
+pub fn ViewModel::get_line_content(Self, Int) -> String
+pub fn ViewModel::get_line_last_non_whitespace_column(Self, Int) -> Int
+pub fn ViewModel::get_line_length(Self, Int) -> Int
+pub fn ViewModel::get_line_max_column(Self, Int) -> Int
+pub fn ViewModel::get_line_min_column(Self, Int) -> Int
+pub fn ViewModel::get_whitespaces(Self) -> Array[@view_layout.EditorWhitespace]
+pub fn ViewModel::injected_text_index_at(Self, @common.Position) -> Int
+pub fn ViewModel::language_id(Self) -> String
+pub fn ViewModel::line_count(Self) -> Int
+pub fn ViewModel::lines(Self) -> ViewModelLinesFromProjectedModel
+pub fn ViewModel::model_line_max_column(Self, Int) -> Int
+pub fn ViewModel::model_position_is_hidden_except_source(Self, @common.Position, String) -> Bool
+pub fn ViewModel::model_position_is_visible(Self, @common.Position) -> Bool
+pub fn ViewModel::model_position_to_view_position(Self, @common.Position, affinity? : @model.PositionAffinity, allow_zero_line_number? : Bool) -> @common.Position
+pub fn ViewModel::move_cursor(Self, SimpleMoveDirection, Bool, value? : Int, unit? : CursorMoveUnit, source? : String, reason? : @editor_api.CursorChangeReason) -> Bool
+pub fn ViewModel::move_cursor_direction(Self, CursorMoveDirection, Bool, value? : Int, unit? : CursorMoveUnit, source? : String, reason? : @editor_api.CursorChangeReason) -> Bool
+pub fn ViewModel::move_cursor_line(Self, @common.Position, Bool, view_position? : @common.Position, source? : String, reason? : @editor_api.CursorChangeReason) -> Bool
+pub fn ViewModel::move_cursor_line_select_to(Self, @common.Position, source? : String, reason? : @editor_api.CursorChangeReason) -> Bool
+pub fn ViewModel::move_cursor_page(Self, SimpleMoveDirection, Bool, page_size? : Int, source? : String, reason? : @editor_api.CursorChangeReason) -> Bool
+pub fn ViewModel::move_cursor_to(Self, @common.Position, Bool, source? : String, reason? : @editor_api.CursorChangeReason) -> Bool
+pub fn ViewModel::move_cursor_to_line_end(Self, Bool, sticky? : Bool, source? : String, reason? : @editor_api.CursorChangeReason) -> Bool
+pub fn ViewModel::move_cursor_to_line_start(Self, Bool, source? : String, reason? : @editor_api.CursorChangeReason) -> Bool
+pub fn ViewModel::move_cursor_to_model_position(Self, @common.Position, Bool, view_position? : @common.Position, source? : String, reason? : @editor_api.CursorChangeReason) -> Bool
+pub fn ViewModel::move_cursor_with_arguments(Self, SimpleMoveArguments, source? : String, reason? : @editor_api.CursorChangeReason) -> Bool
+pub fn ViewModel::move_cursor_word(Self, @common.Position, Bool, source? : String, reason? : @editor_api.CursorChangeReason) -> Bool
+pub fn ViewModel::normalize_position(Self, @common.Position, @model.PositionAffinity) -> @common.Position
+pub fn ViewModel::on_configuration_changed(Self, ViewModelOptions) -> Bool
+pub fn ViewModel::on_cursor_state_changed(Self, (CursorStateChangedEvent) -> Unit) -> @common.Disposable
+pub fn ViewModel::on_did_change_content_or_injected_text(Self, e? : @model.InternalModelContentChangeEvent) -> Unit
+pub fn ViewModel::on_hidden_areas_changed(Self, (HiddenAreasChangedOutgoingEvent) -> Unit) -> @common.Disposable
+pub fn ViewModel::on_model_tokens_changed(Self, (ModelTokensChangedOutgoingEvent) -> Unit) -> @common.Disposable
+pub fn ViewModel::on_view_zones_changed(Self, (ViewZonesChangedEvent) -> Unit) -> @common.Disposable
+pub fn ViewModel::set_cursor_state(Self, @cursor.PartialCursorState?, String, @editor_api.CursorChangeReason) -> Bool
+pub fn ViewModel::set_hidden_areas(Self, Array[@common.Range], source? : String, force_update? : Bool, with_event_batch? : (() -> Bool) -> Bool, on_line_mapping_changed? : (() -> Unit) -> Unit) -> Bool
+pub fn ViewModel::set_model_cursor_state(Self, @cursor.SingleCursorState, String, @editor_api.CursorChangeReason) -> Bool
+pub fn ViewModel::set_view_cursor_state(Self, @cursor.SingleCursorState, String, @editor_api.CursorChangeReason) -> Bool
+pub fn ViewModel::to_model_visible_ranges(Self, @common.Range) -> Array[@common.Range]
+pub fn ViewModel::validate_model_position(Self, @common.Position) -> @common.Position
+pub fn ViewModel::version(Self) -> Int
+pub fn ViewModel::visible_lines_stabilized(Self) -> Unit
+pub fn ViewModel::with_options(@model.TextModel, ViewModelOptions, smooth_scrolling? : Bool, schedule_at_next_animation_frame? : (() -> Unit) -> @common.Disposable, now? : () -> Double, attached_view? : @model.AttachedViewImpl, emit_view_tokens_changed? : (Array[ViewTokensChangedRange]) -> Unit) -> Self
+
+pub(all) struct ViewModelDecoration {
+  range : @common.Range
+  options : @model.ModelDecorationOptions
+}
+
+pub struct ViewModelDecorations {
+  // private fields
+}
+pub fn ViewModelDecorations::get_decorations_viewport_data(Self, @common.Range) -> ViewDecorationsCollection
+pub fn ViewModelDecorations::on_model_decorations_changed(Self) -> Unit
+
+pub struct ViewModelLinesFromProjectedModel {
+  model : @model.TextModel
+  mut font_info : @config.FontInfo
+  mut tab_size : Int
+  mut wrapping_column : Int
+  mut wrapping_indent : @editor_api.WrappingIndent
+  mut model_line_projections : Array[ModelLineProjection]
+  mut projected_model_line_line_counts : Array[Int]
+  mut hidden_areas_decoration_ids : Array[String]
+  // private fields
+}
+#alias(new, deprecated)
+pub fn ViewModelLinesFromProjectedModel::ViewModelLinesFromProjectedModel(@model.TextModel, font_info~ : @config.FontInfo, tab_size~ : Int, wrapping_column~ : Int, wrapping_indent~ : @editor_api.WrappingIndent) -> Self
+pub fn ViewModelLinesFromProjectedModel::convert_model_position_to_view_position(Self, Int, Int, affinity? : @model.PositionAffinity, allow_zero_line_number? : Bool, below_hidden_ranges? : Bool) -> @common.Position
+pub fn ViewModelLinesFromProjectedModel::convert_model_range_to_view_range(Self, @common.Range, affinity? : @model.PositionAffinity) -> @common.Range
+pub fn ViewModelLinesFromProjectedModel::convert_view_position_to_model_position(Self, Int, Int) -> @common.Position
+pub fn ViewModelLinesFromProjectedModel::convert_view_range_to_model_range(Self, @common.Range) -> @common.Range
+pub fn ViewModelLinesFromProjectedModel::create_coordinates_converter(Self) -> CoordinatesConverter
+pub fn ViewModelLinesFromProjectedModel::dispose(Self) -> Unit
+pub fn ViewModelLinesFromProjectedModel::get_hidden_areas(Self) -> Array[@common.Range]
+pub fn ViewModelLinesFromProjectedModel::get_view_line_content(Self, Int) -> String
+pub fn ViewModelLinesFromProjectedModel::get_view_line_count(Self) -> Int
+pub fn ViewModelLinesFromProjectedModel::get_view_line_data(Self, Int) -> ViewLineData
+pub fn ViewModelLinesFromProjectedModel::get_view_line_max_column(Self, Int) -> Int
+pub fn ViewModelLinesFromProjectedModel::get_view_line_min_column(Self, Int) -> Int
+pub fn ViewModelLinesFromProjectedModel::get_view_lines_data(Self, Int, Int, Array[Bool]) -> Array[ViewLineData?]
+pub fn ViewModelLinesFromProjectedModel::injected_text_index_at(Self, Int, Int) -> Int
+pub fn ViewModelLinesFromProjectedModel::model_line_number_of_view_line(Self, Int) -> Int
+pub fn ViewModelLinesFromProjectedModel::model_position_is_visible(Self, Int) -> Bool
+pub fn ViewModelLinesFromProjectedModel::normalize_position(Self, @common.Position, @model.PositionAffinity) -> @common.Position
+pub fn ViewModelLinesFromProjectedModel::on_injected_text_changed(Self) -> Unit
+pub fn ViewModelLinesFromProjectedModel::on_model_flushed(Self) -> Unit
+pub fn ViewModelLinesFromProjectedModel::set_hidden_areas(Self, Array[@common.Range]) -> Bool
+pub fn ViewModelLinesFromProjectedModel::set_tab_size(Self, Int) -> Bool
+pub fn ViewModelLinesFromProjectedModel::set_wrapping_settings(Self, @config.FontInfo, Int, @editor_api.WrappingIndent) -> Bool
+pub fn ViewModelLinesFromProjectedModel::view_line_rendering_data(Self, Int, line_decorations? : Array[@view_layout.LineDecoration]) -> @view_layout.ViewLineRenderingData
+
+pub struct ViewModelOptions {
+  font_info : @config.FontInfo
+  soft_wrap_column : Int
+  tab_size : Int
+  wrapping_indent : @editor_api.WrappingIndent
+  editor_id : Int
+  render_validation_decorations : @editor_api.RenderValidationDecorations
+} derive(Eq, @debug.Debug)
+pub fn ViewModelOptions::ViewModelOptions(font_info? : @config.FontInfo, soft_wrap_column? : Int, tab_size? : Int, wrapping_indent? : @editor_api.WrappingIndent, editor_id? : Int, render_validation_decorations? : @editor_api.RenderValidationDecorations) -> Self
+pub fn ViewModelOptions::is_soft_wrap_enabled(Self) -> Bool
+pub fn ViewModelOptions::no_wrap() -> Self
+pub fn ViewModelOptions::soft_wrap(Int, tab_size? : Int, wrapping_indent? : @editor_api.WrappingIndent) -> Self
+
+pub struct ViewTokensChangedRange {
+  from_line_number : Int
+  to_line_number : Int
+} derive(Eq, @debug.Debug)
+
+pub struct ViewZonesChangedEvent {
+  kind : OutgoingViewModelEventKind
+} derive(@debug.Debug)
+#alias(new, deprecated)
+pub fn ViewZonesChangedEvent::ViewZonesChangedEvent() -> Self
+pub fn ViewZonesChangedEvent::is_no_op(Self) -> Bool
+
+pub(all) enum WordBreak {
+  Normal
+  KeepAll
+} derive(Eq, @debug.Debug)
+
+// Type aliases
+
+// Traits
+

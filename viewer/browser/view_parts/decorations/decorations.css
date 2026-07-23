@@ -1,0 +1,15 @@
+/* Ported from vscode/src/vs/editor/browser/viewParts/decorations/decorations.css.
+ * cdr = core decorations rendering (div); pieces sit inside the per-line
+ * overlay rows, so `height: 100%` is the row's line height. */
+.moonbit-viewer .lines-content .cdr {
+  position: absolute;
+  height: 100%;
+}
+
+/* Stock classNames for the standard decoration colors (Monaco registers
+ * these through registerThemingParticipant; the viewer's colors cascade via
+ * CSS custom properties — recorded theming design). The hoverHighlight rule
+ * lives with the hover feature (viewer/contrib/hover/hover.css). */
+.moonbit-viewer .rangeHighlight {
+  background-color: var(--vscode-editor-rangeHighlightBackground);
+}

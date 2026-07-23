@@ -1,0 +1,8 @@
+import {
+  "moonbit-community/editor/base/browser" @base_browser,
+  "moonbit-community/editor/base/common" @base_common,
+  "moonbit-community/editor/viewer/common/config" @common_config,
+  "moonbit-community/rabbita/dom" @rdom,
+}
+
+supported_targets = "js"

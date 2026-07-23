@@ -1,0 +1,36 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit-community/editor/internal/viewer/contrib/quick_diff/common"
+
+import {
+  "moonbit-community/editor/viewer/common/diff",
+  "moonbit-community/editor/viewer/common/quick_diff_api",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn get_change_type(@diff.Change) -> ChangeType
+
+// Errors
+
+// Types and methods
+pub(all) enum ChangeType {
+  Modify
+  Add
+  Delete
+} derive(Eq, @debug.Debug)
+pub impl Show for ChangeType
+
+pub struct QuickDiffService {
+  // private fields
+}
+#alias(new, deprecated)
+pub fn QuickDiffService::QuickDiffService() -> Self
+pub fn QuickDiffService::get_original_content(Self, @moonbit-community/editor/base/common.Uri) -> String?
+pub fn QuickDiffService::on_did_change_original(Self, (@moonbit-community/editor/base/common.Uri) -> Unit) -> @moonbit-community/editor/base/common.Disposable
+pub fn QuickDiffService::quick_diff_handle(Self) -> @quick_diff_api.QuickDiffHandle
+pub fn QuickDiffService::set_original_content(Self, @moonbit-community/editor/base/common.Uri, String?) -> Unit
+
+// Type aliases
+
+// Traits
+
