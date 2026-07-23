@@ -9,7 +9,9 @@ test can assert directly.
 ```sh
 just check                   # check all targets and source formatting
 just test                    # all MoonBit tests
-just build                   # check + browser assets + native server
+just build-moon-web          # production browser assets only
+just build-browser-tests     # production assets + browser test fixtures
+just build                   # check + production browser assets + native server
 just test-browser            # all Playwright suites
 just test-browser-smoke      # reference app and user workflows
 just test-browser-component  # direct Viewer component pages
@@ -66,9 +68,11 @@ tests/browser/
   support/     Playwright fixtures, logging, and reporters
 ```
 
-`scripts/build-web.mbtx` builds the reference app, embed page, and MoonBit
-scenario bundles, then assembles owner-adjacent CSS and codicons under
-`web/dist`.
+`scripts/build-web.mbtx` builds only the production reference app and embed page,
+then assembles owner-adjacent CSS and codicons under `web/dist`.
+`scripts/build-browser-tests.mbtx` separately builds the MoonBit scenario
+bundles and pinned Monaco oracle under `web/dist/browser-tests`. The
+`just test-browser*` recipes run both build layers before Playwright.
 
 The whole-line Markdown proof is the direct public-Viewer component scenario
 `tests/browser/moonbit/component/markdown_comments_scenario.mbt`, loaded by

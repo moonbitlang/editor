@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "devDependencies": {
-    "@playwright/test": "^1.60.0"
+    "@playwright/test": "^1.60.0",
+    "esbuild": "^0.25.12"
   }
 }

@@ -13,20 +13,23 @@ test: test-moon
 build-moon-web:
     moon run --target native scripts/build-web.mbtx
 
+build-browser-tests: build-moon-web
+    moon run --target native scripts/build-browser-tests.mbtx
+
 build: check build-moon-web
     moon build --target native internal/shell/server_host_native/main
 
 dev *args: build
-    sh -c 'ROOT=.; PORT=5173; ASSET_DIR=web/dist; MOON_COMMAND=moon; for arg do case "$arg" in ROOT=*) ROOT="${arg#ROOT=}";; PORT=*) PORT="${arg#PORT=}";; ASSET_DIR=*) ASSET_DIR="${arg#ASSET_DIR=}";; MOON_COMMAND=*) MOON_COMMAND="${arg#MOON_COMMAND=}";; esac; done; moon run --target native internal/shell/server_host_native/main -- --root "$ROOT" --port "$PORT" --asset-dir "$ASSET_DIR" --moon-command "$MOON_COMMAND"' sh {{ args }}
+    sh -c 'ROOT=.; PORT=5173; ASSET_DIR=web/dist; MOON_COMMAND=moon; for arg do case "$arg" in ROOT=*) ROOT="${arg#ROOT=}";; PORT=*) PORT="${arg#PORT=}";; ASSET_DIR=*) ASSET_DIR="${arg#ASSET_DIR=}";; MOON_COMMAND=*) MOON_COMMAND="${arg#MOON_COMMAND=}";; esac; done; case "$ROOT" in /*) ;; *) ROOT="$(cd "$ROOT" && pwd)" || exit 1;; esac; case "$ASSET_DIR" in /*) ;; *) ASSET_DIR="$(cd "$ASSET_DIR" && pwd)" || exit 1;; esac; moon run --target native internal/shell/server_host_native/main -- --root "$ROOT" --port "$PORT" --asset-dir "$ASSET_DIR" --moon-command "$MOON_COMMAND"' sh {{ args }}
 
-test-browser: build
+test-browser: build build-browser-tests
     ./node_modules/.bin/playwright test
 
-test-browser-smoke: build
+test-browser-smoke: build build-browser-tests
     ./node_modules/.bin/playwright test tests/browser/smoke
 
-test-browser-component: build
+test-browser-component: build build-browser-tests
     ./node_modules/.bin/playwright test tests/browser/component
 
-test-browser-perf: build
+test-browser-perf: build build-browser-tests
     ./node_modules/.bin/playwright test tests/browser/perf

@@ -6,144 +6,34 @@ import {
 
 async fn main {
   let status = @process.run("moon", [
-    "build", "--target", "js", "internal/shell/web",
+    "build",
+    "--target",
+    "js",
+    "--target-dir",
+    "_build",
+    "internal/shell/web",
   ])
   if status != 0 {
     fail("moon build failed with exit code \{status}")
   }
   let embed_status = @process.run("moon", [
-    "build", "--target", "js", "internal/shell/examples/embedded_viewer",
+    "build",
+    "--target",
+    "js",
+    "--target-dir",
+    "_build",
+    "internal/shell/examples/embedded_viewer",
   ])
   if embed_status != 0 {
     fail("moon build failed with exit code \{embed_status}")
   }
-  let component_status = @process.run("moon", [
-    "build", "--target", "js", "tests/browser/moonbit/component",
-  ])
-  if component_status != 0 {
-    fail("moon build failed with exit code \{component_status}")
-  }
-  let perf_status = @process.run("moon", [
-    "build", "--target", "js", "tests/browser/moonbit/perf",
-  ])
-  if perf_status != 0 {
-    fail("moon build failed with exit code \{perf_status}")
-  }
-  let reveal_status = @process.run("moon", [
-    "build", "--target", "js", "tests/browser/moonbit/reveal",
-  ])
-  if reveal_status != 0 {
-    fail("moon build failed with exit code \{reveal_status}")
-  }
-  let read_api_status = @process.run("moon", [
-    "build", "--target", "js", "tests/browser/moonbit/read_api",
-  ])
-  if read_api_status != 0 {
-    fail("moon build failed with exit code \{read_api_status}")
-  }
-  let whitespace_status = @process.run("moon", [
-    "build", "--target", "js", "tests/browser/moonbit/whitespace",
-  ])
-  if whitespace_status != 0 {
-    fail("moon build failed with exit code \{whitespace_status}")
-  }
-  let whitespace_selection_status = @process.run("moon", [
-    "build", "--target", "js", "tests/browser/moonbit/whitespace_selection",
-  ])
-  if whitespace_selection_status != 0 {
-    fail("moon build failed with exit code \{whitespace_selection_status}")
-  }
-  let agent_feedback_status = @process.run("moon", [
-    "build", "--target", "js", "tests/browser/moonbit/agent_feedback",
-  ])
-  if agent_feedback_status != 0 {
-    fail("moon build failed with exit code \{agent_feedback_status}")
-  }
-  let model_swap_status = @process.run("moon", [
-    "build", "--target", "js", "tests/browser/moonbit/model_swap",
-  ])
-  if model_swap_status != 0 {
-    fail("moon build failed with exit code \{model_swap_status}")
-  }
-  let folding_status = @process.run("moon", [
-    "build", "--target", "js", "tests/browser/moonbit/folding",
-  ])
-  if folding_status != 0 {
-    fail("moon build failed with exit code \{folding_status}")
-  }
-  let folding_nested_status = @process.run("moon", [
-    "build", "--target", "js", "tests/browser/moonbit/folding_nested",
-  ])
-  if folding_nested_status != 0 {
-    fail("moon build failed with exit code \{folding_nested_status}")
-  }
-  let quick_diff_status = @process.run("moon", [
-    "build", "--target", "js", "tests/browser/moonbit/quick_diff",
-  ])
-  if quick_diff_status != 0 {
-    fail("moon build failed with exit code \{quick_diff_status}")
-  }
-  let set_value_status = @process.run("moon", [
-    "build", "--target", "js", "tests/browser/moonbit/set_value",
-  ])
-  if set_value_status != 0 {
-    fail("moon build failed with exit code \{set_value_status}")
-  }
 
-  let source_dir = "_build/js/debug/build/internal/shell/web"
-  let embed_source_dir = "_build/js/debug/build/internal/shell/examples/embedded_viewer"
-  let component_source_dir = "_build/js/debug/build/tests/browser/moonbit/component"
-  let perf_source_dir = "_build/js/debug/build/tests/browser/moonbit/perf"
-  let reveal_source_dir = "_build/js/debug/build/tests/browser/moonbit/reveal"
-  let read_api_source_dir = "_build/js/debug/build/tests/browser/moonbit/read_api"
-  let whitespace_source_dir = "_build/js/debug/build/tests/browser/moonbit/whitespace"
-  let whitespace_selection_source_dir = "_build/js/debug/build/tests/browser/moonbit/whitespace_selection"
-  let agent_feedback_source_dir = "_build/js/debug/build/tests/browser/moonbit/agent_feedback"
-  let model_swap_source_dir = "_build/js/debug/build/tests/browser/moonbit/model_swap"
-  let folding_source_dir = "_build/js/debug/build/tests/browser/moonbit/folding"
-  let folding_nested_source_dir = "_build/js/debug/build/tests/browser/moonbit/folding_nested"
-  let quick_diff_source_dir = "_build/js/debug/build/tests/browser/moonbit/quick_diff"
-  let set_value_source_dir = "_build/js/debug/build/tests/browser/moonbit/set_value"
+  let source_dir = "_build/js/debug/build/moonbitlang/editor/internal/shell/web"
+  let embed_source_dir = "_build/js/debug/build/moonbitlang/editor/internal/shell/examples/embedded_viewer"
   let target_dir = "web/dist"
-  let browser_tests_dir = "\{target_dir}/browser-tests"
   if !@fs.exists(target_dir) {
     @fs.mkdir(target_dir, recursive=true)
   }
-  if !@fs.exists(browser_tests_dir) {
-    @fs.mkdir(browser_tests_dir, recursive=true)
-  }
-  // Build a browser-runnable oracle directly from the pinned VS Code
-  // submodule. It is test-only and lets the frame suite compare identical
-  // traces without relying on a separately versioned monaco-editor package.
-  let monaco_oracle_status = @process.run("./node_modules/.bin/esbuild", [
-    "vscode/src/vs/editor/editor.main.ts",
-    "--bundle",
-    "--format=esm",
-    "--platform=browser",
-    "--target=es2022",
-    "--outfile=" + browser_tests_dir + "/monaco-oracle.mjs",
-    "--loader:.svg=dataurl",
-    "--loader:.png=dataurl",
-    "--loader:.ttf=dataurl",
-    "--external:./codicon.ttf",
-    "--log-level=warning",
-  ])
-  if monaco_oracle_status != 0 {
-    fail(
-      "pinned Monaco oracle build failed with exit code " +
-      monaco_oracle_status.to_string(),
-    )
-  }
-  @fs.write_file(
-    browser_tests_dir + "/monaco-oracle.html",
-    monaco_oracle_html(),
-    create_mode=@fs.CreateOrTruncate,
-  )
-  @fs.write_file(
-    browser_tests_dir + "/codicon.ttf",
-    @fs.read_file("viewer/browser/view/codicon/codicon.ttf"),
-    create_mode=@fs.CreateOrTruncate,
-  )
 
   let generated_js = @fs.read_file("\{source_dir}/web.js").text()
   @fs.write_file(
@@ -154,7 +44,6 @@ async fn main {
     ),
     create_mode=@fs.CreateOrTruncate,
   )
-
   @fs.write_file(
     "\{target_dir}/editor.mjs.map",
     @fs.read_file("\{source_dir}/web.js.map"),
@@ -207,279 +96,7 @@ async fn main {
     create_mode=@fs.CreateOrTruncate,
   )
 
-  let component_js = @fs.read_file("\{component_source_dir}/component.js").text()
-  @fs.write_file(
-    "\{browser_tests_dir}/component.mjs",
-    component_js.replace(
-      old="//# sourceMappingURL=component.js.map",
-      new="//# sourceMappingURL=component.mjs.map",
-    ),
-    create_mode=@fs.CreateOrTruncate,
-  )
-  @fs.write_file(
-    "\{browser_tests_dir}/component.mjs.map",
-    @fs.read_file("\{component_source_dir}/component.js.map"),
-    create_mode=@fs.CreateOrTruncate,
-  )
-  @fs.write_file(
-    "\{browser_tests_dir}/component.html",
-    browser_test_html("MoonBit Viewer Component Test", "/browser-tests/component.mjs"),
-    create_mode=@fs.CreateOrTruncate,
-  )
-
-  let perf_js = @fs.read_file("\{perf_source_dir}/perf.js").text()
-  @fs.write_file(
-    "\{browser_tests_dir}/perf.mjs",
-    perf_js.replace(
-      old="//# sourceMappingURL=perf.js.map",
-      new="//# sourceMappingURL=perf.mjs.map",
-    ),
-    create_mode=@fs.CreateOrTruncate,
-  )
-  @fs.write_file(
-    "\{browser_tests_dir}/perf.mjs.map",
-    @fs.read_file("\{perf_source_dir}/perf.js.map"),
-    create_mode=@fs.CreateOrTruncate,
-  )
-  @fs.write_file(
-    "\{browser_tests_dir}/perf.html",
-    browser_test_html("MoonBit Viewer Performance Test", "/browser-tests/perf.mjs"),
-    create_mode=@fs.CreateOrTruncate,
-  )
-
-  let reveal_js = @fs.read_file("\{reveal_source_dir}/reveal.js").text()
-  @fs.write_file(
-    "\{browser_tests_dir}/reveal.mjs",
-    reveal_js.replace(
-      old="//# sourceMappingURL=reveal.js.map",
-      new="//# sourceMappingURL=reveal.mjs.map",
-    ),
-    create_mode=@fs.CreateOrTruncate,
-  )
-  @fs.write_file(
-    "\{browser_tests_dir}/reveal.mjs.map",
-    @fs.read_file("\{reveal_source_dir}/reveal.js.map"),
-    create_mode=@fs.CreateOrTruncate,
-  )
-  @fs.write_file(
-    "\{browser_tests_dir}/reveal.html",
-    browser_test_html("MoonBit Viewer Reveal Test", "/browser-tests/reveal.mjs"),
-    create_mode=@fs.CreateOrTruncate,
-  )
-
-  let read_api_js = @fs.read_file("\{read_api_source_dir}/read_api.js").text()
-  @fs.write_file(
-    "\{browser_tests_dir}/read_api.mjs",
-    read_api_js.replace(
-      old="//# sourceMappingURL=read_api.js.map",
-      new="//# sourceMappingURL=read_api.mjs.map",
-    ),
-    create_mode=@fs.CreateOrTruncate,
-  )
-  @fs.write_file(
-    "\{browser_tests_dir}/read_api.mjs.map",
-    @fs.read_file("\{read_api_source_dir}/read_api.js.map"),
-    create_mode=@fs.CreateOrTruncate,
-  )
-  @fs.write_file(
-    "\{browser_tests_dir}/read_api.html",
-    browser_test_html("MoonBit Viewer Read API Test", "/browser-tests/read_api.mjs"),
-    create_mode=@fs.CreateOrTruncate,
-  )
-
-  let whitespace_js = @fs.read_file("\{whitespace_source_dir}/whitespace.js").text()
-  @fs.write_file(
-    "\{browser_tests_dir}/whitespace.mjs",
-    whitespace_js.replace(
-      old="//# sourceMappingURL=whitespace.js.map",
-      new="//# sourceMappingURL=whitespace.mjs.map",
-    ),
-    create_mode=@fs.CreateOrTruncate,
-  )
-  @fs.write_file(
-    "\{browser_tests_dir}/whitespace.mjs.map",
-    @fs.read_file("\{whitespace_source_dir}/whitespace.js.map"),
-    create_mode=@fs.CreateOrTruncate,
-  )
-  @fs.write_file(
-    "\{browser_tests_dir}/whitespace.html",
-    browser_test_html(
-      "MoonBit Viewer Whitespace Test",
-      "/browser-tests/whitespace.mjs",
-    ),
-    create_mode=@fs.CreateOrTruncate,
-  )
-
-  let whitespace_selection_js = @fs.read_file(
-    "\{whitespace_selection_source_dir}/whitespace_selection.js",
-  ).text()
-  @fs.write_file(
-    "\{browser_tests_dir}/whitespace_selection.mjs",
-    whitespace_selection_js.replace(
-      old="//# sourceMappingURL=whitespace_selection.js.map",
-      new="//# sourceMappingURL=whitespace_selection.mjs.map",
-    ),
-    create_mode=@fs.CreateOrTruncate,
-  )
-  @fs.write_file(
-    "\{browser_tests_dir}/whitespace_selection.mjs.map",
-    @fs.read_file("\{whitespace_selection_source_dir}/whitespace_selection.js.map"),
-    create_mode=@fs.CreateOrTruncate,
-  )
-  @fs.write_file(
-    "\{browser_tests_dir}/whitespace_selection.html",
-    browser_test_html(
-      "MoonBit Viewer Whitespace Selection Test",
-      "/browser-tests/whitespace_selection.mjs",
-    ),
-    create_mode=@fs.CreateOrTruncate,
-  )
-
-  let agent_feedback_js = @fs.read_file(
-    "\{agent_feedback_source_dir}/agent_feedback.js",
-  ).text()
-  @fs.write_file(
-    "\{browser_tests_dir}/agent_feedback.mjs",
-    agent_feedback_js.replace(
-      old="//# sourceMappingURL=agent_feedback.js.map",
-      new="//# sourceMappingURL=agent_feedback.mjs.map",
-    ),
-    create_mode=@fs.CreateOrTruncate,
-  )
-  @fs.write_file(
-    "\{browser_tests_dir}/agent_feedback.mjs.map",
-    @fs.read_file("\{agent_feedback_source_dir}/agent_feedback.js.map"),
-    create_mode=@fs.CreateOrTruncate,
-  )
-  @fs.write_file(
-    "\{browser_tests_dir}/agent_feedback.html",
-    browser_test_html(
-      "MoonBit Viewer Agent Feedback Test",
-      "/browser-tests/agent_feedback.mjs",
-    ),
-    create_mode=@fs.CreateOrTruncate,
-  )
-
-  let model_swap_js = @fs.read_file("\{model_swap_source_dir}/model_swap.js").text()
-  @fs.write_file(
-    "\{browser_tests_dir}/model_swap.mjs",
-    model_swap_js.replace(
-      old="//# sourceMappingURL=model_swap.js.map",
-      new="//# sourceMappingURL=model_swap.mjs.map",
-    ),
-    create_mode=@fs.CreateOrTruncate,
-  )
-  @fs.write_file(
-    "\{browser_tests_dir}/model_swap.mjs.map",
-    @fs.read_file("\{model_swap_source_dir}/model_swap.js.map"),
-    create_mode=@fs.CreateOrTruncate,
-  )
-  @fs.write_file(
-    "\{browser_tests_dir}/model_swap.html",
-    browser_test_html(
-      "MoonBit Viewer Model Swap Test",
-      "/browser-tests/model_swap.mjs",
-    ),
-    create_mode=@fs.CreateOrTruncate,
-  )
-
-  let folding_js = @fs.read_file("\{folding_source_dir}/folding.js").text()
-  @fs.write_file(
-    "\{browser_tests_dir}/folding.mjs",
-    folding_js.replace(
-      old="//# sourceMappingURL=folding.js.map",
-      new="//# sourceMappingURL=folding.mjs.map",
-    ),
-    create_mode=@fs.CreateOrTruncate,
-  )
-  @fs.write_file(
-    "\{browser_tests_dir}/folding.mjs.map",
-    @fs.read_file("\{folding_source_dir}/folding.js.map"),
-    create_mode=@fs.CreateOrTruncate,
-  )
-  @fs.write_file(
-    "\{browser_tests_dir}/folding.html",
-    browser_test_html(
-      "MoonBit Viewer Folding Test",
-      "/browser-tests/folding.mjs",
-    ),
-    create_mode=@fs.CreateOrTruncate,
-  )
-
-  let folding_nested_js = @fs.read_file(
-    "\{folding_nested_source_dir}/folding_nested.js",
-  ).text()
-  @fs.write_file(
-    "\{browser_tests_dir}/folding_nested.mjs",
-    folding_nested_js.replace(
-      old="//# sourceMappingURL=folding_nested.js.map",
-      new="//# sourceMappingURL=folding_nested.mjs.map",
-    ),
-    create_mode=@fs.CreateOrTruncate,
-  )
-  @fs.write_file(
-    "\{browser_tests_dir}/folding_nested.mjs.map",
-    @fs.read_file("\{folding_nested_source_dir}/folding_nested.js.map"),
-    create_mode=@fs.CreateOrTruncate,
-  )
-  @fs.write_file(
-    "\{browser_tests_dir}/folding_nested.html",
-    browser_test_html(
-      "MoonBit Viewer Nested Folding Test",
-      "/browser-tests/folding_nested.mjs",
-    ),
-    create_mode=@fs.CreateOrTruncate,
-  )
-
-  let quick_diff_js = @fs.read_file("\{quick_diff_source_dir}/quick_diff.js").text()
-  @fs.write_file(
-    "\{browser_tests_dir}/quick_diff.mjs",
-    quick_diff_js.replace(
-      old="//# sourceMappingURL=quick_diff.js.map",
-      new="//# sourceMappingURL=quick_diff.mjs.map",
-    ),
-    create_mode=@fs.CreateOrTruncate,
-  )
-  @fs.write_file(
-    "\{browser_tests_dir}/quick_diff.mjs.map",
-    @fs.read_file("\{quick_diff_source_dir}/quick_diff.js.map"),
-    create_mode=@fs.CreateOrTruncate,
-  )
-  @fs.write_file(
-    "\{browser_tests_dir}/quick_diff.html",
-    browser_test_html(
-      "MoonBit Viewer Quick Diff Test",
-      "/browser-tests/quick_diff.mjs",
-    ),
-    create_mode=@fs.CreateOrTruncate,
-  )
-
-  let set_value_js = @fs.read_file("\{set_value_source_dir}/set_value.js").text()
-  @fs.write_file(
-    "\{browser_tests_dir}/set_value.mjs",
-    set_value_js.replace(
-      old="//# sourceMappingURL=set_value.js.map",
-      new="//# sourceMappingURL=set_value.mjs.map",
-    ),
-    create_mode=@fs.CreateOrTruncate,
-  )
-  @fs.write_file(
-    "\{browser_tests_dir}/set_value.mjs.map",
-    @fs.read_file("\{set_value_source_dir}/set_value.js.map"),
-    create_mode=@fs.CreateOrTruncate,
-  )
-  @fs.write_file(
-    "\{browser_tests_dir}/set_value.html",
-    browser_test_html(
-      "MoonBit Viewer Set Value Test",
-      "/browser-tests/set_value.mjs",
-    ),
-    create_mode=@fs.CreateOrTruncate,
-  )
-
-  println(
-    "Generated web/dist/editor.mjs, web/dist/embed.mjs, and browser test bundles",
-  )
+  println("Generated production web assets under web/dist")
 }
 
 ///|
@@ -560,42 +177,6 @@ fn embed_html() -> String {
     #|    <div id="app"></div>
     #|    <script type="module" src="/embed.mjs"></script>
     #|  </body>
-    #|</html>
-  )
-}
-
-///|
-fn browser_test_html(title : String, script_src : String) -> String {
-  (
-    $|<!doctype html>
-    $|<html lang="en">
-    $|  <head>
-    $|    <meta charset="UTF-8" />
-    $|    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    $|    <title>\{title}</title>
-    $|    <link rel="stylesheet" href="/style.css">
-    $|  </head>
-    $|  <body>
-    $|    <div id="app"></div>
-    $|    <script type="module" src="\{script_src}"></script>
-    $|  </body>
-    $|</html>
-  )
-}
-
-///|
-fn monaco_oracle_html() -> String {
-  (
-    #|<!doctype html>
-    #|<html lang="en">
-    #|  <head>
-    #|    <meta charset="UTF-8" />
-    #|    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    #|    <title>Pinned Monaco Scroll Oracle</title>
-    #|    <link rel="stylesheet" href="/browser-tests/monaco-oracle.css">
-    #|    <style>html,body,#monaco-host{margin:0;width:100%;height:100%;overflow:hidden}</style>
-    #|  </head>
-    #|  <body><div id="monaco-host"></div></body>
     #|</html>
   )
 }
