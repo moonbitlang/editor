@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "moonbit-community/editor/base/common"
+package "moonbitlang/editor/base/common"
 
 import {
   "moonbitlang/core/debug",

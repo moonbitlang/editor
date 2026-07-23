@@ -1,8 +1,8 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "moonbit-community/editor/viewer/common/quick_diff_api"
+package "moonbitlang/editor/viewer/common/quick_diff_api"
 
 import {
-  "moonbit-community/editor/base/common",
+  "moonbitlang/editor/base/common",
 }
 
 // Values

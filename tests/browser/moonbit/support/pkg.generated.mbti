@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "moonbit-community/editor/tests/browser/moonbit/support"
+package "moonbitlang/editor/tests/browser/moonbit/support"
 
 // Values
 pub fn now_ms() -> Double

@@ -1,9 +1,9 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "moonbit-community/editor/internal/shell/workspace"
+package "moonbitlang/editor/internal/shell/workspace"
 
 import {
-  "moonbit-community/editor/base/common",
   "moonbitlang/core/debug",
+  "moonbitlang/editor/base/common",
 }
 
 // Values

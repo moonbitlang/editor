@@ -1,9 +1,9 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "moonbit-community/editor/viewer/common/agent_feedback_api"
+package "moonbitlang/editor/viewer/common/agent_feedback_api"
 
 import {
-  "moonbit-community/editor/base/common",
   "moonbitlang/core/debug",
+  "moonbitlang/editor/base/common",
 }
 
 // Values

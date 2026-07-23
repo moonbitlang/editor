@@ -1,10 +1,10 @@
-name = "moonbit-community/editor"
+name = "moonbitlang/editor"
 
 version = "0.2.1"
 
 readme = "README.md"
 
-repository = "https://github.com/moonbit-community/editor"
+repository = "https://github.com/moonbitlang/editor"
 
 license = "Apache-2.0"
 

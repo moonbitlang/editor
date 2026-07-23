@@ -1,9 +1,9 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "moonbit-community/editor/viewer/common/tokens"
+package "moonbitlang/editor/viewer/common/tokens"
 
 import {
-  "moonbit-community/editor/base/common",
-  "moonbit-community/editor/viewer/common/services",
+  "moonbitlang/editor/base/common",
+  "moonbitlang/editor/viewer/common/services",
 }
 
 // Values

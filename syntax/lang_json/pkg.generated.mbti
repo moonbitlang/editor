@@ -1,8 +1,8 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "moonbit-community/editor/syntax/lang_json"
+package "moonbitlang/editor/syntax/lang_json"
 
 import {
-  "moonbit-community/editor/syntax",
+  "moonbitlang/editor/syntax",
 }
 
 // Values

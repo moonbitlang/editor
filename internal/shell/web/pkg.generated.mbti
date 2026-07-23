@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "moonbit-community/editor/internal/shell/web"
+package "moonbitlang/editor/internal/shell/web"
 
 // Values
 

@@ -1,10 +1,10 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "moonbit-community/editor/internal/viewer/contrib/quick_diff/common"
+package "moonbitlang/editor/internal/viewer/contrib/quick_diff/common"
 
 import {
-  "moonbit-community/editor/viewer/common/diff",
-  "moonbit-community/editor/viewer/common/quick_diff_api",
   "moonbitlang/core/debug",
+  "moonbitlang/editor/viewer/common/diff",
+  "moonbitlang/editor/viewer/common/quick_diff_api",
 }
 
 // Values
@@ -25,10 +25,10 @@ pub struct QuickDiffService {
 }
 #alias(new, deprecated)
 pub fn QuickDiffService::QuickDiffService() -> Self
-pub fn QuickDiffService::get_original_content(Self, @moonbit-community/editor/base/common.Uri) -> String?
-pub fn QuickDiffService::on_did_change_original(Self, (@moonbit-community/editor/base/common.Uri) -> Unit) -> @moonbit-community/editor/base/common.Disposable
+pub fn QuickDiffService::get_original_content(Self, @moonbitlang/editor/base/common.Uri) -> String?
+pub fn QuickDiffService::on_did_change_original(Self, (@moonbitlang/editor/base/common.Uri) -> Unit) -> @moonbitlang/editor/base/common.Disposable
 pub fn QuickDiffService::quick_diff_handle(Self) -> @quick_diff_api.QuickDiffHandle
-pub fn QuickDiffService::set_original_content(Self, @moonbit-community/editor/base/common.Uri, String?) -> Unit
+pub fn QuickDiffService::set_original_content(Self, @moonbitlang/editor/base/common.Uri, String?) -> Unit
 
 // Type aliases
 

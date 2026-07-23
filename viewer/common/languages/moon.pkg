@@ -1,15 +1,15 @@
 import {
-  "moonbit-community/editor/base/common" @base_common,
-  "moonbit-community/editor/language",
-  "moonbit-community/editor/platform/log",
-  "moonbit-community/editor/syntax",
-  "moonbit-community/editor/viewer/common/model",
-  "moonbit-community/editor/viewer/common/services",
-  "moonbit-community/editor/viewer/common/tokens",
+  "moonbitlang/editor/base/common" @base_common,
+  "moonbitlang/editor/language",
+  "moonbitlang/editor/platform/log",
+  "moonbitlang/editor/syntax",
+  "moonbitlang/editor/viewer/common/model",
+  "moonbitlang/editor/viewer/common/services",
+  "moonbitlang/editor/viewer/common/tokens",
 }
 
 import {
-  "moonbit-community/editor/language",
+  "moonbitlang/editor/language",
 } for "test"
 
 import {

@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "moonbit-community/editor/tests/browser/moonbit/whitespace_selection"
+package "moonbitlang/editor/tests/browser/moonbit/whitespace_selection"
 
 // Values
 

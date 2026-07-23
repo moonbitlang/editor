@@ -1,15 +1,15 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "moonbit-community/editor/internal/viewer/contrib/hover"
+package "moonbitlang/editor/internal/viewer/contrib/hover"
 
 import {
-  "moonbit-community/editor/base/common",
-  "moonbit-community/editor/internal/viewer/markdown",
-  "moonbit-community/editor/language",
-  "moonbit-community/editor/viewer/common/languages",
-  "moonbit-community/editor/viewer/common/markers",
-  "moonbit-community/editor/viewer/common/model",
-  "moonbit-community/editor/viewer/common/view_model",
   "moonbitlang/core/debug",
+  "moonbitlang/editor/base/common",
+  "moonbitlang/editor/internal/viewer/markdown",
+  "moonbitlang/editor/language",
+  "moonbitlang/editor/viewer/common/languages",
+  "moonbitlang/editor/viewer/common/markers",
+  "moonbitlang/editor/viewer/common/model",
+  "moonbitlang/editor/viewer/common/view_model",
 }
 
 // Values

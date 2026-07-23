@@ -1,9 +1,9 @@
 import {
-  "moonbit-community/editor/base/common" @base_common,
-  "moonbit-community/editor/viewer",
-  "moonbit-community/editor/viewer/common/model",
-  "moonbit-community/editor/internal/viewer/contrib/quick_diff/common" @quick_diff_service,
-  "moonbit-community/editor/tests/browser/moonbit/support",
+  "moonbitlang/editor/base/common" @base_common,
+  "moonbitlang/editor/viewer",
+  "moonbitlang/editor/viewer/common/model",
+  "moonbitlang/editor/internal/viewer/contrib/quick_diff/common" @quick_diff_service,
+  "moonbitlang/editor/tests/browser/moonbit/support",
   "moonbit-community/rabbita/dom" @rdom,
 }
 

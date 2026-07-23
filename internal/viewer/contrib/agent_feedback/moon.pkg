@@ -1,4 +1,4 @@
 import {
-  "moonbit-community/editor/base/common" @base_common,
-  "moonbit-community/editor/viewer/common/agent_feedback_api",
+  "moonbitlang/editor/base/common" @base_common,
+  "moonbitlang/editor/viewer/common/agent_feedback_api",
 }

@@ -1,11 +1,11 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "moonbit-community/editor/internal/shell/widgets/file_tree"
+package "moonbitlang/editor/internal/shell/widgets/file_tree"
 
 import {
-  "moonbit-community/editor/base/common",
-  "moonbit-community/editor/internal/shell/workspace",
   "moonbit-community/rabbita/cmd",
   "moonbit-community/rabbita/html",
+  "moonbitlang/editor/base/common",
+  "moonbitlang/editor/internal/shell/workspace",
 }
 
 // Values

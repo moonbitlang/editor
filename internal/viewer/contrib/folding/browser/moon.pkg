@@ -1,9 +1,9 @@
 import {
-  "moonbit-community/editor/base/common" @base_common,
-  "moonbit-community/editor/viewer/common/core",
-  "moonbit-community/editor/viewer/common/editor_api",
-  "moonbit-community/editor/viewer/common/languages",
-  "moonbit-community/editor/viewer/common/model",
+  "moonbitlang/editor/base/common" @base_common,
+  "moonbitlang/editor/viewer/common/core",
+  "moonbitlang/editor/viewer/common/editor_api",
+  "moonbitlang/editor/viewer/common/languages",
+  "moonbitlang/editor/viewer/common/model",
 }
 
 supported_targets = "js"

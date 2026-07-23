@@ -1,16 +1,16 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "moonbit-community/editor/viewer/common/view_model"
+package "moonbitlang/editor/viewer/common/view_model"
 
 import {
-  "moonbit-community/editor/base/common",
-  "moonbit-community/editor/viewer/common/config",
-  "moonbit-community/editor/viewer/common/core",
-  "moonbit-community/editor/viewer/common/cursor",
-  "moonbit-community/editor/viewer/common/editor_api",
-  "moonbit-community/editor/viewer/common/model",
-  "moonbit-community/editor/viewer/common/tokens",
-  "moonbit-community/editor/viewer/common/view_layout",
   "moonbitlang/core/debug",
+  "moonbitlang/editor/base/common",
+  "moonbitlang/editor/viewer/common/config",
+  "moonbitlang/editor/viewer/common/core",
+  "moonbitlang/editor/viewer/common/cursor",
+  "moonbitlang/editor/viewer/common/editor_api",
+  "moonbitlang/editor/viewer/common/model",
+  "moonbitlang/editor/viewer/common/tokens",
+  "moonbitlang/editor/viewer/common/view_layout",
 }
 
 // Values

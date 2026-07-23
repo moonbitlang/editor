@@ -1,20 +1,20 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "moonbit-community/editor/internal/viewer/contrib/hover/browser"
+package "moonbitlang/editor/internal/viewer/contrib/hover/browser"
 
 import {
-  "moonbit-community/editor/base/common",
-  "moonbit-community/editor/internal/viewer/browser/view",
-  "moonbit-community/editor/internal/viewer/contrib/hover",
-  "moonbit-community/editor/internal/viewer/ui/scrollbar",
-  "moonbit-community/editor/language",
-  "moonbit-community/editor/viewer/common/view_model",
   "moonbit-community/rabbita/dom",
+  "moonbitlang/editor/base/common",
+  "moonbitlang/editor/internal/viewer/browser/view",
+  "moonbitlang/editor/internal/viewer/contrib/hover",
+  "moonbitlang/editor/internal/viewer/ui/scrollbar",
+  "moonbitlang/editor/language",
+  "moonbitlang/editor/viewer/common/view_model",
 }
 
 // Values
 pub let content_hover_widget_id : String
 
-pub fn find_anchor_candidates(Array[@hover.HoverParticipantHandle], @moonbit-community/editor/viewer/browser.MouseTarget, Double, initial_mouse_pos_x? : Double, initial_mouse_pos_y? : Double) -> Array[@hover.HoverAnchor]
+pub fn find_anchor_candidates(Array[@hover.HoverParticipantHandle], @moonbitlang/editor/viewer/browser.MouseTarget, Double, initial_mouse_pos_x? : Double, initial_mouse_pos_y? : Double) -> Array[@hover.HoverAnchor]
 
 pub fn hover_available_space_above(Double, Double) -> Double
 
@@ -37,7 +37,7 @@ pub(all) struct ContentHoverController {
   mut hover : @hover.HoverController
   mut hover_react_pending : Bool
   mut hover_react_token : Int
-  mut hover_pending_target : @moonbit-community/editor/viewer/browser.MouseTarget?
+  mut hover_pending_target : @moonbitlang/editor/viewer/browser.MouseTarget?
   mut hover_async_debouncer : @hover.HoverDebouncer
   mut hover_sync_debouncer : @hover.HoverDebouncer
   mut hover_loading_debouncer : @hover.HoverDebouncer
@@ -118,7 +118,7 @@ pub(all) struct EditorContext {
 }
 
 pub(all) enum EditorEvent {
-  MouseMoved(@moonbit-community/editor/viewer/browser.MouseTarget)
+  MouseMoved(@moonbitlang/editor/viewer/browser.MouseTarget)
   EscapePressed
 }
 

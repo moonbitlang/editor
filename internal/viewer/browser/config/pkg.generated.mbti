@@ -1,13 +1,13 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "moonbit-community/editor/internal/viewer/browser/config"
+package "moonbitlang/editor/internal/viewer/browser/config"
 
 import {
-  "moonbit-community/editor/base/common",
   "moonbit-community/rabbita/dom",
+  "moonbitlang/editor/base/common",
 }
 
 // Values
-pub fn apply_font_info(@dom.Element, @moonbit-community/editor/viewer/common/config.BareFontInfo) -> Unit
+pub fn apply_font_info(@dom.Element, @moonbitlang/editor/viewer/common/config.BareFontInfo) -> Unit
 
 pub fn font_measurements() -> FontMeasurementsImpl
 
@@ -19,7 +19,7 @@ pub struct FontMeasurementsImpl {
 }
 pub fn FontMeasurementsImpl::clear_all_font_infos(Self) -> Unit
 pub fn FontMeasurementsImpl::on_did_change(Self, () -> Unit) -> @common.Disposable
-pub fn FontMeasurementsImpl::read_font_info(Self, @moonbit-community/editor/viewer/common/config.BareFontInfo) -> @moonbit-community/editor/viewer/common/config.FontInfo
+pub fn FontMeasurementsImpl::read_font_info(Self, @moonbitlang/editor/viewer/common/config.BareFontInfo) -> @moonbitlang/editor/viewer/common/config.FontInfo
 
 // Type aliases
 

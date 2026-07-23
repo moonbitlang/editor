@@ -1,5 +1,5 @@
 import {
-  "moonbit-community/editor/internal/shell/server_host_native",
+  "moonbitlang/editor/internal/shell/server_host_native",
   "moonbitlang/async",
   "moonbitlang/core/env",
   "moonbitlang/core/string",

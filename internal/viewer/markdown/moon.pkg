@@ -3,10 +3,10 @@ import {
   "moonbit-community/cmark/cmark",
   "moonbit-community/cmark/cmark_html",
   "moonbit-community/cmark/cmark_renderer",
-  "moonbit-community/editor/syntax",
-  "moonbit-community/editor/viewer/common/languages",
-  "moonbit-community/editor/viewer/common/model",
-  "moonbit-community/editor/viewer/common/services",
+  "moonbitlang/editor/syntax",
+  "moonbitlang/editor/viewer/common/languages",
+  "moonbitlang/editor/viewer/common/model",
+  "moonbitlang/editor/viewer/common/services",
 }
 
 supported_targets = "js+native"

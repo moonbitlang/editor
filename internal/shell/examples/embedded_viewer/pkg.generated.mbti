@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "moonbit-community/editor/internal/shell/examples/embedded_viewer"
+package "moonbitlang/editor/internal/shell/examples/embedded_viewer"
 
 // Values
 

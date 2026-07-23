@@ -1,15 +1,15 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "moonbit-community/editor/viewer/common/languages"
+package "moonbitlang/editor/viewer/common/languages"
 
 import {
-  "moonbit-community/editor/base/common",
-  "moonbit-community/editor/language",
-  "moonbit-community/editor/platform/log",
-  "moonbit-community/editor/syntax",
-  "moonbit-community/editor/viewer/common/model",
-  "moonbit-community/editor/viewer/common/services",
-  "moonbit-community/editor/viewer/common/tokens",
   "moonbitlang/core/debug",
+  "moonbitlang/editor/base/common",
+  "moonbitlang/editor/language",
+  "moonbitlang/editor/platform/log",
+  "moonbitlang/editor/syntax",
+  "moonbitlang/editor/viewer/common/model",
+  "moonbitlang/editor/viewer/common/services",
+  "moonbitlang/editor/viewer/common/tokens",
 }
 
 // Values

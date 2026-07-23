@@ -103,7 +103,7 @@ extern "js" fn install_markdown_dom(
   allow_remote_images : Bool,
 ) -> MarkdownDomLifetime =
   #| (target, html, baseUri, hasBaseUri, actionHandler, hasActionHandler, onSizeChanged, hasOnSizeChanged, allowRemoteImages) => {
-  #|   const lifetimeSlot = Symbol.for("moonbit-community/editor/internal/viewer/browser/markdown/lifetime");
+  #|   const lifetimeSlot = Symbol.for("moonbitlang/editor/internal/viewer/browser/markdown/lifetime");
   #|   const previousDispose = target[lifetimeSlot];
   #|   if (typeof previousDispose === "function") previousDispose();
   #|

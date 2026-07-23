@@ -1,10 +1,10 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "moonbit-community/editor/internal/viewer/contrib/agent_feedback/browser"
+package "moonbitlang/editor/internal/viewer/contrib/agent_feedback/browser"
 
 import {
-  "moonbit-community/editor/base/common",
-  "moonbit-community/editor/internal/viewer/contrib/agent_feedback",
   "moonbit-community/rabbita/dom",
+  "moonbitlang/editor/base/common",
+  "moonbitlang/editor/internal/viewer/contrib/agent_feedback",
 }
 
 // Values

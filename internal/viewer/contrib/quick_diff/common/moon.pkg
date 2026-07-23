@@ -1,5 +1,5 @@
 import {
-  "moonbit-community/editor/base/common" @base_common,
-  "moonbit-community/editor/viewer/common/diff",
-  "moonbit-community/editor/viewer/common/quick_diff_api",
+  "moonbitlang/editor/base/common" @base_common,
+  "moonbitlang/editor/viewer/common/diff",
+  "moonbitlang/editor/viewer/common/quick_diff_api",
 }

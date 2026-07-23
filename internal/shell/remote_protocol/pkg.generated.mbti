@@ -1,11 +1,11 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "moonbit-community/editor/internal/shell/remote_protocol"
+package "moonbitlang/editor/internal/shell/remote_protocol"
 
 import {
-  "moonbit-community/editor/base/common",
-  "moonbit-community/editor/internal/shell/workspace",
-  "moonbit-community/editor/language",
   "moonbitlang/core/debug",
+  "moonbitlang/editor/base/common",
+  "moonbitlang/editor/internal/shell/workspace",
+  "moonbitlang/editor/language",
 }
 
 // Values
