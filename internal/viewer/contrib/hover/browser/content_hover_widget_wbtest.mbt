@@ -84,7 +84,7 @@ test "hover render lifetimes dispose on replacement hide and teardown" {
     @base_common.Disposable::from(() => second_count.val = second_count.val + 1),
   )
 
-  // `update_content` begins a replacement with the same clear operation.
+  // `_setRenderedHover` begins a replacement with the same clear operation.
   dispose_hover_render_disposables(lifetimes)
   assert_eq(first_count.val, 1)
   assert_eq(second_count.val, 1)

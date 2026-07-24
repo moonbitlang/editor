@@ -163,11 +163,37 @@ test('runs MoonBit viewer API component checks in the browser', async ({ page },
       return null;
     });
     expect(keepsPoint).not.toBeNull();
-    await page.mouse.move(keepsPoint.x, keepsPoint.y);
-    await expect(page.locator('[data-content-widget="editor.contrib.resizableContentHoverWidget"] .monaco-hover')).toContainText(
-      'wrapped component hover',
-      { timeout: 3_000 },
+    const hoverSelector =
+      '[data-content-widget="editor.contrib.resizableContentHoverWidget"] .monaco-hover';
+    const hover = page.locator(hoverSelector);
+    const visibleHover = page.locator(`${hoverSelector}:not(.hidden)`);
+    const visibleRows = visibleHover.locator(
+      '.monaco-hover-content > .hover-row',
     );
+    const expectedRows = [
+      'wrapped component diagnostic',
+      'wrapped component hover',
+    ];
+    const expectCompleteHover = async () => {
+      await expect(visibleHover).toBeVisible({ timeout: 5_000 });
+      await expect(visibleRows).toHaveText(expectedRows, { timeout: 5_000 });
+    };
+
+    await page.mouse.move(keepsPoint.x, keepsPoint.y);
+    await expectCompleteHover();
+
+    // The widget remains mounted while hidden. Leave the editor, then return
+    // to the exact same glyph coordinate so the second render replaces two
+    // retained rows instead of benefiting from a different hover target.
+    const exitPoint = await page.evaluate(() => ({
+      x: Math.max(1, window.innerWidth - 4),
+      y: Math.max(1, window.innerHeight - 4),
+    }));
+    await page.mouse.move(exitPoint.x, exitPoint.y);
+    await expect(hover).toHaveClass(/\bhidden\b/, { timeout: 2_000 });
+
+    await page.mouse.move(keepsPoint.x, keepsPoint.y);
+    await expectCompleteHover();
   } finally {
     reporter.dispose();
   }

@@ -34,6 +34,17 @@ pub(all) struct RenderedContentHover {
 }
 
 ///|
+/// Monaco's `RenderedContentHoverParts` prepares a detached
+/// `DocumentFragment` and the lifetimes owned by those rows before
+/// `ContentHoverWidget._setRenderedHover` releases the previous render.
+/// Keep that browser-only preparation private instead of widening the
+/// data-only `RenderedContentHover` boundary.
+priv struct PreparedHoverContent {
+  fragment : @rdom.DocumentFragment
+  disposables : Array[@base_common.Disposable]
+}
+
+///|
 /// Per-render lifetime drain. Replacement, hide, and retained-widget teardown
 /// all converge here so no shared Markdown listener survives the DOM it owns.
 fn dispose_hover_render_disposables(
@@ -95,7 +106,7 @@ pub struct ContentHoverWidget {
   host : ContentHoverWidgetHost
   mut rendered_hover : RenderedContentHover?
   mut position_preference : @view.ContentWidgetPositionPreference?
-  priv render_disposables : Array[@base_common.Disposable]
+  priv mut render_disposables : Array[@base_common.Disposable]
 }
 
 ///|
@@ -249,47 +260,66 @@ pub fn ContentHoverWidget::is_visible(self : ContentHoverWidget) -> Bool {
 }
 
 ///|
-/// Monaco `_setRenderedHover` (`contentHoverWidget.ts:278-283`): swap the
-/// rendered state and toggle the container's `hidden` class.
+/// Monaco `_setRenderedHover` (`contentHoverWidget.ts:278-283`): release the
+/// previous rendered hover, adopt the prepared render lifetime, swap the
+/// rendered state, and toggle the container's `hidden` class.
 fn ContentHoverWidget::set_rendered_hover(
   self : ContentHoverWidget,
   rendered_hover : RenderedContentHover?,
+  render_disposables : Array[@base_common.Disposable],
 ) -> Unit {
+  dispose_hover_render_disposables(self.render_disposables)
+  self.render_disposables = render_disposables
   self.rendered_hover = rendered_hover
   let hidden = if rendered_hover is Some(_) { "" } else { " hidden" }
   self.hover.set_attribute("class", "monaco-hover fade-in" + hidden)
 }
 
 ///|
-/// Monaco `_updateContent` (`contentHoverWidget.ts:295-300`) +
-/// `RenderedContentHoverParts._registerListenersOnRenderedParts`' `tabIndex = 0`
-/// per rendered part row. Rows are rebuilt as retained DOM. Markdown contents
-/// render through the shared browser renderer into their caller-created
-/// `.hover-contents` target; no hover-private HTML insertion path remains.
-fn ContentHoverWidget::update_content(
-  self : ContentHoverWidget,
+/// Monaco `RenderedContentHoverParts` (`contentHoverRendered.ts:221-253`):
+/// render every row and register its lifetime in a detached fragment before
+/// touching the currently displayed hover. Each row receives the source's
+/// `_registerListenersOnRenderedParts` `tabIndex = 0`.
+fn prepare_hover_content(
   parts : Array[@hover.HoverPart],
   language_id : String,
-) -> Unit {
-  dispose_hover_render_disposables(self.render_disposables)
-  for child in self.scrollable.content.get_children() {
-    self.scrollable.content.remove_child(child.as_node())
-  }
+) -> PreparedHoverContent {
+  let fragment = @rdom.document().create_document_fragment()
+  let disposables : Array[@base_common.Disposable] = []
   for part in parts {
     let row = match part {
       MarkdownHover(contents~, ..) =>
-        render_markdown_hover_row(
-          self.render_disposables,
-          contents,
-          language_id,
-        )
+        render_markdown_hover_row(disposables, contents, language_id)
       MarkerHover(marker~, ..) => marker_hover_row(marker.message)
       LoadingHover(message~, ..) => standard_hover_row(message)
     }
     row.set_attribute("tabindex", "0")
-    self.scrollable.content.append_child(row.as_node())
+    fragment.append_child(row.as_node())
   }
+  { fragment, disposables }
 }
+
+///|
+/// Monaco `_updateContent` (`contentHoverWidget.ts:295-300`): reset the resize
+/// padding, clear all child nodes via `textContent`, then transfer the prepared
+/// fragment in one append.
+fn ContentHoverWidget::update_content(
+  self : ContentHoverWidget,
+  fragment : @rdom.DocumentFragment,
+) -> Unit {
+  replace_hover_contents(self.scrollable.content, fragment)
+}
+
+///|
+extern "js" fn replace_hover_contents(
+  contents : @rdom.Element,
+  fragment : @rdom.DocumentFragment,
+) -> Unit =
+  #| (contents, fragment) => {
+  #|   contents.style.paddingBottom = '';
+  #|   contents.textContent = '';
+  #|   contents.appendChild(fragment);
+  #| }
 
 ///|
 /// One Markdown participant part is one row with one `.markdown-hover` child
@@ -406,8 +436,12 @@ fn ContentHoverWidget::render_rendered_hover(
   self : ContentHoverWidget,
   rendered_hover : RenderedContentHover,
 ) -> Unit {
-  self.set_rendered_hover(Some(rendered_hover))
-  self.update_content(rendered_hover.parts, rendered_hover.language_id)
+  let prepared = prepare_hover_content(
+    rendered_hover.parts,
+    rendered_hover.language_id,
+  )
+  self.set_rendered_hover(Some(rendered_hover), prepared.disposables)
+  self.update_content(prepared.fragment)
   self.handle_contents_changed()
   // Simply force a synchronous render on the editor
   // such that the widget does not really render with left = '0px'
@@ -442,12 +476,11 @@ pub fn ContentHoverWidget::show(
 /// `get_position()` is now `None`, so the content-widget layer hides the
 /// node), and give focus back to the editor when the hover had stolen it.
 pub fn ContentHoverWidget::hide(self : ContentHoverWidget) -> Unit {
-  dispose_hover_render_disposables(self.render_disposables)
   guard self.rendered_hover is Some(_) else { return }
   let hover_stole_focus = @base_browser.element_contains_active_element(
     self.wrapper,
   )
-  self.set_rendered_hover(None)
+  self.set_rendered_hover(None, [])
   (self.host.layout_content_widget)()
   if hover_stole_focus {
     (self.host.focus_editor)()
