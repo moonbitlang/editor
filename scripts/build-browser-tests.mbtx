@@ -4,6 +4,29 @@ import {
   "moonbitlang/async/process",
 }
 
+///|
+/// Keep bundle output independent from a parent `moon.work`. Without this
+/// override, the same package is emitted under a workspace-qualified path and
+/// a stale tree from the other mode can be copied into `web/dist`.
+async fn build_js_package(package_path : String) -> Unit {
+  let status = @process.run(
+    "moon",
+    [
+      "build",
+      "--target",
+      "js",
+      "--target-dir",
+      "_build",
+      package_path,
+    ],
+    extra_env={ "MOON_WORK": "off" },
+  )
+  if status != 0 {
+    fail("moon build failed for \{package_path} with exit code \{status}")
+  }
+}
+
+///|
 async fn main {
   let monaco_entry = "vscode/src/vs/editor/editor.main.ts"
   if !@fs.exists(monaco_entry) {
@@ -11,140 +34,27 @@ async fn main {
       "browser test build requires the pinned VS Code checkout at " + monaco_entry,
     )
   }
-  let component_status = @process.run("moon", [
-    "build",
-    "--target",
-    "js",
-    "--target-dir",
-    "_build",
+  for package_path in [
     "tests/browser/moonbit/component",
-  ])
-  if component_status != 0 {
-    fail("moon build failed with exit code \{component_status}")
-  }
-  let perf_status = @process.run("moon", [
-    "build",
-    "--target",
-    "js",
-    "--target-dir",
-    "_build",
     "tests/browser/moonbit/perf",
-  ])
-  if perf_status != 0 {
-    fail("moon build failed with exit code \{perf_status}")
-  }
-  let reveal_status = @process.run("moon", [
-    "build",
-    "--target",
-    "js",
-    "--target-dir",
-    "_build",
     "tests/browser/moonbit/reveal",
-  ])
-  if reveal_status != 0 {
-    fail("moon build failed with exit code \{reveal_status}")
-  }
-  let read_api_status = @process.run("moon", [
-    "build",
-    "--target",
-    "js",
-    "--target-dir",
-    "_build",
     "tests/browser/moonbit/read_api",
-  ])
-  if read_api_status != 0 {
-    fail("moon build failed with exit code \{read_api_status}")
-  }
-  let whitespace_status = @process.run("moon", [
-    "build",
-    "--target",
-    "js",
-    "--target-dir",
-    "_build",
     "tests/browser/moonbit/whitespace",
-  ])
-  if whitespace_status != 0 {
-    fail("moon build failed with exit code \{whitespace_status}")
-  }
-  let whitespace_selection_status = @process.run("moon", [
-    "build",
-    "--target",
-    "js",
-    "--target-dir",
-    "_build",
     "tests/browser/moonbit/whitespace_selection",
-  ])
-  if whitespace_selection_status != 0 {
-    fail("moon build failed with exit code \{whitespace_selection_status}")
-  }
-  let agent_feedback_status = @process.run("moon", [
-    "build",
-    "--target",
-    "js",
-    "--target-dir",
-    "_build",
     "tests/browser/moonbit/agent_feedback",
-  ])
-  if agent_feedback_status != 0 {
-    fail("moon build failed with exit code \{agent_feedback_status}")
-  }
-  let model_swap_status = @process.run("moon", [
-    "build",
-    "--target",
-    "js",
-    "--target-dir",
-    "_build",
     "tests/browser/moonbit/model_swap",
-  ])
-  if model_swap_status != 0 {
-    fail("moon build failed with exit code \{model_swap_status}")
-  }
-  let folding_status = @process.run("moon", [
-    "build",
-    "--target",
-    "js",
-    "--target-dir",
-    "_build",
     "tests/browser/moonbit/folding",
-  ])
-  if folding_status != 0 {
-    fail("moon build failed with exit code \{folding_status}")
-  }
-  let folding_nested_status = @process.run("moon", [
-    "build",
-    "--target",
-    "js",
-    "--target-dir",
-    "_build",
     "tests/browser/moonbit/folding_nested",
-  ])
-  if folding_nested_status != 0 {
-    fail("moon build failed with exit code \{folding_nested_status}")
-  }
-  let quick_diff_status = @process.run("moon", [
-    "build",
-    "--target",
-    "js",
-    "--target-dir",
-    "_build",
     "tests/browser/moonbit/quick_diff",
-  ])
-  if quick_diff_status != 0 {
-    fail("moon build failed with exit code \{quick_diff_status}")
-  }
-  let set_value_status = @process.run("moon", [
-    "build",
-    "--target",
-    "js",
-    "--target-dir",
-    "_build",
     "tests/browser/moonbit/set_value",
-  ])
-  if set_value_status != 0 {
-    fail("moon build failed with exit code \{set_value_status}")
+  ] {
+    build_js_package(package_path)
   }
 
-  let build_dir = "_build/js/debug/build/moonbitlang/editor/tests/browser/moonbit"
+  let build_dir = "_build/js/debug/build/tests/browser/moonbit"
+  if !@fs.exists(build_dir) {
+    fail("isolated MoonBit browser build did not produce its expected output")
+  }
   let component_source_dir = build_dir + "/component"
   let perf_source_dir = build_dir + "/perf"
   let reveal_source_dir = build_dir + "/reveal"

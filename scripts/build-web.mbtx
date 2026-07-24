@@ -4,32 +4,38 @@ import {
   "moonbitlang/async/process",
 }
 
-async fn main {
-  let status = @process.run("moon", [
-    "build",
-    "--target",
-    "js",
-    "--target-dir",
-    "_build",
-    "internal/shell/web",
-  ])
+///|
+/// Keep bundle output independent from a parent `moon.work`. Without this
+/// override, the same package is emitted under a workspace-qualified path and
+/// a stale tree from the other mode can be copied into `web/dist`.
+async fn build_js_package(package_path : String) -> Unit {
+  let status = @process.run(
+    "moon",
+    [
+      "build",
+      "--target",
+      "js",
+      "--target-dir",
+      "_build",
+      package_path,
+    ],
+    extra_env={ "MOON_WORK": "off" },
+  )
   if status != 0 {
-    fail("moon build failed with exit code \{status}")
+    fail("moon build failed for \{package_path} with exit code \{status}")
   }
-  let embed_status = @process.run("moon", [
-    "build",
-    "--target",
-    "js",
-    "--target-dir",
-    "_build",
-    "internal/shell/examples/embedded_viewer",
-  ])
-  if embed_status != 0 {
-    fail("moon build failed with exit code \{embed_status}")
-  }
+}
 
-  let source_dir = "_build/js/debug/build/moonbitlang/editor/internal/shell/web"
-  let embed_source_dir = "_build/js/debug/build/moonbitlang/editor/internal/shell/examples/embedded_viewer"
+///|
+async fn main {
+  build_js_package("internal/shell/web")
+  build_js_package("internal/shell/examples/embedded_viewer")
+
+  let source_dir = "_build/js/debug/build/internal/shell/web"
+  let embed_source_dir = "_build/js/debug/build/internal/shell/examples/embedded_viewer"
+  if !@fs.exists(source_dir) || !@fs.exists(embed_source_dir) {
+    fail("isolated MoonBit web build did not produce its expected output")
+  }
   let target_dir = "web/dist"
   if !@fs.exists(target_dir) {
     @fs.mkdir(target_dir, recursive=true)
