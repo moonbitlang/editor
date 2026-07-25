@@ -41,13 +41,16 @@ implementing `LineTokenizer`. Concrete languages are selected by hosts, examples
 or tests; reusable viewer core packages must not import them. There is no runtime
 grammar-loading or `setMonarchTokensProvider` equivalent.
 
-Helpers every stateful lexer needs live in this package rather than in each
-`lang_*`, which otherwise carry identical copies: `is_capitalized` (the
-identifier-is-a-type heuristic), `push_token` (append a token, coalescing it
-into the previous one when the tag and offsets are contiguous), and
-`decode_mode_stack` / `encode_mode_stack` (the nesting-mode stack a lexer
-carries between lines, packed into `TokenizerState`; an empty state decodes to
-the base mode `'n'`).
+Helpers shared by more than one `lang_*` live in this package rather than being
+copied into each: `is_capitalized` (the identifier-is-a-type heuristic) and
+`push_token` (append a token, coalescing it into the previous one when the tag
+and offsets are contiguous).
+
+`decode_mode_stack` / `encode_mode_stack` serve the lexers whose
+`TokenizerState` carries a *nesting-mode stack* — one character per open mode,
+with an empty state decoding to the base mode `'n'`. `lang_moonbit` and
+`lang_javascript` do; `lang_json` does not, since its state is a single
+in-comment flag.
 
 When translating a Monarch or CodeMirror grammar:
 
