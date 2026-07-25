@@ -165,7 +165,7 @@ pub fn LineRangeSet::add_range(self : LineRangeSet, range : LineRange) -> Unit {
     }) +
     1
   if join_range_start_idx == join_range_end_idx_exclusive {
-    array_splice_insert(ranges, join_range_start_idx, range)
+    ranges.insert(join_range_start_idx, range)
   } else if join_range_start_idx == join_range_end_idx_exclusive - 1 {
     let join_range = ranges[join_range_start_idx]
     ranges[join_range_start_idx] = join_range.join(range)
@@ -322,21 +322,6 @@ fn find_last_monotonous(
   } else {
     Some(array[idx])
   }
-}
-
-///|
-fn array_splice_insert(
-  array : Array[LineRange],
-  index : Int,
-  item : LineRange,
-) -> Unit {
-  array.push(item)
-  let mut i = array.length() - 1
-  while i > index {
-    array[i] = array[i - 1]
-    i -= 1
-  }
-  array[index] = item
 }
 
 ///|

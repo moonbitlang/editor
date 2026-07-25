@@ -179,7 +179,7 @@ fn AgentFeedbackEditorWidget::update_title(
   self : AgentFeedbackEditorWidget,
 ) -> Unit {
   if self.comments.length() == 1 {
-    self.title.set_inner_html(widget_escape_html(self.comments[0].text))
+    self.title.set_inner_html(input_escape_html(self.comments[0].text))
   } else {
     self.title.set_inner_html(self.comments.length().to_string() + " comments")
   }
@@ -785,11 +785,6 @@ fn feedback_comment_target_key(comment_id : String) -> String {
 ///|
 fn feedback_reply_target_key(comment_id : String, reply_index : Int) -> String {
   "reply:" + comment_id + ":" + reply_index.to_string()
-}
-
-///|
-fn widget_escape_html(text : String) -> String {
-  input_escape_html(text)
 }
 
 ///|

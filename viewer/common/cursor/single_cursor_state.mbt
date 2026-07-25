@@ -63,7 +63,7 @@ pub fn SingleCursorState::collapsed(
 fn SingleCursorState::selection_start_is_empty(
   self : SingleCursorState,
 ) -> Bool {
-  position_eq(self.selection_start_start, self.selection_start_end)
+  self.selection_start_start.equals(self.selection_start_end)
 }
 
 ///|
@@ -121,9 +121,4 @@ fn not_before_or_equal(
   b : @base_common.Position,
 ) -> Bool {
   !a.is_before_or_equal(b)
-}
-
-///|
-fn position_eq(a : @base_common.Position, b : @base_common.Position) -> Bool {
-  a.equals(b)
 }
