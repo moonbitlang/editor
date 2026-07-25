@@ -44,12 +44,15 @@ grammar-loading or `setMonarchTokensProvider` equivalent.
 Helpers shared by more than one `lang_*` live in this package rather than being
 copied into each: `is_capitalized` (the identifier-is-a-type heuristic) and
 `push_token` (append a token, coalescing it into the previous one when the tag
-and offsets are contiguous).
+and offsets are contiguous). Both serve `lang_moonbit` and `lang_javascript`;
+`lang_json` uses neither.
 
-`decode_mode_stack` / `encode_mode_stack` serve the lexers whose
-`TokenizerState` carries a *nesting-mode stack* — one character per open mode,
-with an empty state decoding to the base mode `'n'`. `lang_moonbit` and
-`lang_javascript` do; `lang_json` does not, since its state is a single
+`decode_mode_stack` / `encode_mode_stack` convert between a `TokenizerState`
+and a *nesting-mode stack* — one character per open mode, with an empty state
+decoding to the base mode `'n'`. Only `lang_javascript` round-trips the pair,
+carrying its stack from one line into the next. `lang_moonbit` decodes a
+starting stack but always returns `TokenizerState("n")`, so its stack is
+per-line scratch; `lang_json` uses neither, its state being a single
 in-comment flag.
 
 When translating a Monarch or CodeMirror grammar:
