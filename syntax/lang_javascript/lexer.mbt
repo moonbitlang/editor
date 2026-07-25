@@ -37,7 +37,7 @@ pub impl @syntax.LineTokenizer for JavascriptTokenizer with fn tokenize_line(
   line_text,
   state,
 ) {
-  let stack = decode_stack(state)
+  let stack = @syntax.decode_mode_stack(state)
   let tokens : Array[@syntax.LineToken] = []
   let mut at = 0
   let mut view = line_text[:]
@@ -52,13 +52,13 @@ pub impl @syntax.LineTokenizer for JavascriptTokenizer with fn tokenize_line(
     let consumed = view.length() - rest.length()
     match op {
       Blank => ()
-      Emit(tag) => push_token(tokens, at, at + consumed, tag)
+      Emit(tag) => @syntax.push_token(tokens, at, at + consumed, tag)
       Push(tag, mode) => {
-        push_token(tokens, at, at + consumed, tag)
+        @syntax.push_token(tokens, at, at + consumed, tag)
         stack.push(mode)
       }
       Pop(tag) => {
-        push_token(tokens, at, at + consumed, tag)
+        @syntax.push_token(tokens, at, at + consumed, tag)
         if stack.length() > 1 {
           ignore(stack.pop())
         }
@@ -67,28 +67,7 @@ pub impl @syntax.LineTokenizer for JavascriptTokenizer with fn tokenize_line(
     at = at + consumed
     view = rest
   }
-  (tokens, encode_stack(stack))
-}
-
-///|
-fn decode_stack(state : @syntax.TokenizerState) -> Array[Char] {
-  let stack : Array[Char] = []
-  for mode in state.0 {
-    stack.push(mode)
-  }
-  if stack.length() == 0 {
-    stack.push('n')
-  }
-  stack
-}
-
-///|
-fn encode_stack(stack : Array[Char]) -> @syntax.TokenizerState {
-  let encoded = StringBuilder()
-  for mode in stack {
-    encoded.write_char(mode)
-  }
-  TokenizerState(encoded.to_string())
+  (tokens, @syntax.encode_mode_stack(stack))
 }
 
 ///|
@@ -97,25 +76,6 @@ priv enum StepOp {
   Emit(@syntax.HighlightTag)
   Push(@syntax.HighlightTag, Char)
   Pop(@syntax.HighlightTag)
-}
-
-///|
-/// Contiguous same-tag lexemes coalesce so a quoted string renders as a
-/// single span.
-fn push_token(
-  tokens : Array[@syntax.LineToken],
-  start : Int,
-  end : Int,
-  tag : @syntax.HighlightTag,
-) -> Unit {
-  if tokens.length() > 0 {
-    let last = tokens[tokens.length() - 1]
-    if last.tag == tag && last.end == start {
-      tokens[tokens.length() - 1] = { start: last.start, end, tag }
-      return
-    }
-  }
-  tokens.push({ start, end, tag })
 }
 
 ///|

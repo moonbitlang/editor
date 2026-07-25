@@ -273,3 +273,54 @@ pub fn is_capitalized(word : StringView) -> Bool {
   let unit = word[0].to_int()
   65 <= unit && unit <= 90
 }
+
+///|
+/// Append `start`..`end` tagged `tag`, coalescing it into the previous token
+/// when that token carries the same tag and ends exactly where this one
+/// begins. Contiguous same-tag lexemes therefore render as one span — a
+/// quoted string arrives as quote, content, quote and leaves as a single
+/// `String` token. Shared by the language lexers (`lang_*`), which otherwise
+/// carry identical copies.
+pub fn push_token(
+  tokens : Array[LineToken],
+  start : Int,
+  end : Int,
+  tag : HighlightTag,
+) -> Unit {
+  if tokens.length() > 0 {
+    let last = tokens[tokens.length() - 1]
+    if last.tag == tag && last.end == start {
+      tokens[tokens.length() - 1] = { start: last.start, end, tag }
+      return
+    }
+  }
+  tokens.push({ start, end, tag })
+}
+
+///|
+/// The nesting-mode stack a stateful lexer carries between lines, decoded from
+/// its `TokenizerState`. Each character is one open mode; an empty state
+/// decodes to the base mode `'n'`, so a fresh line always has a mode to read.
+/// Shared by the language lexers (`lang_*`), which otherwise carry identical
+/// copies. Inverse of `encode_mode_stack`.
+pub fn decode_mode_stack(state : TokenizerState) -> Array[Char] {
+  let stack : Array[Char] = []
+  for mode in state.0 {
+    stack.push(mode)
+  }
+  if stack.length() == 0 {
+    stack.push('n')
+  }
+  stack
+}
+
+///|
+/// The mode stack packed back into a `TokenizerState` for the next line.
+/// Inverse of `decode_mode_stack`.
+pub fn encode_mode_stack(stack : Array[Char]) -> TokenizerState {
+  let encoded = StringBuilder()
+  for mode in stack {
+    encoded.write_char(mode)
+  }
+  TokenizerState(encoded.to_string())
+}
