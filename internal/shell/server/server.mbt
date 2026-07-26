@@ -213,8 +213,8 @@ pub fn resolve_remote_directory_uri(
 
 ///|
 fn directory_name(path : String) -> String {
-  match path.rev_find("/") {
-    Some(index) => path[index + 1:].to_owned()
+  match path.rev_after("/") {
+    Some(name) => name.to_owned()
     None => path
   }
 }
