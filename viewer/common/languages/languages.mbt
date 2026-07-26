@@ -230,10 +230,7 @@ fn Languages::markdown_comment_provider_result_with_log_handle(
   log_service : @log.LogHandle,
 ) -> Array[@language.MarkdownCommentBlock]? {
   let providers = self.markdown_comment_provider.snapshot_matching(model)
-  if providers.length() == 0 {
-    return None
-  }
-  let captured = providers[0]
+  guard providers is [captured, ..] else { return None }
   let result = captured.entry.provider.provide_markdown_comments(model) catch {
     _ => {
       log_provider_failure(

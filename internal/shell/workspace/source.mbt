@@ -56,11 +56,8 @@ pub fn SourcePath::normalize_root_relative_path(
       segments.push(segment)
     }
   }
-  if segments.length() == 0 {
-    return SourcePathError(InvalidPath)
-  }
-
-  let mut normalized = segments[0]
+  guard segments is [first, ..] else { return SourcePathError(InvalidPath) }
+  let mut normalized = first
   for i in 1..<segments.length() {
     normalized = normalized + "/" + segments[i]
   }

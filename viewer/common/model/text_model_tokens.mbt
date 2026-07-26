@@ -136,10 +136,9 @@ fn RangePriorityQueueImpl::RangePriorityQueueImpl() -> RangePriorityQueueImpl {
 ///|
 /// Smallest queued line, or `None`.
 fn RangePriorityQueueImpl::min(self : RangePriorityQueueImpl) -> Int? {
-  if self.ranges.is_empty() {
-    None
-  } else {
-    Some(self.ranges[0].start)
+  match self.ranges {
+    [first, ..] => Some(first.start)
+    [] => None
   }
 }
 

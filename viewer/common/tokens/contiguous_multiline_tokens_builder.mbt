@@ -30,12 +30,9 @@ pub fn ContiguousMultilineTokensBuilder::add(
   line_number : Int,
   line_tokens : Array[UInt],
 ) -> Unit {
-  if self.tokens.length() > 0 {
-    let last = self.tokens[self.tokens.length() - 1]
-    if last.end_line_number() + 1 == line_number {
-      last.append_line_tokens(line_tokens)
-      return
-    }
+  if self.tokens is [.., last] && last.end_line_number() + 1 == line_number {
+    last.append_line_tokens(line_tokens)
+    return
   }
   self.tokens.push(ContiguousMultilineTokens(line_number, [line_tokens]))
 }

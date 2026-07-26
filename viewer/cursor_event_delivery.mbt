@@ -79,8 +79,7 @@ fn CursorEventDelivery::begin_drain(self : CursorEventDelivery) -> Bool {
 fn CursorEventDelivery::take_next_ready(
   self : CursorEventDelivery,
 ) -> @view_model.CursorStateChangedEvent? {
-  guard self.queue.length() > 0 else { return None }
-  let next = self.queue[0]
+  guard self.queue is [next, ..] else { return None }
   if self.content_barrier_depth > 0 &&
     is_model_flush_cursor_event(next) &&
     !self.has_completed_content_version(next.model_version_id) {

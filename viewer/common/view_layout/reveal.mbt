@@ -149,9 +149,9 @@ pub fn ViewLayout::compute_scroll_left_to_reveal(
   vertical_scrollbar_width~ : Double,
   minimal_reveal? : Bool = false,
 ) -> Double? {
-  guard ranges.length() > 0 else { return None }
-  let mut box_start_x = ranges[0].0.round()
-  let mut box_end_x = (ranges[0].0 + ranges[0].1).round()
+  guard ranges is [(first_left, first_width), ..] else { return None }
+  let mut box_start_x = first_left.round()
+  let mut box_end_x = (first_left + first_width).round()
   for index in 1..<ranges.length() {
     let (left, width) = ranges[index]
     box_start_x = min_double(box_start_x, left.round())

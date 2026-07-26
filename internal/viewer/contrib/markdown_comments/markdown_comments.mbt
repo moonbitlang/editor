@@ -188,14 +188,10 @@ pub fn normalize_markdown_comment_blocks(
   let non_overlapping : Array[@language.MarkdownCommentBlock] = []
   for entry in indexed {
     let block = entry.block
-    if non_overlapping.length() > 0 &&
+    if non_overlapping is [.., previous] &&
       block.line_range.start_line_number <
-      non_overlapping[non_overlapping.length() - 1].line_range.end_line_number_exclusive {
-      warn_overlap(
-        log_service,
-        non_overlapping[non_overlapping.length() - 1].line_range,
-        block.line_range,
-      )
+      previous.line_range.end_line_number_exclusive {
+      warn_overlap(log_service, previous.line_range, block.line_range)
     } else {
       non_overlapping.push(block)
     }

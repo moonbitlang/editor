@@ -287,12 +287,9 @@ pub fn push_token(
   end : Int,
   tag : HighlightTag,
 ) -> Unit {
-  if tokens.length() > 0 {
-    let last = tokens[tokens.length() - 1]
-    if last.tag == tag && last.end == start {
-      tokens[tokens.length() - 1] = { start: last.start, end, tag }
-      return
-    }
+  if tokens is [.., last] && last.tag == tag && last.end == start {
+    tokens[tokens.length() - 1] = { start: last.start, end, tag }
+    return
   }
   tokens.push({ start, end, tag })
 }

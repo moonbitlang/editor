@@ -73,13 +73,14 @@ fn view_cursors_on_view_event(part : ViewCursors, event : ViewEvent) -> Bool {
     ViewFlushed => true
     ViewScrollChanged(_) => true
     ViewCursorStateChanged(e) => {
-      self.last_position = if e.selections.length() == 0 {
-        None
-      } else {
-        Some(e.selections[0].get_position())
+      self.last_position = match e.selections {
+        [primary, ..] => Some(primary.get_position())
+        [] => None
       }
-      let selection_is_empty = e.selections.length() == 0 ||
-        e.selections[0].is_empty()
+      let selection_is_empty = match e.selections {
+        [primary, ..] => primary.is_empty()
+        [] => true
+      }
       // `ViewCursors.onCursorStateChanged` updates the layer class
       // synchronously, but only when the selection shape crosses the
       // empty/nonempty boundary. Keep the last rendered cursor rectangle

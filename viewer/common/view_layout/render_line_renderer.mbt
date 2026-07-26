@@ -548,8 +548,8 @@ fn apply_render_whitespace(
       if !is_in_whitespace ||
         (!use_monospace_optimizations && tmp_indent >= tab_size) {
         if generate_for_each {
-          let last_end_index = if result.length() > 0 {
-            result[result.length() - 1].end_index
+          let last_end_index = if result is [.., last] {
+            last.end_index
           } else {
             faux_indent_length
           }
@@ -620,8 +620,8 @@ fn apply_render_whitespace(
   }
   if generate_whitespace {
     if generate_for_each {
-      let last_end_index = if result.length() > 0 {
-        result[result.length() - 1].end_index
+      let last_end_index = if result is [.., last] {
+        last.end_index
       } else {
         faux_indent_length
       }

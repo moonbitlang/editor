@@ -154,8 +154,8 @@ fn FoldingRegions::ensure_parent_indices(self : FoldingRegions) -> Unit {
           !is_inside_last(start_line_number, end_line_number) {
       parent_indexes.pop() |> ignore
     }
-    let parent_index = if parent_indexes.length() > 0 {
-      parent_indexes[parent_indexes.length() - 1]
+    let parent_index = if parent_indexes is [.., innermost] {
+      innermost
     } else {
       -1
     }

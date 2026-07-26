@@ -78,10 +78,8 @@ pub fn LineRange::join(self : LineRange, other : LineRange) -> LineRange {
 pub fn LineRange::join_many(
   line_ranges : Array[Array[LineRange]],
 ) -> Array[LineRange] {
-  if line_ranges.length() == 0 {
-    return []
-  }
-  let mut result = LineRangeSet(normalized_ranges=line_ranges[0].copy())
+  guard line_ranges is [first, ..] else { return [] }
+  let mut result = LineRangeSet(normalized_ranges=first.copy())
   for index in 1..<line_ranges.length() {
     result = result.get_union(
       LineRangeSet(normalized_ranges=line_ranges[index].copy()),

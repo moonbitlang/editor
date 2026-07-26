@@ -530,8 +530,8 @@ pub fn set_collapse_state_up(
       region,
       _level,
     ) => region.is_collapsed() != do_collapse)
-    if regions.length() > 0 {
-      to_toggle.push(regions[0])
+    if regions is [first, ..] {
+      to_toggle.push(first)
     }
   }
   folding_model.toggle_collapse_state(to_toggle)
@@ -567,8 +567,8 @@ pub fn set_collapse_state_for_rest(
   let filtered_regions : Array[FoldingRegion] = []
   for line_number in blocked_line_numbers {
     let regions = folding_model.get_all_regions_at_line(line_number)
-    if regions.length() > 0 {
-      filtered_regions.push(regions[0])
+    if regions is [first, ..] {
+      filtered_regions.push(first)
     }
   }
   let filter = RegionFilter(region => {
