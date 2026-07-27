@@ -24,9 +24,10 @@ priv struct WorkbenchModel {
 }
 
 ///|
-/// The workbench model contains mutable arrays and host-facing values. Rabbita
-/// must therefore propagate every accepted update, matching the shell's former
-/// cell behavior instead of suppressing a render through structural equality.
+/// The workbench's host objects live outside this model, and marker queries
+/// return fresh diagnostic arrays. `Diagnostic` does not expose `Eq` yet, so
+/// preserve the shell's former whole-view refresh until its model can derive
+/// structural equality.
 priv struct WorkbenchState(WorkbenchModel)
 
 ///|

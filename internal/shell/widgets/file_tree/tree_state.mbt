@@ -2,22 +2,23 @@
 /// One tree node, the `ExplorerItem` role: a cached `WorkspaceStat` plus
 /// per-node expansion state. `children: None` means the directory level
 /// has not been resolved yet; a resolve result is cached on the node and
-/// survives collapse/expand cycles.
+/// survives collapse/expand cycles. Nodes and their child vectors are immutable:
+/// every change rebuilds the path from the root, preserving prior snapshots.
 priv struct TreeNode {
   uri : @base_common.Uri
   name : String
   kind : @workspace.WorkspaceEntryKind
-  mut children : Array[TreeNode]?
-  mut expanded : Bool
-  mut resolve_failed : Bool
-}
+  children : @vec.Vector[TreeNode]?
+  expanded : Bool
+  resolve_failed : Bool
+} derive(Eq)
 
 ///|
 priv struct FileTreeModel {
-  mut root : TreeNode?
-  mut selected : @base_common.Uri?
-  mut pending_reveal : @base_common.Uri?
-}
+  root : TreeNode?
+  selected : @base_common.Uri?
+  pending_reveal : @base_common.Uri?
+} derive(Eq)
 
 ///|
 priv struct TreeRow {
@@ -42,7 +43,7 @@ priv enum RevealStep {
 /// Builds a node from a resolved stat. Children render directories first,
 /// then files, keeping the provider's name order within each group (the
 /// explorer's default sort).
-fn node_from_stat(
+fn TreeNode::from_stat(
   stat : @workspace.WorkspaceStat,
   expanded~ : Bool,
 ) -> TreeNode {
@@ -50,85 +51,117 @@ fn node_from_stat(
     uri: stat.uri,
     name: stat.name,
     kind: stat.kind,
-    children: stat.children.map(children_from_stats),
+    children: stat.children.map(stats => TreeNode::from_stats(stats)),
     expanded,
     resolve_failed: false,
   }
 }
 
 ///|
-fn children_from_stats(
+fn TreeNode::from_stats(
   stats : Array[@workspace.WorkspaceStat],
-) -> Array[TreeNode] {
+) -> @vec.Vector[TreeNode] {
   let nodes : Array[TreeNode] = []
   for stat in stats {
     if stat.kind == Directory {
-      nodes.push(node_from_stat(stat, expanded=false))
+      nodes.push(TreeNode::from_stat(stat, expanded=false))
     }
   }
   for stat in stats {
     if stat.kind == File {
-      nodes.push(node_from_stat(stat, expanded=false))
+      nodes.push(TreeNode::from_stat(stat, expanded=false))
     }
   }
-  nodes
+  @vec.Vector(nodes)
 }
 
 ///|
-fn find_node(node : TreeNode, uri : @base_common.Uri) -> TreeNode? {
-  if node.uri == uri {
-    return Some(node)
+/// Replaces one resolved level and rebuilds the ancestors leading to it.
+fn TreeNode::with_resolved(
+  self : TreeNode,
+  uri : @base_common.Uri,
+  stat : @workspace.WorkspaceStat,
+) -> TreeNode? {
+  if self.uri == uri {
+    return Some({
+      ..self,
+      children: stat.children.map(stats => TreeNode::from_stats(stats)),
+      resolve_failed: false,
+    })
   }
-  match node.children {
-    Some(children) =>
-      for child in children {
-        match find_node(child, uri) {
-          Some(found) => return Some(found)
-          None => ()
-        }
-      }
-    None => ()
+  guard self.children is Some(children) else { return None }
+  let mut index = 0
+  for child in children {
+    if child.with_resolved(uri, stat) is Some(next) {
+      return Some({ ..self, children: Some(children.set(index, next)) })
+    }
+    index = index + 1
   }
   None
 }
 
 ///|
-/// Caches a freshly resolved level on the node. A re-resolve replaces the
-/// cached children wholesale.
-fn apply_resolved(node : TreeNode, stat : @workspace.WorkspaceStat) -> Unit {
-  node.children = stat.children.map(children_from_stats)
-  node.resolve_failed = false
-}
-
-///|
 /// Collapses an expanded directory, or expands a collapsed one. Expanding
 /// a directory whose children are unresolved (including one whose last
-/// resolve failed) asks for a resolve; cached children expand for free.
-fn toggle_node(node : TreeNode) -> ToggleEffect {
-  if node.expanded {
-    node.expanded = false
-    ToggleNone
-  } else {
-    node.expanded = true
-    match node.children {
-      Some(_) => ToggleNone
-      None => {
-        node.resolve_failed = false
-        ToggleResolve(node.uri)
-      }
+/// resolve failed) asks for a resolve; cached children expand for free. The
+/// returned root shares unchanged branches but never mutates `self`.
+fn TreeNode::toggle(
+  self : TreeNode,
+  uri : @base_common.Uri,
+) -> (TreeNode, ToggleEffect)? {
+  if self.uri == uri {
+    if self.expanded {
+      return Some(({ ..self, expanded: false }, ToggleNone))
     }
+    let next = { ..self, expanded: true, resolve_failed: false }
+    let effect = match self.children {
+      Some(_) => ToggleNone
+      None => ToggleResolve(self.uri)
+    }
+    return Some((next, effect))
   }
+  guard self.children is Some(children) else { return None }
+  let mut index = 0
+  for child in children {
+    if child.toggle(uri) is Some((next, effect)) {
+      return Some(
+        ({ ..self, children: Some(children.set(index, next)) }, effect),
+      )
+    }
+    index = index + 1
+  }
+  None
 }
 
 ///|
-/// The directory URIs between the root (exclusive) and `target`
+/// Records a resolve failure on one node without changing an older root.
+fn TreeNode::with_resolve_failed(
+  self : TreeNode,
+  uri : @base_common.Uri,
+) -> TreeNode? {
+  if self.uri == uri {
+    return Some({ ..self, resolve_failed: true })
+  }
+  guard self.children is Some(children) else { return None }
+  let mut index = 0
+  for child in children {
+    if child.with_resolve_failed(uri) is Some(next) {
+      return Some({ ..self, children: Some(children.set(index, next)) })
+    }
+    index = index + 1
+  }
+  None
+}
+
+///|
+/// The directory URIs between this root (exclusive) and `target`
 /// (exclusive), derived from the root-relative path segments. `None` when
 /// the target does not live under the root.
-fn ancestor_uris(
-  root_uri : @base_common.Uri,
+fn TreeNode::ancestor_uris(
+  self : TreeNode,
   target : @base_common.Uri,
 ) -> Array[@base_common.Uri]? {
-  let root_raw = root_uri.to_string()
+  let root_raw = self.uri.to_string()
   let target_raw = target.to_string()
   if !target_raw.has_prefix(root_raw + "/") {
     return None
@@ -153,53 +186,58 @@ fn ancestor_uris(
 }
 
 ///|
-/// One `autoReveal` step: expands resolved ancestors of `target` from the
-/// root down, stopping at the first unresolved level (which must be
-/// resolved before the reveal can continue).
-fn reveal_step(
-  root : TreeNode,
-  root_uri : @base_common.Uri,
-  target : @base_common.Uri,
-) -> RevealStep {
-  guard ancestor_uris(root_uri, target) is Some(ancestors) else {
-    return RevealUnreachable
-  }
-  let mut node = root
-  for ancestor in ancestors {
-    guard node.children is Some(children) else {
-      return RevealResolve(node.uri)
+/// Expands the remaining resolved ancestor path and rebuilds every changed
+/// parent. The first unresolved node becomes the next resolve request.
+fn TreeNode::reveal_ancestors(
+  self : TreeNode,
+  ancestors : ArrayView[@base_common.Uri],
+  index : Int,
+) -> (TreeNode, RevealStep) {
+  if index == ancestors.length() {
+    return match self.children {
+      Some(_) => (self, RevealDone)
+      None => (self, RevealResolve(self.uri))
     }
-    let mut next : TreeNode? = None
-    for child in children {
-      if child.uri == ancestor {
-        next = Some(child)
-        break
-      }
+  }
+  guard self.children is Some(children) else {
+    return (self, RevealResolve(self.uri))
+  }
+  let mut child_index = 0
+  for child in children {
+    if child.uri == ancestors[index] {
+      let expanded = { ..child, expanded: true }
+      let (next, step) = expanded.reveal_ancestors(ancestors, index + 1)
+      return ({ ..self, children: Some(children.set(child_index, next)) }, step)
     }
-    guard next is Some(found) else { return RevealUnreachable }
-    found.expanded = true
-    node = found
+    child_index = child_index + 1
   }
-  if node.children is None {
-    return RevealResolve(node.uri)
-  }
-  RevealDone
+  (self, RevealUnreachable)
 }
 
 ///|
-/// The rows the tree renders: the root's children at depth zero, then the
+/// One `autoReveal` step: expands resolved ancestors of `target` from the
+/// root down, stopping at the first unresolved level. The returned root is a
+/// new snapshot whenever expansion state changes.
+fn TreeNode::reveal_step(
+  self : TreeNode,
+  target : @base_common.Uri,
+) -> (TreeNode, RevealStep) {
+  guard self.ancestor_uris(target) is Some(ancestors) else {
+    return (self, RevealUnreachable)
+  }
+  self.reveal_ancestors(ancestors[:], 0)
+}
+
+///|
+/// The rows the tree renders: this root's children at depth zero, then the
 /// cached children of every expanded directory. Collapsed or unresolved
 /// directories contribute only their own row.
-fn visible_rows(root : TreeNode?) -> Array[TreeRow] {
+fn TreeNode::visible_rows(self : TreeNode) -> Array[TreeRow] {
   let rows : Array[TreeRow] = []
-  match root {
-    Some(root) =>
-      match root.children {
-        Some(children) =>
-          for child in children {
-            push_rows(rows, child, 0)
-          }
-        None => ()
+  match self.children {
+    Some(children) =>
+      for child in children {
+        child.push_rows(rows, 0)
       }
     None => ()
   }
@@ -207,13 +245,17 @@ fn visible_rows(root : TreeNode?) -> Array[TreeRow] {
 }
 
 ///|
-fn push_rows(rows : Array[TreeRow], node : TreeNode, depth : Int) -> Unit {
-  rows.push({ node, depth })
-  if node.kind == Directory && node.expanded {
-    match node.children {
+fn TreeNode::push_rows(
+  self : TreeNode,
+  rows : Array[TreeRow],
+  depth : Int,
+) -> Unit {
+  rows.push({ node: self, depth })
+  if self.kind == Directory && self.expanded {
+    match self.children {
       Some(children) =>
         for child in children {
-          push_rows(rows, child, depth + 1)
+          child.push_rows(rows, depth + 1)
         }
       None => ()
     }

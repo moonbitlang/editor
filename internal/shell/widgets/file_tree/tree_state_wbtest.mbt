@@ -17,8 +17,26 @@ fn file_stat(raw : String, name : String) -> @workspace.WorkspaceStat {
 let root_raw : String = "readonly-remote://workspace"
 
 ///|
+fn TreeNode::find(self : TreeNode, uri : @base_common.Uri) -> TreeNode? {
+  if self.uri == uri {
+    return Some(self)
+  }
+  match self.children {
+    Some(children) =>
+      for child in children {
+        match child.find(uri) {
+          Some(found) => return Some(found)
+          None => ()
+        }
+      }
+    None => ()
+  }
+  None
+}
+
+///|
 fn resolved_root() -> TreeNode {
-  node_from_stat(
+  TreeNode::from_stat(
     {
       uri: uri(root_raw),
       name: "workspace",
@@ -35,7 +53,7 @@ fn resolved_root() -> TreeNode {
 ///|
 test "orders resolved children directories first" {
   let root = resolved_root()
-  let rows = visible_rows(Some(root))
+  let rows = root.visible_rows()
   assert_eq(rows.length(), 2)
   assert_eq(rows[0].node.name, "src")
   assert_true(rows[0].node.kind == Directory)
@@ -45,34 +63,41 @@ test "orders resolved children directories first" {
 
 ///|
 test "directories start collapsed and expansion resolves once" {
-  let root = resolved_root()
-  let src = find_node(root, uri(root_raw + "/src")).unwrap()
-  assert_false(src.expanded)
+  let original = resolved_root()
+  let src_uri = uri(root_raw + "/src")
+  assert_false(original.find(src_uri).unwrap().expanded)
 
   // First expand: unresolved children ask for a provider resolve.
-  match toggle_node(src) {
+  let (expanded, effect) = original.toggle(src_uri).unwrap()
+  match effect {
     ToggleResolve(resolve_uri) =>
       assert_eq(resolve_uri.to_string(), root_raw + "/src")
     ToggleNone => fail("expected resolve effect")
   }
-  assert_true(src.expanded)
-  apply_resolved(src, {
-    uri: src.uri,
-    name: "src",
-    kind: Directory,
-    children: Some([file_stat(root_raw + "/src/main.mbt", "main.mbt")]),
-  })
+  // The original snapshot remains collapsed after producing the new root.
+  assert_false(original.find(src_uri).unwrap().expanded)
+  assert_true(expanded.find(src_uri).unwrap().expanded)
+  let resolved = expanded
+    .with_resolved(src_uri, {
+      uri: src_uri,
+      name: "src",
+      kind: Directory,
+      children: Some([file_stat(root_raw + "/src/main.mbt", "main.mbt")]),
+    })
+    .unwrap()
 
   // Collapse keeps the cache; the next expand is free.
-  match toggle_node(src) {
-    ToggleNone => assert_false(src.expanded)
+  let (collapsed, effect) = resolved.toggle(src_uri).unwrap()
+  match effect {
+    ToggleNone => assert_false(collapsed.find(src_uri).unwrap().expanded)
     ToggleResolve(_) => fail("collapse must not resolve")
   }
-  match toggle_node(src) {
-    ToggleNone => assert_true(src.expanded)
+  let (reexpanded, effect) = collapsed.toggle(src_uri).unwrap()
+  match effect {
+    ToggleNone => assert_true(reexpanded.find(src_uri).unwrap().expanded)
     ToggleResolve(_) => fail("cached children must not re-resolve")
   }
-  let rows = visible_rows(Some(root))
+  let rows = reexpanded.visible_rows()
   assert_eq(rows.length(), 3)
   assert_eq(rows[1].node.name, "main.mbt")
   assert_eq(rows[1].depth, 1)
@@ -80,59 +105,72 @@ test "directories start collapsed and expansion resolves once" {
 
 ///|
 test "failed resolve is retried on the next expand" {
-  let root = resolved_root()
-  let src = find_node(root, uri(root_raw + "/src")).unwrap()
-  ignore(toggle_node(src))
-  src.resolve_failed = true
+  let original = resolved_root()
+  let src_uri = uri(root_raw + "/src")
+  let (expanded, _) = original.toggle(src_uri).unwrap()
+  let failed = expanded.with_resolve_failed(src_uri).unwrap()
+  assert_false(original.find(src_uri).unwrap().resolve_failed)
+  assert_true(failed.find(src_uri).unwrap().resolve_failed)
 
   // Collapse, then expand again: children are still None, so the expand
   // retries the resolve and clears the error state.
-  ignore(toggle_node(src))
-  match toggle_node(src) {
-    ToggleResolve(_) => assert_false(src.resolve_failed)
+  let (collapsed, _) = failed.toggle(src_uri).unwrap()
+  let (retried, effect) = collapsed.toggle(src_uri).unwrap()
+  match effect {
+    ToggleResolve(_) =>
+      assert_false(retried.find(src_uri).unwrap().resolve_failed)
     ToggleNone => fail("expected resolve retry after failure")
   }
 }
 
 ///|
 test "reveal expands resolved ancestors and stops at unresolved levels" {
-  let root = resolved_root()
+  let original = resolved_root()
   let target = uri(root_raw + "/src/lib/util.mbt")
+  let src_uri = uri(root_raw + "/src")
+  let lib_uri = uri(root_raw + "/src/lib")
 
   // src is unresolved: the reveal must resolve it first.
-  match reveal_step(root, uri(root_raw), target) {
+  let (src_expanded, step) = original.reveal_step(target)
+  match step {
     RevealResolve(resolve_uri) =>
       assert_eq(resolve_uri.to_string(), root_raw + "/src")
     _ => fail("expected resolve step for src")
   }
-  let src = find_node(root, uri(root_raw + "/src")).unwrap()
-  assert_true(src.expanded)
-  apply_resolved(src, {
-    uri: src.uri,
-    name: "src",
-    kind: Directory,
-    children: Some([dir_stat(root_raw + "/src/lib", "lib")]),
-  })
+  assert_false(original.find(src_uri).unwrap().expanded)
+  assert_true(src_expanded.find(src_uri).unwrap().expanded)
+  let src_resolved = src_expanded
+    .with_resolved(src_uri, {
+      uri: src_uri,
+      name: "src",
+      kind: Directory,
+      children: Some([dir_stat(root_raw + "/src/lib", "lib")]),
+    })
+    .unwrap()
 
   // lib is now reachable but unresolved.
-  match reveal_step(root, uri(root_raw), target) {
+  let (lib_expanded, step) = src_resolved.reveal_step(target)
+  match step {
     RevealResolve(resolve_uri) =>
       assert_eq(resolve_uri.to_string(), root_raw + "/src/lib")
     _ => fail("expected resolve step for src/lib")
   }
-  let lib = find_node(root, uri(root_raw + "/src/lib")).unwrap()
-  assert_true(lib.expanded)
-  apply_resolved(lib, {
-    uri: lib.uri,
-    name: "lib",
-    kind: Directory,
-    children: Some([file_stat(root_raw + "/src/lib/util.mbt", "util.mbt")]),
-  })
-  match reveal_step(root, uri(root_raw), target) {
+  assert_false(src_resolved.find(lib_uri).unwrap().expanded)
+  assert_true(lib_expanded.find(lib_uri).unwrap().expanded)
+  let lib_resolved = lib_expanded
+    .with_resolved(lib_uri, {
+      uri: lib_uri,
+      name: "lib",
+      kind: Directory,
+      children: Some([file_stat(root_raw + "/src/lib/util.mbt", "util.mbt")]),
+    })
+    .unwrap()
+  let (revealed, step) = lib_resolved.reveal_step(target)
+  match step {
     RevealDone => ()
     _ => fail("expected completed reveal")
   }
-  let rows = visible_rows(Some(root))
+  let rows = revealed.visible_rows()
   assert_eq(rows.length(), 4)
   assert_eq(rows[2].node.name, "util.mbt")
   assert_eq(rows[2].depth, 2)
@@ -141,14 +179,18 @@ test "reveal expands resolved ancestors and stops at unresolved levels" {
 ///|
 test "reveal of targets outside the tree is unreachable" {
   let root = resolved_root()
-  match reveal_step(root, uri(root_raw), uri("memory://other/file.mbt")) {
+  let (outside, step) = root.reveal_step(uri("memory://other/file.mbt"))
+  match step {
     RevealUnreachable => ()
     _ => fail("expected unreachable target outside the root")
   }
-  match reveal_step(root, uri(root_raw), uri(root_raw + "/gone/file.mbt")) {
+  assert_true(outside == root)
+  let (missing, step) = root.reveal_step(uri(root_raw + "/gone/file.mbt"))
+  match step {
     RevealUnreachable => ()
     _ => fail("expected unreachable target in a missing directory")
   }
+  assert_true(missing == root)
 }
 
 ///|
@@ -205,19 +247,22 @@ async test "in-memory provider resolves one level per request" {
   }
   match provider.resolve(provider.root()) {
     WorkspaceResolved(stat) => {
-      let root = node_from_stat(stat, expanded=true)
-      let src = find_node(root, uri(root_raw + "/src")).unwrap()
+      let root = TreeNode::from_stat(stat, expanded=true)
+      let src_uri = uri(root_raw + "/src")
+      let src = root.find(src_uri).unwrap()
       // The resolved level carries unresolved directory children.
       assert_true(src.children is None)
-      match toggle_node(src) {
+      let (expanded, effect) = root.toggle(src_uri).unwrap()
+      let resolved = match effect {
         ToggleResolve(resolve_uri) =>
           match provider.resolve(resolve_uri) {
-            WorkspaceResolved(stat) => apply_resolved(src, stat)
+            WorkspaceResolved(stat) =>
+              expanded.with_resolved(src_uri, stat).unwrap()
             WorkspaceResolveError(error) => fail(error.message)
           }
         ToggleNone => fail("expected resolve effect")
       }
-      let rows = visible_rows(Some(root))
+      let rows = resolved.visible_rows()
       assert_eq(rows.length(), 3)
       assert_eq(rows[1].node.name, "main.mbt")
     }

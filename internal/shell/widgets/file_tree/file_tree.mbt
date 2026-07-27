@@ -21,17 +21,6 @@ priv enum FileTreeMsg {
 }
 
 ///|
-/// File-tree updates mutate cached nodes in place. Treating every returned
-/// wrapper as changed preserves the widget's existing redraw behavior while it
-/// moves from the removed nested `Cell::view()` API to incremental values.
-priv struct FileTreeState(FileTreeModel)
-
-///|
-impl Eq for FileTreeState with fn equal(_, _) {
-  false
-}
-
-///|
 /// Creates a file tree over a workspace provider and reports file-open
 /// intents to the host.
 pub fn FileTree::FileTree(
@@ -43,15 +32,11 @@ pub fn FileTree::FileTree(
     selected: None,
     pending_reveal: None,
   }
-  let (state, emit) = @rabbita.create_state(FileTreeState(model), update=(
-    emit,
-    msg,
-    state,
-  ) => {
-    let (cmd, model) = update_file_tree(provider, on_open, emit, msg, state.0)
-    (FileTreeState(model), cmd)
+  let (state, emit) = @rabbita.create_state(model, update=(emit, msg, model) => {
+    let (cmd, model) = model.update(provider, on_open, emit, msg)
+    (model, cmd)
   })
-  let view_value = state.view(state => view_file_tree(emit, state.0))
+  let view_value = state.view(model => model.view(emit))
   { emit, view_value }
 }
 
@@ -80,109 +65,114 @@ pub fn FileTree::set_active(
 }
 
 ///|
-fn update_file_tree(
+fn FileTreeModel::update(
+  self : FileTreeModel,
   provider : &@workspace.WorkspaceTreeProvider,
   on_open : (@base_common.Uri) -> Unit,
   emit : @rabbita.Emit[FileTreeMsg],
   msg : FileTreeMsg,
-  model : FileTreeModel,
 ) -> (@rabbita.Cmd, FileTreeModel) {
   match msg {
-    Refresh => (resolve_directory_cmd(provider, emit, provider.root()), model)
+    Refresh =>
+      (FileTree::resolve_directory(provider, emit, provider.root()), self)
     DirectoryResolved(uri, result) =>
-      directory_resolved_update(provider, emit, model, uri, result)
+      self.with_directory_resolved(provider, emit, uri, result)
     ToggleDirectory(uri) =>
-      match model.root {
+      match self.root {
         Some(root) =>
-          match find_node(root, uri) {
-            Some(node) =>
-              match toggle_node(node) {
+          match root.toggle(uri) {
+            Some((root, effect)) => {
+              let model = { ..self, root: Some(root) }
+              match effect {
                 ToggleResolve(uri) =>
-                  (resolve_directory_cmd(provider, emit, uri), model)
+                  (FileTree::resolve_directory(provider, emit, uri), model)
                 ToggleNone => (@rabbita.none, model)
               }
-            None => (@rabbita.none, model)
+            }
+            None => (@rabbita.none, self)
           }
-        None => (@rabbita.none, model)
+        None => (@rabbita.none, self)
       }
-    OpenFile(uri) => {
-      model.selected = Some(uri)
-      (@cmd.custom_cmd(_ => on_open(uri)), model)
-    }
-    SetActive(uri) => {
-      model.selected = Some(uri)
-      model.pending_reveal = Some(uri)
-      continue_reveal(provider, emit, model)
-    }
+    OpenFile(uri) =>
+      (@cmd.custom_cmd(_ => on_open(uri)), { ..self, selected: Some(uri) })
+    SetActive(uri) =>
+      { ..self, selected: Some(uri), pending_reveal: Some(uri) }.continue_reveal(
+        provider, emit,
+      )
   }
 }
 
 ///|
-fn directory_resolved_update(
+fn FileTreeModel::with_directory_resolved(
+  self : FileTreeModel,
   provider : &@workspace.WorkspaceTreeProvider,
   emit : @rabbita.Emit[FileTreeMsg],
-  model : FileTreeModel,
   uri : @base_common.Uri,
   result : @workspace.WorkspaceResolveResult,
 ) -> (@rabbita.Cmd, FileTreeModel) {
   match result {
     WorkspaceResolved(stat) => {
-      if uri == provider.root() {
-        model.root = Some(node_from_stat(stat, expanded=true))
-        if model.pending_reveal is None {
-          model.pending_reveal = model.selected
+      let model = if uri == provider.root() {
+        {
+          ..self,
+          root: Some(TreeNode::from_stat(stat, expanded=true)),
+          pending_reveal: if self.pending_reveal is Some(_) {
+            self.pending_reveal
+          } else {
+            self.selected
+          },
         }
       } else {
-        match model.root {
+        match self.root {
           Some(root) =>
-            match find_node(root, uri) {
-              Some(node) => apply_resolved(node, stat)
-              None => ()
+            match root.with_resolved(uri, stat) {
+              Some(root) => { ..self, root: Some(root) }
+              None => self
             }
-          None => ()
+          None => self
         }
       }
-      continue_reveal(provider, emit, model)
+      model.continue_reveal(provider, emit)
     }
     WorkspaceResolveError(_) => {
       // The folder keeps rendering as an empty-with-error level; children
       // stay unresolved so the next expand retries the resolve.
-      match model.root {
+      let model = match self.root {
         Some(root) =>
-          match find_node(root, uri) {
-            Some(node) => node.resolve_failed = true
-            None => ()
+          match root.with_resolve_failed(uri) {
+            Some(root) => { ..self, root: Some(root), pending_reveal: None }
+            None => { ..self, pending_reveal: None }
           }
-        None => ()
+        None => { ..self, pending_reveal: None }
       }
-      model.pending_reveal = None
       (@rabbita.none, model)
     }
   }
 }
 
 ///|
-fn continue_reveal(
+fn FileTreeModel::continue_reveal(
+  self : FileTreeModel,
   provider : &@workspace.WorkspaceTreeProvider,
   emit : @rabbita.Emit[FileTreeMsg],
-  model : FileTreeModel,
 ) -> (@rabbita.Cmd, FileTreeModel) {
-  match (model.root, model.pending_reveal) {
-    (Some(root), Some(target)) =>
-      match reveal_step(root, provider.root(), target) {
+  match (self.root, self.pending_reveal) {
+    (Some(root), Some(target)) => {
+      let (root, step) = root.reveal_step(target)
+      let model = { ..self, root: Some(root) }
+      match step {
         RevealResolve(uri) =>
-          (resolve_directory_cmd(provider, emit, uri), model)
-        RevealDone | RevealUnreachable => {
-          model.pending_reveal = None
-          (@rabbita.none, model)
-        }
+          (FileTree::resolve_directory(provider, emit, uri), model)
+        RevealDone | RevealUnreachable =>
+          (@rabbita.none, { ..model, pending_reveal: None })
       }
-    _ => (@rabbita.none, model)
+    }
+    _ => (@rabbita.none, self)
   }
 }
 
 ///|
-fn resolve_directory_cmd(
+fn FileTree::resolve_directory(
   provider : &@workspace.WorkspaceTreeProvider,
   emit : @rabbita.Emit[FileTreeMsg],
   uri : @base_common.Uri,
@@ -202,27 +192,31 @@ fn resolve_directory_cmd(
 }
 
 ///|
-fn view_file_tree(
+fn FileTreeModel::view(
+  self : FileTreeModel,
   emit : @rabbita.Emit[FileTreeMsg],
-  model : FileTreeModel,
 ) -> @html.Html {
   let children : Array[@html.Html] = []
-  for row in visible_rows(model.root) {
-    if row.node.kind == Directory {
-      children.push(view_folder_row(emit, row))
-    } else {
-      children.push(view_file_row(emit, model, row))
-    }
+  match self.root {
+    Some(root) =>
+      for row in root.visible_rows() {
+        if row.node.kind == Directory {
+          children.push(row.folder_view(emit))
+        } else {
+          children.push(row.file_view(emit, self))
+        }
+      }
+    None => ()
   }
   @html.div(class="file-tree", children)
 }
 
 ///|
-fn view_folder_row(
+fn TreeRow::folder_view(
+  self : TreeRow,
   emit : @rabbita.Emit[FileTreeMsg],
-  row : TreeRow,
 ) -> @html.Html {
-  let node = row.node
+  let node = self.node
   let class_name = if node.resolve_failed {
     "workspace-item workspace-folder resolve-failed"
   } else {
@@ -236,9 +230,9 @@ fn view_folder_row(
       .data_set("workspace-id", node.uri.to_string())
       .data_set("workspace-kind", "folder")
       .aria_expanded(node.expanded.to_string())
-      .style("--depth", row.depth.to_string()),
+      .style("--depth", self.depth.to_string()),
     [
-      view_indent_guides(row.depth),
+      FileTree::indent_guides(self.depth),
       @html.span(class="workspace-twistie", icon_chevron_right()),
       @html.span(class="workspace-label", node.name),
     ],
@@ -246,12 +240,12 @@ fn view_folder_row(
 }
 
 ///|
-fn view_file_row(
+fn TreeRow::file_view(
+  self : TreeRow,
   emit : @rabbita.Emit[FileTreeMsg],
   model : FileTreeModel,
-  row : TreeRow,
 ) -> @html.Html {
-  let node = row.node
+  let node = self.node
   let selected = model.selected is Some(uri) && uri == node.uri
   let class_name = if selected {
     "workspace-item workspace-file is-selected"
@@ -267,9 +261,9 @@ fn view_file_row(
       .data_set("workspace-kind", "file")
       .data_set("selected", selected.to_string())
       .aria_selected(selected.to_string())
-      .style("--depth", row.depth.to_string()),
+      .style("--depth", self.depth.to_string()),
     [
-      view_indent_guides(row.depth),
+      FileTree::indent_guides(self.depth),
       @html.span(class="workspace-twistie workspace-twistie-spacer", ""),
       @html.span(class="workspace-file-icon", icon_file()),
       @html.span(class="workspace-label", node.name),
@@ -278,7 +272,7 @@ fn view_file_row(
 }
 
 ///|
-fn view_indent_guides(depth : Int) -> @html.Html {
+fn FileTree::indent_guides(depth : Int) -> @html.Html {
   let guides : Array[@html.Html] = []
   for _ in 0..<depth {
     guides.push(@html.span(class="indent-guide", ""))
