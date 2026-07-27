@@ -316,13 +316,15 @@ fn AgentFeedbackInputWidget::update_action_enabled(
 ///|
 /// `_autoSize`: width from the measured text (clamped between an effective
 /// minimum and a maximum that never exceeds the editor content area), height
-/// from the textarea's scroll height.
+/// from the textarea's scroll height. An empty input uses the placeholder only
+/// when that attribute exists.
 pub fn AgentFeedbackInputWidget::auto_size(
   self : AgentFeedbackInputWidget,
 ) -> Unit {
   let value = self.value()
-  let text = if value.is_empty() {
-    self.textarea.get_attribute("placeholder").unwrap_or("")
+  let text = if value.is_empty() &&
+    self.textarea.get_attribute("placeholder") is Some(placeholder) {
+    placeholder
   } else {
     value
   }

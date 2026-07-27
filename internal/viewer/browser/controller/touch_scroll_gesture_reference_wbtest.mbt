@@ -296,12 +296,9 @@ test "touch DOM listeners consume boundary moves, reveal, and dispose" {
   )
   assert_eq(layout.position().scroll_left, 20.0)
   assert_eq(layout.position().scroll_top, 80.0)
+  let scrollbar_class = editor_scrollable.track(true).get_attribute("class")
   assert_true(
-    editor_scrollable
-    .track(true)
-    .get_attribute("class")
-    .unwrap_or("")
-    .contains("visible"),
+    scrollbar_class is Some(class_name) && class_name.contains("visible"),
   )
   dispatch_scrollbar_input_touch(lines_content, "touchcancel", 1, 30.0, 0.0)
   |> ignore

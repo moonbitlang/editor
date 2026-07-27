@@ -364,8 +364,9 @@ fn poll_render_invalidation_ready(
     ".render-invalidation-host .cdr.squiggly-warning",
   )
   if line_count > 0 && validation_count > 0 {
+    let root_class = root.get_attribute("class")
     ctx.assert_true(
-      root.get_attribute("class").unwrap_or("").contains("readonly-editor"),
+      root_class is Some(class_name) && class_name.contains("readonly-editor"),
       "viewer root did not finish mounting",
     )
     ctx.metric_int("initialLines", line_count)
