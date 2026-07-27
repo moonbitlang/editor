@@ -10,6 +10,13 @@ import {
 // Errors
 
 // Types and methods
+pub struct MarkdownCommentDiagramViewports {
+  // private fields
+}
+#alias(new, deprecated)
+pub fn MarkdownCommentDiagramViewports::MarkdownCommentDiagramViewports(@dom.Element, () -> Unit) -> Self
+pub fn MarkdownCommentDiagramViewports::dispose(Self) -> Unit
+
 pub(all) struct MarkdownCommentDom {
   outer : @dom.Element
   content : @dom.Element

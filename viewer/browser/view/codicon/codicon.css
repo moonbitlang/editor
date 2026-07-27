@@ -34,6 +34,22 @@
   content: "\eab6";
 }
 
+.codicon-move:before {
+  content: "\eb22";
+}
+
+.codicon-zoom-out:before {
+  content: "\eb82";
+}
+
+.codicon-zoom-in:before {
+  content: "\eb81";
+}
+
+.codicon-screen-normal:before {
+  content: "\eb4d";
+}
+
 /* The folding icons registered in foldingDecorations.ts:
    folding-expanded = chevron-down, folding-collapsed = chevron-right, and
    the manual variants alias them (registerIcon(...) — Monaco emits these

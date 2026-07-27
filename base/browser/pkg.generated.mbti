@@ -19,9 +19,15 @@ pub fn element_contains_active_element(@dom.Element) -> Bool
 
 pub fn element_has_focus(@dom.Element) -> Bool
 
+pub fn element_is_connected(@dom.Element) -> Bool
+
 pub fn element_offset_height(@dom.Element) -> Double
 
 pub fn element_offset_width(@dom.Element) -> Double
+
+pub fn element_style_priority(@dom.Element, String) -> String
+
+pub fn element_style_value(@dom.Element, String) -> String
 
 pub fn event_target_has_matching_ancestor(@dom.Event, @dom.Element, String) -> Bool
 
@@ -35,9 +41,13 @@ pub fn mouse_event_pointer_id(@dom.MouseEvent) -> Int
 
 pub fn native_selection_has_endpoint_in_matching_ancestor(@dom.Element, String) -> Bool
 
+pub fn observe_element_resize(@dom.Element, () -> Unit) -> @common.Disposable?
+
 pub fn queue_microtask(() -> Unit) -> Unit
 
 pub fn remove_element(@dom.Element) -> Unit
+
+pub fn remove_style_property(@dom.Element, String) -> Unit
 
 pub fn run_at_this_or_schedule_at_next_animation_frame(() -> Unit, priority? : Int) -> @common.Disposable
 
@@ -46,6 +56,8 @@ pub fn schedule_at_next_animation_frame(() -> Unit, priority? : Int) -> @common.
 pub fn schedule_timeout(() -> Unit, Int) -> @common.Disposable
 
 pub fn set_style_property(@dom.Element, String, String) -> Unit
+
+pub fn set_style_property_with_priority(@dom.Element, String, String, String) -> Unit
 
 pub fn wall_clock_now_ms() -> Double
 

@@ -23,6 +23,11 @@ pub extern "js" fn element_offset_height(element : @rdom.Element) -> Double =
   #| (element) => element?.offsetHeight ?? 0
 
 ///|
+/// Whether the element currently participates in an attached document tree.
+pub extern "js" fn element_is_connected(element : @rdom.Element) -> Bool =
+  #| (element) => element?.isConnected === true
+
+///|
 /// Writes one inline CSS property without replacing sibling properties.
 pub extern "js" fn set_style_property(
   element : @rdom.Element,
@@ -30,6 +35,42 @@ pub extern "js" fn set_style_property(
   value : String,
 ) -> Unit =
   #| (element, name, value) => { element.style.setProperty(name, value); }
+
+///|
+/// Reads one inline CSS property without requiring an `HTMLElement` downcast.
+/// This is useful for SVG-capable containers and narrow DOM test doubles.
+pub extern "js" fn element_style_value(
+  element : @rdom.Element,
+  name : String,
+) -> String =
+  #| (element, name) => element?.style?.getPropertyValue?.(name) ?? ''
+
+///|
+/// Reads the priority associated with one inline CSS property.
+pub extern "js" fn element_style_priority(
+  element : @rdom.Element,
+  name : String,
+) -> String =
+  #| (element, name) => element?.style?.getPropertyPriority?.(name) ?? ''
+
+///|
+/// Removes one inline CSS property while preserving sibling declarations.
+pub extern "js" fn remove_style_property(
+  element : @rdom.Element,
+  name : String,
+) -> Unit = "(element, name) => { element?.style?.removeProperty?.(name); }"
+
+///|
+/// Writes one inline CSS property together with its explicit priority.
+pub extern "js" fn set_style_property_with_priority(
+  element : @rdom.Element,
+  name : String,
+  value : String,
+  priority : String,
+) -> Unit =
+  #| (element, name, value, priority) => {
+  #|   element?.style?.setProperty?.(name, value, priority);
+  #| }
 
 ///|
 /// Removes an element if attached. `HTMLElement.remove()` is idempotent; the
