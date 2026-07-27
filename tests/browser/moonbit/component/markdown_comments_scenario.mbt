@@ -9,7 +9,7 @@ fn markdown_comments_initial_source() -> String {
     #|/// # Start comment
     #|/// Start prose with [fixture link](https://example.test/docs).
     #|alpha_code_truth
-    #|let long_neighbor = "soft wrapped source neighbor alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu nu xi omicron pi rho sigma tau"
+    #|let long_neighbor = "horizontal_overflow_sentinel alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu nu xi omicron pi rho sigma tau upsilon phi chi psi omega alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu nu xi omicron pi rho sigma tau upsilon phi chi psi omega alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu nu xi omicron pi rho sigma tau upsilon phi chi psi omega"
     #|/// ## Middle comment
     #|/// The **same-key initial phrase** is deliberately long enough to reflow after the public Viewer host becomes narrow.
     #|/// - first item
@@ -28,6 +28,10 @@ fn markdown_comments_initial_source() -> String {
     #|/// svg -> browser: mount
     #|/// ```
     #|///
+    #|/// ```diago
+    #|/// compact -> viewport: fit
+    #|/// ```
+    #|///
     #|/// ![fixture image](https://images.example.test/markdown-comment.svg)
     #|/// EOF paragraph.
   source
@@ -39,7 +43,7 @@ fn markdown_comments_same_key_source() -> String {
     #|/// # Start comment
     #|/// Start prose with [fixture link](https://example.test/docs).
     #|alpha_code_truth
-    #|let long_neighbor = "soft wrapped source neighbor alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu nu xi omicron pi rho sigma tau"
+    #|let long_neighbor = "horizontal_overflow_sentinel alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu nu xi omicron pi rho sigma tau upsilon phi chi psi omega alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu nu xi omicron pi rho sigma tau upsilon phi chi psi omega alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu nu xi omicron pi rho sigma tau upsilon phi chi psi omega"
     #|/// ## Middle updated
     #|/// The same-key replacement body is intentionally even longer so width changes produce a visible measured-height transition without changing this block's half-open line range.
     #|/// 1. updated first item
@@ -56,6 +60,10 @@ fn markdown_comments_same_key_source() -> String {
     #|/// parser -> layout: layout
     #|/// layout -> svg: render
     #|/// svg -> browser: mount
+    #|/// ```
+    #|///
+    #|/// ```diago
+    #|/// compact -> viewport: replaced
     #|/// ```
     #|///
     #|/// ![fixture image](https://images.example.test/markdown-comment.svg)
@@ -106,7 +114,13 @@ fn markdown_comments_offscreen_source() -> String {
     if line > 1 {
       source.write_char('\n')
     }
-    source.write_string("offscreen_code_line_\{line}")
+    if line == 10 {
+      source.write_string(
+        "offscreen_horizontal_overflow_sentinel alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu nu xi omicron pi rho sigma tau upsilon phi chi psi omega alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu nu xi omicron pi rho sigma tau upsilon phi chi psi omega alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu nu xi omicron pi rho sigma tau upsilon phi chi psi omega",
+      )
+    } else {
+      source.write_string("offscreen_code_line_\{line}")
+    }
   }
   source.write_string(
     (
@@ -118,6 +132,12 @@ fn markdown_comments_offscreen_source() -> String {
       #|/// - second measured item
       #|/// - third measured item
       #|/// - fourth measured item
+      #|///
+      #|/// ```diago
+      #|/// direction: down
+      #|/// offscreen -> viewport: initialize
+      #|/// viewport -> browser: reveal
+      #|/// ```
       #|///
       #|/// ![fixture image](https://images.example.test/markdown-comment.svg)
       #|/// Final offscreen paragraph.
@@ -162,6 +182,10 @@ fn markdown_comments_state_json(
     "replacementAttachedEditors": replacement
     .get_attached_editor_count()
     .to_json(),
+    "softWrap": viewer.get_options().soft_wrap().to_json(),
+    "scrollLeft": viewer.get_scroll_left().to_json(),
+    "scrollWidth": viewer.get_scroll_width().to_json(),
+    "contentWidth": viewer.get_content_width().to_json(),
     "scrollTop": viewer.get_scroll_top().to_json(),
     "scrollHeight": viewer.get_scroll_height().to_json(),
   }).stringify()
@@ -229,7 +253,7 @@ fn run_markdown_comments_test() -> Unit {
   let viewer = @viewer.Viewer::create(
     host,
     services~,
-    options=ViewerOptions(soft_wrap=true, smooth_scrolling=false),
+    options=ViewerOptions(soft_wrap=false, smooth_scrolling=false),
   )
   viewer.set_model(Some(primary))
   viewer.handle_initialized()
@@ -263,6 +287,11 @@ fn run_markdown_comments_test() -> Unit {
       viewer.handle_initialized()
     },
     () => viewer.set_scroll_top(viewer.get_scroll_height()),
+    top => viewer.set_scroll_top(top.to_double()),
+    left => viewer.set_scroll_left(left.to_double()),
+    enabled => {
+      viewer.update_options(viewer.get_options().with_soft_wrap(enabled))
+    },
     () => viewer.dispose(),
   )
   poll_markdown_comments_ready(ctx, 120)
@@ -275,11 +304,12 @@ fn poll_markdown_comments_ready(
 ) -> Unit {
   let zones = @support.query_count(".moonbit-viewer-markdown-comment")
   let diagrams = @support.query_count(
-    ".markdown-comments-host .moonbit-viewer-markdown-diagram > svg",
+    ".markdown-comments-host .moonbit-viewer-markdown-diagram-content" +
+    " > svg",
   )
   let text = @support.query_text(".markdown-comments-host")
   if zones == 3 &&
-    diagrams == 1 &&
+    diagrams == 2 &&
     text.contains("Start comment") &&
     text.contains("Middle comment") &&
     text.contains("EOF paragraph") &&
@@ -323,12 +353,16 @@ extern "js" fn install_markdown_comments_controls(
   attach_replacement : () -> Unit,
   reattach_primary : () -> Unit,
   scroll_to_bottom : () -> Unit,
+  set_scroll_top : (Int) -> Unit,
+  set_scroll_left : (Int) -> Unit,
+  set_soft_wrap : (Bool) -> Unit,
   dispose_viewer : () -> Unit,
 ) -> Unit =
   #| (host, initialRoot, stateJson, sameKeyUpdate, restructure,
   #|  restoreInitial, foldingSource, offscreenSource, resize,
   #|  setModelSelection, focus, detach, attachReplacement, reattachPrimary,
-  #|  scrollToBottom, disposeViewer) => {
+  #|  scrollToBottom, setScrollTop, setScrollLeft, setSoftWrap,
+  #|  disposeViewer) => {
   #|   const keyLog = [];
   #|   const copyLog = [];
   #|   let disposed = false;
@@ -371,6 +405,9 @@ extern "js" fn install_markdown_comments_controls(
   #|     attach_replacement: attachReplacement,
   #|     reattach_primary: reattachPrimary,
   #|     scroll_to_bottom: scrollToBottom,
+  #|     set_scroll_top: setScrollTop,
+  #|     set_scroll_left: setScrollLeft,
+  #|     set_soft_wrap: setSoftWrap,
   #|     dispose: () => {
   #|       disposeViewer();
   #|       disposed = true;

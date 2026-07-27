@@ -9,6 +9,14 @@ const editor = `${host} > .monaco-editor.readonly-editor`;
 const zone = `${editor} .moonbit-viewer-markdown-comment`;
 const content = '.moonbit-viewer-markdown-comment-content';
 const diagram = '.moonbit-viewer-markdown-diagram';
+const diagramViewport =
+  `${diagram}.moonbit-viewer-markdown-diagram-viewport`;
+const diagramContent = '.moonbit-viewer-markdown-diagram-content';
+const diagramControls = '.moonbit-viewer-markdown-diagram-controls';
+const diagramResizeHandle =
+  '.moonbit-viewer-markdown-diagram-resize-handle';
+const editorScrollable =
+  `${editor} .monaco-scrollable-element.editor-scrollable`;
 const imageUrl = 'https://images.example.test/markdown-comment.svg';
 
 const fixtureSvg = `
@@ -54,7 +62,7 @@ async function mountMarkdownComments(page, testInfo) {
   });
   expectMoonBitReportPassed(report, { suite: 'markdown_comments' });
   expect(report.metrics.initialZones).toBe(3);
-  expect(report.metrics.initialDiagrams).toBe(1);
+  expect(report.metrics.initialDiagrams).toBe(2);
   await expect(page.locator(zone)).toHaveCount(3);
   await settle(page);
   return reporter;
@@ -72,6 +80,78 @@ async function state(page) {
   return control(page, 'state');
 }
 
+async function horizontalViewportGeometry(page) {
+  return page.locator(editor).evaluate((root) => {
+    const rect = (node) => {
+      const value = node.getBoundingClientRect();
+      return {
+        top: value.top,
+        bottom: value.bottom,
+        left: value.left,
+        right: value.right,
+        width: value.width,
+        height: value.height,
+      };
+    };
+    const required = (selector, scope = root) => {
+      const node = scope.querySelector(selector);
+      if (!node) throw new Error(`missing horizontal geometry node: ${selector}`);
+      return node;
+    };
+    const scrollable = required(
+      '.monaco-scrollable-element.editor-scrollable',
+    );
+    const rail = required(':scope > .scrollbar.vertical', scrollable);
+    const viewZones = required('.view-zones');
+    const outers = Array.from(
+      root.querySelectorAll('.moonbit-viewer-markdown-comment'),
+    );
+    if (outers.length === 0) {
+      throw new Error('missing Markdown comment outer nodes');
+    }
+    const sourceLine = Array.from(
+      root.querySelectorAll('.view-lines .view-line'),
+    ).find((node) =>
+      node.textContent.includes('horizontal_overflow_sentinel'));
+    if (!sourceLine) throw new Error('missing horizontal overflow source line');
+    const sourceContent =
+      sourceLine.querySelector('.view-line-content') ?? sourceLine;
+    const viewport = required(
+      '.moonbit-viewer-markdown-diagram-viewport',
+    );
+    const toolbar = required(
+      ':scope > .moonbit-viewer-markdown-diagram-controls',
+      viewport,
+    );
+    const transformContent = required(
+      ':scope > .moonbit-viewer-markdown-diagram-content',
+      viewport,
+    );
+    return {
+      scrollable: rect(scrollable),
+      rail: rect(rail),
+      viewZones: rect(viewZones),
+      outers: outers.map(rect),
+      source: rect(sourceContent),
+      diagram: rect(viewport),
+      toolbar: rect(toolbar),
+      diagramTransform: transformContent.style.transform,
+    };
+  });
+}
+
+function expectMarkdownPinnedToVisibleViewport(geometry) {
+  expect(geometry.rail.width).toBeGreaterThan(0);
+  for (const outer of geometry.outers) {
+    expectNear(outer.left, geometry.scrollable.left);
+    expectNear(outer.right, geometry.rail.left);
+    expectNear(
+      outer.width,
+      geometry.rail.left - geometry.scrollable.left,
+    );
+  }
+}
+
 async function zoneRanges(page) {
   return page.locator(zone).evaluateAll((nodes) =>
     nodes.map((node) => [
@@ -79,6 +159,36 @@ async function zoneRanges(page) {
       Number(node.getAttribute('data-end-line')),
     ]),
   );
+}
+
+async function viewportGeometry(locator) {
+  return locator.evaluate((wrapper) => {
+    const transformContent = wrapper.querySelector(
+      ':scope > .moonbit-viewer-markdown-diagram-content',
+    );
+    const svg = transformContent.querySelector(':scope > svg');
+    const wrapperRect = wrapper.getBoundingClientRect();
+    const svgRect = svg.getBoundingClientRect();
+    const transform = new DOMMatrixReadOnly(
+      window.getComputedStyle(transformContent).transform,
+    );
+    return {
+      wrapperHeight: wrapperRect.height,
+      wrapperWidth: wrapperRect.width,
+      inlineHeight: Number.parseFloat(wrapper.style.height),
+      svgHeight: svgRect.height,
+      svgWidth: svgRect.width,
+      scale: transform.a,
+      scaleY: transform.d,
+      translateX: transform.e,
+      translateY: transform.f,
+      transform: transformContent.style.transform,
+    };
+  });
+}
+
+function expectNear(actual, expected, tolerance = 1) {
+  expect(Math.abs(actual - expected)).toBeLessThanOrEqual(tolerance);
 }
 
 function relativeLuminance(color) {
@@ -174,7 +284,7 @@ test('public Viewer replaces whole-line source with themed Markdown while model 
     expect(await zoneRanges(page)).toEqual([
       [1, 3],
       [5, 9],
-      [10, 25],
+      [10, 29],
     ]);
 
     const zones = page.locator(zone);
@@ -189,13 +299,58 @@ test('public Viewer replaces whole-line source with themed Markdown while model 
       'let fenced_value = 42',
     );
     await expect(fencedCode.locator('.mtk3')).not.toHaveCount(0);
-    const diagoDiagram = zones
+    const diagoDiagrams = zones
       .nth(2)
       .locator(`${diagram}[data-diagram-language="diago"]`);
-    await expect(diagoDiagram).toHaveCount(1);
-    await expect(diagoDiagram.locator(':scope > svg')).toHaveCount(1);
+    await expect(diagoDiagrams).toHaveCount(2);
+    const diagoDiagram = diagoDiagrams.nth(0);
+    const compactDiagram = diagoDiagrams.nth(1);
+    for (const renderedDiagram of [diagoDiagram, compactDiagram]) {
+      await expect(renderedDiagram).toHaveClass(
+        /moonbit-viewer-markdown-diagram-viewport/,
+      );
+      await expect(
+        renderedDiagram.locator(`:scope > ${diagramContent} > svg`),
+      ).toHaveCount(1);
+      await expect(renderedDiagram.locator(':scope > svg')).toHaveCount(0);
+      await expect(
+        renderedDiagram.locator(`:scope > ${diagramControls} > button`),
+      ).toHaveCount(4);
+      await expect(
+        renderedDiagram.locator(`:scope > ${diagramResizeHandle}`),
+      ).toHaveCount(1);
+      await expect(renderedDiagram).toHaveAttribute(
+        'aria-label',
+        'Interactive Diago diagram',
+      );
+      await expect(renderedDiagram).toHaveAttribute('tabindex', '0');
+    }
+    await expect(
+      diagoDiagram.locator('[aria-label="Toggle pan mode"]'),
+    ).toHaveAttribute('aria-pressed', 'false');
+    await expect(
+      diagoDiagram.locator('[aria-label="Zoom out"]'),
+    ).toHaveCount(1);
+    await expect(
+      diagoDiagram.locator('[aria-label="Zoom in"]'),
+    ).toHaveCount(1);
+    await expect(
+      diagoDiagram.locator('[aria-label="Fit diagram"]'),
+    ).toHaveCount(1);
+    const resizeHandle = diagoDiagram.locator(
+      '[aria-label="Resize diagram"]',
+    );
+    await expect(resizeHandle).toHaveAttribute('role', 'separator');
+    await expect(resizeHandle).toHaveAttribute('tabindex', '0');
+    await expect(resizeHandle).toHaveAttribute(
+      'aria-orientation',
+      'horizontal',
+    );
     const diagramLayout = await diagoDiagram.evaluate((wrapper) => {
-      const svg = wrapper.querySelector(':scope > svg');
+      const transformContent = wrapper.querySelector(
+        ':scope > .moonbit-viewer-markdown-diagram-content',
+      );
+      const svg = transformContent.querySelector(':scope > svg');
       const inner = wrapper.closest(
         '.moonbit-viewer-markdown-comment-content',
       );
@@ -215,7 +370,6 @@ test('public Viewer replaces whole-line source with themed Markdown while model 
         svgWidth: svgRect.width,
         svgAspectRatio: svgRect.width / svgRect.height,
         viewBoxAspectRatio: viewBox.width / viewBox.height,
-        expectedMaxHeight: Math.min(window.innerHeight * 0.5, 480),
         innerClientWidth: inner.clientWidth,
         innerHeight: inner.offsetHeight,
         outerHeight: outerRect.height,
@@ -229,37 +383,45 @@ test('public Viewer replaces whole-line source with themed Markdown while model 
         diagramWithinMeasuredHeight: wrapperRect.bottom <= innerRect.bottom + 1,
         overflowX: window.getComputedStyle(wrapper).overflowX,
         overflowY: window.getComputedStyle(wrapper).overflowY,
+        position: window.getComputedStyle(wrapper).position,
+        boxSizing: window.getComputedStyle(wrapper).boxSizing,
         wrapperMaxWidth: window.getComputedStyle(wrapper).maxWidth,
         svgDisplay: window.getComputedStyle(svg).display,
         svgMaxWidth: window.getComputedStyle(svg).maxWidth,
+        transformOrigin:
+          window.getComputedStyle(transformContent).transformOrigin,
+        preserveAspectRatio: svg.getAttribute('preserveAspectRatio'),
+        hasWidth: svg.hasAttribute('width'),
+        hasHeight: svg.hasAttribute('height'),
       };
     });
     expect(diagramLayout).toMatchObject({
       wrapperWithinContent: true,
       svgWithinWrapper: true,
       diagramWithinMeasuredHeight: true,
-      overflowX: 'auto',
-      overflowY: 'auto',
+      overflowX: 'hidden',
+      overflowY: 'hidden',
+      position: 'relative',
+      boxSizing: 'border-box',
       wrapperMaxWidth: '100%',
       svgDisplay: 'block',
       svgMaxWidth: '100%',
+      transformOrigin: '0px 0px',
+      preserveAspectRatio: 'xMinYMin meet',
+      hasWidth: false,
+      hasHeight: false,
     });
-    expect(diagramLayout.wrapperHeight).toBeGreaterThan(0);
+    expect(diagramLayout.wrapperHeight).toBeGreaterThan(480);
     expect(diagramLayout.svgHeight).toBeGreaterThan(0);
-    expect(
-      Math.abs(
-        diagramLayout.wrapperClientHeight - diagramLayout.expectedMaxHeight,
-      ),
-    ).toBeLessThanOrEqual(1);
-    expect(
-      Math.abs(diagramLayout.wrapperHeight - diagramLayout.wrapperClientHeight),
-    ).toBeLessThanOrEqual(1);
-    expect(diagramLayout.wrapperScrollHeight).toBeGreaterThan(
-      diagramLayout.wrapperClientHeight + 1,
+    expectNear(
+      diagramLayout.wrapperHeight,
+      diagramLayout.wrapperClientHeight,
     );
-    expect(diagramLayout.svgHeight).toBeGreaterThan(
-      diagramLayout.wrapperClientHeight + 1,
+    expectNear(
+      diagramLayout.wrapperScrollHeight,
+      diagramLayout.wrapperClientHeight,
     );
+    expectNear(diagramLayout.svgHeight, diagramLayout.wrapperClientHeight);
     expect(
       Math.abs(
         diagramLayout.svgAspectRatio - diagramLayout.viewBoxAspectRatio,
@@ -347,12 +509,12 @@ test('public Viewer replaces whole-line source with themed Markdown while model 
       return {
         start: rect(byRange(1, 3)),
         middle: rect(byRange(5, 9)),
-        eof: rect(byRange(10, 25)),
+        eof: rect(byRange(10, 29)),
         alpha: rect(lineWith('alpha_code_truth')),
         omega: rect(lineWith('omega_code_truth')),
         startHeading: rect(byRange(1, 3).querySelector('h1')),
         eofCode: rect(
-          byRange(10, 25).querySelector('.monaco-tokenized-source'),
+          byRange(10, 29).querySelector('.monaco-tokenized-source'),
         ),
         alphaContent: rect(
           lineWith('alpha_code_truth').querySelector('.view-line-content'),
@@ -374,7 +536,7 @@ test('public Viewer replaces whole-line source with themed Markdown while model 
     expect(
       Math.abs(geometry.eofCode.left - geometry.omegaContent.left),
     ).toBeLessThanOrEqual(1);
-    expect(geometry.visibleLineCount).toBeGreaterThan(3);
+    expect(geometry.visibleLineCount).toBeGreaterThanOrEqual(3);
     expect(geometry.visibleSourceText).not.toContain('///');
     expect(geometry.visibleSourceText).not.toContain('Start comment');
 
@@ -406,58 +568,28 @@ test('public Viewer replaces whole-line source with themed Markdown while model 
     );
     expect(initialState.primaryValue).toContain(imageUrl);
 
-    // The diagram owns wheel input only while it can consume that delta. The
-    // browser keeps native scrolling because the shared listener never calls
-    // preventDefault; the editor's scroll position must stay unchanged.
+    // An interactive viewport has no native diagram scroller. Ordinary wheel
+    // input bubbles to the public Viewer scroll surface without changing its
+    // transform.
+    await diagoDiagram.scrollIntoViewIfNeeded();
+    await settle(page);
     const diagramBox = await diagoDiagram.boundingBox();
     expect(diagramBox).not.toBeNull();
     await page.mouse.move(
       diagramBox.x + diagramBox.width / 2,
-      diagramBox.y + Math.min(100, diagramBox.height / 2),
+      Math.max(20, Math.min(660, diagramBox.y + 100)),
     );
-    const diagramScrollBefore = await diagoDiagram.evaluate(
-      (wrapper) => wrapper.scrollTop,
-    );
+    const diagramBeforeWheel = await viewportGeometry(diagoDiagram);
     const editorScrollBefore = (await state(page)).scrollTop;
     await page.mouse.wheel(0, 160);
     await expect
-      .poll(() => diagoDiagram.evaluate((wrapper) => wrapper.scrollTop))
-      .toBeGreaterThan(diagramScrollBefore);
-    expect(
-      Math.abs((await state(page)).scrollTop - editorScrollBefore),
-    ).toBeLessThanOrEqual(1);
-
-    const boundaryHandoff = await diagoDiagram.evaluate((wrapper) => {
-      const owner = wrapper.closest(
-        '.moonbit-viewer-markdown-comment-content',
-      );
-      wrapper.scrollTop = wrapper.scrollHeight;
-      let bubbled = 0;
-      const observe = (event) => {
-        bubbled += 1;
-        // Observe the handoff before Monaco consumes the synthetic wheel.
-        event.stopPropagation();
-      };
-      owner.addEventListener('wheel', observe);
-      wrapper.dispatchEvent(
-        new WheelEvent('wheel', {
-          bubbles: true,
-          cancelable: true,
-          deltaY: 160,
-        }),
-      );
-      owner.removeEventListener('wheel', observe);
-      return {
-        atBottom:
-          wrapper.scrollTop + wrapper.clientHeight >=
-          wrapper.scrollHeight - 1,
-        bubbled,
-      };
-    });
-    expect(boundaryHandoff).toEqual({ atBottom: true, bubbled: 1 });
-    await diagoDiagram.evaluate((wrapper) => {
-      wrapper.scrollTop = 0;
-    });
+      .poll(async () => (await state(page)).scrollTop)
+      .toBeGreaterThan(editorScrollBefore);
+    const diagramAfterWheel = await viewportGeometry(diagoDiagram);
+    expect(diagramAfterWheel.transform).toBe(diagramBeforeWheel.transform);
+    expect(await diagoDiagram.evaluate((wrapper) => wrapper.scrollTop)).toBe(0);
+    await control(page, 'set_scroll_top', 0);
+    await settle(page);
 
     await control(page, 'set_model_selection');
     await control(page, 'focus');
@@ -572,6 +704,505 @@ test('keeps the Markdown surface distinct from source and fenced code in both th
   }
 });
 
+test('pins Markdown to the visible viewport while long source keeps its horizontal scroll plane', async ({
+  page,
+}, testInfo) => {
+  const reporter = await mountMarkdownComments(page, testInfo);
+  try {
+    const zeroState = await state(page);
+    expect(zeroState.softWrap).toBe(false);
+    expect(zeroState.scrollLeft).toBe(0);
+
+    const zero = await horizontalViewportGeometry(page);
+    expectMarkdownPinnedToVisibleViewport(zero);
+    expect(zeroState.scrollWidth).toBeGreaterThan(zero.scrollable.width + 100);
+    expect(zeroState.contentWidth).toBeGreaterThan(
+      zero.scrollable.width + 100,
+    );
+    expect(zero.viewZones.width).toBeGreaterThan(
+      zero.scrollable.width + 100,
+    );
+
+    const maximumRequest = Math.floor(zeroState.scrollWidth);
+    const middleRequest = Math.max(
+      1,
+      Math.floor((zeroState.scrollWidth - zero.scrollable.width) / 2),
+    );
+    const samples = [{ state: zeroState, geometry: zero }];
+    for (const requested of [middleRequest, maximumRequest]) {
+      await control(page, 'set_scroll_left', requested);
+      await expect
+        .poll(async () => (await state(page)).scrollLeft)
+        .toBeGreaterThan(samples.at(-1).state.scrollLeft);
+      await settle(page);
+      samples.push({
+        state: await state(page),
+        geometry: await horizontalViewportGeometry(page),
+      });
+    }
+
+    for (const sample of samples) {
+      expectMarkdownPinnedToVisibleViewport(sample.geometry);
+      expect(sample.geometry.viewZones.width).toBeGreaterThan(
+        sample.geometry.scrollable.width + 100,
+      );
+      expectNear(
+        sample.geometry.source.left,
+        zero.source.left - sample.state.scrollLeft,
+      );
+      expectNear(sample.geometry.diagram.left, zero.diagram.left);
+      expectNear(sample.geometry.diagram.right, zero.diagram.right);
+      expectNear(sample.geometry.toolbar.right, zero.toolbar.right);
+      expect(sample.geometry.diagramTransform).toBe(zero.diagramTransform);
+      sample.geometry.outers.forEach((outer, index) => {
+        expectNear(outer.height, zero.outers[index].height);
+      });
+    }
+
+    // Widen from the maximum horizontal position so the new maximum is
+    // smaller but remains non-zero. This exercises real scrollLeft clamping,
+    // not merely a resize that increases the available scroll range.
+    const maximumSample = samples.at(-1);
+    await control(page, 'resize', 900);
+    await expect
+      .poll(async () => (await state(page)).scrollLeft)
+      .toBeGreaterThan(0);
+    await expect
+      .poll(async () => (await state(page)).scrollLeft)
+      .toBeLessThan(maximumSample.state.scrollLeft);
+    await settle(page);
+    const resizedState = await state(page);
+    const resized = await horizontalViewportGeometry(page);
+    expect(resizedState.scrollLeft).toBeLessThanOrEqual(
+      Math.max(0, resizedState.scrollWidth - resized.scrollable.width) + 1,
+    );
+    expectMarkdownPinnedToVisibleViewport(resized);
+    expectNear(
+      resized.source.left - resized.scrollable.left + resizedState.scrollLeft,
+      zero.source.left - zero.scrollable.left,
+    );
+    expectNear(
+      resized.diagram.right - resized.toolbar.right,
+      zero.diagram.right - zero.toolbar.right,
+    );
+    expect(resized.diagram.right).toBeLessThanOrEqual(resized.rail.left + 1);
+    expect(
+      resized.outers.some(
+        (outer, index) =>
+          Math.abs(outer.height - maximumSample.geometry.outers[index].height)
+          > 1,
+      ),
+    ).toBe(true);
+
+    // Soft wrap removes the horizontal range and clamps scrollLeft. Toggling
+    // it back restores overflow without changing the Markdown viewport
+    // contract, after which horizontal scrolling can resume.
+    await control(page, 'set_soft_wrap', true);
+    await expect.poll(async () => (await state(page)).softWrap).toBe(true);
+    await expect
+      .poll(async () => (await state(page)).scrollLeft)
+      .toBeLessThan(resizedState.scrollLeft);
+    await settle(page);
+    const wrappedState = await state(page);
+    const wrapped = await horizontalViewportGeometry(page);
+    expect(wrappedState.scrollLeft).toBeLessThanOrEqual(
+      Math.max(0, wrappedState.scrollWidth - wrapped.scrollable.width) + 1,
+    );
+    expectMarkdownPinnedToVisibleViewport(wrapped);
+
+    await control(page, 'set_soft_wrap', false);
+    await expect.poll(async () => (await state(page)).softWrap).toBe(false);
+    await expect
+      .poll(async () => (await state(page)).scrollWidth)
+      .toBeGreaterThan(resized.scrollable.width + 100);
+    await control(page, 'set_scroll_left', middleRequest);
+    await expect
+      .poll(async () => (await state(page)).scrollLeft)
+      .toBeGreaterThan(0);
+    await settle(page);
+    expectMarkdownPinnedToVisibleViewport(
+      await horizontalViewportGeometry(page),
+    );
+  } finally {
+    reporter.dispose();
+  }
+});
+
+test('interactive Diago controls pan zoom fit resize and keep sibling state independent', async ({
+  page,
+}, testInfo) => {
+  const reporter = await mountMarkdownComments(page, testInfo);
+  try {
+    const viewports = page.locator(`${zone} ${diagramViewport}`);
+    await expect(viewports).toHaveCount(2);
+    const large = viewports.nth(0);
+    const compact = viewports.nth(1);
+
+    // Before either diagram has been touched, a host resize recomputes natural
+    // geometry and keeps scale 1. Both controllers observe the same public
+    // Viewer layout but own independent transforms.
+    const compactWide = await viewportGeometry(compact);
+    await control(page, 'resize', 420);
+    await expect
+      .poll(async () => (await viewportGeometry(compact)).wrapperWidth)
+      .toBeLessThan(compactWide.wrapperWidth - 20);
+    const compactNarrow = await viewportGeometry(compact);
+    expectNear(compactNarrow.scale, 1, 0.001);
+    expectNear(compactNarrow.scaleY, 1, 0.001);
+    expectNear(compactNarrow.translateY, 0, 0.01);
+    expect(compactNarrow.wrapperHeight).not.toBe(compactWide.wrapperHeight);
+
+    await large.scrollIntoViewIfNeeded();
+    await settle(page);
+    await control(page, 'set_model_selection');
+    const selectionBeforeInput = (await state(page)).selection;
+    const compactBeforeLargeInput = await viewportGeometry(compact);
+    const initial = await viewportGeometry(large);
+    expectNear(initial.scale, 1, 0.001);
+
+    const pan = large.locator('[aria-label="Toggle pan mode"]');
+    const zoomOut = large.locator('[aria-label="Zoom out"]');
+    const zoomIn = large.locator('[aria-label="Zoom in"]');
+    const fit = large.locator('[aria-label="Fit diagram"]');
+    await zoomIn.focus();
+    const windowWidth = await page.evaluate(() => window.innerWidth);
+    await page.mouse.move(windowWidth - 2, 20);
+    await expect(large.locator(`:scope > ${diagramControls}`)).toHaveCSS(
+      'opacity',
+      '1',
+    );
+    await pan.click();
+    await expect(pan).toHaveAttribute('aria-pressed', 'true');
+    const panBox = await large.boundingBox();
+    expect(panBox).not.toBeNull();
+    const panX = panBox.x + panBox.width * 0.35;
+    const panY = Math.max(30, Math.min(620, panBox.y + 160));
+    await page.mouse.move(panX, panY);
+    await page.mouse.down();
+    await page.mouse.move(panX + 36, panY + 24, { steps: 3 });
+    await page.mouse.up();
+    const plainPanned = await viewportGeometry(large);
+    expectNear(plainPanned.translateX - initial.translateX, 36, 2);
+    expectNear(plainPanned.translateY - initial.translateY, 24, 2);
+    await pan.click();
+    await expect(pan).toHaveAttribute('aria-pressed', 'false');
+
+    // Alt drag pans while the toggle is off. Its >3px single-move threshold is
+    // covered exactly by the reference test; this direct proof uses a clearly
+    // visible gesture.
+    const altPanBox = await large.boundingBox();
+    const altPanX = altPanBox.x + altPanBox.width * 0.35;
+    const altPanY = Math.max(30, Math.min(620, altPanBox.y + 190));
+    await page.keyboard.down('Alt');
+    await page.mouse.move(altPanX, altPanY);
+    await page.mouse.down();
+    await page.mouse.move(altPanX + 28, altPanY - 20, { steps: 2 });
+    await page.mouse.up();
+    await page.keyboard.up('Alt');
+    const modifierPanned = await viewportGeometry(large);
+    expectNear(modifierPanned.translateX - plainPanned.translateX, 28, 2);
+    expectNear(modifierPanned.translateY - plainPanned.translateY, -20, 2);
+
+    await zoomOut.click();
+    expectNear((await viewportGeometry(large)).scale, 0.8, 0.001);
+    await zoomIn.click();
+    expectNear((await viewportGeometry(large)).scale, 1, 0.001);
+    await fit.click();
+    const fitted = await viewportGeometry(large);
+    expect(fitted.scale).toBeGreaterThan(0);
+    expect(fitted.scale).toBeLessThan(1);
+    const fittedRect = await large.evaluate((wrapper) => {
+      const svg = wrapper.querySelector(
+        ':scope > .moonbit-viewer-markdown-diagram-content > svg',
+      );
+      const viewportRect = wrapper.getBoundingClientRect();
+      const svgRect = svg.getBoundingClientRect();
+      return {
+        left: svgRect.left - viewportRect.left,
+        right: viewportRect.right - svgRect.right,
+        top: svgRect.top - viewportRect.top,
+        bottom: viewportRect.bottom - svgRect.bottom,
+      };
+    });
+    expect(fittedRect.left).toBeGreaterThanOrEqual(15);
+    expect(fittedRect.right).toBeGreaterThanOrEqual(15);
+    expect(fittedRect.top).toBeGreaterThanOrEqual(15);
+    expect(fittedRect.bottom).toBeGreaterThanOrEqual(15);
+
+    await zoomIn.click();
+    const toolbarZoomed = await viewportGeometry(large);
+    expectNear(toolbarZoomed.scale, fitted.scale * 1.25, 0.002);
+    const wheelOwnership = await large.evaluate((wrapper) => {
+      const rect = wrapper.getBoundingClientRect();
+      const dispatch = (init) => {
+        const event = new WheelEvent('wheel', {
+          bubbles: true,
+          cancelable: true,
+          clientX: rect.left + rect.width / 2,
+          clientY: rect.top + Math.min(100, rect.height / 2),
+          ...init,
+        });
+        const returned = wrapper.dispatchEvent(event);
+        return { defaultPrevented: event.defaultPrevented, returned };
+      };
+      return {
+        alt: dispatch({ altKey: true, deltaY: -20 }),
+        ctrl: dispatch({ ctrlKey: true, deltaY: -2 }),
+      };
+    });
+    expect(wheelOwnership).toEqual({
+      alt: { defaultPrevented: true, returned: false },
+      ctrl: { defaultPrevented: true, returned: false },
+    });
+    const modifierZoomed = await viewportGeometry(large);
+    expect(modifierZoomed.scale).toBeGreaterThan(toolbarZoomed.scale);
+
+    const clickBox = await large.boundingBox();
+    const clickPosition = {
+      x: clickBox.width * 0.3,
+      y: Math.min(120, clickBox.height * 0.3),
+    };
+    const beforeAltClick = await viewportGeometry(large);
+    await large.click({ position: clickPosition, modifiers: ['Alt'] });
+    const afterAltClick = await viewportGeometry(large);
+    expect(afterAltClick.scale).toBeGreaterThan(beforeAltClick.scale);
+    await large.click({
+      position: clickPosition,
+      modifiers: ['Alt', 'Shift'],
+    });
+    expect((await viewportGeometry(large)).scale).toBeLessThan(
+      afterAltClick.scale,
+    );
+
+    const compactAfterLargeInput = await viewportGeometry(compact);
+    expect(compactAfterLargeInput.transform).toBe(
+      compactBeforeLargeInput.transform,
+    );
+
+    const handle = large.locator(diagramResizeHandle);
+    await handle.scrollIntoViewIfNeeded();
+    await settle(page);
+    const heightBeforePointer = (await viewportGeometry(large)).wrapperHeight;
+    const zoneHeightBeforePointer = await large.evaluate(
+      (wrapper) =>
+        wrapper.closest('.moonbit-viewer-markdown-comment')
+          .getBoundingClientRect().height,
+    );
+    const handleBox = await handle.boundingBox();
+    expect(handleBox).not.toBeNull();
+    await page.mouse.move(
+      handleBox.x + handleBox.width / 2,
+      handleBox.y + handleBox.height / 2,
+    );
+    await page.mouse.down();
+    await page.mouse.move(
+      handleBox.x + handleBox.width / 2,
+      handleBox.y + handleBox.height / 2 + 60,
+      { steps: 4 },
+    );
+    await page.mouse.up();
+    await expect
+      .poll(async () => (await viewportGeometry(large)).wrapperHeight)
+      .toBeGreaterThan(heightBeforePointer + 55);
+    await expect
+      .poll(() =>
+        large.evaluate(
+          (wrapper) =>
+            wrapper.closest('.moonbit-viewer-markdown-comment')
+              .getBoundingClientRect().height,
+        ),
+      )
+      .toBeGreaterThan(zoneHeightBeforePointer + 55);
+
+    await handle.focus();
+    const heightBeforeKeyboard = (await viewportGeometry(large)).wrapperHeight;
+    await page.keyboard.press('ArrowDown');
+    await expect
+      .poll(async () => (await viewportGeometry(large)).wrapperHeight)
+      .toBeCloseTo(heightBeforeKeyboard + 10, 0);
+    await page.keyboard.press('Shift+ArrowDown');
+    await expect
+      .poll(async () => (await viewportGeometry(large)).wrapperHeight)
+      .toBeCloseTo(heightBeforeKeyboard + 60, 0);
+    await page.keyboard.press('ArrowUp');
+    await expect
+      .poll(async () => (await viewportGeometry(large)).wrapperHeight)
+      .toBeCloseTo(heightBeforeKeyboard + 50, 0);
+
+    // A custom height wins across a later host resize, while prior fit/pan
+    // keeps scale and preserves a visible origin instead of resetting.
+    const beforeResponsiveResize = await viewportGeometry(large);
+    await control(page, 'resize', 620);
+    await expect
+      .poll(async () => (await viewportGeometry(large)).wrapperWidth)
+      .toBeGreaterThan(beforeResponsiveResize.wrapperWidth + 100);
+    const afterResponsiveResize = await viewportGeometry(large);
+    expectNear(
+      afterResponsiveResize.wrapperHeight,
+      beforeResponsiveResize.wrapperHeight,
+      1,
+    );
+    expectNear(afterResponsiveResize.scale, beforeResponsiveResize.scale, 0.002);
+    expect(afterResponsiveResize.transform).not.toBe(
+      beforeResponsiveResize.transform,
+    );
+
+    // A pure horizontal source scroll must not enter the diagram resize or
+    // transform paths. In particular, its caller-selected height is stable.
+    // Bring the long source sentinel into the vertically rendered range so
+    // it contributes the no-wrap horizontal extent used by this gesture.
+    await control(page, 'set_scroll_top', 0);
+    await settle(page);
+    const customHeightBeforeHorizontal = await viewportGeometry(large);
+    await control(page, 'set_scroll_left', 200);
+    await expect
+      .poll(async () => (await state(page)).scrollLeft)
+      .toBeGreaterThan(0);
+    await settle(page);
+    const customHeightAfterHorizontal = await viewportGeometry(large);
+    expectNear(
+      customHeightAfterHorizontal.wrapperHeight,
+      customHeightBeforeHorizontal.wrapperHeight,
+    );
+    expectNear(
+      customHeightAfterHorizontal.inlineHeight,
+      customHeightBeforeHorizontal.inlineHeight,
+    );
+    expect(customHeightAfterHorizontal.transform).toBe(
+      customHeightBeforeHorizontal.transform,
+    );
+    expect((await state(page)).selection).toEqual(selectionBeforeInput);
+  } finally {
+    reporter.dispose();
+  }
+});
+
+test('diagram viewports never cover the editor scrollbar rail and real thumb drag preserves selection', async ({
+  page,
+}, testInfo) => {
+  const reporter = await mountMarkdownComments(page, testInfo);
+  try {
+    const large = page.locator(`${zone} ${diagramViewport}`).first();
+    const scrollable = page.locator(editorScrollable);
+    const verticalBar = scrollable.locator(':scope > .scrollbar.vertical');
+    const slider = verticalBar.locator(':scope > .slider');
+    await expect(verticalBar).toHaveCount(1);
+    await expect(slider).toHaveCount(1);
+
+    // Put the tall diagram behind the entire scrollbar thumb so the hit test
+    // would expose even a one-pixel Markdown overflow into the rail.
+    const desiredScrollTop = await large.evaluate((wrapper) => {
+      const editorRoot = wrapper.closest('.monaco-editor.readonly-editor');
+      const editorRect = editorRoot.getBoundingClientRect();
+      const wrapperRect = wrapper.getBoundingClientRect();
+      const current = Number(
+        globalThis.__markdownCommentsControls.state().scrollTop,
+      );
+      return Math.max(
+        0,
+        Math.round(current + wrapperRect.top - editorRect.top + 20),
+      );
+    });
+    await control(page, 'set_scroll_top', desiredScrollTop);
+    await settle(page);
+    await control(page, 'set_model_selection');
+    const selectionBeforeDrag = (await state(page)).selection;
+
+    const viewportSize = await page.evaluate(() => ({
+      width: window.innerWidth,
+      height: window.innerHeight,
+    }));
+    await page.mouse.move(viewportSize.width - 2, viewportSize.height - 2);
+    await expect(verticalBar).toHaveClass(
+      /(^|\s)invisible(\s|$).*($|\s)fade(\s|$)/,
+      { timeout: 2_500 },
+    );
+    const hiddenPoint = await slider.evaluate((thumb) => {
+      const rect = thumb.getBoundingClientRect();
+      return {
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2,
+      };
+    });
+    const hiddenHit = await page.evaluate(({ x, y }) => {
+      const node = document.elementFromPoint(x, y);
+      return {
+        hitClass: String(node?.className ?? ''),
+        markdownOuter: Boolean(
+          node?.closest?.('.moonbit-viewer-markdown-comment'),
+        ),
+        markdownDescendant: Boolean(
+          node?.closest?.('.moonbit-viewer-markdown-comment-content'),
+        ),
+        diagramDescendant: Boolean(
+          node?.closest?.('.moonbit-viewer-markdown-diagram-viewport'),
+        ),
+      };
+    }, hiddenPoint);
+    const hiddenPointRelation = await large.evaluate(
+      (wrapper, { x, y }) => {
+        const viewportRect = wrapper.getBoundingClientRect();
+        const outerRect = wrapper
+          .closest('.moonbit-viewer-markdown-comment')
+          .getBoundingClientRect();
+        return {
+          overlapsDiagramRow:
+            y >= viewportRect.top && y <= viewportRect.bottom,
+          atOrBeyondMarkdownRight: x >= outerRect.right - 1,
+        };
+      },
+      hiddenPoint,
+    );
+    expect(hiddenPointRelation).toEqual({
+      overlapsDiagramRow: true,
+      atOrBeyondMarkdownRight: true,
+    });
+    expect(hiddenHit).toMatchObject({
+      markdownOuter: false,
+      markdownDescendant: false,
+      diagramDescendant: false,
+    });
+
+    await scrollable.hover({ position: { x: 20, y: 20 } });
+    await expect(verticalBar).toHaveClass(/(^|\s)visible(\s|$)/);
+    const visiblePoint = await slider.evaluate((thumb) => {
+      const rect = thumb.getBoundingClientRect();
+      return {
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2,
+      };
+    });
+    const visibleHit = await page.evaluate(({ x, y }) => {
+      const thumb = document.querySelector(
+        '.markdown-comments-host .monaco-scrollable-element.editor-scrollable'
+          + ' > .scrollbar.vertical > .slider',
+      );
+      const hit = document.elementFromPoint(x, y);
+      return {
+        slider: hit === thumb || thumb.contains(hit),
+        hitClass: String(hit?.className ?? ''),
+      };
+    }, visiblePoint);
+    expect(visibleHit.slider).toBe(true);
+
+    const scrollTopBeforeDrag = (await state(page)).scrollTop;
+    await page.mouse.move(visiblePoint.x, visiblePoint.y);
+    await page.mouse.down();
+    await page.mouse.move(visiblePoint.x, visiblePoint.y + 80, { steps: 4 });
+    await page.mouse.up();
+    await expect
+      .poll(async () => (await state(page)).scrollTop)
+      .toBeGreaterThan(scrollTopBeforeDrag);
+    expect((await state(page)).selection).toEqual(selectionBeforeDrag);
+    expect(await page.evaluate(() => document.getSelection()?.toString())).toBe(
+      '',
+    );
+    await expect(slider).not.toHaveClass(/active/);
+  } finally {
+    reporter.dispose();
+  }
+});
+
 test('same-key replacement retains zone identity, reflows, and reconciles add remove move atomically', async ({
   page,
 }, testInfo) => {
@@ -586,6 +1217,29 @@ test('same-key replacement retains zone identity, reflows, and reconciles add re
     expect(oldOuter).not.toBeNull();
     expect(oldContent).not.toBeNull();
     expect(oldHeading).not.toBeNull();
+    const eofContent = page.locator(zone).nth(2).locator(content);
+    const initialDiagram = eofContent.locator(diagramViewport).nth(0);
+    const oldDiagram = await initialDiagram.elementHandle();
+    const oldDiagramContent = await initialDiagram
+      .locator(`:scope > ${diagramContent}`)
+      .elementHandle();
+    const oldPanButton = await initialDiagram
+      .locator('[aria-label="Toggle pan mode"]')
+      .elementHandle();
+    expect(oldDiagram).not.toBeNull();
+    expect(oldDiagramContent).not.toBeNull();
+    expect(oldPanButton).not.toBeNull();
+    const oldPanPressed = await oldPanButton.evaluate((button) =>
+      button.getAttribute('aria-pressed'));
+    await initialDiagram.locator('[aria-label="Zoom in"]').click();
+    const initialResizeHandle = initialDiagram.locator(diagramResizeHandle);
+    await initialResizeHandle.focus();
+    await page.keyboard.press('ArrowDown');
+    const interactedDiagram = await viewportGeometry(initialDiagram);
+    expect(interactedDiagram.scale).toBeGreaterThan(1);
+    await eofContent.evaluate((node) => {
+      node.style.display = 'none';
+    });
     const versionBefore = (await state(page)).primaryVersion;
 
     const updateFrames = await transitionFrames(page, 'same_key_update');
@@ -609,8 +1263,39 @@ test('same-key replacement retains zone identity, reflows, and reconciles add re
     expect(await zoneRanges(page)).toEqual([
       [1, 3],
       [5, 9],
-      [10, 25],
+      [10, 29],
     ]);
+    const replacementDiagrams = eofContent.locator(diagramViewport);
+    await expect(replacementDiagrams).toHaveCount(2);
+    const replacementDiagram = replacementDiagrams.nth(0);
+    const pendingHeight = await replacementDiagram.evaluate(
+      (wrapper) => wrapper.style.height,
+    );
+    expect(pendingHeight).not.toBe('0px');
+    expect(await oldDiagram.evaluate((node) => node.isConnected)).toBe(false);
+    expect(
+      await oldDiagramContent.evaluate((node) => node.isConnected),
+    ).toBe(false);
+    await oldPanButton.evaluate((button) => button.click());
+    expect(
+      await oldPanButton.evaluate((button) =>
+        button.getAttribute('aria-pressed')),
+    ).toBe(oldPanPressed);
+
+    await eofContent.evaluate((node) => {
+      node.style.removeProperty('display');
+    });
+    await expect
+      .poll(async () => (await viewportGeometry(replacementDiagram)).wrapperHeight)
+      .toBeGreaterThan(0);
+    const replacementGeometry = await viewportGeometry(replacementDiagram);
+    expectNear(replacementGeometry.scale, 1, 0.001);
+    expectNear(replacementGeometry.translateY, 0, 0.01);
+    expect(
+      Math.abs(
+        replacementGeometry.wrapperHeight - interactedDiagram.wrapperHeight,
+      ),
+    ).toBeGreaterThan(5);
 
     const wideHeight = await page
       .locator(`${middleSelector} ${content}`)
@@ -741,10 +1426,15 @@ test('offscreen Markdown measures before first reveal and reflows without a scro
   try {
     await control(page, 'offscreen_source');
     await expect(page.locator(zone)).toHaveCount(1);
-    expect(await zoneRanges(page)).toEqual([[81, 91]]);
+    expect(await zoneRanges(page)).toEqual([[81, 97]]);
     const retained = await page.locator(zone).elementHandle();
     expect(retained).not.toBeNull();
     await expect(page.locator(zone)).not.toBeVisible();
+    const offscreenDiagram = page.locator(`${zone} ${diagramViewport}`);
+    await expect(offscreenDiagram).toHaveCount(1);
+    expect(
+      await offscreenDiagram.evaluate((wrapper) => wrapper.style.height),
+    ).toBe('');
 
     // Eighty short visible lines contribute 1440px. The provisional zone is
     // only one 18px line; crossing this threshold proves the still-offscreen
@@ -753,17 +1443,53 @@ test('offscreen Markdown measures before first reveal and reflows without a scro
       .poll(async () => (await state(page)).scrollHeight)
       .toBeGreaterThan(1560);
     const wideHeight = (await state(page)).scrollHeight;
+    const wideState = await state(page);
+    const wideGeometry = await horizontalViewportGeometry(page);
+    expect(wideState.softWrap).toBe(false);
+    expect(wideState.scrollWidth).toBeGreaterThan(
+      wideGeometry.scrollable.width + 100,
+    );
+    expect(wideGeometry.viewZones.width).toBeGreaterThan(
+      wideGeometry.scrollable.width + 100,
+    );
+
+    await control(page, 'set_scroll_left', 300);
+    await expect
+      .poll(async () => (await state(page)).scrollLeft)
+      .toBeGreaterThan(0);
+    await settle(page);
+    const scrolledGeometry = await horizontalViewportGeometry(page);
+    expect(scrolledGeometry.source.left).toBeLessThan(
+      wideGeometry.source.left - 100,
+    );
 
     await control(page, 'resize', 240);
     await expect(page.locator(zone)).not.toBeVisible();
     await expect
+      .poll(async () => (await state(page)).scrollLeft)
+      .toBeGreaterThan(0);
+    await expect
       .poll(async () => (await state(page)).scrollHeight)
-      .toBeGreaterThan(wideHeight + 20);
+      .toBeLessThan(wideHeight - 20);
+    await settle(page);
+    const hiddenNarrowGeometry = await horizontalViewportGeometry(page);
+    expect(hiddenNarrowGeometry.viewZones.width).toBeGreaterThan(
+      hiddenNarrowGeometry.scrollable.width + 100,
+    );
+    expect(
+      await offscreenDiagram.evaluate((wrapper) => wrapper.style.height),
+    ).toBe('');
     const narrowHeight = (await state(page)).scrollHeight;
 
     await control(page, 'scroll_to_bottom');
     await settle(page);
     await expect(page.locator(zone)).toBeVisible();
+    await expect
+      .poll(async () => (await viewportGeometry(offscreenDiagram)).wrapperHeight)
+      .toBeGreaterThan(0);
+    const revealedDiagram = await viewportGeometry(offscreenDiagram);
+    expectNear(revealedDiagram.scale, 1, 0.001);
+    expectNear(revealedDiagram.translateY, 0, 0.01);
     expect(
       await retained.evaluate(
         (node) =>
@@ -771,6 +1497,24 @@ test('offscreen Markdown measures before first reveal and reflows without a scro
           document.querySelector('.moonbit-viewer-markdown-comment'),
       ),
     ).toBe(true);
+    const revealedBounds = await retained.evaluate((outer) => {
+      const root = outer.closest('.monaco-editor.readonly-editor');
+      const scrollable = root.querySelector(
+        '.monaco-scrollable-element.editor-scrollable',
+      );
+      const rail = scrollable.querySelector(':scope > .scrollbar.vertical');
+      const outerRect = outer.getBoundingClientRect();
+      const scrollableRect = scrollable.getBoundingClientRect();
+      const railRect = rail.getBoundingClientRect();
+      return {
+        outerLeft: outerRect.left,
+        outerRight: outerRect.right,
+        scrollableLeft: scrollableRect.left,
+        railLeft: railRect.left,
+      };
+    });
+    expectNear(revealedBounds.outerLeft, revealedBounds.scrollableLeft);
+    expectNear(revealedBounds.outerRight, revealedBounds.railLeft);
     await expect
       .poll(async () =>
         Math.abs((await state(page)).scrollHeight - narrowHeight),
@@ -798,8 +1542,18 @@ test('model detach replacement reattach and Viewer disposal release every render
   try {
     const initialRoot = await page.locator(editor).elementHandle();
     const initialZone = await page.locator(zone).first().elementHandle();
+    const initialDiagram = page.locator(`${zone} ${diagramViewport}`).first();
+    const retainedDiagram = await initialDiagram.elementHandle();
+    const retainedPanButton = await initialDiagram
+      .locator('[aria-label="Toggle pan mode"]')
+      .elementHandle();
     expect(initialRoot).not.toBeNull();
     expect(initialZone).not.toBeNull();
+    expect(retainedDiagram).not.toBeNull();
+    expect(retainedPanButton).not.toBeNull();
+    const retainedPanPressed = await retainedPanButton.evaluate((button) =>
+      button.getAttribute('aria-pressed'));
+    await initialDiagram.locator('[aria-label="Zoom in"]').click();
 
     await control(page, 'detach');
     await settle(page);
@@ -810,6 +1564,27 @@ test('model detach replacement reattach and Viewer disposal release every render
     await expect(page.locator(zone)).toHaveCount(0);
     expect(await initialRoot.evaluate((node) => node.isConnected)).toBe(false);
     expect(await initialZone.evaluate((node) => node.isConnected)).toBe(false);
+    expect(await retainedDiagram.evaluate((node) => node.isConnected)).toBe(
+      false,
+    );
+    expect(
+      await retainedDiagram.evaluate((node) => ({
+        viewport: node.classList.contains(
+          'moonbit-viewer-markdown-diagram-viewport',
+        ),
+        directSvg: Boolean(node.querySelector(':scope > svg')),
+        controls: Boolean(
+          node.querySelector(
+            ':scope > .moonbit-viewer-markdown-diagram-controls',
+          ),
+        ),
+      })),
+    ).toEqual({ viewport: false, directSvg: true, controls: false });
+    await retainedPanButton.evaluate((button) => button.click());
+    expect(
+      await retainedPanButton.evaluate((button) =>
+        button.getAttribute('aria-pressed')),
+    ).toBe(retainedPanPressed);
     expect(await state(page)).toMatchObject({
       attachedKind: 'none',
       attachedValue: '',
@@ -833,6 +1608,7 @@ test('model detach replacement reattach and Viewer disposal release every render
     await control(page, 'reattach_primary');
     await expect(page.locator(zone)).toHaveCount(3);
     await expect(page.locator(zone).first()).toContainText('Start comment');
+    await expect(page.locator(`${zone} ${diagramViewport}`)).toHaveCount(2);
     expect(await replacementRoot.evaluate((node) => node.isConnected)).toBe(false);
     expect(await replacementZone.evaluate((node) => node.isConnected)).toBe(false);
     expect(await state(page)).toMatchObject({
@@ -841,6 +1617,9 @@ test('model detach replacement reattach and Viewer disposal release every render
       replacementAttachedEditors: 0,
     });
     const reattachedZones = await page.locator(zone).elementHandles();
+    const reattachedDiagrams = await page
+      .locator(`${zone} ${diagramViewport}`)
+      .elementHandles();
     expect(
       await reattachedZones[0].evaluate(
         (node, original) => node === original,
@@ -863,6 +1642,16 @@ test('model detach replacement reattach and Viewer disposal release every render
     });
     for (const rendered of reattachedZones) {
       expect(await rendered.evaluate((node) => node.isConnected)).toBe(false);
+    }
+    for (const rendered of reattachedDiagrams) {
+      expect(await rendered.evaluate((node) => node.isConnected)).toBe(false);
+      expect(
+        await rendered.evaluate((node) =>
+          node.classList.contains(
+            'moonbit-viewer-markdown-diagram-viewport',
+          ),
+        ),
+      ).toBe(false);
     }
   } finally {
     reporter.dispose();
