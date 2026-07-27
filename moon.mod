@@ -19,7 +19,7 @@ preferred_target = "js"
 import {
   "moonbit-community/cmark@0.4.4",
   "moonbitlang/async@0.20.1",
-  "moonbit-community/rabbita@0.12.4",
+  "moonbit-community/rabbita@0.13.1",
   "moonbit-community/piediff@0.0.10",
   "Milky2018/diago@0.3.0",
 }

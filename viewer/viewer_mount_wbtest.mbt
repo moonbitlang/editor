@@ -81,7 +81,10 @@ test "mount keeps one host and one placeholder pair across detach" {
     .with_theme("mount-test-theme")
     .with_placeholder("no model"),
   )
-  assert_eq(placeholder_root.get_attribute("data-theme"), "mount-test-theme")
+  assert_eq(
+    placeholder_root.get_attribute("data-theme"),
+    Some("mount-test-theme"),
+  )
   flush_mounted_test_frames()
   assert_false(mounted.has_pending_render())
   assert_eq(mounted_test_node_value(placeholder_text), "no model")
@@ -120,7 +123,10 @@ test "mount keeps one host and one placeholder pair across detach" {
     same_mounted_test_element(restored_pair.root, placeholder_root) &&
     same_mounted_test_element(restored_pair.text, placeholder_text),
   )
-  assert_eq(restored_pair.root.get_attribute("data-theme"), "mount-test-theme")
+  assert_eq(
+    restored_pair.root.get_attribute("data-theme"),
+    Some("mount-test-theme"),
+  )
   subscription.dispose()
 }
 

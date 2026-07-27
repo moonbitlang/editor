@@ -77,7 +77,7 @@ fn margin_view_overlays_render(
   // translation (the viewer's `margin_transform`).
   self.overlays.render_lines(context.viewport)
   let margin_style = "width:" + self.content_left.to_string() + "px"
-  if self.dom_node.get_attribute("style") != margin_style {
+  if self.dom_node.get_attribute("style") != Some(margin_style) {
     self.dom_node.set_attribute("style", margin_style)
   }
   self.render_focused()
@@ -93,7 +93,7 @@ fn margin_view_overlays_render(
     "px;height:" +
     height.to_string() +
     "px"
-  if overlays.get_attribute("style") != overlays_style {
+  if overlays.get_attribute("style") != Some(overlays_style) {
     overlays.set_attribute("style", overlays_style)
   }
 }

@@ -292,7 +292,7 @@ test "AbstractScrollbar gesture owns listeners, drag state, and reset branches" 
     0,
   )
   assert_true(handler.drag is None)
-  assert_eq(slider.get_attribute("class"), "slider")
+  assert_eq(slider.get_attribute("class"), Some("slider"))
   assert_eq(
     scrollbar_input_test_dispatch_mouse(slider, "click", 2, 0, 1, 10, 10),
     0,
@@ -320,7 +320,7 @@ test "AbstractScrollbar gesture owns listeners, drag state, and reset branches" 
   )
   assert_true(handler.drag is Some(_))
   assert_true(hover_scrollable.is_dragging)
-  assert_eq(slider.get_attribute("class"), "slider active")
+  assert_eq(slider.get_attribute("class"), Some("slider active"))
   assert_eq(scrollbar_input_test_trace(), "active,monitor,drag-start")
   let expected_from_pointerdown = match handler.drag {
     Some(drag) => drag.initial_state.desired_position_from_delta(20.0)
@@ -354,7 +354,7 @@ test "AbstractScrollbar gesture owns listeners, drag state, and reset branches" 
   |> ignore
   assert_true(handler.drag is None)
   assert_false(hover_scrollable.is_dragging)
-  assert_eq(slider.get_attribute("class"), "slider")
+  assert_eq(slider.get_attribute("class"), Some("slider"))
   assert_eq(scrollbar_input_test_listener_count(slider, "pointermove"), 0)
   // A second pointerup has no retained stop callback or state transition.
   scrollbar_input_test_dispatch_mouse(slider, "pointerup", 0, 0, 3, 10, 30)
@@ -412,7 +412,7 @@ test "AbstractScrollbar gesture owns listeners, drag state, and reset branches" 
   handler.dispose()
   assert_true(handler.drag is None)
   assert_false(hover_scrollable.is_dragging)
-  assert_eq(slider.get_attribute("class"), "slider")
+  assert_eq(slider.get_attribute("class"), Some("slider"))
   assert_eq(scrollbar_input_test_listener_count(slider, "pointerdown"), 0)
   assert_eq(
     scrollbar_input_test_dispatch_mouse(

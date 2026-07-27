@@ -270,7 +270,7 @@ fn run_model_swap_test() -> Unit {
                     ctx.assert_true(
                       @support.query_count(".swap-overlay-second") == 0 &&
                       second_overlay_node.get_attribute("widgetId") ==
-                      "swap-overlay",
+                      Some("swap-overlay"),
                       "Viewer disposal kept the overlay mounted or destroyed its node",
                     )
                     model_c.dispose()

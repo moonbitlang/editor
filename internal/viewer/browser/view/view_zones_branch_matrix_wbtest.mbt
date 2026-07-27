@@ -407,7 +407,7 @@ test "ViewZones hidden-area omitted false and true toggle exact heights" {
   let hidden_zero_visible = zero_fixture.view_model.view_layout.get_whitespace_viewport_data()
   zero_fixture.view.view_zones.render(hidden_zero_visible, 0, 0.0, 300.0)
   assert_eq(view_zones_branch_style(zero_node, "display"), "block")
-  assert_eq(zero_node.get_attribute("monaco-visible-view-zone"), "true")
+  assert_eq(zero_node.get_attribute("monaco-visible-view-zone"), Some("true"))
 
   assert_true(
     zero_fixture.view_model.set_hidden_areas(
@@ -422,7 +422,7 @@ test "ViewZones hidden-area omitted false and true toggle exact heights" {
   let shown_zero_visible = zero_fixture.view_model.view_layout.get_whitespace_viewport_data()
   zero_fixture.view.view_zones.render(shown_zero_visible, 0, 0.0, 300.0)
   assert_eq(view_zones_branch_style(zero_node, "display"), "block")
-  assert_eq(zero_node.get_attribute("monaco-visible-view-zone"), "true")
+  assert_eq(zero_node.get_attribute("monaco-visible-view-zone"), Some("true"))
   assert_eq(zero_callbacks.length(), 1)
   zero_fixture.dispose()
 }
@@ -756,8 +756,8 @@ test "ViewZones layoutZone rereads geometry but retains ordinal width and nodes"
       fixture.view.view_zones.margin_dom_node(),
     ),
   )
-  assert_eq(original_node.get_attribute("monaco-view-zone"), id)
-  assert_eq(replacement_node.get_attribute("monaco-view-zone"), "")
+  assert_eq(original_node.get_attribute("monaco-view-zone"), Some(id))
+  assert_eq(replacement_node.get_attribute("monaco-view-zone"), Some(""))
 }
 
 ///|

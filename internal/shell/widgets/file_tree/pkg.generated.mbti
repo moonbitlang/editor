@@ -2,6 +2,7 @@
 package "moonbitlang/editor/internal/shell/widgets/file_tree"
 
 import {
+  "moonbit-community/rabbita",
   "moonbit-community/rabbita/cmd",
   "moonbit-community/rabbita/html",
   "moonbitlang/editor/base/common",
@@ -19,7 +20,7 @@ pub struct FileTree {
 pub fn FileTree::FileTree(&@workspace.WorkspaceTreeProvider, on_open~ : (@common.Uri) -> Unit) -> Self
 pub fn FileTree::refresh(Self) -> @cmd.Cmd
 pub fn FileTree::set_active(Self, @common.Uri) -> @cmd.Cmd
-pub fn FileTree::view(Self) -> @html.Html
+pub fn FileTree::view(Self) -> @rabbita.Val[@html.Html]
 
 // Type aliases
 

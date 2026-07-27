@@ -154,7 +154,7 @@ fn MemoryWorkspace::model(
 ///|
 priv struct EmbedModel {
   status : String
-}
+} derive(Eq)
 
 ///|
 priv enum EmbedMsg {
@@ -289,6 +289,7 @@ fn open_embed_document_cmd(uri : @base_common.Uri) -> @rabbita.Cmd {
 fn view_embed(
   _emit : @rabbita.Emit[EmbedMsg],
   model : EmbedModel,
+  tree_html : @html.Html,
 ) -> @html.Html {
   @html.main_(
     class="editor-shell",
@@ -304,7 +305,7 @@ fn view_embed(
             @html.div(class="workspace-title", [
               @html.span(class="workspace-title-label", "Explorer"),
             ]),
-            embed_tree().view(),
+            tree_html,
           ],
         ),
         // The stable view host: the viewer attaches its imperative DOM
@@ -329,29 +330,36 @@ fn main {
     @lang_moonbit.MoonbitTokenizer(),
   )
   |> ignore
-  let (_, cell) = @rabbita.cell_with_emit(
-    model={ status: "loading" },
-    update=update_embed,
-    view=view_embed,
-    subscriptions=(emit, _model) => {
-      startup_sub(
-        @cmd.custom_cmd(scheduler => {
-          embed_dispatch.val = Some(msg => scheduler.add(emit(msg)))
-          // Boot after the first paint: the view host and the tree cell
-          // must be in the DOM before the viewer attaches and opens.
-          scheduler.add(
-            @cmd.custom_cmd(
-              after => {
-                embed_viewer() |> ignore
-                after.add(emit(Boot))
-              },
-              kind=@cmd.after_render,
-            ),
-          )
-        }),
-      )
-    },
-  )
-  let app = @rabbita.new(cell)
+  let app = @rabbita.new(() => {
+    let tree_view = embed_tree().view()
+    let (model, emit) = @rabbita.create_state(
+      { status: "loading" },
+      update=(emit, msg, model) => {
+        let (cmd, model) = update_embed(emit, msg, model)
+        (model, cmd)
+      },
+      subscriptions=(emit, _model) => {
+        startup_sub(
+          @cmd.custom_cmd(scheduler => {
+            embed_dispatch.val = Some(msg => scheduler.add(emit(msg)))
+            // Boot after the first paint: the view host and tree value must be
+            // in the DOM before the viewer attaches and opens.
+            scheduler.add(
+              @cmd.custom_cmd(
+                after => {
+                  embed_viewer() |> ignore
+                  after.add(emit(Boot))
+                },
+                kind=@cmd.after_render,
+              ),
+            )
+          }),
+        )
+      },
+    )
+    model.view2(tree_view, (model, tree_html) => {
+      view_embed(emit, model, tree_html)
+    })
+  })
   app.mount("app")
 }

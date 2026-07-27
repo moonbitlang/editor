@@ -322,7 +322,7 @@ pub fn AgentFeedbackInputWidget::auto_size(
 ) -> Unit {
   let value = self.value()
   let text = if value.is_empty() {
-    self.textarea.get_attribute("placeholder")
+    self.textarea.get_attribute("placeholder").unwrap_or("")
   } else {
     value
   }

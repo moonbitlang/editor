@@ -257,7 +257,7 @@ fn ViewOverlays::render_focused_class(
   } else {
     base_class_name
   }
-  if element.get_attribute("class") != class_name {
+  if element.get_attribute("class") != Some(class_name) {
     element.set_attribute("class", class_name)
   }
 }
@@ -374,7 +374,7 @@ fn ContentViewOverlays::set_focused(
   } else {
     "view-overlays"
   }
-  if element.get_attribute("class") != class_name {
+  if element.get_attribute("class") != Some(class_name) {
     element.set_attribute("class", class_name)
   }
 }

@@ -121,11 +121,17 @@ test "View mounts both ViewZones containers at the source relative positions" {
       view.view_lines.get_dom_node(),
     ),
   )
-  assert_eq(view.view_zones.dom_node().get_attribute("role"), "presentation")
-  assert_eq(view.view_zones.dom_node().get_attribute("aria-hidden"), "true")
+  assert_eq(
+    view.view_zones.dom_node().get_attribute("role"),
+    Some("presentation"),
+  )
+  assert_eq(
+    view.view_zones.dom_node().get_attribute("aria-hidden"),
+    Some("true"),
+  )
   assert_eq(
     view.view_zones.margin_dom_node().get_attribute("class"),
-    "margin-view-zones",
+    Some("margin-view-zones"),
   )
   restore_view_lifecycle_test_browser()
 }

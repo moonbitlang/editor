@@ -182,7 +182,7 @@ test "500ms hide timeout is cancellable and inert after disposal" {
   assert_eq(scrollable_timeout_test_active_count(), 1)
   assert_eq(
     scrollable.vertical_bar.get_attribute("class"),
-    "visible scrollbar vertical",
+    Some("visible scrollbar vertical"),
   )
 
   // A replacement schedule cancels the old browser handle rather than only
@@ -229,7 +229,7 @@ test "500ms hide timeout is cancellable and inert after disposal" {
   assert_true(guarded.hide_timeout is None)
   assert_eq(
     guarded.vertical_bar.get_attribute("class"),
-    "invisible scrollbar vertical fade",
+    Some("invisible scrollbar vertical fade"),
   )
   guarded.dispose()
   restore_scrollable_timeout_test_browser()

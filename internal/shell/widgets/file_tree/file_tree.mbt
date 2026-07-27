@@ -8,7 +8,7 @@
 /// never opens documents itself.
 pub struct FileTree {
   priv emit : @rabbita.Emit[FileTreeMsg]
-  priv cell : @rabbita.Cell
+  priv view_value : @rabbita.Val[@html.Html]
 }
 
 ///|
@@ -18,6 +18,17 @@ priv enum FileTreeMsg {
   ToggleDirectory(@base_common.Uri)
   OpenFile(@base_common.Uri)
   SetActive(@base_common.Uri)
+}
+
+///|
+/// File-tree updates mutate cached nodes in place. Treating every returned
+/// wrapper as changed preserves the widget's existing redraw behavior while it
+/// moves from the removed nested `Cell::view()` API to incremental values.
+priv struct FileTreeState(FileTreeModel)
+
+///|
+impl Eq for FileTreeState with fn equal(_, _) {
+  false
 }
 
 ///|
@@ -32,20 +43,22 @@ pub fn FileTree::FileTree(
     selected: None,
     pending_reveal: None,
   }
-  let (emit, cell) = @rabbita.cell_with_emit(
-    model~,
-    update=(emit, msg, model) => {
-      update_file_tree(provider, on_open, emit, msg, model)
-    },
-    view=view_file_tree,
-  )
-  { emit, cell }
+  let (state, emit) = @rabbita.create_state(FileTreeState(model), update=(
+    emit,
+    msg,
+    state,
+  ) => {
+    let (cmd, model) = update_file_tree(provider, on_open, emit, msg, state.0)
+    (FileTreeState(model), cmd)
+  })
+  let view_value = state.view(state => view_file_tree(emit, state.0))
+  { emit, view_value }
 }
 
 ///|
-/// Embeds the tree as a Rabbita child cell.
-pub fn FileTree::view(self : FileTree) -> @html.Html {
-  self.cell.view()
+/// Returns the tree's incremental view for composition by the host component.
+pub fn FileTree::view(self : FileTree) -> @rabbita.Val[@html.Html] {
+  self.view_value
 }
 
 ///|

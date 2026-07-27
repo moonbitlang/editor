@@ -484,7 +484,7 @@ fn find_attribute_up_to(
       current is Some(el) && !controller_is_document_body(el)
       current = controller_parent_element(el) {
     if element_has_attribute(el, attr) {
-      return Some(el.get_attribute(attr))
+      return el.get_attribute(attr)
     }
     if el.is_same_node(stop_at.as_node()) {
       return None
