@@ -13,6 +13,13 @@ Scrollable diagram wrappers retain native wheel scrolling while they can
 consume the current delta. When neither axis can consume it, the event is
 allowed to reach the owning hover, widget, or editor scroller.
 
+`moonbit-viewer-markdown-diagram-viewport` is an event-time ownership marker:
+while a wrapper carries it, this generic listener never stops ordinary wheel
+input. The Markdown-comment viewport controller can therefore mount after the
+renderer listener and return ordinary wheel input to the editor while owning
+its modifier-zoom events. Removing the marker restores the native inner-scroll
+handoff, so hover and agent-feedback diagrams keep their existing behavior.
+
 The returned `RenderedMarkdown.dispose` removes all listeners and makes late
 load callbacks inert. Rendering into the same explicit target first disposes
 the target's previous renderer-owned lifetime, while leaving the caller-owned

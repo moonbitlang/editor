@@ -12,9 +12,62 @@ Current behavior and ownership live in `docs/architecture.md`, `docs/harness.md`
 `docs/quality.md`, package READMEs, generated interfaces, source, and tests.
 Historical plans are evidence of how a change landed, not current contracts.
 
-As of 2026-07-21 there are no active checked-in execution plans.
+As of 2026-07-24 there are no active checked-in execution plans.
 
 ## Completed Work
+
+### Markdown-comment Diago viewport controls
+
+Successful direct Diago SVGs inside whole-line Markdown comments now mount as
+independent bounded viewports with pan mode, zoom out, zoom in, true Fit, and a
+pointer/keyboard resize handle. Ordinary wheel input reaches the editor;
+Alt-wheel and Ctrl-pinch zoom the diagram, Alt or toggled primary drag pans,
+and the fixed first-version geometry preserves Diago's aspect ratio, defers
+zero-size initialization, uses a 100px resize floor, and preserves the visible
+origin across host-width changes. Hover and agent-feedback diagrams remain
+native inner scrollers, failed fences and other Markdown nodes are untouched,
+and replacing a rendered body intentionally starts with fresh viewport state.
+
+Gate A froze the `vscode` gitlink
+`b18492a288de038fbc7643aae6de8247029d11bd`. DOM, accessibility, event
+ownership, and disposal used a behavior port; pan/zoom/fit/resize and
+host-resize geometry used an algorithm-fidelity port; configuration and
+cross-render state received behavior accounting only. The reviewed product
+deviations keep Diago's SVG sizing metadata, expose true Fit with 16px padding
+instead of preview Reset Zoom, add no settings or global manager, and perform
+stronger zero-geometry and cleanup handling.
+
+Milestone 1 evidence is the focused JS reference suite for direct-target
+selection, DOM/ARIA structure, positive and deferred geometry, fit and zoom
+boundaries, pan and resize branches, responsive arithmetic, independent
+diagrams, cursor ownership, and idempotent cleanup. Milestone 2 stores the
+opaque viewport group beside each rendered Markdown lifetime, disposes it
+before renderer replacement and zone removal, dynamically bypasses the generic
+diagram wheel listener through an event-time marker, and routes every inline
+height change through the existing coalesced size observer and
+generation-checked ViewZone writer. The emitted CSS and existing codicon font
+own the viewport presentation without a new public Viewer option or package
+edge. Real-browser geometry keeps the focus border out of the border-box height
+and reserves the editor's 20px overlay-scrollbar/layout strip while preserving
+the Markdown surface's 12px inner trailing gap.
+
+Milestone 3 evidence extends the direct public-Viewer component scenario over
+initial and offscreen layout, two independent diagrams, four controls,
+modifier input, pointer/keyboard resize relayout, ordinary-wheel editor
+scrolling, host resize, same-key replacement, model swap, double disposal, and
+hidden/visible scrollbar-rail hit testing while retaining the existing
+Markdown image, link, selection, folding, source-truth, and ViewZone cells.
+
+Final validation passed the focused shared-Markdown, diagram-controller, and
+Viewer JS suites at 6, 18, and 241 tests; all 1,555 JS and 1,053 native
+MoonBit tests; the 8-test focused Markdown-comments Playwright spec; and all
+100 browser tests. `moon info --target all`, `moon fmt`,
+`just build-browser-tests`, `just check`, `just test`, `just build`,
+`just test-browser`, and `git diff --check` also passed. The generated
+interface changed only for the opaque viewport handle, constructor, and
+`dispose`; no `moon.pkg` edge changed.
+
+Former artifact: `markdown-comment-diagram-viewport-port.md`.
 
 ### Diago Markdown code-block rendering
 

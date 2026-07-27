@@ -136,7 +136,11 @@ js-only. Concrete browser runtime packages live below the module-private
   returning failures and every other code block to the existing fallback;
   `internal/viewer/browser/markdown` adds JS-only DOM retention, URI/media
   policy, activation listeners, size notification, and per-target disposal.
-  Browser contributions consume these packages instead of owning private
+  Its diagram-wheel listener rechecks wrapper classes for every event:
+  `moonbit-viewer-markdown-diagram-viewport` declines the generic native-scroll
+  handoff so ordinary wheel input reaches the editor, while unmarked hover and
+  agent-feedback diagrams retain their existing inner-scroll behavior. Browser
+  contributions consume these packages instead of owning private
   Markdown-to-`innerHTML` pipelines.
 - `internal/viewer/browser/config` measures fonts and browser geometry.
 - `internal/viewer/browser/controller` owns hit testing, mouse selection, drag
@@ -190,9 +194,19 @@ editor common/browser layers; editor common never depends on them.
 - `internal/viewer/contrib/markdown_comments` owns multi-target whole-line
   comment detection, provider/configuration resolution, and normalized block
   ranges. Its browser sibling owns the stable ViewZone DOM pair and coalesced
-  visible/offscreen size observer; the root `viewer` contribution owns
-  reconciliation, renderer lifetimes, zone ids, and the one hidden-area source.
-  Its emitted stylesheet remains at
+  visible/offscreen size observer. It also owns one opaque diagram-viewport
+  group per rendered target: each successful direct Diago SVG is enhanced
+  independently with bounded pan/zoom/fit controls and a resize handle.
+  MoonBit structs own each group's controllers, geometry state, listeners,
+  observers, queued frame, and disposal. The parent rendered entry guarantees
+  exclusive wrapper ownership and disposes the group before renderer
+  replacement; no ownership state is written onto caller DOM. Resize gestures
+  share a module-private per-document cursor coordinator, while FFI remains
+  limited to missing browser bindings such as `ResizeObserver`, document/body
+  access, style preservation, and a non-passive wheel listener. Inline
+  viewport-height changes report only through a narrow callback. The root
+  `viewer` contribution owns reconciliation, renderer and viewport lifetimes,
+  zone ids, and the one hidden-area source. Its emitted stylesheet remains at
   `viewer/contrib/markdown_comments/browser/markdown_comments.css`.
 
 The root editor registry has two distinct ownership layers. Its process-wide
@@ -224,6 +238,17 @@ observers, removes zones, and clears the contribution's hidden source before
 the outgoing browser `View` is destroyed. Same-model flushes rebuild that
 source with `force_update=true` because the projected line collection was
 recreated even when normalized ranges did not change.
+
+Each rendered entry retains the shared Markdown renderer, its diagram-viewport
+group, and the existing size observer. Same-key body replacement disposes the
+old viewport group before the renderer replaces its target and mounts a fresh
+group; entry teardown orders viewport, renderer, and observer disposal before
+zone removal. The only diagram-to-ViewZone invalidation chain runs from the
+viewport-height callback through
+`MarkdownCommentSizeObserver::request_measure` to
+`Viewer::apply_markdown_comment_height`; the final step keeps the existing
+generation and zone-id checks and remains the sole writer of the live ViewZone
+height.
 
 This central ownership rule supersedes the feature-local instance tables from
 the earlier ownership-divergence work. The completed migration is summarized in
