@@ -238,6 +238,7 @@ pub fn ViewLineOptions::ViewLineOptions(line_height? : Int, space_width? : Doubl
 pub struct ViewLines {
   // private fields
 }
+pub fn ViewLines::acquire_content_viewport_geometry(Self) -> @common.Disposable
 pub fn ViewLines::get_dom_node(Self) -> @dom.Element
 pub fn ViewLines::get_line_width(Self, Int) -> Double
 pub fn ViewLines::get_position_from_dom_info(Self, @view_model.ViewModel, @dom.Element, Int) -> @common.Position?

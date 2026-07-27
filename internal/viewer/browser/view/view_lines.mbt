@@ -4,6 +4,12 @@
 // `view_lines_zones_lifecycle.mbt`.
 
 ///|
+let rendered_scroll_left_css_variable : String = "--moonbit-viewer-rendered-scroll-left"
+
+///|
+let visible_content_width_css_variable : String = "--moonbit-viewer-visible-content-width"
+
+///|
 /// Live configuration values read by `ViewLines.onConfigurationChanged` in the
 /// same order as Monaco's retained caches. `view_line_options` is the exact
 /// equality-gated subset owned by each retained `ViewLine`.
@@ -166,6 +172,9 @@ pub struct ViewLines {
   priv mut max_line_width : Double
   priv mut last_layout : @view_layout.ViewLayout?
   priv mut should_render : Bool
+  priv mut content_viewport_geometry_lease_count : Int
+  priv mut rendered_scroll_left : Double?
+  priv mut visible_content_width : Double?
 }
 
 ///|
@@ -205,6 +214,9 @@ fn ViewLines::ViewLines(
     max_line_width: 0.0,
     last_layout: None,
     should_render: true,
+    content_viewport_geometry_lease_count: 0,
+    rendered_scroll_left: None,
+    visible_content_width: None,
   }
 }
 
@@ -305,6 +317,84 @@ fn ViewLines::on_options_maybe_changed(
 ///|
 pub fn ViewLines::get_dom_node(self : ViewLines) -> @rdom.Element {
   self.dom_node.element()
+}
+
+///|
+/// Enables the Markdown-comment geometry contract for this model-scoped
+/// `ViewLines`. Ordinary ViewZones keep Monaco's scroll-plane width; while at
+/// least one lease is alive, `render_text` additionally publishes inherited
+/// CSS variables that let selected descendants cancel the lines-content
+/// translation and size against the visible content viewport.
+pub fn ViewLines::acquire_content_viewport_geometry(
+  self : ViewLines,
+) -> @base_common.Disposable {
+  if self.content_viewport_geometry_lease_count == 0 {
+    // The caller schedules the frame (Markdown acquires inside a ViewZones
+    // transaction). Mark the text phase dirty so that frame cannot skip
+    // `render_text` and leave the CSS fallbacks at zero indefinitely.
+    self.should_render = true
+  }
+  self.content_viewport_geometry_lease_count += 1
+  @base_common.Disposable::from(() => {
+    if self.content_viewport_geometry_lease_count <= 0 {
+      return
+    }
+    self.content_viewport_geometry_lease_count -= 1
+    if self.content_viewport_geometry_lease_count == 0 {
+      self.clear_content_viewport_geometry()
+    }
+  })
+}
+
+///|
+/// Publishes both axes from the exact render snapshot used to position
+/// `.lines-content`. The width is the visible content box with the configured
+/// vertical scrollbar rail removed, never the model's potentially wider
+/// `scroll_width`.
+fn ViewLines::publish_content_viewport_geometry(
+  self : ViewLines,
+  scroll_left : Double,
+  viewport_width : Double,
+) -> Unit {
+  if self.content_viewport_geometry_lease_count <= 0 {
+    return
+  }
+  let visible_width = (viewport_width -
+  self.view_line_options.vertical_scrollbar_size).max(0.0)
+  if self.rendered_scroll_left != Some(scroll_left) {
+    @base_browser.set_style_property(
+      self.lines_content.element(),
+      rendered_scroll_left_css_variable,
+      scroll_left.to_string() + "px",
+    )
+    self.rendered_scroll_left = Some(scroll_left)
+  }
+  if self.visible_content_width != Some(visible_width) {
+    @base_browser.set_style_property(
+      self.lines_content.element(),
+      visible_content_width_css_variable,
+      visible_width.to_string() + "px",
+    )
+    self.visible_content_width = Some(visible_width)
+  }
+}
+
+///|
+fn ViewLines::clear_content_viewport_geometry(self : ViewLines) -> Unit {
+  if self.rendered_scroll_left is Some(_) {
+    remove_view_lines_style_property(
+      self.lines_content.element(),
+      rendered_scroll_left_css_variable,
+    )
+    self.rendered_scroll_left = None
+  }
+  if self.visible_content_width is Some(_) {
+    remove_view_lines_style_property(
+      self.lines_content.element(),
+      visible_content_width_css_variable,
+    )
+    self.visible_content_width = None
+  }
 }
 
 ///|
@@ -506,6 +596,7 @@ fn ViewLines::render_text(
     viewport.big_numbers_delta.to_double()
   self.lines_content.set_top(Pixels(-adjusted_scroll_top))
   self.lines_content.set_left(Pixels(-position.scroll_left))
+  self.publish_content_viewport_geometry(position.scroll_left, dimensions.width)
 }
 
 ///|
@@ -886,7 +977,16 @@ fn ViewLines::ensure_max_line_width(
 ///|
 fn ViewLines::dispose(self : ViewLines) -> Unit {
   self.async_update_line_widths.dispose()
+  self.content_viewport_geometry_lease_count = 0
+  self.clear_content_viewport_geometry()
 }
+
+///|
+extern "js" fn remove_view_lines_style_property(
+  element : @rdom.Element,
+  name : String,
+) -> Unit =
+  #| (element, name) => { element?.style?.removeProperty(name); }
 
 ///|
 /// FFI gap-fills for the `.view-line` ancestor walk (element-typed

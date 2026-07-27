@@ -1,10 +1,10 @@
 /* Whole-line Markdown is mounted as ordinary ViewZone content. Projection
- * owns source-line removal; these rules never hide, overlay, or offset model
- * text. The ViewZone owner writes the outer node's position, width, and fixed
- * measured height. */
+ * owns source-line removal; these rules never hide or overlay model text.
+ * ViewZones owns vertical position and measured height, while the Markdown
+ * contribution pins horizontal geometry to the visible editor viewport. */
 .moonbit-viewer-markdown-comment {
   box-sizing: border-box;
-  width: 100%;
+  overflow-x: clip;
   /* The full-scroll-height .view-lines plane is z-index 1. Keep caller-owned
    * Markdown input above it, but below editor cursors (4) and widgets (50+). */
   z-index: 2;
@@ -27,11 +27,8 @@
  * relayout. The leading edge stays flush with the editor's source rail. */
 .moonbit-viewer-markdown-comment-content {
   box-sizing: border-box;
-  /* ViewZone nodes extend through the editor's 14px overlay scrollbar rail
-   * and its 6px right-side layout allowance. Keep the interactive Markdown
-   * surface left of that 20px strip; the 12px inner padding remains the
-   * visible trailing gap between content and the rail. */
-  width: calc(100% - 20px);
+  /* The pinned outer already ends at the vertical scrollbar rail. */
+  width: 100%;
   padding: 6px 12px 8px 0;
   overflow-wrap: anywhere;
   user-select: text;

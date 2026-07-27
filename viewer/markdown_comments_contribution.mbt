@@ -14,11 +14,19 @@ priv struct MarkdownCommentContributionState {
   mut generation : Int
   rendered : Map[String, RenderedMarkdownComment]
   listeners : Array[@base_common.Disposable]
+  mut viewport_observer : @markdown_comments_browser.MarkdownCommentViewportObserver?
+  mut geometry_lease : @base_common.Disposable?
 }
 
 ///|
 fn MarkdownCommentContributionState::MarkdownCommentContributionState() -> MarkdownCommentContributionState {
-  { generation: 0, rendered: Map([]), listeners: [] }
+  {
+    generation: 0,
+    rendered: Map([]),
+    listeners: [],
+    viewport_observer: None,
+    geometry_lease: None,
+  }
 }
 
 ///|
@@ -40,6 +48,59 @@ fn RenderedMarkdownComment::dispose_render_resources(
   self.diagram_viewports.dispose()
   self.rendered_markdown.dispose.dispose()
   self.size_observer.dispose()
+}
+
+///|
+fn MarkdownCommentContributionState::ensure_geometry_lease(
+  self : MarkdownCommentContributionState,
+  view_lines : @view.ViewLines,
+) -> Unit {
+  if self.geometry_lease is None {
+    self.geometry_lease = Some(view_lines.acquire_content_viewport_geometry())
+  }
+}
+
+///|
+fn MarkdownCommentContributionState::dispose_geometry_lease(
+  self : MarkdownCommentContributionState,
+) -> Unit {
+  match self.geometry_lease {
+    Some(lease) => lease.dispose()
+    None => ()
+  }
+  self.geometry_lease = None
+}
+
+///|
+fn MarkdownCommentContributionState::request_all_measures(
+  self : MarkdownCommentContributionState,
+) -> Unit {
+  for _, entry in self.rendered {
+    entry.size_observer.request_measure()
+  }
+}
+
+///|
+fn MarkdownCommentContributionState::ensure_viewport_observer(
+  self : MarkdownCommentContributionState,
+  dom : @markdown_comments_browser.MarkdownCommentDom,
+) -> Unit {
+  if self.viewport_observer is None {
+    self.viewport_observer = Some(
+      dom.observe_viewport_width(() => self.request_all_measures()),
+    )
+  }
+}
+
+///|
+fn MarkdownCommentContributionState::dispose_viewport_observer(
+  self : MarkdownCommentContributionState,
+) -> Unit {
+  match self.viewport_observer {
+    Some(observer) => observer.dispose()
+    None => ()
+  }
+  self.viewport_observer = None
 }
 
 ///|
@@ -141,7 +202,7 @@ fn Viewer::refresh_markdown_comments(
   guard self.markdown_comment_contribution() is Some(state) else { return }
   guard self.get_model() is Some(model) else { return }
   // A headless Viewer has no replacement DOM and must keep source visible.
-  guard self.current_browser_data() is Some(_) else { return }
+  guard self.current_browser_data() is Some(browser) else { return }
   // Reserve this generation before invoking an open provider. Provider code
   // can synchronously mutate or replace the model through an external owner;
   // any nested refresh then invalidates this attempt before it mutates zones.
@@ -154,6 +215,13 @@ fn Viewer::refresh_markdown_comments(
   )
   guard self.markdown_comment_refresh_is_current(state, model, generation) else {
     return
+  }
+  if !blocks.is_empty() {
+    state.ensure_geometry_lease(browser.view.view_lines)
+  } else {
+    // With no surviving consumer, stop width invalidations before disposing
+    // the per-comment observers and removing their zones below.
+    state.dispose_viewport_observer()
   }
   let next : Map[String, @language.MarkdownCommentBlock] = Map([])
   for block in blocks {
@@ -209,6 +277,9 @@ fn Viewer::refresh_markdown_comments(
             height_in_lines=1.0,
           )
           let zone_id = accessor.add_zone(zone)
+          // `add_zone` writes the ordinary scroll-plane `width: 100%`.
+          // Replace it before any observer or renderer can measure the node.
+          dom.pin_to_content_viewport()
           let entry_generation = Ref(generation)
           let size_observer = dom.observe_size(height => {
             self.apply_markdown_comment_height(
@@ -236,6 +307,7 @@ fn Viewer::refresh_markdown_comments(
             generation: entry_generation,
           }
           state.rendered.set(key, entry)
+          state.ensure_viewport_observer(dom)
           size_observer.request_measure()
         }
       }
@@ -246,6 +318,11 @@ fn Viewer::refresh_markdown_comments(
   // generation/source. Never let this older refresh overwrite its ranges.
   guard self.markdown_comment_refresh_is_current(state, model, generation) else {
     return
+  }
+  if state.rendered.is_empty() {
+    // The last geometry consumer is gone only after ViewZones detached its
+    // caller-owned nodes.
+    state.dispose_geometry_lease()
   }
   self.set_hidden_areas(
     markdown_comment_hidden_ranges(blocks),
@@ -297,6 +374,9 @@ fn Viewer::apply_markdown_comment_height(
 fn Viewer::clear_markdown_comment_model_state(self : Viewer) -> Unit {
   guard self.markdown_comment_contribution() is Some(state) else { return }
   state.generation += 1
+  // Stop model-wide invalidation first. Per-comment content/renderer
+  // lifetimes follow, then structural zones, and finally ViewLines geometry.
+  state.dispose_viewport_observer()
   let entries : Array[RenderedMarkdownComment] = []
   for _, entry in state.rendered {
     entries.push(entry)
@@ -316,6 +396,7 @@ fn Viewer::clear_markdown_comment_model_state(self : Viewer) -> Unit {
     None => ()
   }
   state.rendered.clear()
+  state.dispose_geometry_lease()
   self.set_hidden_areas([], source=markdown_comment_hidden_source)
 }
 

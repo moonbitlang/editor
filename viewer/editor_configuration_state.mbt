@@ -446,8 +446,8 @@ fn EditorConfigurationSnapshot::layout_info(
     decorations_width,
     content_left,
     content_width: self.content_width,
-    horizontal_scrollbar_height: 10.0,
-    vertical_scrollbar_width: 10.0,
+    horizontal_scrollbar_height: @core.editor_horizontal_scrollbar_size,
+    vertical_scrollbar_width: @core.editor_vertical_scrollbar_size,
   }
 }
 

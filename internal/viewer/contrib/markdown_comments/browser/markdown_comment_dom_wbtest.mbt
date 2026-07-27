@@ -1,26 +1,40 @@
 ///|
-extern "js" fn install_markdown_comment_browser_test_dom() -> Unit =
+#external
+type MarkdownCommentBrowserTestHarness
+
+///|
+extern "js" fn install_markdown_comment_browser_test_dom() -> MarkdownCommentBrowserTestHarness =
   #| () => {
-  #|   globalThis.__markdownCommentBrowserOriginals = {
-  #|     document: globalThis.document,
-  #|     Element: globalThis.Element,
-  #|     ResizeObserver: globalThis.ResizeObserver,
-  #|     requestAnimationFrame: globalThis.requestAnimationFrame,
+  #|   const harness = {
+  #|     restored: false,
+  #|     originals: {
+  #|       document: globalThis.document,
+  #|       Element: globalThis.Element,
+  #|       HTMLElement: globalThis.HTMLElement,
+  #|       ResizeObserver: globalThis.ResizeObserver,
+  #|       requestAnimationFrame: globalThis.requestAnimationFrame,
+  #|     },
+  #|     frames: [],
+  #|     observers: [],
+  #|     hiddenMeasureCount: 0,
   #|   };
-  #|   globalThis.__markdownCommentBrowserFrames = [];
-  #|   globalThis.__markdownCommentBrowserObservers = [];
-  #|   globalThis.__markdownCommentHiddenMeasureCount = 0;
   #|
   #|   class TestStyle {
-  #|     constructor() { this.values = new Map(); this.priorities = new Map(); }
+  #|     constructor() {
+  #|       this.values = new Map();
+  #|       this.priorities = new Map();
+  #|       this.writes = [];
+  #|     }
   #|     getPropertyValue(name) { return this.values.get(name) ?? ""; }
   #|     getPropertyPriority(name) { return this.priorities.get(name) ?? ""; }
   #|     setProperty(name, value, priority = "") {
+  #|       this.writes.push({ operation: 'set', name: String(name) });
   #|       this.values.set(name, String(value));
   #|       if (priority) this.priorities.set(name, String(priority));
   #|       else this.priorities.delete(name);
   #|     }
   #|     removeProperty(name) {
+  #|       this.writes.push({ operation: 'remove', name: String(name) });
   #|       const previous = this.getPropertyValue(name);
   #|       this.values.delete(name);
   #|       this.priorities.delete(name);
@@ -42,18 +56,31 @@ extern "js" fn install_markdown_comment_browser_test_dom() -> Unit =
   #|       this.isConnected = false;
   #|       this.style = new TestStyle();
   #|       this.clientWidth = 0;
+  #|       this.__offsetWidth = 0;
   #|       this.__offsetHeight = 0;
   #|       this.__hiddenHeights = null;
   #|     }
+  #|     get offsetWidth() { return this.__offsetWidth; }
+  #|     set offsetWidth(value) { this.__offsetWidth = Number(value); }
   #|     get offsetHeight() {
   #|       if (this.__offsetHeight > 0) return this.__offsetHeight;
   #|       const outer = this.parentNode;
   #|       if (!this.__hiddenHeights || outer?.style.getPropertyValue('display') !== 'block') return 0;
-  #|       globalThis.__markdownCommentHiddenMeasureCount += 1;
-  #|       const width = Number.parseInt(outer.style.getPropertyValue('width'), 10);
+  #|       harness.hiddenMeasureCount += 1;
+  #|       const width = Math.trunc(outer.getBoundingClientRect().width);
   #|       return this.__hiddenHeights.get(width) ?? 0;
   #|     }
   #|     set offsetHeight(value) { this.__offsetHeight = Number(value); }
+  #|     getBoundingClientRect() {
+  #|       return {
+  #|         left: 0,
+  #|         right: this.__offsetWidth,
+  #|         top: 0,
+  #|         bottom: this.__offsetHeight,
+  #|         width: this.__offsetWidth,
+  #|         height: this.__offsetHeight,
+  #|       };
+  #|     }
   #|     setAttribute(name, value) { this.attributes.set(name, String(value)); }
   #|     getAttribute(name) { return this.attributes.get(name) ?? ""; }
   #|     closest(selector) {
@@ -86,7 +113,7 @@ extern "js" fn install_markdown_comment_browser_test_dom() -> Unit =
   #|       this.target = null;
   #|       this.targets = [];
   #|       this.disconnectCount = 0;
-  #|       globalThis.__markdownCommentBrowserObservers.push(this);
+  #|       harness.observers.push(this);
   #|     }
   #|     observe(target) {
   #|       this.target ??= target;
@@ -102,25 +129,31 @@ extern "js" fn install_markdown_comment_browser_test_dom() -> Unit =
   #|   };
   #|   globalThis.document = document;
   #|   globalThis.Element = TestElement;
+  #|   globalThis.HTMLElement = TestElement;
   #|   globalThis.ResizeObserver = TestResizeObserver;
   #|   globalThis.requestAnimationFrame = callback => {
-  #|     globalThis.__markdownCommentBrowserFrames.push(callback);
-  #|     return globalThis.__markdownCommentBrowserFrames.length;
+  #|     harness.frames.push(callback);
+  #|     return harness.frames.length;
   #|   };
+  #|   return harness;
   #| }
 
 ///|
-extern "js" fn restore_markdown_comment_browser_test_dom() -> Unit =
-  #| () => {
-  #|   const originals = globalThis.__markdownCommentBrowserOriginals;
-  #|   globalThis.document = originals.document;
-  #|   globalThis.Element = originals.Element;
-  #|   globalThis.ResizeObserver = originals.ResizeObserver;
-  #|   globalThis.requestAnimationFrame = originals.requestAnimationFrame;
-  #|   delete globalThis.__markdownCommentBrowserOriginals;
-  #|   delete globalThis.__markdownCommentBrowserFrames;
-  #|   delete globalThis.__markdownCommentBrowserObservers;
-  #|   delete globalThis.__markdownCommentHiddenMeasureCount;
+extern "js" fn MarkdownCommentBrowserTestHarness::dispose(
+  self : MarkdownCommentBrowserTestHarness,
+) -> Unit =
+  #| harness => {
+  #|   if (harness.restored) return;
+  #|   harness.restored = true;
+  #|   const restore = (name, value) => {
+  #|     if (value === undefined) delete globalThis[name];
+  #|     else globalThis[name] = value;
+  #|   };
+  #|   restore('document', harness.originals.document);
+  #|   restore('Element', harness.originals.Element);
+  #|   restore('HTMLElement', harness.originals.HTMLElement);
+  #|   restore('ResizeObserver', harness.originals.ResizeObserver);
+  #|   restore('requestAnimationFrame', harness.originals.requestAnimationFrame);
   #| }
 
 ///|
@@ -157,26 +190,46 @@ extern "js" fn markdown_comment_test_set_measurement(
   #| }
 
 ///|
-extern "js" fn markdown_comment_test_trigger_resize() -> Unit =
-  #| () => {
-  #|   const observer = globalThis.__markdownCommentBrowserObservers.at(-1);
+extern "js" fn markdown_comment_test_trigger_resize(
+  harness : MarkdownCommentBrowserTestHarness,
+) -> Unit =
+  #| harness => {
+  #|   const observer = harness.observers.at(-1);
   #|   if (!observer) throw new Error("missing ResizeObserver");
   #|   observer.triggerLate();
   #| }
 
 ///|
 extern "js" fn markdown_comment_test_trigger_resize_for(
+  harness : MarkdownCommentBrowserTestHarness,
   element : @rdom.Element,
 ) -> Unit =
-  #| element => {
-  #|   const observer = globalThis.__markdownCommentBrowserObservers.at(-1);
+  #| (harness, element) => {
+  #|   const observer = harness.observers
+  #|     .findLast(candidate => candidate.targets.includes(element));
   #|   if (!observer) throw new Error("missing ResizeObserver");
   #|   observer.triggerLate(element);
   #| }
 
 ///|
-extern "js" fn markdown_comment_test_observes(element : @rdom.Element) -> Bool =
-  #| element => globalThis.__markdownCommentBrowserObservers.at(-1)?.targets.includes(element) === true
+extern "js" fn markdown_comment_test_observes(
+  harness : MarkdownCommentBrowserTestHarness,
+  element : @rdom.Element,
+) -> Bool =
+  #| (harness, element) => harness.observers
+  #|   .some(observer => observer.targets.includes(element))
+
+///|
+extern "js" fn markdown_comment_test_observer_count(
+  harness : MarkdownCommentBrowserTestHarness,
+) -> Int = "harness => harness.observers.length"
+
+///|
+extern "js" fn markdown_comment_test_observer_target_count(
+  harness : MarkdownCommentBrowserTestHarness,
+  index : Int,
+) -> Int =
+  #| (harness, index) => harness.observers[index]?.targets.length ?? 0
 
 ///|
 extern "js" fn markdown_comment_test_mount_offscreen(
@@ -192,17 +245,19 @@ extern "js" fn markdown_comment_test_mount_offscreen(
   #|   viewport.setAttribute('class', 'editor-scrollable');
   #|   viewport.clientWidth = viewportWidth;
   #|   viewport.isConnected = true;
+  #|   viewport.__markdownCommentOuter = outer;
   #|   viewport.appendChild(outer);
   #|   outer.isConnected = true;
+  #|   const pinnedWidth = Math.max(0, viewportWidth - 14);
+  #|   const narrowPinnedWidth = Math.max(0, narrowWidth - 14);
+  #|   outer.offsetWidth = pinnedWidth;
   #|   content.isConnected = true;
   #|   outer.style.setProperty('display', 'none');
   #|   outer.style.setProperty('height', '0px');
-  #|   outer.style.setProperty('width', '100%');
   #|   outer.style.setProperty('top', '7px');
-  #|   outer.style.setProperty('left', '3px');
   #|   content.__hiddenHeights = new Map([
-  #|     [viewportWidth, wideHeight],
-  #|     [narrowWidth, narrowHeight],
+  #|     [pinnedWidth, wideHeight],
+  #|     [narrowPinnedWidth, narrowHeight],
   #|   ]);
   #|   return viewport;
   #| }
@@ -211,7 +266,45 @@ extern "js" fn markdown_comment_test_mount_offscreen(
 extern "js" fn markdown_comment_test_set_viewport_width(
   viewport : @rdom.Element,
   width : Int,
-) -> Unit = "(viewport, width) => { viewport.clientWidth = width; }"
+) -> Unit =
+  #| (viewport, width) => {
+  #|   viewport.clientWidth = width;
+  #|   if (viewport.__markdownCommentOuter) {
+  #|     viewport.__markdownCommentOuter.offsetWidth =
+  #|       Math.max(0, width - 14);
+  #|   }
+  #| }
+
+///|
+extern "js" fn markdown_comment_test_offset_width(
+  element : @rdom.Element,
+) -> Int = "element => Math.trunc(element.offsetWidth)"
+
+///|
+extern "js" fn markdown_comment_test_style(
+  element : @rdom.Element,
+  name : String,
+) -> String = "(element, name) => element.style.getPropertyValue(name)"
+
+///|
+extern "js" fn markdown_comment_test_clear_style_writes(
+  element : @rdom.Element,
+) -> Unit = "element => { element.style.writes.length = 0; }"
+
+///|
+extern "js" fn markdown_comment_test_style_write_count(
+  element : @rdom.Element,
+  name : String,
+) -> Int =
+  #| (element, name) => element.style.writes
+  #|   .filter(write => write.name === name).length
+
+///|
+extern "js" fn markdown_comment_test_set_style(
+  element : @rdom.Element,
+  name : String,
+  value : String,
+) -> Unit = "(element, name, value) => element.style.setProperty(name, value)"
 
 ///|
 extern "js" fn markdown_comment_test_outer_style(
@@ -222,26 +315,36 @@ extern "js" fn markdown_comment_test_outer_style(
   #|   .join(';')
 
 ///|
-extern "js" fn markdown_comment_test_hidden_measure_count() -> Int = "() => globalThis.__markdownCommentHiddenMeasureCount"
+extern "js" fn markdown_comment_test_hidden_measure_count(
+  harness : MarkdownCommentBrowserTestHarness,
+) -> Int = "harness => harness.hiddenMeasureCount"
 
 ///|
-extern "js" fn markdown_comment_test_disconnect_count() -> Int =
-  #| () => globalThis.__markdownCommentBrowserObservers.at(-1)?.disconnectCount ?? 0
+extern "js" fn markdown_comment_test_disconnect_count(
+  harness : MarkdownCommentBrowserTestHarness,
+) -> Int =
+  #| harness => harness.observers
+  #|   .reduce((sum, observer) => sum + observer.disconnectCount, 0)
 
 ///|
-extern "js" fn markdown_comment_test_pending_frame_count() -> Int = "() => globalThis.__markdownCommentBrowserFrames.length"
+extern "js" fn markdown_comment_test_pending_frame_count(
+  harness : MarkdownCommentBrowserTestHarness,
+) -> Int = "harness => harness.frames.length"
 
 ///|
-extern "js" fn markdown_comment_test_flush_frame() -> Unit =
-  #| () => {
-  #|   const callback = globalThis.__markdownCommentBrowserFrames.shift();
+extern "js" fn markdown_comment_test_flush_frame(
+  harness : MarkdownCommentBrowserTestHarness,
+) -> Unit =
+  #| harness => {
+  #|   const callback = harness.frames.shift();
   #|   if (!callback) throw new Error("missing animation frame");
   #|   callback(0);
   #| }
 
 ///|
 test "MarkdownCommentDom creates the stable half-open ViewZone target shape" {
-  install_markdown_comment_browser_test_dom()
+  let harness = install_markdown_comment_browser_test_dom()
+  defer harness.dispose()
   let dom = MarkdownCommentDom(3, 7)
   assert_eq(
     markdown_comment_test_attribute(dom.outer, "class"),
@@ -260,87 +363,109 @@ test "MarkdownCommentDom creates the stable half-open ViewZone target shape" {
       dom.content,
     ),
   )
-  restore_markdown_comment_browser_test_dom()
+}
+
+///|
+test "MarkdownCommentDom pins outer geometry to ViewLines viewport variables" {
+  let harness = install_markdown_comment_browser_test_dom()
+  defer harness.dispose()
+  let dom = MarkdownCommentDom(3, 7)
+  // Simulate the ordinary ViewZone add write that this helper must replace.
+  markdown_comment_test_set_style(dom.outer, "left", "0px")
+  markdown_comment_test_set_style(dom.outer, "width", "100%")
+  dom.pin_to_content_viewport()
+  assert_eq(
+    markdown_comment_test_style(dom.outer, "left"),
+    "var(--moonbit-viewer-rendered-scroll-left, 0px)",
+  )
+  assert_eq(
+    markdown_comment_test_style(dom.outer, "width"),
+    "var(--moonbit-viewer-visible-content-width, 0px)",
+  )
 }
 
 ///|
 test "size observation coalesces and reports positive changed integer heights" {
-  install_markdown_comment_browser_test_dom()
+  let harness = install_markdown_comment_browser_test_dom()
+  defer harness.dispose()
   let dom = MarkdownCommentDom(1, 2)
   let observed : Array[Int] = []
   let lifetime = dom.observe_size(height => observed.push(height))
-  assert_true(markdown_comment_test_observes(dom.content))
+  assert_true(markdown_comment_test_observes(harness, dom.content))
+  assert_eq(markdown_comment_test_observer_count(harness), 1)
+  assert_eq(markdown_comment_test_observer_target_count(harness, 0), 1)
   markdown_comment_test_set_measurement(dom.content, true, 18.9)
-  markdown_comment_test_trigger_resize()
-  markdown_comment_test_trigger_resize()
-  markdown_comment_test_trigger_resize()
-  assert_eq(markdown_comment_test_pending_frame_count(), 1)
+  markdown_comment_test_trigger_resize(harness)
+  markdown_comment_test_trigger_resize(harness)
+  markdown_comment_test_trigger_resize(harness)
+  assert_eq(markdown_comment_test_pending_frame_count(harness), 1)
   // The frame reads the latest geometry, not the first observer payload.
   markdown_comment_test_set_measurement(dom.content, true, 27.9)
-  markdown_comment_test_flush_frame()
+  markdown_comment_test_flush_frame(harness)
   assert_eq(observed, [27])
 
-  markdown_comment_test_trigger_resize()
-  markdown_comment_test_flush_frame()
+  markdown_comment_test_trigger_resize(harness)
+  markdown_comment_test_flush_frame(harness)
   assert_eq(observed, [27])
 
   markdown_comment_test_set_measurement(dom.content, true, 31.0)
-  markdown_comment_test_trigger_resize()
-  markdown_comment_test_trigger_resize()
-  assert_eq(markdown_comment_test_pending_frame_count(), 1)
-  markdown_comment_test_flush_frame()
+  markdown_comment_test_trigger_resize(harness)
+  markdown_comment_test_trigger_resize(harness)
+  assert_eq(markdown_comment_test_pending_frame_count(harness), 1)
+  markdown_comment_test_flush_frame(harness)
   assert_eq(observed, [27, 31])
   lifetime.dispose()
   lifetime.dispose()
-  assert_eq(markdown_comment_test_disconnect_count(), 1)
-  restore_markdown_comment_browser_test_dom()
+  assert_eq(markdown_comment_test_disconnect_count(harness), 1)
 }
 
 ///|
 test "disconnected zero queued and late observer callbacks are inert" {
-  install_markdown_comment_browser_test_dom()
+  let harness = install_markdown_comment_browser_test_dom()
+  defer harness.dispose()
   let dom = MarkdownCommentDom(5, 6)
   let observed : Array[Int] = []
   let lifetime = dom.observe_size(height => observed.push(height))
 
   markdown_comment_test_set_measurement(dom.content, false, 20.0)
-  markdown_comment_test_trigger_resize()
-  markdown_comment_test_flush_frame()
+  markdown_comment_test_trigger_resize(harness)
+  markdown_comment_test_flush_frame(harness)
   assert_true(observed.is_empty())
 
   markdown_comment_test_set_measurement(dom.content, true, 0.0)
-  markdown_comment_test_trigger_resize()
-  markdown_comment_test_flush_frame()
+  markdown_comment_test_trigger_resize(harness)
+  markdown_comment_test_flush_frame(harness)
   assert_true(observed.is_empty())
 
   markdown_comment_test_set_measurement(dom.content, true, 22.0)
-  markdown_comment_test_trigger_resize()
-  markdown_comment_test_flush_frame()
+  markdown_comment_test_trigger_resize(harness)
+  markdown_comment_test_flush_frame(harness)
   assert_eq(observed, [22])
 
   markdown_comment_test_set_measurement(dom.content, true, 40.0)
-  markdown_comment_test_trigger_resize()
-  assert_eq(markdown_comment_test_pending_frame_count(), 1)
+  markdown_comment_test_trigger_resize(harness)
+  assert_eq(markdown_comment_test_pending_frame_count(harness), 1)
   lifetime.dispose()
   lifetime.dispose()
-  assert_eq(markdown_comment_test_disconnect_count(), 1)
+  assert_eq(markdown_comment_test_disconnect_count(harness), 1)
   // The native frame still drains the shared coordinator, whose canceled
   // registration and disposed guard both keep the root callback inert.
-  markdown_comment_test_flush_frame()
+  markdown_comment_test_flush_frame(harness)
   assert_eq(observed, [22])
 
   // Simulate a browser-delivered ResizeObserver callback that was already
   // queued when disconnect ran.
-  markdown_comment_test_trigger_resize()
-  assert_eq(markdown_comment_test_pending_frame_count(), 0)
+  markdown_comment_test_trigger_resize(harness)
+  assert_eq(markdown_comment_test_pending_frame_count(harness), 0)
   assert_eq(observed, [22])
-  restore_markdown_comment_browser_test_dom()
 }
 
 ///|
-test "offscreen measurement uses viewport width restores styles and avoids zero feedback" {
-  install_markdown_comment_browser_test_dom()
+test "offscreen measurement retains pinned width and offset and avoids zero feedback" {
+  let harness = install_markdown_comment_browser_test_dom()
+  defer harness.dispose()
   let dom = MarkdownCommentDom(81, 91)
+  dom.pin_to_content_viewport()
   let viewport = markdown_comment_test_mount_offscreen(
     dom.outer,
     dom.content,
@@ -349,39 +474,79 @@ test "offscreen measurement uses viewport width restores styles and avoids zero 
     180,
     154,
   )
+  // The editor viewport is 320px, but the already-pinned Markdown surface
+  // excludes the fixed 14px vertical rail.
+  assert_eq(markdown_comment_test_offset_width(dom.outer), 306)
   let original_style = markdown_comment_test_outer_style(dom.outer)
   let observed : Array[Int] = []
   let observer = dom.observe_size(height => observed.push(height))
-  assert_true(markdown_comment_test_observes(dom.content))
-  assert_true(markdown_comment_test_observes(viewport))
+  let viewport_observer = dom.observe_viewport_width(() => {
+    observer.request_measure()
+  })
+  assert_true(markdown_comment_test_observes(harness, dom.content))
+  assert_true(markdown_comment_test_observes(harness, viewport))
+  assert_eq(markdown_comment_test_observer_count(harness), 2)
+  assert_eq(markdown_comment_test_observer_target_count(harness, 0), 1)
+  assert_eq(markdown_comment_test_observer_target_count(harness, 1), 1)
+  markdown_comment_test_clear_style_writes(dom.outer)
 
   observer.request_measure()
   observer.request_measure()
-  assert_eq(markdown_comment_test_pending_frame_count(), 1)
-  markdown_comment_test_flush_frame()
+  assert_eq(markdown_comment_test_pending_frame_count(harness), 1)
+  markdown_comment_test_flush_frame(harness)
   assert_eq(observed, [96])
-  assert_eq(markdown_comment_test_hidden_measure_count(), 1)
+  assert_eq(markdown_comment_test_hidden_measure_count(harness), 1)
   assert_eq(markdown_comment_test_outer_style(dom.outer), original_style)
+  assert_eq(markdown_comment_test_style_write_count(dom.outer, "width"), 0)
+  assert_eq(markdown_comment_test_style_write_count(dom.outer, "left"), 0)
 
   // The zero-size target callback caused by restoring `display:none` must not
   // enter the forced hidden path again or produce a frame-to-frame loop.
-  markdown_comment_test_trigger_resize_for(dom.content)
-  markdown_comment_test_flush_frame()
+  markdown_comment_test_trigger_resize_for(harness, dom.content)
+  markdown_comment_test_flush_frame(harness)
   assert_eq(observed, [96])
-  assert_eq(markdown_comment_test_hidden_measure_count(), 1)
+  assert_eq(markdown_comment_test_hidden_measure_count(harness), 1)
 
   // A viewport observation is an explicit width invalidation even while the
   // ViewZone remains display:none.
   markdown_comment_test_set_viewport_width(viewport, 180)
-  markdown_comment_test_trigger_resize_for(viewport)
-  markdown_comment_test_flush_frame()
+  markdown_comment_test_trigger_resize_for(harness, viewport)
+  markdown_comment_test_flush_frame(harness)
+  assert_eq(markdown_comment_test_offset_width(dom.outer), 166)
   assert_eq(observed, [96, 154])
-  assert_eq(markdown_comment_test_hidden_measure_count(), 2)
+  assert_eq(markdown_comment_test_hidden_measure_count(harness), 2)
   assert_eq(markdown_comment_test_outer_style(dom.outer), original_style)
+  assert_eq(markdown_comment_test_style_write_count(dom.outer, "width"), 0)
+  assert_eq(markdown_comment_test_style_write_count(dom.outer, "left"), 0)
 
+  // An equal positive width is deduplicated by the shared observer.
+  markdown_comment_test_trigger_resize_for(harness, viewport)
+  assert_eq(markdown_comment_test_pending_frame_count(harness), 0)
+
+  // Zero is remembered but not measured. Restoring the same positive width
+  // still invalidates because content may have laid out while the host was
+  // collapsed.
+  markdown_comment_test_set_viewport_width(viewport, 0)
+  markdown_comment_test_trigger_resize_for(harness, viewport)
+  assert_eq(markdown_comment_test_pending_frame_count(harness), 0)
+  markdown_comment_test_set_viewport_width(viewport, 180)
+  markdown_comment_test_trigger_resize_for(harness, viewport)
+  assert_eq(markdown_comment_test_pending_frame_count(harness), 1)
+  markdown_comment_test_flush_frame(harness)
+  assert_eq(observed, [96, 154])
+  assert_eq(markdown_comment_test_hidden_measure_count(harness), 3)
+  assert_eq(markdown_comment_test_style_write_count(dom.outer, "width"), 0)
+  assert_eq(markdown_comment_test_style_write_count(dom.outer, "left"), 0)
+
+  viewport_observer.dispose()
+  viewport_observer.dispose()
   observer.dispose()
   observer.request_measure()
-  assert_eq(markdown_comment_test_pending_frame_count(), 0)
-  assert_eq(markdown_comment_test_disconnect_count(), 1)
-  restore_markdown_comment_browser_test_dom()
+  assert_eq(markdown_comment_test_pending_frame_count(harness), 0)
+  assert_eq(markdown_comment_test_disconnect_count(harness), 2)
+
+  // Browser-delivered callbacks already queued before disconnect are inert.
+  markdown_comment_test_set_viewport_width(viewport, 240)
+  markdown_comment_test_trigger_resize_for(harness, viewport)
+  assert_eq(markdown_comment_test_pending_frame_count(harness), 0)
 }

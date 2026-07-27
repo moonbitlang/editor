@@ -202,6 +202,25 @@ extern "js" fn markdown_contribution_test_parent(
 extern "js" fn markdown_contribution_test_disconnect_count() -> Int = "() => globalThis.__markdownContributionDisconnectCount"
 
 ///|
+extern "js" fn markdown_contribution_test_active_observer_count() -> Int =
+  #| () => globalThis.__markdownContributionObservers
+  #|   .filter(observer => observer.active).length
+
+///|
+extern "js" fn markdown_contribution_test_active_viewport_observer_count() -> Int =
+  #| () => globalThis.__markdownContributionObservers.filter((observer) => {
+  #|   if (!observer.active) return false;
+  #|   const classes = String(
+  #|     observer.target?.getAttribute?.('class') ?? '',
+  #|   ).split(/\s+/);
+  #|   // The lightweight contribution DOM does not model Element.closest, so
+  #|   // the shared observer can have no target here. Content observers are
+  #|   // still exactly identifiable; the DOM-package fixture separately
+  #|   // verifies that production closest() resolves editor-scrollable.
+  #|   return !classes.includes('moonbit-viewer-markdown-comment-content');
+  #| }).length
+
+///|
 extern "js" fn markdown_contribution_test_trigger_resize(
   target : @rdom.Element,
   height : Int,
@@ -289,6 +308,10 @@ test "Markdown comments replace start middle EOF blocks while preserving model t
       assert_true(state.rendered.contains("1:2"))
       assert_true(state.rendered.contains("3:5"))
       assert_true(state.rendered.contains("6:7"))
+      // Three comments retain independent content observers, but the model
+      // owns exactly one viewport-width observer.
+      assert_eq(markdown_contribution_test_active_observer_count(), 4)
+      assert_eq(markdown_contribution_test_active_viewport_observer_count(), 1)
       for key in ["1:2", "3:5", "6:7"] {
         let entry = state.rendered[key]
         assert_true(entry.zone_id != "")
@@ -460,6 +483,8 @@ test "Markdown comment reconciliation adds removes and moves blocks by stable ra
           removed_outer,
         ),
       )
+      assert_eq(markdown_contribution_test_active_observer_count(), 4)
+      assert_eq(markdown_contribution_test_active_viewport_observer_count(), 1)
       assert_eq(markdown_contribution_test_disconnect_count(), 1)
       assert_true(
         viewer.test_view_model().get_hidden_areas() ==
@@ -655,7 +680,8 @@ test "Markdown comment model detach replacement reattach and Viewer disposal rel
       assert_true(first_view_model.get_hidden_areas() == [])
       assert_eq(first_view_model.get_whitespaces().length(), 0)
       assert_true(markdown_contribution_test_is_detached(first_outer))
-      assert_eq(markdown_contribution_test_disconnect_count(), 1)
+      assert_eq(markdown_contribution_test_active_observer_count(), 0)
+      assert_eq(markdown_contribution_test_disconnect_count(), 2)
 
       // Reattach after the explicit no-model state creates fresh per-model
       // ViewZone/DOM ownership under the same Viewer-lived contribution.
@@ -667,6 +693,8 @@ test "Markdown comment model detach replacement reattach and Viewer disposal rel
       assert_eq(state.rendered.length(), 1)
       assert_false(same_mounted_test_element(first_outer, second_outer))
       assert_true(second_view_model.get_hidden_areas() == [Range(2, 1, 2, 1)])
+      assert_eq(markdown_contribution_test_active_observer_count(), 2)
+      assert_eq(markdown_contribution_test_active_viewport_observer_count(), 1)
 
       // A direct replacement clears the outgoing source/resources before
       // installing a third model's fresh entry.
@@ -679,14 +707,15 @@ test "Markdown comment model detach replacement reattach and Viewer disposal rel
       assert_eq(second_view_model.get_whitespaces().length(), 0)
       assert_true(markdown_contribution_test_is_detached(second_outer))
       assert_false(same_mounted_test_element(second_outer, third_outer))
-      assert_eq(markdown_contribution_test_disconnect_count(), 2)
+      assert_eq(markdown_contribution_test_disconnect_count(), 4)
 
       viewer.dispose()
       assert_eq(state.rendered.length(), 0)
       assert_true(third_view_model.get_hidden_areas() == [])
       assert_eq(third_view_model.get_whitespaces().length(), 0)
       assert_true(markdown_contribution_test_is_detached(third_outer))
-      assert_eq(markdown_contribution_test_disconnect_count(), 3)
+      assert_eq(markdown_contribution_test_active_observer_count(), 0)
+      assert_eq(markdown_contribution_test_disconnect_count(), 6)
       assert_true(viewer.markdown_comment_contribution() is None)
     },
     provider_blocks=[markdown_contribution_block(2, 3, "comment")],
@@ -792,7 +821,8 @@ test "Markdown comment height callbacks ignore zero disconnected stale and dispo
         run_one_mounted_test_frame()
       }
       assert_eq(state.rendered.length(), 0)
-      assert_eq(markdown_contribution_test_disconnect_count(), 1)
+      assert_eq(markdown_contribution_test_active_observer_count(), 0)
+      assert_eq(markdown_contribution_test_disconnect_count(), 2)
       assert_eq(mounted_test_frame_count(), 0)
       markdown_contribution_test_trigger_resize(target, 50, true)
       assert_eq(mounted_test_frame_count(), 0)

@@ -24,12 +24,19 @@ pub(all) struct MarkdownCommentDom {
 #alias(new, deprecated)
 pub fn MarkdownCommentDom::MarkdownCommentDom(Int, Int) -> Self
 pub fn MarkdownCommentDom::observe_size(Self, (Int) -> Unit) -> MarkdownCommentSizeObserver
+pub fn MarkdownCommentDom::observe_viewport_width(Self, () -> Unit) -> MarkdownCommentViewportObserver
+pub fn MarkdownCommentDom::pin_to_content_viewport(Self) -> Unit
 
 pub struct MarkdownCommentSizeObserver {
   // private fields
 }
 pub fn MarkdownCommentSizeObserver::dispose(Self) -> Unit
 pub fn MarkdownCommentSizeObserver::request_measure(Self) -> Unit
+
+pub struct MarkdownCommentViewportObserver {
+  // private fields
+}
+pub fn MarkdownCommentViewportObserver::dispose(Self) -> Unit
 
 // Type aliases
 

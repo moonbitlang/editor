@@ -9,6 +9,7 @@ fn geometry_view_lines(
   layout : @view_layout.ViewLayout,
   fixture : ViewLineFixture,
   scheduler? : RunOnceScheduler = RunOnceScheduler(200),
+  lines_content? : @rdom.Element = view_line_fixture_context(fixture),
 ) -> ViewLines {
   let configuration = ViewLinesConfiguration::ViewLinesConfiguration()
   let options_ref = Ref(configuration.view_line_options)
@@ -16,7 +17,7 @@ fn geometry_view_lines(
   last_rendered_data.set_current_visible_range(visible_range)
   {
     dom_node: CachedDomNode(view_line_fixture_context(fixture)),
-    lines_content: CachedDomNode(view_line_fixture_context(fixture)),
+    lines_content: CachedDomNode(lines_content),
     text_range_resting_spot: view_line_fixture_end_node(fixture),
     window,
     lines,
@@ -34,6 +35,9 @@ fn geometry_view_lines(
     max_line_width: 0.0,
     last_layout: Some(layout),
     should_render: true,
+    content_viewport_geometry_lease_count: 0,
+    rendered_scroll_left: None,
+    visible_content_width: None,
   }
 }
 
@@ -103,11 +107,132 @@ fn GeometryTimerSpy::fire_active(self : GeometryTimerSpy) -> Unit {
 }
 
 ///|
+extern "js" fn new_geometry_style_element() -> @rdom.Element =
+  #| () => ({
+  #|   style: {
+  #|     values: Object.create(null),
+  #|     setCount: 0,
+  #|     removeCount: 0,
+  #|     setProperty(name, value) {
+  #|       this.values[name] = String(value);
+  #|       this.setCount += 1;
+  #|     },
+  #|     removeProperty(name) {
+  #|       delete this.values[name];
+  #|       this.removeCount += 1;
+  #|     },
+  #|   },
+  #| })
+
+///|
+extern "js" fn geometry_style_value(
+  element : @rdom.Element,
+  name : String,
+) -> String =
+  #| (element, name) => element.style.values[name] ?? ""
+
+///|
+extern "js" fn geometry_style_set_count(element : @rdom.Element) -> Int = "(element) => element.style.setCount"
+
+///|
+extern "js" fn geometry_style_remove_count(element : @rdom.Element) -> Int = "(element) => element.style.removeCount"
+
+///|
 test "LastRenderedData initializes and replaces the exact visible Range" {
   let data = LastRenderedData::LastRenderedData()
   assert_true(data.get_current_visible_range() == Range(1, 1, 1, 1))
   data.set_current_visible_range(Range(3, 2, 5, 7))
   assert_true(data.get_current_visible_range() == Range(3, 2, 5, 7))
+}
+
+///|
+test "ViewLines content viewport geometry is leased cached and scrollbar-safe" {
+  let fixture = new_view_line_fixture(10.0, 10.0)
+  let lines_content = new_geometry_style_element()
+  let layout = @view_layout.ViewLayout(line_height=20, line_count=1)
+  let view_lines = geometry_view_lines(
+    [],
+    { start: 1, end: 1 },
+    Range(1, 1, 1, 1),
+    layout,
+    fixture,
+    lines_content~,
+  )
+  // Ordinary ViewZones retain the model scroll-plane contract until a
+  // specialized consumer explicitly acquires it.
+  view_lines.publish_content_viewport_geometry(40.0, 200.0)
+  assert_eq(geometry_style_set_count(lines_content), 0)
+  view_lines.should_render = false
+  let first = view_lines.acquire_content_viewport_geometry()
+  assert_true(view_lines.should_render)
+  view_lines.should_render = false
+  let second = view_lines.acquire_content_viewport_geometry()
+  assert_false(view_lines.should_render)
+  assert_eq(view_lines.content_viewport_geometry_lease_count, 2)
+  view_lines.publish_content_viewport_geometry(40.0, 200.0)
+  assert_eq(
+    geometry_style_value(lines_content, rendered_scroll_left_css_variable),
+    "40px",
+  )
+  assert_eq(
+    geometry_style_value(lines_content, visible_content_width_css_variable),
+    "186px",
+  )
+  assert_eq(geometry_style_set_count(lines_content), 2)
+  // Replaying an identical render snapshot performs no redundant DOM writes;
+  // changing only the horizontal position updates only its variable.
+  view_lines.publish_content_viewport_geometry(40.0, 200.0)
+  assert_eq(geometry_style_set_count(lines_content), 2)
+  view_lines.publish_content_viewport_geometry(45.0, 200.0)
+  assert_eq(geometry_style_set_count(lines_content), 3)
+  // The width follows the current configured scrollbar size and clamps at
+  // zero when the rail is wider than the viewport.
+  let wider_scrollbar = {
+    ..view_lines.view_line_options,
+    vertical_scrollbar_size: 20.0,
+  }
+  view_lines.on_options_maybe_changed(wider_scrollbar) |> ignore
+  view_lines.publish_content_viewport_geometry(45.0, 200.0)
+  assert_eq(
+    geometry_style_value(lines_content, visible_content_width_css_variable),
+    "180px",
+  )
+  assert_eq(geometry_style_set_count(lines_content), 4)
+  view_lines.publish_content_viewport_geometry(45.0, 5.0)
+  assert_eq(
+    geometry_style_value(lines_content, visible_content_width_css_variable),
+    "0px",
+  )
+  assert_eq(geometry_style_set_count(lines_content), 5)
+  // Only the last lease removes the inherited contract and resets both
+  // caches. Disposable itself is idempotent.
+  first.dispose()
+  assert_eq(geometry_style_remove_count(lines_content), 0)
+  second.dispose()
+  assert_eq(view_lines.content_viewport_geometry_lease_count, 0)
+  assert_eq(
+    geometry_style_value(lines_content, rendered_scroll_left_css_variable),
+    "",
+  )
+  assert_eq(
+    geometry_style_value(lines_content, visible_content_width_css_variable),
+    "",
+  )
+  assert_eq(geometry_style_remove_count(lines_content), 2)
+  assert_true(view_lines.rendered_scroll_left is None)
+  assert_true(view_lines.visible_content_width is None)
+  second.dispose()
+  assert_eq(geometry_style_remove_count(lines_content), 2)
+  // ViewLines teardown also clears an outstanding lease; a later handle
+  // disposal cannot underflow the refcount or perform duplicate DOM removal.
+  let third = view_lines.acquire_content_viewport_geometry()
+  view_lines.publish_content_viewport_geometry(5.0, 100.0)
+  assert_eq(geometry_style_set_count(lines_content), 7)
+  view_lines.dispose()
+  assert_eq(view_lines.content_viewport_geometry_lease_count, 0)
+  assert_eq(geometry_style_remove_count(lines_content), 4)
+  third.dispose()
+  assert_eq(geometry_style_remove_count(lines_content), 4)
 }
 
 ///|

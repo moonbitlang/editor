@@ -312,6 +312,16 @@ test "read API: layout info reduces to gutter + content box" {
     assert_eq(info.content_left, info.line_numbers_width + 26.0)
     assert_eq(info.width, info.content_left + info.content_width)
     assert_eq(info.height, 400.0)
+    assert_eq(
+      info.horizontal_scrollbar_height,
+      @core.editor_horizontal_scrollbar_size,
+    )
+    assert_eq(
+      info.vertical_scrollbar_width,
+      @core.editor_vertical_scrollbar_size,
+    )
+    assert_eq(info.horizontal_scrollbar_height, 12.0)
+    assert_eq(info.vertical_scrollbar_width, 14.0)
     assert_true(info.content_left > 0.0)
     // `showFoldingControls: 'never'` drops the reserve back to the raw
     // `lineDecorationsWidth`.

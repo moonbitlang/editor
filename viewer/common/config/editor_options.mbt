@@ -7,9 +7,10 @@
 //
 // Omissions: `glyphMarginDecorationLaneCount` (no glyph-margin lanes),
 // `minimap`/`overviewRuler` cluster, `viewportColumn`,
-// `isWordWrapMinified`/`isViewportWrapping`/`wrappingColumn`, and the
-// scrollbar width/height fields — none are rendered or consumed by the
-// viewer. The viewer has no glyph margin, so `glyph_margin_left`/
+// `isWordWrapMinified`/`isViewportWrapping`/`wrappingColumn`. Scrollbar
+// width/height stay in the reduced shape because viewport-fixed consumers
+// share the actual 14px vertical and 12px horizontal editor geometry. The
+// viewer has no glyph margin, so `glyph_margin_left`/
 // `glyph_margin_width` are always `0` and
 // `content_left = line_numbers_width + decorations_width`.
 

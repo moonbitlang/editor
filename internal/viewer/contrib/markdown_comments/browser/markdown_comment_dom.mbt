@@ -27,10 +27,31 @@ pub fn MarkdownCommentDom::MarkdownCommentDom(
 }
 
 ///|
+/// Pins the caller-owned ViewZone node to the visible content viewport. The
+/// ordinary ViewZone write performed by `add_zone` deliberately uses the
+/// model's horizontal scroll plane; this contribution-specific write runs
+/// immediately afterwards and consumes geometry published by ViewLines.
+pub fn MarkdownCommentDom::pin_to_content_viewport(
+  self : MarkdownCommentDom,
+) -> Unit {
+  @base_browser.set_style_property(
+    self.outer,
+    "left",
+    "var(--moonbit-viewer-rendered-scroll-left, 0px)",
+  )
+  @base_browser.set_style_property(
+    self.outer,
+    "width",
+    "var(--moonbit-viewer-visible-content-width, 0px)",
+  )
+}
+
+///|
 /// Observes the inner Markdown content and reports its first/changed positive
 /// integer height after one shared animation-frame boundary. Explicit requests
-/// cover renderer replacement/image load while a zone is offscreen. The root
-/// callback owns generation and zone-id stale checks before relayout.
+/// cover renderer replacement, image load, and model-scoped viewport-width
+/// changes while a zone is offscreen. The root callback owns generation and
+/// zone-id stale checks before relayout.
 pub fn MarkdownCommentDom::observe_size(
   self : MarkdownCommentDom,
   on_height_changed : (Int) -> Unit,
@@ -43,7 +64,7 @@ pub fn MarkdownCommentDom::observe_size(
   let measure = () => {
     frame_scheduled.val = false
     pending_frame.val = None
-    if disposed.val || !markdown_comment_element_is_connected(self.content) {
+    if disposed.val || !@base_browser.element_is_connected(self.content) {
       return
     }
     let allow_hidden = force_hidden_measure.val || last_height.val == 0
@@ -77,13 +98,15 @@ pub fn MarkdownCommentDom::observe_size(
       registration.dispose()
     }
   }
-  let observer = markdown_comment_resize_observer(
-    self.content,
-    schedule_measure,
-  )
+  let observer = @base_browser.observe_element_resize(self.content, () => {
+    schedule_measure(false)
+  })
   let lifetime = @base_common.Disposable::from(() => {
     disposed.val = true
-    observer.disconnect()
+    match observer {
+      Some(observer) => observer.dispose()
+      None => ()
+    }
     match pending_frame.val {
       Some(registration) => registration.dispose()
       None => ()
@@ -117,71 +140,153 @@ pub fn MarkdownCommentSizeObserver::dispose(
 }
 
 ///|
-#external
-priv type MarkdownCommentResizeObserver
+/// One model-scoped observer for the editor content viewport. Width transitions
+/// are deduplicated here; zero is remembered but not published so restoring a
+/// previously equal positive width still invalidates hidden comment heights.
+pub fn MarkdownCommentDom::observe_viewport_width(
+  self : MarkdownCommentDom,
+  on_width_changed : () -> Unit,
+) -> MarkdownCommentViewportObserver {
+  let disposed = Ref(false)
+  let lifetime = match markdown_comment_content_viewport(self.outer) {
+    Some(viewport) => {
+      let last_width = Ref(
+        @base_browser.element_client_width(viewport).to_int(),
+      )
+      let observer = @base_browser.observe_element_resize(viewport, () => {
+        if disposed.val {
+          return
+        }
+        let width = @base_browser.element_client_width(viewport).to_int()
+        if width == last_width.val {
+          return
+        }
+        last_width.val = width
+        if width > 0 {
+          on_width_changed()
+        }
+      })
+      @base_common.Disposable::from(() => {
+        disposed.val = true
+        match observer {
+          Some(observer) => observer.dispose()
+          None => ()
+        }
+      })
+    }
+    None => @base_common.Disposable::from(() => disposed.val = true)
+  }
+  { lifetime, }
+}
 
 ///|
-extern "js" fn markdown_comment_resize_observer(
-  target : @rdom.Element,
-  notify : (Bool) -> Unit,
-) -> MarkdownCommentResizeObserver =
-  #| (target, notify) => {
-  #|   const viewport = target.closest?.('.editor-scrollable') ?? null;
-  #|   const observer = new ResizeObserver((entries) => {
-  #|     notify(Boolean(viewport && entries.some((entry) => entry.target === viewport)));
-  #|   });
-  #|   observer.observe(target);
-  #|   if (viewport && viewport !== target) observer.observe(viewport);
-  #|   return observer;
-  #| }
+pub struct MarkdownCommentViewportObserver {
+  priv lifetime : @base_common.Disposable
+}
 
 ///|
-extern "js" fn MarkdownCommentResizeObserver::disconnect(
-  self : MarkdownCommentResizeObserver,
-) -> Unit = "observer => observer.disconnect()"
+pub fn MarkdownCommentViewportObserver::dispose(
+  self : MarkdownCommentViewportObserver,
+) -> Unit {
+  self.lifetime.dispose()
+}
 
 ///|
-extern "js" fn markdown_comment_element_is_connected(
+fn markdown_comment_content_viewport(element : @rdom.Element) -> @rdom.Element? {
+  if element_has_class(element, "editor-scrollable") {
+    return Some(element)
+  }
+  match element.get_parent_node().to_option() {
+    Some(parent) =>
+      match parent.to_element() {
+        Some(parent) => markdown_comment_content_viewport(parent)
+        None => None
+      }
+    None => None
+  }
+}
+
+///|
+priv struct MarkdownCommentSavedStyle {
+  name : String
+  value : String
+  priority : String
+}
+
+///|
+fn save_markdown_comment_style(
   element : @rdom.Element,
-) -> Bool = "element => element?.isConnected === true"
+  name : String,
+) -> MarkdownCommentSavedStyle {
+  {
+    name,
+    value: @base_browser.element_style_value(element, name),
+    priority: @base_browser.element_style_priority(element, name),
+  }
+}
+
+///|
+fn restore_markdown_comment_style(
+  element : @rdom.Element,
+  saved : MarkdownCommentSavedStyle,
+) -> Unit {
+  if saved.value == "" {
+    @base_browser.remove_style_property(element, saved.name)
+  } else {
+    @base_browser.set_style_property_with_priority(
+      element,
+      saved.name,
+      saved.value,
+      saved.priority,
+    )
+  }
+}
 
 ///|
 /// Reads visible content directly. For a connected `display:none` ViewZone,
-/// temporarily lays out the caller-owned outer node invisibly at the editor
-/// content viewport width, then restores every touched inline declaration and
-/// priority before returning. A later zero-size ResizeObserver notification is
-/// not allowed to repeat this hidden path unless the viewport or renderer
-/// explicitly invalidated it.
-extern "js" fn markdown_comment_measured_height(
+/// temporarily lays out the caller-owned outer node invisibly without replacing
+/// its viewport-pinned `left` or `width`, then restores every touched inline
+/// declaration and priority before returning. A later zero-size ResizeObserver
+/// notification is not allowed to repeat this hidden path unless the shared
+/// viewport observer or renderer explicitly invalidated it.
+fn markdown_comment_measured_height(
   outer : @rdom.Element,
   content : @rdom.Element,
   allow_hidden : Bool,
-) -> Int =
-  #| (outer, content, allowHidden) => {
-  #|   const direct = Math.trunc(content?.offsetHeight ?? 0);
-  #|   if (direct > 0 || !allowHidden || content?.isConnected !== true) return direct;
-  #|   const viewport = content.closest?.('.editor-scrollable') ?? null;
-  #|   const width = Math.trunc(viewport?.clientWidth ?? 0);
-  #|   if (width <= 0 || !outer?.style) return 0;
-  #|   const names = ['display', 'visibility', 'pointer-events', 'height', 'width', 'top', 'left'];
-  #|   const saved = names.map((name) => [
-  #|     name,
-  #|     outer.style.getPropertyValue(name),
-  #|     outer.style.getPropertyPriority(name),
-  #|   ]);
-  #|   try {
-  #|     outer.style.setProperty('display', 'block', 'important');
-  #|     outer.style.setProperty('visibility', 'hidden', 'important');
-  #|     outer.style.setProperty('pointer-events', 'none', 'important');
-  #|     outer.style.setProperty('height', 'auto', 'important');
-  #|     outer.style.setProperty('width', `${width}px`, 'important');
-  #|     outer.style.setProperty('top', '0px', 'important');
-  #|     outer.style.setProperty('left', '0px', 'important');
-  #|     return Math.trunc(content.offsetHeight ?? 0);
-  #|   } finally {
-  #|     for (const [name, value, priority] of saved) {
-  #|       if (value === '') outer.style.removeProperty(name);
-  #|       else outer.style.setProperty(name, value, priority);
-  #|     }
-  #|   }
-  #| }
+) -> Int {
+  let direct = @base_browser.element_offset_height(content).to_int()
+  if direct > 0 || !allow_hidden || !@base_browser.element_is_connected(content) {
+    return direct
+  }
+  let saved = ["display", "visibility", "pointer-events", "height", "top"].map(name => {
+    save_markdown_comment_style(outer, name)
+  })
+  defer (for declaration in saved {
+    restore_markdown_comment_style(outer, declaration)
+  })
+  @base_browser.set_style_property_with_priority(
+    outer, "display", "block", "important",
+  )
+  @base_browser.set_style_property_with_priority(
+    outer, "visibility", "hidden", "important",
+  )
+  @base_browser.set_style_property_with_priority(
+    outer, "pointer-events", "none", "important",
+  )
+  @base_browser.set_style_property_with_priority(
+    outer, "height", "auto", "important",
+  )
+  @base_browser.set_style_property_with_priority(
+    outer, "top", "0px", "important",
+  )
+  let rect_width = outer.get_bounding_client_rect().get_width()
+  let width = if rect_width > 0.0 {
+    rect_width
+  } else {
+    @base_browser.element_offset_width(outer)
+  }
+  if width <= 0.0 {
+    return 0
+  }
+  @base_browser.element_offset_height(content).to_int()
+}
