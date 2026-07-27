@@ -3,7 +3,7 @@
 /// Unknown, unlabelled, and failed diagram blocks keep the existing fallback.
 fn render_diagram_code_block(code_block : MarkdownCodeBlock) -> String? {
   match code_block.language_id {
-    Some("diago") =>
+    Some("diago") | Some("d2") =>
       render_diago_svg(code_block.code).map(svg => {
         wrap_diagram_svg("diago", svg)
       })

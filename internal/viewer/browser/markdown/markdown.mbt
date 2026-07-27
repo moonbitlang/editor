@@ -211,6 +211,8 @@ extern "js" fn install_markdown_dom(
   #|     if (!classes.includes("moonbit-viewer-markdown-diagram")) continue;
   #|     listen(diagram, "wheel", (event) => {
   #|       if (!active) return;
+  #|       const currentClasses = (diagram.getAttribute("class") || "").split(/\s+/);
+  #|       if (currentClasses.includes("moonbit-viewer-markdown-diagram-viewport")) return;
   #|       const deltaX = Number(event.deltaX || (event.shiftKey ? event.deltaY : 0));
   #|       const deltaY = Number(event.shiftKey ? 0 : event.deltaY || 0);
   #|       const consumesX = canScroll(

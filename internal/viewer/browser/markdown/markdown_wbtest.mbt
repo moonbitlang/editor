@@ -175,6 +175,12 @@ extern "js" fn markdown_test_listener_count(
 ) -> Int = "(element, type) => element.listenerCount(type)"
 
 ///|
+extern "js" fn markdown_test_set_class(
+  element : @rdom.Element,
+  value : String,
+) -> Unit = "(element, value) => element.setAttribute('class', value)"
+
+///|
 extern "js" fn markdown_test_same_element(
   left : @rdom.Element,
   right : @rdom.Element,
@@ -360,7 +366,7 @@ test "target reuse replaces children and releases every prior listener" {
 }
 
 ///|
-test "diagram wheel stays native until the scroll boundary and listener disposal" {
+test "diagram wheel ownership follows the dynamic viewport marker and listener lifetime" {
   install_markdown_test_dom()
   let target = markdown_test_target()
   let rendered = render_markdown(
@@ -388,6 +394,15 @@ test "diagram wheel stays native until the scroll boundary and listener disposal
     markdown_test_dispatch_vertical_wheel(diagram, 120, 200, 100, 300),
     0,
   )
+  // The Markdown-comment controller mounts after this generic listener.
+  // Event-time marker reads hand every ordinary wheel delta back to the
+  // interactive component/editor without changing other Markdown consumers.
+  markdown_test_set_class(
+    diagram, "moonbit-viewer-markdown-diagram moonbit-viewer-markdown-diagram-viewport",
+  )
+  assert_eq(markdown_test_dispatch_vertical_wheel(diagram, 120, 0, 100, 300), 0)
+  markdown_test_set_class(diagram, "moonbit-viewer-markdown-diagram")
+  assert_eq(markdown_test_dispatch_vertical_wheel(diagram, 120, 0, 100, 300), 1)
   rendered.dispose.dispose()
   assert_eq(markdown_test_listener_count(diagram, "wheel"), 0)
   assert_eq(markdown_test_dispatch_vertical_wheel(diagram, 120, 0, 100, 300), 0)

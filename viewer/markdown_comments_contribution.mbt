@@ -27,6 +27,7 @@ priv struct RenderedMarkdownComment {
   zone : @editor_browser.ViewZone
   zone_id : String
   mut rendered_markdown : @browser_markdown.RenderedMarkdown
+  mut diagram_viewports : @markdown_comments_browser.MarkdownCommentDiagramViewports
   size_observer : @markdown_comments_browser.MarkdownCommentSizeObserver
   mut measured_height : Double
   generation : Ref[Int]
@@ -36,6 +37,7 @@ priv struct RenderedMarkdownComment {
 fn RenderedMarkdownComment::dispose_render_resources(
   self : RenderedMarkdownComment,
 ) -> Unit {
+  self.diagram_viewports.dispose()
   self.rendered_markdown.dispose.dispose()
   self.size_observer.dispose()
 }
@@ -178,10 +180,15 @@ fn Viewer::refresh_markdown_comments(
         Some(existing) => {
           existing.generation.val = generation
           if existing.block.markdown != block.markdown {
+            existing.diagram_viewports.dispose()
             existing.rendered_markdown.dispose.dispose()
             existing.rendered_markdown = render_markdown_comment_body(
               model,
               block.markdown,
+              existing.rendered_markdown.element,
+              () => existing.size_observer.request_measure(),
+            )
+            existing.diagram_viewports = MarkdownCommentDiagramViewports(
               existing.rendered_markdown.element,
               () => existing.size_observer.request_measure(),
             )
@@ -214,11 +221,16 @@ fn Viewer::refresh_markdown_comments(
             dom.content,
             () => size_observer.request_measure(),
           )
+          let diagram_viewports = @markdown_comments_browser.MarkdownCommentDiagramViewports(
+            rendered_markdown.element,
+            () => size_observer.request_measure(),
+          )
           let entry : RenderedMarkdownComment = {
             block,
             zone,
             zone_id,
             rendered_markdown,
+            diagram_viewports,
             size_observer,
             measured_height: 0.0,
             generation: entry_generation,
