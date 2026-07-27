@@ -1,9 +1,13 @@
+// Native filesystem tests use an atomically created directory per test because
+// async tests run in parallel.
+
 ///|
 async test "native host reads root-relative text files" {
-  let root = "_build/native_host_read_test"
-  reset_dir(root)
   @async.with_task_group() <| group => {
-    group.add_defer(() => @fs.rmdir(root, recursive=true))
+    let root = @fs.tmpdir(prefix="openseek-native-host-read")
+    group.add_defer() <| () => {
+      @async.protect_from_cancel(() => @fs.rmdir(root, recursive=true))
+    }
     @fs.mkdir(root + "/src", recursive=true)
     @fs.write_file(
       root + "/src/main.mbt",
@@ -29,10 +33,11 @@ async test "native host reads root-relative text files" {
 
 ///|
 async test "native host resolves one directory level with minted uris" {
-  let root = "_build/native_host_resolve_test"
-  reset_dir(root)
   @async.with_task_group() <| group => {
-    group.add_defer(() => @fs.rmdir(root, recursive=true))
+    let root = @fs.tmpdir(prefix="openseek-native-host-resolve")
+    group.add_defer() <| () => {
+      @async.protect_from_cancel(() => @fs.rmdir(root, recursive=true))
+    }
     @fs.mkdir(root + "/src/lib", recursive=true)
     @fs.mkdir(root + "/_build", recursive=true)
     @fs.write_file(
@@ -111,11 +116,11 @@ fn stat_kind(stats : Array[@workspace.WorkspaceStat], uri : String) -> String {
 
 ///|
 async test "native host polling watch emits changed and deleted" {
-  let root = "_build/native_host_watch_test"
-  reset_dir(root)
   @async.with_task_group() <| group => {
-    group.add_defer(() => @fs.rmdir(root, recursive=true))
-    @fs.mkdir(root, recursive=true)
+    let root = @fs.tmpdir(prefix="openseek-native-host-watch")
+    group.add_defer() <| () => {
+      @async.protect_from_cancel(() => @fs.rmdir(root, recursive=true))
+    }
     @fs.write_file(
       root + "/watched.mbt",
       "pub fn watched { 1 }\n",
@@ -144,13 +149,6 @@ async test "native host polling watch emits changed and deleted" {
     watch.dispose()
     assert_true(events[0] == Changed)
     assert_true(events[1] == Deleted)
-  }
-}
-
-///|
-async fn reset_dir(path : String) -> Unit {
-  if @fs.exists(path) {
-    @fs.rmdir(path, recursive=true)
   }
 }
 
