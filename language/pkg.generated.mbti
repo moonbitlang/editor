@@ -36,7 +36,7 @@ pub(all) struct Diagnostic {
   severity : DiagnosticSeverity
   message : String
   tags : Array[DiagnosticTag]?
-} derive(@debug.Debug)
+} derive(Eq, @debug.Debug)
 
 pub(all) enum DiagnosticSeverity {
   Error

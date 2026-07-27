@@ -49,7 +49,7 @@ pub(all) struct Diagnostic {
   severity : DiagnosticSeverity
   message : String
   tags : Array[DiagnosticTag]?
-} derive(Debug)
+} derive(Eq, Debug)
 
 ///|
 /// Cross-document location result for definition and reference providers.

@@ -8,7 +8,7 @@ priv struct WorkbenchDocumentView {
   display_name : String
   language_id : String
   revision : String
-}
+} derive(Eq)
 
 ///|
 priv struct WorkbenchModel {
@@ -21,19 +21,7 @@ priv struct WorkbenchModel {
   /// Mirrors whether the viewer holds a rendered frame; while it does not,
   /// the shell renders its own status placeholder instead of the viewer.
   viewer_has_frame : Bool
-}
-
-///|
-/// The workbench's host objects live outside this model, and marker queries
-/// return fresh diagnostic arrays. `Diagnostic` does not expose `Eq` yet, so
-/// preserve the shell's former whole-view refresh until its model can derive
-/// structural equality.
-priv struct WorkbenchState(WorkbenchModel)
-
-///|
-impl Eq for WorkbenchState with fn equal(_, _) {
-  false
-}
+} derive(Eq)
 
 ///|
 /// The shell's scroll policy for an incoming document read: a reload of the
@@ -239,10 +227,10 @@ pub fn mount_app() -> Unit {
   let app = @rabbita.new(() => {
     let tree_view = workspace_file_tree().view()
     let (state, emit) = @rabbita.create_state(
-      WorkbenchState(initial_workbench_model()),
+      initial_workbench_model(),
       update=(emit, msg, state) => {
-        let (cmd, model) = update_workbench(emit, msg, state.0)
-        (WorkbenchState(model), cmd)
+        let (cmd, model) = update_workbench(emit, msg, state)
+        (model, cmd)
       },
       subscriptions=(emit, _state) => {
         @sub.batch([
@@ -268,7 +256,7 @@ pub fn mount_app() -> Unit {
       },
     )
     state.view2(tree_view, (state, tree_html) => {
-      view_workbench(emit, state.0, tree_html)
+      view_workbench(emit, state, tree_html)
     })
   })
   app.mount("app")
