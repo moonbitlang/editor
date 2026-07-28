@@ -92,6 +92,25 @@ test('renders undocumented MoonBit item anchors as horizontal separators', async
   );
 });
 
+test('renders detached MoonBit documentation as delimited HTML', async ({ page }) => {
+  await page.goto('/');
+  await openWorkspaceFile(page, 'src/z_detached_docs.mbt');
+
+  const detached = page.locator(
+    '.moonbit-viewer-markdown-comment[data-start-line="1"][data-end-line="5"]',
+  );
+  const attached = page.locator(
+    '.moonbit-viewer-markdown-comment[data-start-line="6"][data-end-line="8"]',
+  );
+  await expect(detached.locator('hr + h1')).toHaveText('Detached overview');
+  await expect(detached).toContainText('This Markdown has no top-level body.');
+  await expect(attached.locator('hr + h1')).toHaveText('Attached function');
+  await expect(page.locator('.view-lines')).not.toContainText('Detached overview');
+  expect(await page.evaluate(() => globalThis.__readonlyEditorSource)).toContain(
+    'This Markdown has no top-level body.\n\n///|',
+  );
+});
+
 test('shows hover through pointer interaction', async ({ page }) => {
   await page.goto('/');
   await openMainFixture(page);

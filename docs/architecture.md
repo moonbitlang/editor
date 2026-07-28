@@ -303,7 +303,8 @@ internal/shell/server_host_native/main
 - `workbench` adapts protocol payloads into `TextModel`, language providers,
   markers, the file tree, theme, and harness events. Its private MoonBit
   Markdown-comment provider adapts exact `///|` item anchors and their following
-  `///` documentation into the Viewer's language-neutral provider contract.
+  `///` documentation into the Viewer's language-neutral provider contract;
+  documentation remains renderable when no top-level declaration follows it.
 
 ## Dependency Rules
 

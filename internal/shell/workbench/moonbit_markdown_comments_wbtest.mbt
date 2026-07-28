@@ -40,6 +40,22 @@ test "MoonBit Markdown comments render consecutive undocumented item separators"
 }
 
 ///|
+test "MoonBit Markdown comments retain a detached documented block" {
+  let blocks = moonbit_markdown_comments_in_snapshot(
+    TextSnapshot(
+      "///|\n/// # Detached overview\n///\n/// This Markdown has no top-level body.\n\n///|\n/// # Attached function\nfn attached() -> Unit {}",
+    ),
+  )
+  assert_eq(blocks, [
+    {
+      line_range: LineRange(1, 5),
+      markdown: "---\n\n# Detached overview\n\nThis Markdown has no top-level body.",
+    },
+    { line_range: LineRange(6, 8), markdown: "---\n\n# Attached function" },
+  ])
+}
+
+///|
 test "MoonBit Markdown comments preserve body whitespace Unicode and fences" {
   let blocks = moonbit_markdown_comments_in_snapshot(
     TextSnapshot(
