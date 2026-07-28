@@ -1,0 +1,6 @@
+[submodule "codemirror"]
+	path = codemirror
+	url = https://code.haverbeke.berlin/codemirror/dev.git
+[submodule "vscode"]
+	path = vscode
+	url = https://github.com/microsoft/vscode.git
