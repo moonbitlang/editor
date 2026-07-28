@@ -705,7 +705,25 @@ fn DefaultBackgroundTokenizer::background_tokenize_with_deadline(
 }
 
 ///|
-/// Runs one synchronous slice, then yields by zero timeout or requests a new idle turn.
+/// Runs one synchronous slice, then yields by zero timeout or requests a new
+/// idle turn.
+///
+/// ```d2
+/// idle: idle callback
+/// slice: tokenization slice
+/// budget: time remains in this idle deadline?
+/// zero: zero-timeout yield
+/// next: request another idle turn
+/// cancel: detach, reset, or dispose
+///
+/// idle -> slice
+/// slice -> budget: at least one line or about 1 ms
+/// budget -> zero: yes
+/// zero -> slice
+/// budget -> next: no
+/// next -> idle
+/// cancel -> slice: generation mismatch stops stale work
+/// ```
 fn DefaultBackgroundTokenizer::execute_slice_until_deadline(
   self : DefaultBackgroundTokenizer,
   end_time : Double,

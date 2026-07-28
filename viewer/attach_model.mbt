@@ -7,6 +7,25 @@
 /// `on_did_change_content_or_injected_text`). Token reads are passive;
 /// explicit/visible/background demand owns lexer work. The paint happens in
 /// the next render flush.
+///
+/// ```mermaid
+/// flowchart TD
+///   A[set_model] --> B[Begin model generation]
+///   B --> C[Install model-scoped listeners]
+///   C --> D[Acquire marker lease]
+///   D --> E[Acquire attached-view handle]
+///   E --> F[Build ViewModel]
+///   F --> G{Mounted?}
+///   G -->|yes| H[Create View and input handler]
+///   G -->|no| I[Keep browser data empty]
+///   H --> J[Install one ModelData bundle]
+///   I --> J
+///   J --> K[Publish flush, layout, and build facts]
+///   K --> L[Schedule the render frame]
+/// ```
+///
+/// ViewModel callbacks use the generation gate, while model listeners are
+/// disposed by `ModelData` teardown before a replacement can observe them.
 fn Viewer::attach_model(self : Viewer, model : @model.TextModel) -> Unit {
   let model_data_generation = self.model_slot.begin_attach_generation()
   let listeners_to_remove : Array[@base_common.Disposable] = []

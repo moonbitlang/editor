@@ -49,6 +49,33 @@ fn MermaidRuntime::enqueue(
 }
 
 ///|
+/// Advances the one realm-wide Mermaid queue. Mermaid configuration is global,
+/// so module loading, `initialize`, and `render` remain serialized even when
+/// different Viewer targets enqueue concurrently. Per-diagram epochs decide
+/// whether the eventual result may commit.
+///
+/// ```mermaid
+/// flowchart TD
+///   A[enqueue request] --> B{runtime already running?}
+///   B -->|yes| C[leave request queued]
+///   B -->|no| D[dequeue oldest request]
+///   D --> E{cached API uses same loader?}
+///   E -->|yes| F[initialize and render]
+///   E -->|no| G[load module]
+///   G --> M{load succeeded?}
+///   M -->|yes| N[update cache]
+///   N --> F
+///   M -->|no| K[finish request]
+///   F --> O{render succeeded?}
+///   O -->|no| K
+///   O -->|yes| H{target, lifetime, and epoch current?}
+///   H -->|yes| I[replace fallback with SVG]
+///   H -->|no| J[discard stale result]
+///   I --> K[finish request]
+///   J --> K
+///   K --> L[clear running flag]
+///   L --> B
+/// ```
 fn MermaidRuntime::pump(self : MermaidRuntime) -> Unit {
   if self.running || self.requests.length() == 0 {
     return

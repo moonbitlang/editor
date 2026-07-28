@@ -62,6 +62,26 @@ fn Viewer::handle_hover_keydown(
 /// The rAF-coalesced render loop entry: reads (measurement) before
 /// writes, delegates browser DOM work to `View`, then reports the paint
 /// facts that were waiting on this flush.
+///
+/// ```mermaid
+/// sequenceDiagram
+///   participant F as animation frame
+///   participant C as configuration
+///   participant VM as ViewModel and layout
+///   participant V as browser View
+///   participant O as outgoing events
+///   F->>C: consume pending measurement
+///   alt no model
+///     F->>V: paint placeholder
+///   else mounted model
+///     F->>VM: synchronize rendered window
+///     F->>V: render current window
+///     V-->>F: DOM is measurable
+///     F->>VM: finish deferred horizontal reveal
+///     F->>O: publish render telemetry
+///     F->>O: publish coalesced scroll event
+///   end
+/// ```
 fn Viewer::flush_render(self : Viewer) -> Unit {
   if self.disposed {
     return
