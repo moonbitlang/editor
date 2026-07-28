@@ -115,6 +115,27 @@
 }
 
 .moonbit-viewer-markdown-comment-content
+  .moonbit-viewer-markdown-diagram {
+  max-width: 100%;
+}
+
+.moonbit-viewer-markdown-comment-content
+  .moonbit-viewer-markdown-diagram:not(
+    .moonbit-viewer-markdown-diagram-viewport
+  ) {
+  max-height: min(50vh, 480px);
+  overflow: auto;
+}
+
+.moonbit-viewer-markdown-comment-content
+  .moonbit-viewer-markdown-diagram
+  > svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.moonbit-viewer-markdown-comment-content
   .moonbit-viewer-markdown-diagram-viewport {
   position: relative;
   box-sizing: border-box;

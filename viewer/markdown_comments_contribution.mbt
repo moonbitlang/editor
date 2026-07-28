@@ -166,11 +166,42 @@ fn markdown_comment_hidden_ranges(
 }
 
 ///|
+fn markdown_comment_mermaid_theme(
+  viewer_theme : String,
+) -> @browser_markdown.MermaidTheme {
+  if viewer_theme == "light" {
+    Light
+  } else {
+    Dark
+  }
+}
+
+///|
+fn render_markdown_comment_code_block(
+  code_block : @markdown_core.MarkdownCodeBlock,
+  active_language_id : String?,
+) -> String {
+  let fallback = @markdown_core.render_tokenized_code_block(
+    code_block, active_language_id,
+  )
+  match code_block.language_id {
+    Some("mermaid") =>
+      "<div class=\"moonbit-viewer-markdown-diagram\" " +
+      "data-diagram-language=\"mermaid\" " +
+      "data-mermaid-state=\"fallback\">\n" +
+      fallback +
+      "\n</div>\n"
+    _ => fallback
+  }
+}
+
+///|
 fn render_markdown_comment_body(
   model : @model.TextModel,
   markdown : String,
   target : @rdom.Element,
   on_size_changed : () -> Unit,
+  mermaid_theme : @browser_markdown.MermaidTheme,
 ) -> @browser_markdown.RenderedMarkdown {
   @browser_markdown.render_markdown(
     markdown,
@@ -178,9 +209,10 @@ fn render_markdown_comment_body(
       language_id=model.get_language_id(),
       base_uri=model.uri,
       action_handler=open_markdown_comment_link,
-      code_block_renderer=@markdown_core.render_tokenized_code_block,
+      code_block_renderer=render_markdown_comment_code_block,
       on_size_changed~,
       allow_remote_images=true,
+      mermaid_theme~,
     ),
     target~,
   )
@@ -203,6 +235,9 @@ fn Viewer::refresh_markdown_comments(
   guard self.get_model() is Some(model) else { return }
   // A headless Viewer has no replacement DOM and must keep source visible.
   guard self.current_browser_data() is Some(browser) else { return }
+  let mermaid_theme = markdown_comment_mermaid_theme(
+    self.configuration.snapshot().options.theme,
+  )
   // Reserve this generation before invoking an open provider. Provider code
   // can synchronously mutate or replace the model through an external owner;
   // any nested refresh then invalidates this attempt before it mutates zones.
@@ -255,6 +290,7 @@ fn Viewer::refresh_markdown_comments(
               block.markdown,
               existing.rendered_markdown.element,
               () => existing.size_observer.request_measure(),
+              mermaid_theme,
             )
             existing.diagram_viewports = MarkdownCommentDiagramViewports(
               existing.rendered_markdown.element,
@@ -291,6 +327,7 @@ fn Viewer::refresh_markdown_comments(
             block.markdown,
             dom.content,
             () => size_observer.request_measure(),
+            mermaid_theme,
           )
           let diagram_viewports = @markdown_comments_browser.MarkdownCommentDiagramViewports(
             rendered_markdown.element,
@@ -330,6 +367,18 @@ fn Viewer::refresh_markdown_comments(
     force_update~,
   )
   self.schedule_render()
+}
+
+///|
+fn Viewer::markdown_comments_on_theme_changed(
+  self : Viewer,
+  viewer_theme : String,
+) -> Unit {
+  guard self.markdown_comment_contribution() is Some(state) else { return }
+  let mermaid_theme = markdown_comment_mermaid_theme(viewer_theme)
+  for _, entry in state.rendered {
+    entry.rendered_markdown.rerender_mermaid(mermaid_theme)
+  }
 }
 
 ///|

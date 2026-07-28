@@ -134,12 +134,21 @@ js-only. Concrete browser runtime packages live below the module-private
   the shared editor-token HTML override, and the private synchronous adapter
   that renders exact lowercase `diago` fences through `Milky2018/diago` while
   returning failures and every other code block to the existing fallback;
-  `internal/viewer/browser/markdown` adds JS-only DOM retention, URI/media
-  policy, activation listeners, size notification, and per-target disposal.
+  `internal/viewer/browser/markdown` adds MoonBit-owned DOM retention,
+  URI/media policy, activation listeners, size notification, and per-target
+  disposal. Narrow JS bindings provide inert-template parsing, browser URL
+  resolution, realm registries, dynamic import, and Mermaid API calls.
   Its diagram-wheel listener rechecks wrapper classes for every event:
   `moonbit-viewer-markdown-diagram-viewport` declines the generic native-scroll
   handoff so ordinary wheel input reaches the editor, while unmarked hover and
-  agent-feedback diagrams retain their existing inner-scroll behavior. Browser
+  agent-feedback diagrams retain their existing inner-scroll behavior. Its
+  opt-in Mermaid lifetime lazily imports the pinned official CDN module. Its
+  realm-wide MoonBit runtime caches the API, serializes global configuration
+  with rendering, and rejects stale asynchronous DOM commits through
+  per-diagram epochs and target ownership. Only the root Markdown-comment
+  contribution emits
+  the exact lowercase `mermaid` marker and enables this lifetime; hover and
+  agent feedback remain ordinary tokenized code consumers. Browser
   contributions consume these packages instead of owning private
   Markdown-to-`innerHTML` pipelines.
 - `internal/viewer/browser/config` measures fonts and browser geometry.
@@ -237,7 +246,9 @@ they have no replacement DOM. Model detach disposes renderers and size
 observers, removes zones, and clears the contribution's hidden source before
 the outgoing browser `View` is destroyed. Same-model flushes rebuild that
 source with `force_update=true` because the projected line collection was
-recreated even when normalized ranges did not change.
+recreated even when normalized ranges did not change. Viewer theme changes
+rerender retained Mermaid SVGs in place and send accepted size changes through
+the existing observer and generation-checked ViewZone height writer.
 
 Each rendered entry retains the shared Markdown renderer, its diagram-viewport
 group, and the existing size observer. Same-key body replacement disposes the

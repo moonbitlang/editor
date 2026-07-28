@@ -12,7 +12,7 @@ Current behavior and ownership live in `docs/architecture.md`, `docs/harness.md`
 `docs/quality.md`, package READMEs, generated interfaces, source, and tests.
 Historical plans are evidence of how a change landed, not current contracts.
 
-As of 2026-07-24 there are no active checked-in execution plans.
+As of 2026-07-27 there are no active checked-in execution plans.
 
 ## Completed Work
 
@@ -68,6 +68,45 @@ interface changed only for the opaque viewport handle, constructor, and
 `dispose`; no `moon.pkg` edge changed.
 
 Former artifact: `markdown-comment-diagram-viewport-port.md`.
+
+### Markdown-comment Mermaid CDN rendering
+
+Whole-line Markdown comments now opt exact lowercase `mermaid` fences into the
+browser Markdown lifetime while preserving their safely escaped, editor-
+tokenized source as the pending/error fallback. The JS FFI lazily imports
+Mermaid 11.16.0 from the fixed jsDelivr ESM URL, calls the official asynchronous
+`render(id, source)` API, commits only a successful returned SVG, and then
+invokes `bindFunctions` on the retained wrapper. No npm dependency, Mermaid
+bundle/chunk, production loader override, public CDN option, or MoonBit Mermaid
+renderer was added; Diago, hover, and agent-feedback behavior is unchanged.
+
+The internal browser Markdown contract gained `MermaidTheme::{Light, Dark}`, an
+optional render setting, and in-place theme rerendering. One realm-wide module
+promise retries after load failure, while a shared queue serializes
+`initialize + render` with `startOnLoad=false`, `securityLevel=strict`,
+suppressed error rendering, and protected theme configuration. Random
+realm-nonce ids plus a counter avoid host and Mermaid temporary-element
+collisions. Per-diagram epochs, active lifetime checks, target ownership, and
+DOM containment prevent late content, model, theme, target-reuse, and disposal
+promises from committing. Failed theme redraws retain the last successful SVG.
+
+Viewer `light` maps to Mermaid `default`; every other Viewer theme maps to
+`dark`. Accepted SVGs use the existing renderer size callback, observer,
+generation check, and sole ViewZone height writer. Host documentation records
+the pinned CDN and relative-chunk CSP requirement, inline SVG styling
+requirement, lack of dynamic-import SRI, and visible offline/blocked fallback.
+
+Final validation passed 12 browser-Markdown JS tests, the 243-test mounted
+Viewer suite, 1,549 JS tests, 1,053 native tests, all 12 default Mermaid
+component scenarios, and the full Playwright result of 104 passed with the
+opt-in live-CDN diagnostic skipped. The separately enabled real jsDelivr smoke
+also passed. `moon info --target all`, `moon fmt`, `just check`, `just test`,
+`just build`, `just test-browser`, and `git diff --check` passed. Production
+artifacts retain only the fixed remote import, package/lockfiles and the public
+Viewer interface are unchanged, and only the internal browser Markdown
+interface changed.
+
+Former artifact: `markdown-comment-mermaid-cdn-rendering.md`.
 
 ### Diago Markdown code-block rendering
 

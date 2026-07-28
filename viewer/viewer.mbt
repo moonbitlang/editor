@@ -390,6 +390,7 @@ pub fn Viewer::update_options(self : Viewer, options : ViewerOptions) -> Unit {
   self.configuration.replace_options(options) |> ignore
   if previous.theme != options.theme {
     self.apply_theme()
+    self.markdown_comments_on_theme_changed(options.theme)
   }
   if previous.smooth_scrolling != options.smooth_scrolling {
     match self.get_view_model() {

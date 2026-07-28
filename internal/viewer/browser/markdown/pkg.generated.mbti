@@ -3,6 +3,7 @@ package "moonbitlang/editor/internal/viewer/browser/markdown"
 
 import {
   "moonbit-community/rabbita/dom",
+  "moonbitlang/core/debug",
   "moonbitlang/editor/base/common",
 }
 
@@ -19,15 +20,23 @@ pub(all) struct MarkdownRenderOptions {
   code_block_renderer : ((@moonbitlang/editor/internal/viewer/markdown.MarkdownCodeBlock, String?) -> String)?
   on_size_changed : (() -> Unit)?
   allow_remote_images : Bool
+  mermaid_theme : MermaidTheme?
 }
 #alias(new, deprecated)
-pub fn MarkdownRenderOptions::MarkdownRenderOptions(language_id? : String, base_uri? : @common.Uri, action_handler? : (String) -> Unit, code_block_renderer? : (@moonbitlang/editor/internal/viewer/markdown.MarkdownCodeBlock, String?) -> String, on_size_changed? : () -> Unit, allow_remote_images? : Bool) -> Self
+pub fn MarkdownRenderOptions::MarkdownRenderOptions(language_id? : String, base_uri? : @common.Uri, action_handler? : (String) -> Unit, code_block_renderer? : (@moonbitlang/editor/internal/viewer/markdown.MarkdownCodeBlock, String?) -> String, on_size_changed? : () -> Unit, allow_remote_images? : Bool, mermaid_theme? : MermaidTheme) -> Self
 
-pub(all) struct RenderedMarkdown {
+pub(all) enum MermaidTheme {
+  Light
+  Dark
+} derive(Eq, @debug.Debug)
+
+pub struct RenderedMarkdown {
   element : @dom.Element
   dispose : @common.Disposable
   has_code_block : Bool
+  // private fields
 }
+pub fn RenderedMarkdown::rerender_mermaid(Self, MermaidTheme) -> Unit
 
 // Type aliases
 

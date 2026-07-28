@@ -4,6 +4,39 @@
 // Viewer, including model projection and per-model browser ownership.
 
 ///|
+test "Markdown comments mark only exact mermaid fences and keep safe fallback source" {
+  let exact = @markdown_core.render_markdown(
+    "```mermaid\nflowchart LR\nA[<script>alert(1)</script>] --> B\n```",
+    language_id="moonbit",
+    code_block_renderer=render_markdown_comment_code_block,
+  )
+  assert_true(
+    exact.html.contains(
+      "data-diagram-language=\"mermaid\" data-mermaid-state=\"fallback\"",
+    ),
+  )
+  assert_true(exact.html.contains("monaco-tokenized-source"))
+  assert_true(exact.html.contains("&lt;script&gt;"))
+  assert_false(exact.html.contains("<script>"))
+
+  let differently_cased = @markdown_core.render_markdown(
+    "```Mermaid\nflowchart LR\nA --> B\n```",
+    language_id="moonbit",
+    code_block_renderer=render_markdown_comment_code_block,
+  )
+  assert_false(differently_cased.html.contains("data-diagram-language"))
+  assert_true(differently_cased.html.contains("monaco-tokenized-source"))
+
+  let unlabelled = @markdown_core.render_markdown(
+    "```\nflowchart LR\nA --> B\n```",
+    language_id="mermaid",
+    code_block_renderer=render_markdown_comment_code_block,
+  )
+  assert_false(unlabelled.html.contains("data-diagram-language"))
+  assert_true(unlabelled.html.contains("monaco-tokenized-source"))
+}
+
+///|
 fn markdown_contribution_block(
   start_line_number : Int,
   end_line_number_exclusive : Int,
@@ -446,6 +479,43 @@ test "same-key Markdown update retains the ViewZone and target identities" {
       )
     },
     provider_blocks=[markdown_contribution_block(2, 4, "original body")],
+  )
+}
+
+///|
+test "Markdown comment theme changes retain the ViewZone and render target" {
+  with_markdown_contribution_viewer(
+    "one\ntwo\nthree",
+    (viewer, _provider_blocks) => {
+      let state = markdown_contribution_state(viewer)
+      let entry = state.rendered["2:3"]
+      let first_outer = entry.zone.dom_node
+      let first_target = entry.rendered_markdown.element
+      let first_zone_id = entry.zone_id
+
+      viewer.update_options(viewer.get_options().with_theme("light"))
+      let light = state.rendered["2:3"]
+      assert_eq(viewer.get_options().theme, "light")
+      assert_eq(light.zone_id, first_zone_id)
+      assert_true(same_mounted_test_element(light.zone.dom_node, first_outer))
+      assert_true(
+        same_mounted_test_element(light.rendered_markdown.element, first_target),
+      )
+
+      viewer.update_options(viewer.get_options().with_theme("dark"))
+      let dark = state.rendered["2:3"]
+      assert_eq(viewer.get_options().theme, "dark")
+      assert_eq(dark.zone_id, first_zone_id)
+      assert_true(same_mounted_test_element(dark.zone.dom_node, first_outer))
+      assert_true(
+        same_mounted_test_element(dark.rendered_markdown.element, first_target),
+      )
+    },
+    provider_blocks=[
+      markdown_contribution_block(
+        2, 3, "```mermaid\nflowchart LR\nA --> B\n```",
+      ),
+    ],
   )
 }
 

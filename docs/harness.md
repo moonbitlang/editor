@@ -80,13 +80,16 @@ The whole-line Markdown proof is the direct public-Viewer component scenario
 `tests/browser/component/markdown_comments.spec.js`. It does not route through
 the reference shell. The scenario owns its language configuration and models,
 then exposes compact evidence for projected source replacement,
-tokenized Markdown DOM, measured/offscreen ViewZone geometry, native
-link/selection input, image updates, model flush/swap, and disposal. Its Diago
-cells exercise the public Viewer surface rather than a private controller seam:
-initial bounded layout, independent diagrams, all four controls, modifier
-zoom/pan, pointer and keyboard resizing, ordinary-wheel handoff, host-width
-response, same-key fresh state, retained-node teardown, and editor-scrollbar
-rail hit testing.
+tokenized Markdown DOM, CDN-backed Mermaid replacement/theme/freshness,
+measured/offscreen ViewZone geometry, native link/selection input,
+resize/image updates, model flush/swap, and disposal. Its Diago cells exercise
+the public Viewer surface rather than a private controller seam: initial
+bounded layout, independent diagrams, all four controls, modifier zoom/pan,
+pointer and keyboard resizing, ordinary-wheel handoff, host-width response,
+same-key fresh state, retained-node teardown, and editor-scrollbar rail hit
+testing. The required suite intercepts the exact pinned Mermaid CDN module with
+a self-contained ESM fixture, so CI never depends on public network access; the
+explicit live-CDN smoke remains opt-in diagnostic coverage.
 
 The corresponding real-shell proof is
 `tests/browser/smoke/viewer.spec.js`: it opens the fixture through the native

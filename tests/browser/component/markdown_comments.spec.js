@@ -18,6 +18,109 @@ const diagramResizeHandle =
 const editorScrollable =
   `${editor} .monaco-scrollable-element.editor-scrollable`;
 const imageUrl = 'https://images.example.test/markdown-comment.svg';
+const mermaidCdnUrl =
+  'https://cdn.jsdelivr.net/npm/mermaid@11.16.0/dist/mermaid.esm.min.mjs';
+const runLiveMermaidCdn =
+  process.env.READONLY_EDITOR_TEST_LIVE_MERMAID_CDN === '1';
+
+const fakeMermaidModule = `
+  const state = globalThis.__markdownCommentsMermaid;
+  state.moduleLoads += 1;
+  let currentTheme = '';
+
+  const escapeXml = (value) =>
+    value
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&apos;');
+
+  export function initialize(options) {
+    currentTheme = options.theme;
+    state.initialize.push({
+      startOnLoad: options.startOnLoad,
+      securityLevel: options.securityLevel,
+      suppressErrorRendering: options.suppressErrorRendering,
+      theme: options.theme,
+      secure: Array.isArray(options.secure) ? [...options.secure] : [],
+    });
+  }
+
+  export async function render(id, source) {
+    const call = {
+      id,
+      source,
+      theme: currentTheme,
+      order: state.render.length,
+    };
+    state.render.push(call);
+    if (source.includes('INVALID')) {
+      state.reject.push({ id, source, theme: currentTheme });
+      throw new Error('deterministic invalid Mermaid fixture');
+    }
+    if (source.includes('DELAYED_OLD')) {
+      await new Promise((resolve) => {
+        state.pending.push({ id, source, theme: currentTheme, resolve });
+      });
+    }
+    const theme = call.theme;
+    const responsive = source.includes('RESPONSIVE_OFFSCREEN');
+    const width = responsive ? 720 : 360;
+    const height = responsive ? 240 : theme === 'default' ? 132 : 76;
+    const label = responsive
+      ? 'RESPONSIVE_OFFSCREEN'
+      : source.includes('DELAYED_OLD')
+        ? 'DELAYED_OLD'
+        : source.includes('CURRENT_NEW')
+          ? 'CURRENT_NEW'
+          : source.includes('VALID_SECOND')
+            ? 'VALID_SECOND'
+            : 'VALID_ONE';
+    return {
+      svg:
+        '<svg xmlns="http://www.w3.org/2000/svg" width="' +
+        width +
+        '" height="' +
+        height +
+        '" viewBox="0 0 ' +
+        width +
+        ' ' +
+        height +
+        '" data-mermaid-id="' +
+        escapeXml(id) +
+        '" data-mermaid-theme="' +
+        escapeXml(theme) +
+        '" data-mermaid-source="' +
+        label +
+        '">' +
+        '<rect width="' +
+        width +
+        '" height="' +
+        height +
+        '" fill="' +
+        (theme === 'default' ? '#f4f7fb' : '#1f2937') +
+        '"/>' +
+        '<text x="16" y="36" fill="' +
+        (theme === 'default' ? '#172033' : '#f8fafc') +
+        '">' +
+        label +
+        '</text></svg>',
+      bindFunctions(root) {
+        root.setAttribute('data-fake-mermaid-bound', id);
+        state.bind.push({
+          id,
+          source,
+          theme,
+          rootClass: root.className,
+          connected: root.isConnected,
+        });
+      },
+    };
+  }
+
+  export default { initialize, render };
+`;
 
 const fixtureSvg = `
   <svg xmlns="http://www.w3.org/2000/svg" width="180" height="48" viewBox="0 0 180 48">
@@ -38,7 +141,11 @@ async function settle(page, delay = 50) {
   if (delay > 0) await page.waitForTimeout(delay);
 }
 
-async function mountMarkdownComments(page, testInfo) {
+async function mountMarkdownComments(
+  page,
+  testInfo,
+  { liveMermaidCdn = false } = {},
+) {
   await page.route(imageUrl, (route) =>
     route.fulfill({
       status: 200,
@@ -46,8 +153,44 @@ async function mountMarkdownComments(page, testInfo) {
       body: fixtureSvg,
     }),
   );
+  if (!liveMermaidCdn) {
+    await page.route(mermaidCdnUrl, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'text/javascript',
+        headers: {
+          'access-control-allow-origin': '*',
+          'cache-control': 'no-store',
+        },
+        body: fakeMermaidModule,
+      }),
+    );
+  }
   await page.addInitScript(() => {
     globalThis.__markdownCommentOpened = [];
+    globalThis.__markdownCommentsMermaid = {
+      moduleLoads: 0,
+      initialize: [],
+      render: [],
+      bind: [],
+      reject: [],
+      pending: [],
+      released: [],
+      release(needle = '') {
+        const index = this.pending.findIndex((entry) =>
+          entry.source.includes(needle),
+        );
+        if (index < 0) return false;
+        const [entry] = this.pending.splice(index, 1);
+        this.released.push({
+          id: entry.id,
+          source: entry.source,
+          theme: entry.theme,
+        });
+        entry.resolve();
+        return true;
+      },
+    };
     globalThis.open = (...args) => {
       globalThis.__markdownCommentOpened.push(args);
       return { opener: {} };
@@ -66,6 +209,77 @@ async function mountMarkdownComments(page, testInfo) {
   await expect(page.locator(zone)).toHaveCount(3);
   await settle(page);
   return reporter;
+}
+
+async function mermaidLog(page) {
+  return page.evaluate(() => {
+    const state = globalThis.__markdownCommentsMermaid;
+    return {
+      moduleLoads: state.moduleLoads,
+      initialize: state.initialize.map((entry) => ({ ...entry })),
+      render: state.render.map((entry) => ({ ...entry })),
+      bind: state.bind.map((entry) => ({ ...entry })),
+      reject: state.reject.map((entry) => ({ ...entry })),
+      pending: state.pending.map(({ id, source, theme }) => ({
+        id,
+        source,
+        theme,
+      })),
+      released: state.released.map((entry) => ({ ...entry })),
+    };
+  });
+}
+
+async function releaseMermaid(page, needle = '') {
+  return page.evaluate(
+    (value) => globalThis.__markdownCommentsMermaid.release(value),
+    needle,
+  );
+}
+
+async function observeMermaidCommits(page) {
+  await page.evaluate(() => {
+    globalThis.__markdownCommentsMermaidCommits = [];
+    globalThis.__markdownCommentsMermaidCommitObserver?.disconnect();
+    const recordSvg = (node) => {
+      if (!(node instanceof Element)) return;
+      const svgs = node.matches('[data-mermaid-source]')
+        ? [node]
+        : Array.from(node.querySelectorAll('[data-mermaid-source]'));
+      for (const svg of svgs) {
+        globalThis.__markdownCommentsMermaidCommits.push({
+          id: svg.getAttribute('data-mermaid-id'),
+          source: svg.getAttribute('data-mermaid-source'),
+          theme: svg.getAttribute('data-mermaid-theme'),
+        });
+      }
+    };
+    globalThis.__markdownCommentsMermaidCommitObserver = new MutationObserver(
+      (records) => {
+        for (const record of records) {
+          for (const node of record.addedNodes) recordSvg(node);
+        }
+      },
+    );
+    globalThis.__markdownCommentsMermaidCommitObserver.observe(
+      document.querySelector('.markdown-comments-host'),
+      { childList: true, subtree: true },
+    );
+  });
+}
+
+async function mermaidCommits(page) {
+  return page.evaluate(() =>
+    (globalThis.__markdownCommentsMermaidCommits ?? []).map((entry) => ({
+      ...entry,
+    })),
+  );
+}
+
+async function stopObservingMermaidCommits(page) {
+  await page.evaluate(() =>
+    globalThis.__markdownCommentsMermaidCommitObserver?.disconnect(),
+  );
 }
 
 async function control(page, name, ...args) {
@@ -1653,6 +1867,657 @@ test('model detach replacement reattach and Viewer disposal release every render
         ),
       ).toBe(false);
     }
+  } finally {
+    reporter.dispose();
+  }
+});
+
+test('renders exact Mermaid fences through the pinned CDN module and rerenders them in place for Viewer themes', async ({
+  page,
+}, testInfo) => {
+  const reporter = await mountMarkdownComments(page, testInfo);
+  try {
+    expect((await mermaidLog(page)).moduleLoads).toBe(0);
+    await control(page, 'mermaid_source');
+
+    const mermaidDiagram = `${zone} ${diagram}[data-diagram-language="mermaid"]`;
+    const mermaidDiagrams = page.locator(mermaidDiagram);
+    const renderedSvgs = page.locator(`${mermaidDiagram} > svg`);
+    await expect(mermaidDiagrams).toHaveCount(3);
+    await expect(renderedSvgs).toHaveCount(2);
+    await expect
+      .poll(async () => (await mermaidLog(page)).reject.length)
+      .toBe(1);
+    await expect
+      .poll(async () => (await mermaidLog(page)).bind.length)
+      .toBe(2);
+
+    const invalid = mermaidDiagrams.filter({ hasText: 'INVALID' });
+    await expect(invalid).toHaveCount(1);
+    await expect(invalid.locator(':scope > svg')).toHaveCount(0);
+    await expect(invalid.locator('.monaco-tokenized-source')).toContainText(
+      'INVALID',
+    );
+    await expect(page.locator(zone)).toContainText('CASE_SENSITIVE_FALLBACK');
+    await expect(
+      page.locator(
+        `${diagram}[data-diagram-language="Mermaid"], ${diagram}[data-diagram-language="CASE_SENSITIVE_FALLBACK"]`,
+      ),
+    ).toHaveCount(0);
+
+    const initialSvgState = await renderedSvgs.evaluateAll((nodes) =>
+      nodes.map((node) => ({
+        id: node.getAttribute('data-mermaid-id'),
+        source: node.getAttribute('data-mermaid-source'),
+        theme: node.getAttribute('data-mermaid-theme'),
+      })),
+    );
+    expect(initialSvgState.map(({ source }) => source).sort()).toEqual([
+      'VALID_ONE',
+      'VALID_SECOND',
+    ]);
+    expect(initialSvgState.every(({ theme }) => theme === 'dark')).toBe(true);
+    expect(new Set(initialSvgState.map(({ id }) => id)).size).toBe(2);
+
+    const initialLog = await mermaidLog(page);
+    expect(initialLog.moduleLoads).toBe(1);
+    expect(initialLog.render).toHaveLength(3);
+    expect(new Set(initialLog.render.map(({ id }) => id)).size).toBe(3);
+    for (const options of initialLog.initialize) {
+      expect(options).toMatchObject({
+        startOnLoad: false,
+        securityLevel: 'strict',
+        suppressErrorRendering: true,
+        theme: 'dark',
+      });
+      expect(options.secure).toContain('theme');
+    }
+    expect(initialLog.bind.every(({ rootClass, connected }) =>
+      rootClass.includes('moonbit-viewer-markdown-diagram') && connected)).toBe(
+      true,
+    );
+
+    const retainedZone = await page.locator(zone).elementHandle();
+    const retainedWrappers = await mermaidDiagrams.elementHandles();
+    const darkHeight = await page
+      .locator(zone)
+      .evaluate((node) => node.getBoundingClientRect().height);
+    expect(retainedZone).not.toBeNull();
+    expect(retainedWrappers).toHaveLength(3);
+
+    await control(page, 'theme_light');
+    await expect(page.locator(editor)).toHaveAttribute('data-theme', 'light');
+    await expect
+      .poll(() =>
+        renderedSvgs.evaluateAll((nodes) =>
+          nodes.map((node) => node.getAttribute('data-mermaid-theme')),
+        ),
+      )
+      .toEqual(['default', 'default']);
+    await expect
+      .poll(async () => (await mermaidLog(page)).render.length)
+      .toBe(6);
+    await expect
+      .poll(() =>
+        page.locator(zone).evaluate((node) => {
+          const inner = node.querySelector(
+            '.moonbit-viewer-markdown-comment-content',
+          );
+          return {
+            outer: node.getBoundingClientRect().height,
+            style: Number.parseFloat(node.style.height),
+            inner: inner.offsetHeight,
+          };
+        }),
+      )
+      .toEqual(
+        expect.objectContaining({
+          outer: expect.any(Number),
+          style: expect.any(Number),
+          inner: expect.any(Number),
+        }),
+      );
+    const lightGeometry = await page.locator(zone).evaluate((node) => {
+      const inner = node.querySelector(
+        '.moonbit-viewer-markdown-comment-content',
+      );
+      return {
+        outer: node.getBoundingClientRect().height,
+        style: Number.parseFloat(node.style.height),
+        inner: inner.offsetHeight,
+      };
+    });
+    expect(Math.abs(lightGeometry.outer - lightGeometry.inner)).toBeLessThanOrEqual(
+      1,
+    );
+    expect(Math.abs(lightGeometry.style - lightGeometry.inner)).toBeLessThanOrEqual(
+      1,
+    );
+    expect(lightGeometry.outer).toBeGreaterThan(darkHeight);
+    expect(
+      await retainedZone.evaluate(
+        (node) =>
+          node ===
+          document.querySelector(
+            '.markdown-comments-host .moonbit-viewer-markdown-comment',
+          ),
+      ),
+    ).toBe(true);
+    for (let index = 0; index < retainedWrappers.length; index += 1) {
+      expect(
+        await retainedWrappers[index].evaluate(
+          (node, selectorIndex) =>
+            node ===
+            document.querySelectorAll(
+              '.markdown-comments-host .moonbit-viewer-markdown-diagram[data-diagram-language="mermaid"]',
+            )[selectorIndex],
+          index,
+        ),
+      ).toBe(true);
+    }
+
+    await control(page, 'theme_dark');
+    await expect(page.locator(editor)).toHaveAttribute('data-theme', 'dark');
+    await expect
+      .poll(() =>
+        renderedSvgs.evaluateAll((nodes) =>
+          nodes.map((node) => node.getAttribute('data-mermaid-theme')),
+        ),
+      )
+      .toEqual(['dark', 'dark']);
+    await expect
+      .poll(async () => (await mermaidLog(page)).render.length)
+      .toBe(9);
+    await expect
+      .poll(() =>
+        page
+          .locator(zone)
+          .evaluate((node) => node.getBoundingClientRect().height),
+      )
+      .toBeLessThan(lightGeometry.outer);
+
+    const finalLog = await mermaidLog(page);
+    // The wrappers are retained, but every official render call receives a
+    // fresh id so the still-mounted previous SVG cannot collide with
+    // Mermaid's temporary render DOM.
+    expect(new Set(finalLog.render.map(({ id }) => id)).size).toBe(9);
+    expect(finalLog.initialize.map(({ theme }) => theme)).toEqual([
+      'dark',
+      'dark',
+      'dark',
+      'default',
+      'default',
+      'default',
+      'dark',
+      'dark',
+      'dark',
+    ]);
+    expect(finalLog.bind).toHaveLength(6);
+    expect(finalLog.reject).toHaveLength(3);
+  } finally {
+    reporter.dispose();
+  }
+});
+
+test('drops delayed Mermaid results after same-key replacement and keeps the ViewZone owner current', async ({
+  page,
+}, testInfo) => {
+  const reporter = await mountMarkdownComments(page, testInfo);
+  try {
+    await control(page, 'mermaid_delayed_old_source');
+    await expect
+      .poll(async () => (await mermaidLog(page)).pending.length)
+      .toBe(1);
+    const retainedZone = await page.locator(zone).elementHandle();
+    expect(retainedZone).not.toBeNull();
+    await expect(page.locator(zone)).toContainText('DELAYED_OLD');
+    await expect(
+      page.locator(
+        `${zone} ${diagram}[data-diagram-language="mermaid"] > svg`,
+      ),
+    ).toHaveCount(0);
+
+    await page.evaluate(() => {
+      globalThis.__markdownCommentsObservedMermaidSources = [];
+      globalThis.__markdownCommentsMermaidObserver = new MutationObserver(() => {
+        for (const svg of document.querySelectorAll(
+          '.markdown-comments-host [data-mermaid-source]',
+        )) {
+          globalThis.__markdownCommentsObservedMermaidSources.push(
+            svg.getAttribute('data-mermaid-source'),
+          );
+        }
+      });
+      globalThis.__markdownCommentsMermaidObserver.observe(
+        document.querySelector('.markdown-comments-host'),
+        { childList: true, subtree: true },
+      );
+    });
+
+    await control(page, 'mermaid_delayed_new_source');
+    await expect(page.locator(zone)).toContainText('CURRENT_NEW');
+    expect(
+      await retainedZone.evaluate(
+        (node) =>
+          node ===
+          document.querySelector(
+            '.markdown-comments-host .moonbit-viewer-markdown-comment',
+          ),
+      ),
+    ).toBe(true);
+    expect(await releaseMermaid(page, 'DELAYED_OLD')).toBe(true);
+
+    const currentSvg = page.locator(
+      `${zone} ${diagram}[data-diagram-language="mermaid"] > svg`,
+    );
+    await expect(currentSvg).toHaveCount(1);
+    await expect(currentSvg).toHaveAttribute(
+      'data-mermaid-source',
+      'CURRENT_NEW',
+    );
+    await settle(page);
+    expect(
+      await page.evaluate(
+        () => globalThis.__markdownCommentsObservedMermaidSources,
+      ),
+    ).not.toContain('DELAYED_OLD');
+    const log = await mermaidLog(page);
+    expect(log.render.map(({ source }) => source)).toEqual([
+      expect.stringContaining('DELAYED_OLD'),
+      expect.stringContaining('CURRENT_NEW'),
+    ]);
+    expect(new Set(log.render.map(({ id }) => id)).size).toBe(2);
+    expect(log.bind).toHaveLength(1);
+    expect(log.bind[0]).toMatchObject({
+      source: expect.stringContaining('CURRENT_NEW'),
+      connected: true,
+    });
+    const measured = await page.locator(zone).evaluate((node) => {
+      const inner = node.querySelector(
+        '.moonbit-viewer-markdown-comment-content',
+      );
+      return {
+        outer: node.getBoundingClientRect().height,
+        style: Number.parseFloat(node.style.height),
+        inner: inner.offsetHeight,
+      };
+    });
+    expect(Math.abs(measured.outer - measured.inner)).toBeLessThanOrEqual(1);
+    expect(Math.abs(measured.style - measured.inner)).toBeLessThanOrEqual(1);
+  } finally {
+    await page.evaluate(() =>
+      globalThis.__markdownCommentsMermaidObserver?.disconnect(),
+    );
+    reporter.dispose();
+  }
+});
+
+test('commits only the latest theme after rapid light and dark changes while Mermaid is pending', async ({
+  page,
+}, testInfo) => {
+  const reporter = await mountMarkdownComments(page, testInfo);
+  try {
+    await control(page, 'mermaid_delayed_old_source');
+    await expect
+      .poll(async () =>
+        (await mermaidLog(page)).pending.map(({ theme }) => theme),
+      )
+      .toEqual(['dark']);
+
+    const retainedZone = await page.locator(zone).elementHandle();
+    const mermaidWrapper = page.locator(
+      `${zone} ${diagram}[data-diagram-language="mermaid"]`,
+    );
+    const retainedWrapper = await mermaidWrapper.elementHandle();
+    expect(retainedZone).not.toBeNull();
+    expect(retainedWrapper).not.toBeNull();
+    await observeMermaidCommits(page);
+
+    await page.evaluate(() => {
+      const controls = globalThis.__markdownCommentsControls;
+      controls.theme_light();
+      controls.theme_dark();
+    });
+    await expect(page.locator(editor)).toHaveAttribute('data-theme', 'dark');
+    expect(
+      await retainedZone.evaluate(
+        (node) =>
+          node ===
+          document.querySelector(
+            '.markdown-comments-host .moonbit-viewer-markdown-comment',
+          ),
+      ),
+    ).toBe(true);
+    expect(
+      await retainedWrapper.evaluate(
+        (node) =>
+          node ===
+          document.querySelector(
+            '.markdown-comments-host .moonbit-viewer-markdown-diagram[data-diagram-language="mermaid"]',
+          ),
+      ),
+    ).toBe(true);
+
+    expect(await releaseMermaid(page, 'DELAYED_OLD')).toBe(true);
+    await expect
+      .poll(async () =>
+        (await mermaidLog(page)).pending.map(({ theme }) => theme),
+      )
+      .toEqual(['default']);
+    await expect(mermaidWrapper.locator(':scope > svg')).toHaveCount(0);
+    expect(await mermaidCommits(page)).toEqual([]);
+
+    expect(await releaseMermaid(page, 'DELAYED_OLD')).toBe(true);
+    await expect
+      .poll(async () =>
+        (await mermaidLog(page)).pending.map(({ theme }) => theme),
+      )
+      .toEqual(['dark']);
+    await expect(mermaidWrapper.locator(':scope > svg')).toHaveCount(0);
+    expect(await mermaidCommits(page)).toEqual([]);
+
+    expect(await releaseMermaid(page, 'DELAYED_OLD')).toBe(true);
+    await expect(mermaidWrapper.locator(':scope > svg')).toHaveCount(1);
+    await expect(mermaidWrapper.locator(':scope > svg')).toHaveAttribute(
+      'data-mermaid-theme',
+      'dark',
+    );
+    await expect
+      .poll(async () => (await mermaidCommits(page)).map(({ theme }) => theme))
+      .toEqual(['dark']);
+
+    const log = await mermaidLog(page);
+    expect(log.render.map(({ theme }) => theme)).toEqual([
+      'dark',
+      'default',
+      'dark',
+    ]);
+    expect(log.bind).toHaveLength(1);
+    expect(log.bind[0]).toMatchObject({
+      theme: 'dark',
+      connected: true,
+    });
+    expect(
+      await retainedZone.evaluate(
+        (node) =>
+          node ===
+          document.querySelector(
+            '.markdown-comments-host .moonbit-viewer-markdown-comment',
+          ),
+      ),
+    ).toBe(true);
+    expect(
+      await retainedWrapper.evaluate(
+        (node) =>
+          node ===
+          document.querySelector(
+            '.markdown-comments-host .moonbit-viewer-markdown-diagram[data-diagram-language="mermaid"]',
+          ),
+      ),
+    ).toBe(true);
+  } finally {
+    await stopObservingMermaidCommits(page);
+    reporter.dispose();
+  }
+});
+
+test('drops pending Mermaid output after a direct model swap', async ({
+  page,
+}, testInfo) => {
+  const reporter = await mountMarkdownComments(page, testInfo);
+  try {
+    await control(page, 'mermaid_delayed_old_source');
+    await expect
+      .poll(async () => (await mermaidLog(page)).pending.length)
+      .toBe(1);
+    const pendingId = (await mermaidLog(page)).pending[0].id;
+    const oldZone = await page.locator(zone).elementHandle();
+    const oldWrapper = await page
+      .locator(
+        `${zone} ${diagram}[data-diagram-language="mermaid"]`,
+      )
+      .elementHandle();
+    expect(oldZone).not.toBeNull();
+    expect(oldWrapper).not.toBeNull();
+    await observeMermaidCommits(page);
+
+    await control(page, 'attach_replacement');
+    await expect(page.locator(zone)).toHaveCount(1);
+    await expect(page.locator(zone)).toContainText('Replacement comment');
+    expect(await state(page)).toMatchObject({
+      attachedKind: 'replacement',
+      primaryAttachedEditors: 0,
+      replacementAttachedEditors: 1,
+    });
+    expect(await oldZone.evaluate((node) => node.isConnected)).toBe(false);
+    expect(await oldWrapper.evaluate((node) => node.isConnected)).toBe(false);
+
+    expect(await releaseMermaid(page, 'DELAYED_OLD')).toBe(true);
+    await settle(page);
+    await expect(
+      page.locator(
+        `${zone} ${diagram}[data-diagram-language="mermaid"] > svg`,
+      ),
+    ).toHaveCount(0);
+    expect(await mermaidCommits(page)).toEqual([]);
+    expect(
+      (await mermaidLog(page)).bind.some(({ id }) => id === pendingId),
+    ).toBe(false);
+  } finally {
+    await stopObservingMermaidCommits(page);
+    reporter.dispose();
+  }
+});
+
+test('keeps an offscreen Mermaid SVG and its ViewZone height synchronized across resize and reveal', async ({
+  page,
+}, testInfo) => {
+  const reporter = await mountMarkdownComments(page, testInfo);
+  try {
+    await control(page, 'mermaid_offscreen_source');
+    await expect(page.locator(zone)).toHaveCount(1);
+    expect(await zoneRanges(page)).toEqual([[81, 88]]);
+    const mermaidWrapper = page.locator(
+      `${zone} ${diagram}[data-diagram-language="mermaid"]`,
+    );
+    const svg = mermaidWrapper.locator(':scope > svg');
+    await expect(svg).toHaveCount(1);
+    await expect(svg).toHaveAttribute(
+      'data-mermaid-source',
+      'RESPONSIVE_OFFSCREEN',
+    );
+    await expect(page.locator(zone)).not.toBeVisible();
+
+    const retainedZone = await page.locator(zone).elementHandle();
+    const retainedWrapper = await mermaidWrapper.elementHandle();
+    const retainedSvg = await svg.elementHandle();
+    expect(retainedZone).not.toBeNull();
+    expect(retainedWrapper).not.toBeNull();
+    expect(retainedSvg).not.toBeNull();
+
+    const svgContract = await svg.evaluate((node) => ({
+      width: node.getAttribute('width'),
+      height: node.getAttribute('height'),
+      viewBox: node.getAttribute('viewBox'),
+    }));
+    expect(svgContract).toEqual({
+      width: '720',
+      height: '240',
+      viewBox: '0 0 720 240',
+    });
+    // The hidden projection has no live layout box or inline height. Eighty
+    // padding lines plus mermaid_code_truth contribute a stable 81 * 18px;
+    // the remainder is the ViewZone height already owned by scroll geometry.
+    const wideScrollHeight = (await state(page)).scrollHeight;
+    const wideMeasuredHeight = wideScrollHeight - 81 * 18;
+    expect(wideMeasuredHeight).toBeGreaterThan(18);
+
+    await control(page, 'resize', 240);
+    await expect(page.locator(zone)).not.toBeVisible();
+    await expect
+      .poll(async () =>
+        Math.abs((await state(page)).scrollHeight - wideScrollHeight),
+      )
+      .toBeGreaterThan(1);
+    const narrowScrollHeight = (await state(page)).scrollHeight;
+    const narrowMeasuredHeight = narrowScrollHeight - 81 * 18;
+    expect(narrowMeasuredHeight).not.toBe(wideMeasuredHeight);
+    expect(narrowMeasuredHeight).toBeGreaterThan(18);
+    expect(
+      await retainedZone.evaluate(
+        (node) =>
+          node ===
+          document.querySelector(
+            '.markdown-comments-host .moonbit-viewer-markdown-comment',
+          ),
+      ),
+    ).toBe(true);
+    expect(
+      await retainedWrapper.evaluate(
+        (node) =>
+          node ===
+          document.querySelector(
+            '.markdown-comments-host .moonbit-viewer-markdown-diagram[data-diagram-language="mermaid"]',
+          ),
+      ),
+    ).toBe(true);
+    expect(
+      await retainedSvg.evaluate(
+        (node) =>
+          node ===
+          document.querySelector(
+            '.markdown-comments-host .moonbit-viewer-markdown-diagram[data-diagram-language="mermaid"] > svg',
+          ),
+      ),
+    ).toBe(true);
+
+    await control(page, 'scroll_to_bottom');
+    await settle(page);
+    await expect(page.locator(zone)).toBeVisible();
+    await expect
+      .poll(async () =>
+        Math.abs((await state(page)).scrollHeight - narrowScrollHeight),
+      )
+      .toBeLessThanOrEqual(1);
+    const revealed = await page.locator(zone).evaluate((outer) => {
+      const inner = outer.querySelector(
+        '.moonbit-viewer-markdown-comment-content',
+      );
+      const rendered = outer.querySelector(
+        '.moonbit-viewer-markdown-diagram[data-diagram-language="mermaid"] > svg',
+      );
+      const svgRect = rendered.getBoundingClientRect();
+      return {
+        outer: outer.getBoundingClientRect().height,
+        style: Number.parseFloat(outer.style.height),
+        inner: inner.offsetHeight,
+        svgWidth: svgRect.width,
+        svgHeight: svgRect.height,
+        svgAspectRatio: svgRect.width / svgRect.height,
+      };
+    });
+    expect(revealed.svgWidth).toBeGreaterThan(0);
+    expect(revealed.svgHeight).toBeGreaterThan(0);
+    expect(revealed.svgWidth).toBeLessThan(720);
+    expect(Math.abs(revealed.svgAspectRatio - 3)).toBeLessThan(0.001);
+    expect(Math.abs(revealed.outer - revealed.inner)).toBeLessThanOrEqual(1);
+    expect(Math.abs(revealed.style - revealed.inner)).toBeLessThanOrEqual(1);
+    expect(
+      Math.abs(revealed.outer - narrowMeasuredHeight),
+    ).toBeLessThanOrEqual(2);
+  } finally {
+    reporter.dispose();
+  }
+});
+
+test('invalidates pending Mermaid work on model detach and idempotent Viewer disposal', async ({
+  page,
+}, testInfo) => {
+  const reporter = await mountMarkdownComments(page, testInfo);
+  try {
+    await control(page, 'mermaid_delayed_old_source');
+    await expect
+      .poll(async () => (await mermaidLog(page)).pending.length)
+      .toBe(1);
+    const detachedId = (await mermaidLog(page)).pending[0].id;
+
+    await control(page, 'detach');
+    await expect(page.locator(zone)).toHaveCount(0);
+    expect(await releaseMermaid(page, 'DELAYED_OLD')).toBe(true);
+    await settle(page);
+    expect(
+      (await mermaidLog(page)).bind.some(({ id }) => id === detachedId),
+    ).toBe(false);
+
+    await control(page, 'reattach_primary');
+    await expect
+      .poll(async () => (await mermaidLog(page)).pending.length)
+      .toBe(1);
+    const disposedId = (await mermaidLog(page)).pending[0].id;
+    expect(disposedId).not.toBe(detachedId);
+    await control(page, 'dispose');
+    await control(page, 'dispose');
+    await expect(page.locator(host)).toBeEmpty();
+    expect(await releaseMermaid(page, 'DELAYED_OLD')).toBe(true);
+    await settle(page);
+
+    const log = await mermaidLog(page);
+    expect(log.bind.some(({ id }) => id === detachedId)).toBe(false);
+    expect(log.bind.some(({ id }) => id === disposedId)).toBe(false);
+    expect(log.released.map(({ id }) => id)).toEqual([
+      detachedId,
+      disposedId,
+    ]);
+    expect(await state(page)).toMatchObject({
+      attachedKind: 'none',
+      primaryAttachedEditors: 0,
+      replacementAttachedEditors: 0,
+      disposed: true,
+    });
+  } finally {
+    reporter.dispose();
+  }
+});
+
+test('renders through the real pinned Mermaid CDN when live diagnostics are enabled', async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    !runLiveMermaidCdn,
+    'set READONLY_EDITOR_TEST_LIVE_MERMAID_CDN=1 to exercise jsDelivr',
+  );
+  test.slow();
+  const reporter = await mountMarkdownComments(page, testInfo, {
+    liveMermaidCdn: true,
+  });
+  try {
+    const moduleRequest = page.waitForRequest(
+      (request) => request.url() === mermaidCdnUrl,
+    );
+    await control(page, 'mermaid_source');
+    await moduleRequest;
+
+    const mermaidDiagram = `${zone} ${diagram}[data-diagram-language="mermaid"]`;
+    await expect(page.locator(mermaidDiagram)).toHaveCount(3);
+    await expect(page.locator(`${mermaidDiagram} > svg`)).toHaveCount(2, {
+      timeout: 30_000,
+    });
+    await expect(
+      page.locator(
+        `${mermaidDiagram}[data-mermaid-state="rendered"] > svg`,
+      ),
+    ).toHaveCount(2);
+    const sizes = await page
+      .locator(`${mermaidDiagram} > svg`)
+      .evaluateAll((nodes) =>
+        nodes.map((node) => {
+          const rect = node.getBoundingClientRect();
+          return { width: rect.width, height: rect.height };
+        }),
+      );
+    expect(sizes.every(({ width, height }) => width > 0 && height > 0)).toBe(
+      true,
+    );
   } finally {
     reporter.dispose();
   }

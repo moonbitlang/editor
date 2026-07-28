@@ -147,6 +147,82 @@ fn markdown_comments_offscreen_source() -> String {
 }
 
 ///|
+fn markdown_comments_mermaid_source() -> String {
+  let source =
+    #|/// # Mermaid CDN fixture
+    #|/// Two valid diagrams render independently while the invalid diagram keeps its tokenized source fallback.
+    #|///
+    #|/// ```mermaid
+    #|/// flowchart LR
+    #|/// VALID_ONE --> VALID_TWO
+    #|/// ```
+    #|///
+    #|/// ```mermaid
+    #|/// sequenceDiagram
+    #|/// Alice->>Bob: VALID_SECOND
+    #|/// ```
+    #|///
+    #|/// ```mermaid
+    #|/// INVALID
+    #|/// ```
+    #|///
+    #|/// ```Mermaid
+    #|/// CASE_SENSITIVE_FALLBACK
+    #|/// ```
+    #|mermaid_code_truth
+  source
+}
+
+///|
+fn markdown_comments_mermaid_delayed_old_source() -> String {
+  let source =
+    #|/// # Mermaid delayed fixture
+    #|/// ```mermaid
+    #|/// flowchart LR
+    #|/// DELAYED_OLD --> STALE
+    #|/// ```
+    #|mermaid_code_truth
+  source
+}
+
+///|
+fn markdown_comments_mermaid_delayed_new_source() -> String {
+  let source =
+    #|/// # Mermaid delayed fixture
+    #|/// ```mermaid
+    #|/// flowchart LR
+    #|/// CURRENT_NEW --> CURRENT
+    #|/// ```
+    #|mermaid_code_truth
+  source
+}
+
+///|
+fn markdown_comments_mermaid_offscreen_source() -> String {
+  let source = StringBuilder()
+  for line in 1..<=80 {
+    if line > 1 {
+      source.write_char('\n')
+    }
+    source.write_string("m_pad_\{line}")
+  }
+  source.write_string(
+    (
+      #|
+      #|/// # Offscreen Mermaid fixture
+      #|/// The rendered SVG must participate in measurement before this ViewZone enters the viewport.
+      #|///
+      #|/// ```mermaid
+      #|/// flowchart LR
+      #|/// VALID_ONE --> RESPONSIVE_OFFSCREEN
+      #|/// ```
+      #|mermaid_code_truth
+    ),
+  )
+  source.to_string()
+}
+
+///|
 fn markdown_comments_state_json(
   viewer : @viewer.Viewer,
   primary : @model.TextModel,
@@ -271,6 +347,12 @@ fn run_markdown_comments_test() -> Unit {
     () => viewer.set_value(markdown_comments_initial_source()),
     () => viewer.set_value(markdown_comments_folding_source()),
     () => viewer.set_value(markdown_comments_offscreen_source()),
+    () => viewer.set_value(markdown_comments_mermaid_source()),
+    () => viewer.set_value(markdown_comments_mermaid_delayed_old_source()),
+    () => viewer.set_value(markdown_comments_mermaid_delayed_new_source()),
+    () => viewer.set_value(markdown_comments_mermaid_offscreen_source()),
+    () => viewer.update_options(viewer.get_options().with_theme("light")),
+    () => viewer.update_options(viewer.get_options().with_theme("dark")),
     width => {
       host.set_attribute("style", "height:680px;width:\{width}px;")
       viewer.layout()
@@ -346,6 +428,12 @@ extern "js" fn install_markdown_comments_controls(
   restore_initial : () -> Unit,
   folding_source : () -> Unit,
   offscreen_source : () -> Unit,
+  mermaid_source : () -> Unit,
+  mermaid_delayed_old_source : () -> Unit,
+  mermaid_delayed_new_source : () -> Unit,
+  mermaid_offscreen_source : () -> Unit,
+  theme_light : () -> Unit,
+  theme_dark : () -> Unit,
   resize : (Int) -> Unit,
   set_model_selection : () -> Unit,
   focus : () -> Unit,
@@ -359,10 +447,11 @@ extern "js" fn install_markdown_comments_controls(
   dispose_viewer : () -> Unit,
 ) -> Unit =
   #| (host, initialRoot, stateJson, sameKeyUpdate, restructure,
-  #|  restoreInitial, foldingSource, offscreenSource, resize,
-  #|  setModelSelection, focus, detach, attachReplacement, reattachPrimary,
-  #|  scrollToBottom, setScrollTop, setScrollLeft, setSoftWrap,
-  #|  disposeViewer) => {
+  #|  restoreInitial, foldingSource, offscreenSource, mermaidSource,
+  #|  mermaidDelayedOldSource, mermaidDelayedNewSource, mermaidOffscreenSource,
+  #|  themeLight, themeDark, resize, setModelSelection, focus, detach,
+  #|  attachReplacement, reattachPrimary, scrollToBottom, setScrollTop,
+  #|  setScrollLeft, setSoftWrap, disposeViewer) => {
   #|   const keyLog = [];
   #|   const copyLog = [];
   #|   let disposed = false;
@@ -398,6 +487,12 @@ extern "js" fn install_markdown_comments_controls(
   #|     restore_initial: restoreInitial,
   #|     folding_source: foldingSource,
   #|     offscreen_source: offscreenSource,
+  #|     mermaid_source: mermaidSource,
+  #|     mermaid_delayed_old_source: mermaidDelayedOldSource,
+  #|     mermaid_delayed_new_source: mermaidDelayedNewSource,
+  #|     mermaid_offscreen_source: mermaidOffscreenSource,
+  #|     theme_light: themeLight,
+  #|     theme_dark: themeDark,
   #|     resize,
   #|     set_model_selection: setModelSelection,
   #|     focus,
