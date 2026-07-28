@@ -10,9 +10,13 @@ browser-suite authoring contracts.
 support/    Playwright fixtures, app helpers, logging, reporter
 smoke/      user workflows against the workbench or embedded viewer
 component/  loaders/assertions for direct MoonBit Viewer pages
-perf/       correctness traces plus structured non-budgeted timing evidence
+perf/       opt-in performance diagnostics and scroll-frame traces
 moonbit/    js-target MoonBit scenario packages
 ```
+
+`just test-browser-smoke` is the routine browser-correctness gate and runs both
+the `smoke/` and `component/` directories. `just test-browser-perf` is reserved
+for performance investigation and perf-harness changes.
 
 - Smoke tests prefer real gestures and visible outcomes. Use helpers from
   `support/app.js`; do not call deterministic state-control globals when a
@@ -61,8 +65,9 @@ moonbit/    js-target MoonBit scenario packages
 MoonBit scenarios are built by `scripts/build-browser-tests.mbtx` into
 `web/dist/browser-tests/`. A report has the shape
 `{"suite":"viewer_api","status":"passed","failures":[],"metrics":{}}`.
-The test build requires the pinned VS Code checkout at
-`vscode/src/vs/editor/editor.main.ts`.
+Only the perf build requires the pinned VS Code checkout at
+`vscode/src/vs/editor/editor.main.ts`; the routine browser-correctness build
+does not build the Monaco oracle.
 
 `support/test.js` captures runner logs, console/page/request/HTTP failures,
 traces, and failure screenshots. Set `READONLY_EDITOR_TEST_VERBOSE=1` or

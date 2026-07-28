@@ -1,6 +1,7 @@
 import { defineConfig } from '@playwright/test';
 
-const baseURL = process.env.READONLY_EDITOR_BASE_URL || 'http://127.0.0.1:5173';
+const configuredBaseURL = process.env.READONLY_EDITOR_BASE_URL;
+const baseURL = configuredBaseURL || 'http://127.0.0.1:5174';
 const serverPort = new URL(baseURL).port || '5173';
 
 export default defineConfig({
@@ -14,9 +15,9 @@ export default defineConfig({
     trace: 'retain-on-failure'
   },
   webServer: {
-    command: `just dev ROOT=tests/fixtures/workspace PORT=${serverPort}`,
-    url: `http://127.0.0.1:${serverPort}`,
-    reuseExistingServer: true,
+    command: `just serve ROOT=tests/fixtures/workspace PORT=${serverPort}`,
+    url: baseURL,
+    reuseExistingServer: Boolean(configuredBaseURL),
     timeout: 60_000
   }
 });

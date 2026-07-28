@@ -247,5 +247,6 @@ been delivered; it does not subscribe directly to TextModel token events.
   The browser renders typed state directly; do not pass render-frame JSON to
   JavaScript.
 - Owner-adjacent CSS is assembled by `scripts/build-web.mbtx`.
-- Use `just test` for headless/model behavior, `just test-browser` for real DOM
-  input and geometry, and `just check` for architecture boundaries.
+- Use `just test` for headless/model behavior, `just test-browser-smoke` for
+  routine real-DOM input and geometry, `just test-browser-perf` for opt-in
+  performance diagnosis, and `just check` for architecture boundaries.

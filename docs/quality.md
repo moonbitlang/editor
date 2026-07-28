@@ -10,11 +10,15 @@ plan history in `docs/exec-plans/HISTORY.md`.
 just check
 just test
 just build
-just test-browser
+just test-browser-smoke
 ```
 
 Run the subset relevant to each milestone; run all four before declaring a
 cross-package or browser-visible implementation complete.
+
+`just test-browser-perf` is a diagnostic workflow, not a routine development
+gate. Run it when investigating a performance problem or changing scroll-frame,
+render-timing, or perf-harness behavior.
 
 ## Guardrails
 

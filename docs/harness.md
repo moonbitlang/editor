@@ -7,21 +7,33 @@ test can assert directly.
 ## Commands
 
 ```sh
-just check                   # check all targets and source formatting
-just test                    # all MoonBit tests
-just build-moon-web          # production browser assets only
-just build-browser-tests     # production assets + browser test fixtures
-just build                   # check + production browser assets + native server
-just test-browser            # all Playwright suites
-just test-browser-smoke      # reference app and user workflows
-just test-browser-component  # direct Viewer component pages
-just test-browser-perf       # commit-frame conformance + non-budgeted timing
-just dev ROOT=. PORT=5173    # build and run the reference app
+just test                    # MoonBit correctness
+just test-browser-smoke      # browser correctness: smoke + component
+just test-browser-perf       # opt-in performance diagnostics
 ```
 
-Playwright defaults to `http://127.0.0.1:5173` and the deterministic
+`just test-browser` is an alias for `just test-browser-smoke`. Routine
+development does not run the perf suite; use it when investigating performance
+or changing the perf harness and its scroll-frame oracle.
+
+Focused build and development commands are:
+
+```sh
+just check                       # check all targets and source formatting
+just build                       # check + production assets + native server
+just build-moon-web              # production browser assets only
+just build-browser-tests         # browser-correctness scenario bundles
+just build-browser-perf-tests    # perf scenarios + pinned Monaco oracle
+just test-browser-component      # direct Viewer subset of browser correctness
+just dev ROOT=. PORT=5173        # build and run the reference app
+```
+
+Playwright owns `http://127.0.0.1:5174` by default and uses the deterministic
 `tests/fixtures/workspace`. Set `READONLY_EDITOR_BASE_URL` to target an already
-running server.
+running server explicitly; only that opt-in path may reuse an existing server.
+The direct Playwright CLI starts the native server without rebuilding assets
+and assumes the matching browser-build profile has already run; use the
+`just test-browser-*` recipes when bundle freshness matters.
 
 ## Test Layers
 
@@ -63,16 +75,21 @@ layout, focus, pointer input, and native animation-frame behavior.
 tests/browser/
   smoke/       real workbench/embed workflows and real pointer input
   component/   direct public-Viewer scenarios reported as compact JSON
-  perf/        correctness traces plus non-budgeted timing evidence
+  perf/        opt-in performance diagnostics and scroll-frame traces
   moonbit/     js-target scenario packages
   support/     Playwright fixtures, logging, and reporters
 ```
 
+The browser-correctness gate runs both `smoke/` and `component/`. Their
+directory names describe how they reach the browser surface, not separate
+top-level quality gates.
+
 `scripts/build-web.mbtx` builds only the production reference app and embed page,
 then assembles owner-adjacent CSS and codicons under `web/dist`.
-`scripts/build-browser-tests.mbtx` separately builds the MoonBit scenario
-bundles and pinned Monaco oracle under `web/dist/browser-tests`. The
-`just test-browser*` recipes run both build layers before Playwright.
+`scripts/build-browser-tests.mbtx` has separate `smoke` and `perf` profiles
+under `web/dist/browser-tests`. The smoke profile builds the MoonBit scenarios
+used by browser correctness without touching the perf bundle or Monaco. The
+perf profile builds only its local scenarios plus the pinned Monaco oracle.
 
 The whole-line Markdown proof is the direct public-Viewer component scenario
 `tests/browser/moonbit/component/markdown_comments_scenario.mbt`, loaded by
@@ -119,7 +136,8 @@ contract, not a browser-geometry dependency.
   scroll-frame oracle records accepted state and local render phases, then
   observes `.lines-content` `top`/`left` mutations. It groups callbacks by the
   native rAF timestamp; getter samples alone remain state/cadence evidence, and
-  ambient cadence remains diagnostic rather than a budget.
+  ambient cadence remains diagnostic rather than a budget. This oracle belongs
+  to the opt-in perf workflow, not the routine correctness gate.
 - The MoonBit reporter only emits data; Playwright validates the report and
   owns pass/fail.
 

@@ -52,7 +52,7 @@ readonly remote protocol WebSocket.
 just check
 just test
 just build
-just test-browser
+just test-browser-smoke
 ```
 
 Current architecture lives in [docs/architecture.md](docs/architecture.md).

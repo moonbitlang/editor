@@ -48,5 +48,6 @@ embedders remain restricted to root `viewer`, `viewer/browser`, and
 `viewer/common/**`. JavaScript FFI is limited to host capabilities, harness
 events, storage, and protocol URL lookup.
 
-Run `moon test internal/shell/workbench --target js`, `just check`, and the
-relevant `just test-browser-*` suite.
+Run `moon test internal/shell/workbench --target js`, `just check`, and
+`just test-browser-smoke`. Use `just test-browser-perf` only for performance
+investigation or perf-harness changes.

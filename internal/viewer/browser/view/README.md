@@ -340,7 +340,7 @@ moon check --target all
 just check
 just test
 just build
-just test-browser
+just test-browser-smoke
 ```
 
 Exact public API and dependency summaries are generated in
