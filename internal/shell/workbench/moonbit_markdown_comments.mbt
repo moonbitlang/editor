@@ -1,7 +1,7 @@
-// MoonBit documentation comments are anchored by the formatter's exact
-// top-level `///|` separator. The generic `///` detector cannot distinguish
-// that marker from Markdown content, so the reference shell owns this
-// language-specific adapter and keeps the reusable Viewer language-neutral.
+// MoonBit documentation comments and item separators are anchored by the
+// formatter's exact top-level `///|` marker. The generic `///` detector cannot
+// distinguish that marker from Markdown content, so the reference shell owns
+// this language-specific adapter and keeps the reusable Viewer language-neutral.
 
 ///|
 priv struct MoonBitMarkdownCommentProvider {}
@@ -25,11 +25,12 @@ fn install_moonbit_markdown_comment_provider(
 }
 
 ///|
-/// Returns anchored MoonBit documentation blocks. An undocumented `///|`
-/// remains ordinary source; an anchored block hides the marker together with
-/// its consecutive `///` documentation lines while omitting the marker from
-/// the Markdown body. The rendered block is placed after the following item
-/// signature, while its original source range remains the hidden doc lines.
+/// Returns anchored MoonBit documentation and item-separator blocks. Every
+/// exact `///|` becomes a Markdown horizontal rule; consecutive `///` lines,
+/// when present, follow that separator as the documentation body. Documented
+/// blocks render after the following item signature; undocumented separators
+/// remain at their source position. The source marker and documentation lines
+/// are hidden together.
 fn moonbit_markdown_comments_in_snapshot(
   snapshot : @model.TextSnapshot,
 ) -> Array[@language.MarkdownCommentBlock] {
@@ -56,15 +57,19 @@ fn moonbit_markdown_comments_in_snapshot(
         None => break
       }
     }
-    if !contents.is_empty() {
-      blocks.push({
-        line_range: LineRange(start_line_number, line_number),
-        markdown: contents.join("\n"),
-        render_after_line_number: moonbit_signature_end_line_number(
-          snapshot, line_number,
-        ),
-      })
-    }
+    blocks.push({
+      line_range: LineRange(start_line_number, line_number),
+      markdown: if contents.is_empty() {
+        "---"
+      } else {
+        "---\n\n" + contents.join("\n")
+      },
+      render_after_line_number: if contents.is_empty() {
+        None
+      } else {
+        moonbit_signature_end_line_number(snapshot, line_number)
+      },
+    })
   }
   blocks
 }

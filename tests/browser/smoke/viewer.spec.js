@@ -58,7 +58,7 @@ test('renders MoonBit documentation comments through the real workbench', async 
     '.moonbit-viewer-markdown-comment[data-start-line="1"][data-end-line="5"]',
   );
   await expect(markdown).toBeVisible();
-  await expect(markdown.locator('h1')).toHaveText('Fixture entry point');
+  await expect(markdown.locator('hr + h1')).toHaveText('Fixture entry point');
   await expect(markdown.locator('strong')).toHaveText('native shell');
   await expect(markdown).not.toContainText('|');
   await expect(page.locator('.view-lines')).not.toContainText('Fixture entry point');
@@ -78,6 +78,31 @@ test('renders MoonBit documentation comments through the real workbench', async 
   expect(bodyBox.y).toBeGreaterThan(markdownBox.y);
   expect(await page.evaluate(() => globalThis.__readonlyEditorSource)).toContain(
     '///|\n/// # Fixture entry point',
+  );
+});
+
+test('renders undocumented MoonBit item anchors as horizontal separators', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await openWorkspaceFile(page, 'src/events.mbt');
+
+  const first = page.locator(
+    '.moonbit-viewer-markdown-comment[data-start-line="1"][data-end-line="2"]',
+  );
+  const second = page.locator(
+    '.moonbit-viewer-markdown-comment[data-start-line="6"][data-end-line="7"]',
+  );
+  await expect(first.locator('hr')).toBeVisible();
+  await expect(second.locator('hr')).toBeVisible();
+  const firstBox = await first.boundingBox();
+  const firstCodeLineBox = await page
+    .locator('.view-line[data-line="2"]')
+    .boundingBox();
+  expect(firstBox?.height).toBe(firstCodeLineBox?.height);
+  await expect(page.locator('.view-lines')).not.toContainText('///|');
+  expect(await page.evaluate(() => globalThis.__readonlyEditorSource)).toContain(
+    '///|\npub struct StartupEvent',
   );
 });
 

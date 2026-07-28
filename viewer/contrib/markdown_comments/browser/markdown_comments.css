@@ -99,6 +99,12 @@
   background: var(--vscode-editorWidget-border, var(--vscode-widget-border));
 }
 
+/* An item separator replaces one source line. Its content box is otherwise
+ * 15px tall (6px + 1px + 8px), so retain the configured line geometry. */
+.moonbit-viewer-markdown-comment-content > hr:only-child {
+  margin-bottom: calc(var(--editor-line-height, 18px) - 15px);
+}
+
 .moonbit-viewer-markdown-comment-content a {
   color: var(--vscode-textLink-foreground);
   text-decoration: none;

@@ -1,5 +1,5 @@
 ///|
-test "MoonBit Markdown comments omit the item boundary from a core-shaped block" {
+test "MoonBit Markdown comments prefix a core-shaped block with its item boundary" {
   let blocks = moonbit_markdown_comments_in_snapshot(
     TextSnapshot(
       "///|\n/// # Sample API\n///\n/// Uses **shell rendering**.\npub fn sample() -> Unit {}",
@@ -8,14 +8,14 @@ test "MoonBit Markdown comments omit the item boundary from a core-shaped block"
   assert_eq(blocks, [
     {
       line_range: LineRange(1, 5),
-      markdown: "# Sample API\n\nUses **shell rendering**.",
+      markdown: "---\n\n# Sample API\n\nUses **shell rendering**.",
       render_after_line_number: Some(5),
     },
   ])
 }
 
 ///|
-test "MoonBit Markdown comments ignore unanchored false and detached groups" {
+test "MoonBit Markdown comments render separators and ignore detached groups" {
   let blocks = moonbit_markdown_comments_in_snapshot(
     TextSnapshot(
       "///|\nlet first = 1\n/// detached\n///| shadow\n///|\n\n/// separated\n///|\n/// Valid docs\npub fn valid() -> Unit {}\n///|\n/// Second docs\npub fn second() -> Unit {}",
@@ -23,14 +23,43 @@ test "MoonBit Markdown comments ignore unanchored false and detached groups" {
   )
   assert_eq(blocks, [
     {
+      line_range: LineRange(1, 2),
+      markdown: "---",
+      render_after_line_number: None,
+    },
+    {
+      line_range: LineRange(5, 6),
+      markdown: "---",
+      render_after_line_number: None,
+    },
+    {
       line_range: LineRange(8, 10),
-      markdown: "Valid docs",
+      markdown: "---\n\nValid docs",
       render_after_line_number: Some(10),
     },
     {
       line_range: LineRange(11, 13),
-      markdown: "Second docs",
+      markdown: "---\n\nSecond docs",
       render_after_line_number: Some(13),
+    },
+  ])
+}
+
+///|
+test "MoonBit Markdown comments render consecutive undocumented item separators" {
+  let blocks = moonbit_markdown_comments_in_snapshot(
+    TextSnapshot("///|\nfn first {}\n///|\nfn second {}"),
+  )
+  assert_eq(blocks, [
+    {
+      line_range: LineRange(1, 2),
+      markdown: "---",
+      render_after_line_number: None,
+    },
+    {
+      line_range: LineRange(3, 4),
+      markdown: "---",
+      render_after_line_number: None,
     },
   ])
 }
@@ -45,7 +74,7 @@ test "MoonBit Markdown comments preserve body whitespace Unicode and fences" {
   assert_eq(blocks, [
     {
       line_range: LineRange(1, 11),
-      markdown: "\n\n indented\n| literal pipe\n\tTabbed\nUnicode 中\n```mbt\nlet value = 1\n```",
+      markdown: "---\n\n\n\n indented\n| literal pipe\n\tTabbed\nUnicode 中\n```mbt\nlet value = 1\n```",
       render_after_line_number: Some(11),
     },
   ])
@@ -59,7 +88,7 @@ test "MoonBit Markdown comments keep an EOF half-open range after CRLF normaliza
   assert_eq(blocks, [
     {
       line_range: LineRange(2, 4),
-      markdown: "EOF docs",
+      markdown: "---\n\nEOF docs",
       render_after_line_number: None,
     },
   ])
@@ -75,7 +104,7 @@ test "MoonBit Markdown comments render after multiline signatures and attributes
   assert_eq(blocks, [
     {
       line_range: LineRange(1, 3),
-      markdown: "Multiline docs",
+      markdown: "---\n\nMultiline docs",
       render_after_line_number: Some(7),
     },
   ])
@@ -91,7 +120,7 @@ test "MoonBit Markdown comments cross multiline attributes and implementation no
   assert_eq(blocks, [
     {
       line_range: LineRange(1, 3),
-      markdown: "Attribute docs",
+      markdown: "---\n\nAttribute docs",
       render_after_line_number: Some(10),
     },
   ])
@@ -107,12 +136,12 @@ test "MoonBit Markdown comments do not cross another exact item boundary" {
   assert_eq(blocks, [
     {
       line_range: LineRange(1, 3),
-      markdown: "First docs",
+      markdown: "---\n\nFirst docs",
       render_after_line_number: None,
     },
     {
       line_range: LineRange(3, 5),
-      markdown: "Second docs",
+      markdown: "---\n\nSecond docs",
       render_after_line_number: Some(5),
     },
   ])
@@ -182,7 +211,7 @@ test "MoonBit Markdown comments do not cross a blank line to find an item" {
     [
       {
         line_range: LineRange(1, 3),
-        markdown: "Detached docs",
+        markdown: "---\n\nDetached docs",
         render_after_line_number: None,
       },
     ],
@@ -221,7 +250,7 @@ test "workbench installs the provider only for MoonBit models" {
   assert_eq(blocks, [
     {
       line_range: LineRange(1, 3),
-      markdown: "Registered docs",
+      markdown: "---\n\nRegistered docs",
       render_after_line_number: Some(3),
     },
   ])
