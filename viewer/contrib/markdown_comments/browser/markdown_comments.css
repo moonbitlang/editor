@@ -142,6 +142,16 @@
 }
 
 .moonbit-viewer-markdown-comment-content
+  .moonbit-viewer-markdown-diagram:not(
+    .moonbit-viewer-markdown-diagram-viewport
+  )
+  > svg {
+  width: auto;
+  max-height: min(50vh, 480px);
+  margin-inline: auto;
+}
+
+.moonbit-viewer-markdown-comment-content
   .moonbit-viewer-markdown-diagram-viewport {
   position: relative;
   box-sizing: border-box;

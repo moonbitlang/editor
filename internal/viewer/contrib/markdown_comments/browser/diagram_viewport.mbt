@@ -23,6 +23,12 @@ let diagram_zoom_factor = 0.002
 let diagram_fit_padding = 16.0
 
 ///|
+let diagram_maximum_initial_height = 480.0
+
+///|
+let diagram_initial_window_height_ratio = 0.5
+
+///|
 let diagram_minimum_height = 100.0
 
 ///|
@@ -570,6 +576,11 @@ fn MarkdownCommentDiagramViewport::install_listeners(
   }
   self.listen(self.owner_window.as_event_target(), "keydown", handle_key_change)
   self.listen(self.owner_window.as_event_target(), "keyup", handle_key_change)
+  self.listen(self.owner_window.as_event_target(), "resize", _event => {
+    if self.active {
+      self.layout() |> ignore
+    }
+  })
   self.listen(self.resize_handle.as_event_target(), "pointerdown", event => {
     guard event.to_mouse_event() is Some(mouse) else { return }
     if !self.active ||
@@ -785,6 +796,56 @@ fn MarkdownCommentDiagramViewport::set_cursor(
 }
 
 ///|
+fn MarkdownCommentDiagramViewport::height_for_svg(
+  self : MarkdownCommentDiagramViewport,
+  svg_size : DiagramSize,
+) -> Double {
+  match self.custom_height {
+    Some(height) => height
+    None => {
+      let window_height = diagram_window_inner_height(self.owner_window)
+      let initial_height_limit = if is_positive_finite(window_height) {
+        diagram_maximum_initial_height.min(
+          window_height * diagram_initial_window_height_ratio,
+        )
+      } else {
+        diagram_maximum_initial_height
+      }
+      svg_size.height.min(initial_height_limit)
+    }
+  }
+}
+
+///|
+fn MarkdownCommentDiagramViewport::fit_content_to_rect(
+  self : MarkdownCommentDiagramViewport,
+  svg_size : DiagramSize,
+  rect : @rdom.DOMRect,
+) -> Bool {
+  let available_width = 1.0.max(rect.get_width() - diagram_fit_padding * 2.0)
+  let available_height = 1.0.max(rect.get_height() - diagram_fit_padding * 2.0)
+  let next_scale = 1.0
+    .min(available_width / svg_size.width)
+    .min(available_height / svg_size.height)
+  if !is_positive_finite(next_scale) {
+    return false
+  }
+  let next_x = (rect.get_width() - svg_size.width * next_scale) / 2.0
+  let next_y = (rect.get_height() - svg_size.height * next_scale) / 2.0
+  if !is_finite(next_x) || !is_finite(next_y) {
+    return false
+  }
+  self.scale = next_scale
+  self.fit_scale = next_scale
+  self.translate_x = next_x
+  self.translate_y = next_y
+  self.last_svg_width = svg_size.width
+  self.last_svg_height = svg_size.height
+  self.apply_transform()
+  true
+}
+
+///|
 fn MarkdownCommentDiagramViewport::center_natural_content(
   self : MarkdownCommentDiagramViewport,
 ) -> Bool {
@@ -793,7 +854,7 @@ fn MarkdownCommentDiagramViewport::center_natural_content(
   if !is_positive_finite(before.get_width()) {
     return false
   }
-  let height = self.custom_height.unwrap_or(svg_size.height)
+  let height = self.height_for_svg(svg_size)
   if !is_positive_finite(height) {
     return false
   }
@@ -803,13 +864,23 @@ fn MarkdownCommentDiagramViewport::center_natural_content(
     !is_positive_finite(rect.get_height()) {
     return false
   }
-  self.last_svg_width = svg_size.width
-  self.last_svg_height = svg_size.height
-  self.scale = 1.0
-  self.fit_scale = 1.0
-  self.translate_x = (rect.get_width() - svg_size.width) / 2.0
-  self.translate_y = 0.0
-  self.apply_transform()
+  let fits_initial_height = match self.custom_height {
+    Some(_) => false
+    None => height < svg_size.height
+  }
+  if fits_initial_height {
+    if !self.fit_content_to_rect(svg_size, rect) {
+      return false
+    }
+  } else {
+    self.last_svg_width = svg_size.width
+    self.last_svg_height = svg_size.height
+    self.scale = 1.0
+    self.fit_scale = 1.0
+    self.translate_x = (rect.get_width() - svg_size.width) / 2.0
+    self.translate_y = 0.0
+    self.apply_transform()
+  }
   self.initialized = true
   true
 }
@@ -834,7 +905,7 @@ fn MarkdownCommentDiagramViewport::preserve_visible_origin(
     0.0
   }
   guard self.measure_svg() is Some(svg_size) else { return false }
-  let height = self.custom_height.unwrap_or(svg_size.height)
+  let height = self.height_for_svg(svg_size)
   if !is_positive_finite(height) {
     return false
   }
@@ -930,28 +1001,11 @@ fn MarkdownCommentDiagramViewport::fit(
     !is_positive_finite(rect.get_height()) {
     return false
   }
-  let available_width = 1.0.max(rect.get_width() - diagram_fit_padding * 2.0)
-  let available_height = 1.0.max(rect.get_height() - diagram_fit_padding * 2.0)
-  let next_scale = 1.0
-    .min(available_width / svg_size.width)
-    .min(available_height / svg_size.height)
-  if !is_positive_finite(next_scale) {
+  if !self.fit_content_to_rect(svg_size, rect) {
     return false
   }
-  let next_x = (rect.get_width() - svg_size.width * next_scale) / 2.0
-  let next_y = (rect.get_height() - svg_size.height * next_scale) / 2.0
-  if !is_finite(next_x) || !is_finite(next_y) {
-    return false
-  }
-  self.scale = next_scale
-  self.fit_scale = next_scale
-  self.translate_x = next_x
-  self.translate_y = next_y
-  self.last_svg_width = svg_size.width
-  self.last_svg_height = svg_size.height
   self.initialized = true
   self.has_interacted = true
-  self.apply_transform()
   true
 }
 
@@ -1242,6 +1296,9 @@ extern "js" fn with_diagram_viewport_environment(
   #|   callback(document, window);
   #|   return true;
   #| }
+
+///|
+extern "js" fn diagram_window_inner_height(window : @rdom.Window) -> Double = "window => Number(window?.innerHeight)"
 
 ///|
 /// Rabbita does not currently expose `hasAttribute` or nullable attribute

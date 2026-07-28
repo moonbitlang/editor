@@ -5,11 +5,12 @@
 // pinned at b18492a288de038fbc7643aae6de8247029d11bd.
 //
 // The product deviations exercised here are the checked-in plan's true Fit
-// action, zero-size initialization deferral, retained SVG height metadata,
-// fit-aware 0.5 floor, owning-window drag lifetime, and complete disposal.
+// action, fixed initial max height, zero-size initialization deferral, retained
+// SVG height metadata, fit-aware 0.5 floor, owning-window drag lifetime, and
+// complete disposal.
 //
 // SKIPPED (fixed product defaults): configurable control visibility,
-// resizability, max height, and Always/Never click-drag modes.
+// resizability, and Always/Never click-drag modes.
 // SKIPPED (product boundary): preview Reset Zoom, cross-render retained state,
 // SVG height-attribute removal, touch-specific gestures, fullscreen, minimap,
 // export/copy, and reset-to-intrinsic controls.
@@ -250,6 +251,7 @@ extern "js" fn install_diagram_viewport_test_dom() -> DiagramViewportTestHarness
   #|   const ownerWindow = new TestTarget();
   #|   ownerWindow.parentNode = null;
   #|   ownerWindow.ResizeObserver = TestResizeObserver;
+  #|   ownerWindow.innerHeight = 800;
   #|   const document = new TestTarget();
   #|   document.nodeType = 9;
   #|   document.ownerDocument = document;
@@ -340,6 +342,8 @@ extern "js" fn diagram_viewport_test_target(
   #|     add('diago', true, 400, 200, 200, 100);
   #|   } else if (mode === 'wide') {
   #|     add('diago', true, 400, 400, 800, 400);
+  #|   } else if (mode === 'tall') {
+  #|     add('diago', true, 400, 800, 200, 800);
   #|   } else {
   #|     add('diago', true, 400, 100, 200, 100);
   #|   }
@@ -422,6 +426,12 @@ extern "js" fn diagram_viewport_test_window_listener_count(
   harness : DiagramViewportTestHarness,
   event_type : String,
 ) -> Int = "(harness, type) => harness.window.listenerCount(type)"
+
+///|
+extern "js" fn diagram_viewport_test_set_window_inner_height(
+  harness : DiagramViewportTestHarness,
+  height : Double,
+) -> Unit = "(harness, height) => { harness.window.innerHeight = height; }"
 
 ///|
 fn diagram_viewport_test_controller_count(
@@ -996,6 +1006,53 @@ test "mount is synchronous while positive geometry waits for the shared frame" {
   assert_true(diagram_viewport_test_all_svg_measurements_untransformed(harness))
   assert_eq(changes.val, 1)
   viewports.dispose()
+}
+
+///|
+test "initial tall SVG is capped to half the window and fitted with exact padding" {
+  let harness = install_diagram_viewport_test_dom()
+  defer harness.dispose()
+  let target = diagram_viewport_test_target(harness, "tall")
+  let changes = Ref(0)
+  let viewports = MarkdownCommentDiagramViewports(target, () => changes.val += 1)
+  defer viewports.dispose()
+  diagram_viewport_test_flush_frame(harness)
+
+  assert_eq(
+    diagram_viewport_test_wrapper_height(viewports.lifetime, 0),
+    "400px",
+  )
+  assert_true(
+    (diagram_viewport_test_scale(viewports.lifetime, 0) - 0.46).abs() <
+    0.0000001,
+  )
+  assert_eq(diagram_viewport_test_translate_x(viewports.lifetime, 0), 154.0)
+  assert_eq(diagram_viewport_test_translate_y(viewports.lifetime, 0), 16.0)
+  assert_false(diagram_viewport_test_interacted(viewports.lifetime, 0))
+  assert_eq(changes.val, 1)
+  assert_eq(diagram_viewport_test_window_listener_count(harness, "resize"), 1)
+
+  diagram_viewport_test_set_window_inner_height(harness, 600.0)
+  assert_eq(
+    diagram_viewport_event(viewports.lifetime, 0, "ownerWindow", "resize"),
+    "false|false",
+  )
+  assert_eq(
+    diagram_viewport_test_wrapper_height(viewports.lifetime, 0),
+    "300px",
+  )
+  assert_true(
+    (diagram_viewport_test_scale(viewports.lifetime, 0) - 0.335).abs() <
+    0.0000001,
+  )
+  assert_true(
+    (diagram_viewport_test_translate_x(viewports.lifetime, 0) - 166.5).abs() <
+    0.0000001,
+  )
+  assert_eq(diagram_viewport_test_translate_y(viewports.lifetime, 0), 16.0)
+  assert_eq(changes.val, 2)
+  viewports.dispose()
+  assert_eq(diagram_viewport_test_window_listener_count(harness, "resize"), 0)
 }
 
 ///|

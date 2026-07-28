@@ -66,8 +66,15 @@ const fakeMermaidModule = `
     }
     const theme = call.theme;
     const responsive = source.includes('RESPONSIVE_OFFSCREEN');
+    const tall = source.includes('VALID_SECOND');
     const width = responsive ? 720 : 360;
-    const height = responsive ? 240 : theme === 'default' ? 132 : 76;
+    const height = responsive
+      ? 240
+      : tall
+        ? 960
+        : theme === 'default'
+          ? 132
+          : 76;
     const label = responsive
       ? 'RESPONSIVE_OFFSCREEN'
       : source.includes('DELAYED_OLD')
@@ -387,6 +394,7 @@ async function viewportGeometry(locator) {
       window.getComputedStyle(transformContent).transform,
     );
     return {
+      heightLimit: Math.min(window.innerHeight * 0.5, 480),
       wrapperHeight: wrapperRect.height,
       wrapperWidth: wrapperRect.width,
       inlineHeight: Number.parseFloat(wrapper.style.height),
@@ -397,6 +405,11 @@ async function viewportGeometry(locator) {
       translateX: transform.e,
       translateY: transform.f,
       transform: transformContent.style.transform,
+      fullyVisible:
+        svgRect.left >= wrapperRect.left - 1 &&
+        svgRect.right <= wrapperRect.right + 1 &&
+        svgRect.top >= wrapperRect.top - 1 &&
+        svgRect.bottom <= wrapperRect.bottom + 1,
     };
   });
 }
@@ -574,7 +587,11 @@ test('public Viewer replaces whole-line source with themed Markdown while model 
       const innerRect = inner.getBoundingClientRect();
       const outerRect = outer.getBoundingClientRect();
       const viewBox = svg.viewBox.baseVal;
+      const transform = new DOMMatrixReadOnly(
+        window.getComputedStyle(transformContent).transform,
+      );
       return {
+        viewportHeight: window.innerHeight,
         wrapperHeight: wrapperRect.height,
         wrapperWidth: wrapperRect.width,
         wrapperClientHeight: wrapper.clientHeight,
@@ -593,7 +610,9 @@ test('public Viewer replaces whole-line source with themed Markdown while model 
           wrapperRect.right <= innerRect.right + 1,
         svgWithinWrapper:
           svgRect.left >= wrapperRect.left - 1 &&
-          svgRect.right <= wrapperRect.right + 1,
+          svgRect.right <= wrapperRect.right + 1 &&
+          svgRect.top >= wrapperRect.top - 1 &&
+          svgRect.bottom <= wrapperRect.bottom + 1,
         diagramWithinMeasuredHeight: wrapperRect.bottom <= innerRect.bottom + 1,
         overflowX: window.getComputedStyle(wrapper).overflowX,
         overflowY: window.getComputedStyle(wrapper).overflowY,
@@ -604,6 +623,8 @@ test('public Viewer replaces whole-line source with themed Markdown while model 
         svgMaxWidth: window.getComputedStyle(svg).maxWidth,
         transformOrigin:
           window.getComputedStyle(transformContent).transformOrigin,
+        scale: transform.a,
+        translateY: transform.f,
         preserveAspectRatio: svg.getAttribute('preserveAspectRatio'),
         hasWidth: svg.hasAttribute('width'),
         hasHeight: svg.hasAttribute('height'),
@@ -625,17 +646,20 @@ test('public Viewer replaces whole-line source with themed Markdown while model 
       hasWidth: false,
       hasHeight: false,
     });
-    expect(diagramLayout.wrapperHeight).toBeGreaterThan(480);
+    expectNear(
+      diagramLayout.wrapperHeight,
+      Math.min(diagramLayout.viewportHeight * 0.5, 480),
+    );
     expect(diagramLayout.svgHeight).toBeGreaterThan(0);
+    expect(diagramLayout.scale).toBeLessThan(1);
+    expectNear(diagramLayout.translateY, 16);
     expectNear(
       diagramLayout.wrapperHeight,
       diagramLayout.wrapperClientHeight,
     );
-    expectNear(
-      diagramLayout.wrapperScrollHeight,
-      diagramLayout.wrapperClientHeight,
+    expect(diagramLayout.svgHeight).toBeLessThanOrEqual(
+      diagramLayout.wrapperClientHeight - 32 + 1,
     );
-    expectNear(diagramLayout.svgHeight, diagramLayout.wrapperClientHeight);
     expect(
       Math.abs(
         diagramLayout.svgAspectRatio - diagramLayout.viewBoxAspectRatio,
@@ -1052,19 +1076,25 @@ test('interactive Diago controls pan zoom fit resize and keep sibling state inde
     const large = viewports.nth(0);
     const compact = viewports.nth(1);
 
-    // Before either diagram has been touched, a host resize recomputes natural
-    // geometry and keeps scale 1. Both controllers observe the same public
-    // Viewer layout but own independent transforms.
+    // Before either diagram has been touched, a host resize recomputes the
+    // bounded initial fit. Both controllers observe the same public Viewer
+    // layout but own independent transforms.
     const compactWide = await viewportGeometry(compact);
     await control(page, 'resize', 420);
     await expect
       .poll(async () => (await viewportGeometry(compact)).wrapperWidth)
       .toBeLessThan(compactWide.wrapperWidth - 20);
     const compactNarrow = await viewportGeometry(compact);
-    expectNear(compactNarrow.scale, 1, 0.001);
-    expectNear(compactNarrow.scaleY, 1, 0.001);
-    expectNear(compactNarrow.translateY, 0, 0.01);
-    expect(compactNarrow.wrapperHeight).not.toBe(compactWide.wrapperHeight);
+    expect(compactNarrow.scale).toBeGreaterThan(0);
+    expect(compactNarrow.scale).toBeLessThanOrEqual(1);
+    expectNear(compactNarrow.scaleY, compactNarrow.scale, 0.001);
+    expect(compactNarrow.wrapperHeight).toBeLessThanOrEqual(
+      compactNarrow.heightLimit + 1,
+    );
+    expect(compactNarrow.fullyVisible).toBe(true);
+    expect(
+      Math.abs(compactNarrow.scale - compactWide.scale),
+    ).toBeGreaterThan(0.001);
 
     await large.scrollIntoViewIfNeeded();
     await settle(page);
@@ -1072,7 +1102,10 @@ test('interactive Diago controls pan zoom fit resize and keep sibling state inde
     const selectionBeforeInput = (await state(page)).selection;
     const compactBeforeLargeInput = await viewportGeometry(compact);
     const initial = await viewportGeometry(large);
-    expectNear(initial.scale, 1, 0.001);
+    expect(initial.scale).toBeGreaterThan(0);
+    expect(initial.scale).toBeLessThan(1);
+    expectNear(initial.wrapperHeight, initial.heightLimit);
+    expect(initial.fullyVisible).toBe(true);
 
     const pan = large.locator('[aria-label="Toggle pan mode"]');
     const zoomOut = large.locator('[aria-label="Zoom out"]');
@@ -1118,9 +1151,13 @@ test('interactive Diago controls pan zoom fit resize and keep sibling state inde
     expectNear(modifierPanned.translateY - plainPanned.translateY, -20, 2);
 
     await zoomOut.click();
-    expectNear((await viewportGeometry(large)).scale, 0.8, 0.001);
+    expectNear((await viewportGeometry(large)).scale, initial.scale, 0.001);
     await zoomIn.click();
-    expectNear((await viewportGeometry(large)).scale, 1, 0.001);
+    expectNear(
+      (await viewportGeometry(large)).scale,
+      initial.scale * 1.25,
+      0.001,
+    );
     await fit.click();
     const fitted = await viewportGeometry(large);
     expect(fitted.scale).toBeGreaterThan(0);
@@ -1303,8 +1340,8 @@ test('diagram viewports never cover the editor scrollbar rail and real thumb dra
     await expect(verticalBar).toHaveCount(1);
     await expect(slider).toHaveCount(1);
 
-    // Put the tall diagram behind the entire scrollbar thumb so the hit test
-    // would expose even a one-pixel Markdown overflow into the rail.
+    // Put the bounded diagram under the scrollbar rail so the hit test would
+    // expose even a one-pixel Markdown overflow into the rail.
     const desiredScrollTop = await large.evaluate((wrapper) => {
       const editorRoot = wrapper.closest('.monaco-editor.readonly-editor');
       const editorRect = editorRoot.getBoundingClientRect();
@@ -1333,9 +1370,13 @@ test('diagram viewports never cover the editor scrollbar rail and real thumb dra
     );
     const hiddenPoint = await slider.evaluate((thumb) => {
       const rect = thumb.getBoundingClientRect();
+      const diagram = document.querySelector(
+        '.markdown-comments-host .moonbit-viewer-markdown-diagram-viewport',
+      );
+      const diagramRect = diagram.getBoundingClientRect();
       return {
         x: rect.left + rect.width / 2,
-        y: rect.top + rect.height / 2,
+        y: diagramRect.top + diagramRect.height / 2,
       };
     });
     const hiddenHit = await page.evaluate(({ x, y }) => {
@@ -1445,12 +1486,15 @@ test('same-key replacement retains zone identity, reflows, and reconciles add re
     expect(oldPanButton).not.toBeNull();
     const oldPanPressed = await oldPanButton.evaluate((button) =>
       button.getAttribute('aria-pressed'));
+    const initialDiagramGeometry = await viewportGeometry(initialDiagram);
     await initialDiagram.locator('[aria-label="Zoom in"]').click();
     const initialResizeHandle = initialDiagram.locator(diagramResizeHandle);
     await initialResizeHandle.focus();
     await page.keyboard.press('ArrowDown');
     const interactedDiagram = await viewportGeometry(initialDiagram);
-    expect(interactedDiagram.scale).toBeGreaterThan(1);
+    expect(interactedDiagram.scale).toBeGreaterThan(
+      initialDiagramGeometry.scale,
+    );
     await eofContent.evaluate((node) => {
       node.style.display = 'none';
     });
@@ -1503,8 +1547,9 @@ test('same-key replacement retains zone identity, reflows, and reconciles add re
       .poll(async () => (await viewportGeometry(replacementDiagram)).wrapperHeight)
       .toBeGreaterThan(0);
     const replacementGeometry = await viewportGeometry(replacementDiagram);
-    expectNear(replacementGeometry.scale, 1, 0.001);
-    expectNear(replacementGeometry.translateY, 0, 0.01);
+    expect(replacementGeometry.scale).toBeGreaterThan(0);
+    expect(replacementGeometry.scale).toBeLessThanOrEqual(1);
+    expect(replacementGeometry.fullyVisible).toBe(true);
     expect(
       Math.abs(
         replacementGeometry.wrapperHeight - interactedDiagram.wrapperHeight,
@@ -1919,6 +1964,42 @@ test('renders exact Mermaid fences through the pinned CDN module and rerenders t
     expect(initialSvgState.every(({ theme }) => theme === 'dark')).toBe(true);
     expect(new Set(initialSvgState.map(({ id }) => id)).size).toBe(2);
 
+    const tallMermaid = page.locator(
+      `${mermaidDiagram} > svg[data-mermaid-source="VALID_SECOND"]`,
+    );
+    const tallMermaidLayout = await tallMermaid.evaluate((svg) => {
+      const wrapper = svg.parentElement;
+      const wrapperRect = wrapper.getBoundingClientRect();
+      const svgRect = svg.getBoundingClientRect();
+      const viewBox = svg.viewBox.baseVal;
+      return {
+        heightLimit: Math.min(window.innerHeight * 0.5, 480),
+        wrapperHeight: wrapperRect.height,
+        svgHeight: svgRect.height,
+        svgAspectRatio: svgRect.width / svgRect.height,
+        viewBoxAspectRatio: viewBox.width / viewBox.height,
+        fullyVisible:
+          svgRect.left >= wrapperRect.left - 1 &&
+          svgRect.right <= wrapperRect.right + 1 &&
+          svgRect.top >= wrapperRect.top - 1 &&
+          svgRect.bottom <= wrapperRect.bottom + 1,
+        overflowY: window.getComputedStyle(wrapper).overflowY,
+      };
+    });
+    expectNear(tallMermaidLayout.svgHeight, tallMermaidLayout.heightLimit);
+    expectNear(
+      tallMermaidLayout.wrapperHeight,
+      tallMermaidLayout.heightLimit,
+    );
+    expect(tallMermaidLayout.fullyVisible).toBe(true);
+    expect(tallMermaidLayout.overflowY).toBe('auto');
+    expect(
+      Math.abs(
+        tallMermaidLayout.svgAspectRatio -
+          tallMermaidLayout.viewBoxAspectRatio,
+      ),
+    ).toBeLessThan(0.001);
+
     const initialLog = await mermaidLog(page);
     expect(initialLog.moduleLoads).toBe(1);
     expect(initialLog.render).toHaveLength(3);
@@ -1963,20 +2044,16 @@ test('renders exact Mermaid fences through the pinned CDN module and rerenders t
           const inner = node.querySelector(
             '.moonbit-viewer-markdown-comment-content',
           );
-          return {
-            outer: node.getBoundingClientRect().height,
-            style: Number.parseFloat(node.style.height),
-            inner: inner.offsetHeight,
-          };
+          const outer = node.getBoundingClientRect().height;
+          const style = Number.parseFloat(node.style.height);
+          const innerHeight = inner.offsetHeight;
+          return (
+            Math.abs(outer - innerHeight) <= 1 &&
+            Math.abs(style - innerHeight) <= 1
+          );
         }),
       )
-      .toEqual(
-        expect.objectContaining({
-          outer: expect.any(Number),
-          style: expect.any(Number),
-          inner: expect.any(Number),
-        }),
-      );
+      .toBe(true);
     const lightGeometry = await page.locator(zone).evaluate((node) => {
       const inner = node.querySelector(
         '.moonbit-viewer-markdown-comment-content',
