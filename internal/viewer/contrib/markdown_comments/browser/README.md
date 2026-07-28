@@ -24,15 +24,21 @@ viewport observer, geometry lease, generation, and zone-id freshness.
 Diago SVG viewport inside one Markdown-comment target. It mounts the
 transformable content, four controls, resize handle, listeners, animation
 frame, and per-wrapper `ResizeObserver`, while leaving the target and original
-wrapper caller-owned. MoonBit structs retain the group/controller lifetime and
-all pan/zoom/fit/resize state. The root entry's disposal-before-replacement
-contract gives the group exclusive wrapper ownership, so the implementation
-does not place private ownership tokens on DOM nodes. A module-private
-per-document coordinator grants at most one temporary body-cursor lease during
-resize; it restores the exact prior inline value and priority on release.
-Narrow FFI fills browser binding gaps only. Each inline viewport-height change
-invokes the supplied `on_size_changed` callback; the root contribution wires
-that callback to the existing coalesced
+wrapper caller-owned. Initial height is bounded to the smaller of the SVG's
+natural height, half the owning window, and 480px. A diagram that reaches that
+cap starts with the same 16px-padded Fit transform used by the toolbar action;
+uninteracted layout tracks window and wrapper changes, while a caller-selected
+resize height remains authoritative. Direct noninteractive diagram SVGs,
+including Mermaid output, use the same CSS height boundary and preserve their
+aspect ratio without cropping. MoonBit structs retain the group/controller
+lifetime and all pan/zoom/fit/resize state. The root entry's
+disposal-before-replacement contract gives the group exclusive wrapper
+ownership, so the implementation does not place private ownership tokens on
+DOM nodes. A module-private per-document coordinator grants at most one
+temporary body-cursor lease during resize; it restores the exact prior inline
+value and priority on release. Narrow FFI fills browser binding gaps only. Each
+inline viewport-height change invokes the supplied `on_size_changed` callback;
+the root contribution wires that callback to the existing coalesced
 `MarkdownCommentSizeObserver::request_measure` path rather than introducing
 another ViewZone height writer. The root entry disposes the diagram owner
 before the shared Markdown renderer and size observer whenever the body is
