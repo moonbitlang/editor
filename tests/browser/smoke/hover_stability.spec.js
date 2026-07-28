@@ -1,5 +1,5 @@
 import { expect, test } from '../support/test.js';
-import { openMainFixture } from '../support/app.js';
+import { waitForReady } from '../support/app.js';
 
 const widgetSelector = '[data-content-widget="editor.contrib.resizableContentHoverWidget"]';
 
@@ -10,7 +10,16 @@ const widgetSelector = '[data-content-widget="editor.contrib.resizableContentHov
 // restarts the CSS animation and reads as flicker.
 test('hover widget stays mounted and visible while the mouse moves along the span', async ({ page }) => {
   await page.goto('/');
-  await openMainFixture(page);
+  await waitForReady(page);
+  await expect(page.locator('.editor-shell')).toHaveAttribute(
+    'data-source-uri',
+    'readonly-remote://workspace/src/main.mbt',
+  );
+  const collapsed = page.locator(
+    '.margin-view-overlays .cldr.codicon-folding-collapsed',
+  );
+  await expect(collapsed).toHaveCount(1);
+  await collapsed.click({ force: true });
 
   const symbol = page.locator('.view-line span', { hasText: 'startup_event' }).first();
   await expect(symbol).toBeVisible();
