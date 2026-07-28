@@ -29,6 +29,21 @@ fn Viewer::folding_controller(
 }
 
 ///|
+/// Collapses every top-level folding region in the current model.
+///
+/// This is the host-facing mechanism for applying an initial fold policy. It
+/// intentionally supplies no blocked lines, unlike Monaco's
+/// `editor.foldLevel1` action, so the region containing the current selection
+/// is folded as well. The call does nothing when folding is disabled or no
+/// folding model is attached.
+pub fn Viewer::fold_top_level(self : Viewer) -> Unit {
+  guard self.get_options().folding else { return }
+  guard self.folding_controller() is Some(controller) else { return }
+  guard controller.folding_model is Some(folding_model) else { return }
+  @folding_browser.set_collapse_state_at_level(folding_model, 1, true, [])
+}
+
+///|
 /// `onModelChanged` (`folding.ts:227`).
 fn Viewer::folding_on_model_changed(self : Viewer) -> Unit {
   guard self.folding_controller() is Some(controller) else { return }

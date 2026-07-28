@@ -17,6 +17,30 @@ test "folding: contribution computes indent regions on model attach" {
 }
 
 ///|
+test "folding: public fold_top_level collapses every outer region only" {
+  with_test_viewer("root\n  child\n    leaf\nnext\n  item\ntail", viewer => {
+    let view_model = viewer.test_view_model()
+    guard viewer.folding_controller() is Some(controller)
+    guard controller.folding_model is Some(folding_model)
+    let regions = folding_model.regions()
+    assert_eq(regions.length(), 3)
+    viewer.set_position(Position(3, 1))
+    viewer.fold_top_level()
+    assert_true(regions.is_collapsed(0))
+    assert_false(regions.is_collapsed(1))
+    assert_true(regions.is_collapsed(2))
+    assert_eq(view_model.line_count(), 3)
+    assert_eq(view_model.lines().get_view_line_content(1), "root")
+    assert_eq(view_model.lines().get_view_line_content(2), "next")
+    assert_eq(view_model.lines().get_view_line_content(3), "tail")
+    // The API does not preserve a blocked selection: folding the containing
+    // outer region snaps the caret to its header.
+    guard viewer.get_selection() is Some(selection)
+    assert_eq(selection.start().line_number, 1)
+  })
+}
+
+///|
 test "folding: toggling a region folds its lines out of the view axis" {
   with_test_viewer("a\n  b\n  c\nd\n  e", viewer => {
     let view_model = viewer.test_view_model()
@@ -97,6 +121,8 @@ test "folding: disabling the option clears folds and detaches the model state" {
     assert_eq(view_model.line_count(), 4)
     assert_true(controller.folding_model is None)
     assert_false(viewer.folding_enabled())
+    viewer.fold_top_level()
+    assert_eq(view_model.line_count(), 4)
   })
 }
 

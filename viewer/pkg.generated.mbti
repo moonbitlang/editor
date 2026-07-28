@@ -45,6 +45,7 @@ pub fn Viewer::create_decorations_collection(Self, decorations? : Array[@model.M
 pub fn Viewer::delta_decorations(Self, Array[String], Array[@model.ModelDeltaDecoration]) -> Array[String]
 pub fn Viewer::dispose(Self) -> Unit
 pub fn Viewer::focus(Self) -> Unit
+pub fn Viewer::fold_top_level(Self) -> Unit
 pub fn Viewer::get_bottom_for_line_number(Self, Int) -> Double
 pub fn Viewer::get_container_dom_node(Self) -> @dom.Element
 pub fn Viewer::get_content_height(Self) -> Double
