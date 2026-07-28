@@ -48,6 +48,7 @@ pub fn detect_markdown_comments_in_snapshot(
             result.push({
               line_range: LineRange(start_line_number, line_index + 1),
               markdown: contents.join("\n"),
+              render_after_line_number: None,
             })
             continue
           }
@@ -108,6 +109,7 @@ pub fn detect_markdown_comments_in_snapshot(
                 closing_line_index + 2,
               ),
               markdown: normalize_block_body(body_lines),
+              render_after_line_number: None,
             })
           }
           // The first closing delimiter ends the language block even when
@@ -168,6 +170,9 @@ pub fn normalize_markdown_comment_blocks(
       range.end_line_number_exclusive <= range.start_line_number ||
       range.end_line_number_exclusive > model_line_count + 1 {
       warn_invalid_range(log_service, range)
+    } else if block.render_after_line_number is Some(line_number) &&
+      (line_number < 0 || line_number > model_line_count) {
+      warn_invalid_render_position(log_service, range, line_number)
     } else {
       indexed.push({ block, original_index: index })
     }
@@ -349,6 +354,22 @@ fn warn_invalid_range(
     details=[
       ("startLineNumber", range.start_line_number.to_string()),
       ("endLineNumberExclusive", range.end_line_number_exclusive.to_string()),
+    ],
+  )
+}
+
+///|
+fn warn_invalid_render_position(
+  log_service : @log.LogHandle,
+  range : @base_common.LineRange,
+  line_number : Int,
+) -> Unit {
+  log_service.warn(
+    "viewer.markdownComments",
+    "discarded Markdown comment block with invalid render position",
+    details=[
+      ("range", range.to_string()),
+      ("renderAfterLineNumber", line_number.to_string()),
     ],
   )
 }

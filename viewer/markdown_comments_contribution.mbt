@@ -150,9 +150,22 @@ fn Viewer::markdown_comment_contribution(
 ///|
 fn markdown_comment_key(block : @language.MarkdownCommentBlock) -> String {
   let range = block.line_range
-  range.start_line_number.to_string() +
-  ":" +
-  range.end_line_number_exclusive.to_string()
+  let source_key = range.start_line_number.to_string() +
+    ":" +
+    range.end_line_number_exclusive.to_string()
+  match block.render_after_line_number {
+    Some(line_number) => source_key + ":" + line_number.to_string()
+    None => source_key
+  }
+}
+
+///|
+fn markdown_comment_after_line_number(
+  block : @language.MarkdownCommentBlock,
+) -> Int {
+  block.render_after_line_number.unwrap_or(
+    block.line_range.end_line_number_exclusive - 1,
+  )
 }
 
 ///|
@@ -306,7 +319,7 @@ fn Viewer::refresh_markdown_comments(
             block.line_range.end_line_number_exclusive,
           )
           let zone = @editor_browser.ViewZone(
-            block.line_range.end_line_number_exclusive - 1,
+            markdown_comment_after_line_number(block),
             dom.outer,
             ignore_hidden_area_source=markdown_comment_hidden_source,
             suppress_mouse_down=false,

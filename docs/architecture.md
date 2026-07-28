@@ -202,7 +202,9 @@ editor common/browser layers; editor common never depends on them.
   `viewer/contrib/folding/browser/folding.css`.
 - `internal/viewer/contrib/markdown_comments` owns multi-target whole-line
   comment detection, provider/configuration resolution, and normalized block
-  ranges. Its browser sibling owns the stable ViewZone DOM pair and coalesced
+  ranges, including validation of an optional provider-selected render line
+  that is independent of the hidden source range. Its browser sibling owns the
+  stable ViewZone DOM pair and coalesced
   visible/offscreen size observer. It also owns one opaque diagram-viewport
   group per rendered target: each successful direct Diago SVG is enhanced
   independently with bounded pan/zoom/fit controls and a resize handle.

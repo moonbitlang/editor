@@ -12,8 +12,10 @@ reusable `viewer`, file tree, remote transport, and browser-test observability.
   MoonBit Markdown-comment provider, and agent-feedback persistence; then it
   calls `mount_app`. The MoonBit adapter treats an exact `///|` line as an item
   anchor, omits that anchor from rendered Markdown, and renders only the
-  immediately following `///` documentation lines. Undocumented anchors remain
-  ordinary source.
+  immediately following `///` documentation lines. Attached documentation is
+  displayed after the following declaration's complete single- or multiline
+  signature; its source comments remain hidden in place. Undocumented anchors
+  remain ordinary source.
 - Rabbita owns topbar/sidebar/status/diagnostics/theme state and renders one
   stable, childless `.viewer-host`. After the first paint `Viewer::create`
   mounts the imperative editor into that element.

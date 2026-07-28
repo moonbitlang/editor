@@ -14,6 +14,7 @@ import {
   "moonbitlang/editor/internal/viewer/contrib/agent_feedback",
   "moonbitlang/editor/syntax/lang_javascript",
   "moonbitlang/editor/syntax/lang_json",
+  "moonbitlang/editor/syntax",
   "moonbitlang/editor/syntax/lang_moonbit",
   "moonbitlang/editor/internal/shell/widgets/file_tree",
   "moonbitlang/editor/internal/shell/workspace",

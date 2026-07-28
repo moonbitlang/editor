@@ -15,10 +15,13 @@ pub(all) struct Hover {
 
 ///|
 /// One whole-line Markdown source-comment block. `line_range` uses the
-/// repository's 1-based half-open line convention.
+/// repository's 1-based half-open line convention. `render_after_line_number`
+/// optionally decouples the rendered ViewZone position from the hidden source
+/// range; `None` renders immediately after the range as before.
 pub(all) struct MarkdownCommentBlock {
   line_range : @base_common.LineRange
   markdown : String
+  render_after_line_number : Int?
 } derive(Eq, Debug)
 
 ///|

@@ -28,7 +28,8 @@ fn install_moonbit_markdown_comment_provider(
 /// Returns anchored MoonBit documentation blocks. An undocumented `///|`
 /// remains ordinary source; an anchored block hides the marker together with
 /// its consecutive `///` documentation lines while omitting the marker from
-/// the Markdown body.
+/// the Markdown body. The rendered block is placed after the following item
+/// signature, while its original source range remains the hidden doc lines.
 fn moonbit_markdown_comments_in_snapshot(
   snapshot : @model.TextSnapshot,
 ) -> Array[@language.MarkdownCommentBlock] {
@@ -59,10 +60,93 @@ fn moonbit_markdown_comments_in_snapshot(
       blocks.push({
         line_range: LineRange(start_line_number, line_number),
         markdown: contents.join("\n"),
+        render_after_line_number: moonbit_signature_end_line_number(
+          snapshot, line_number,
+        ),
       })
     }
   }
   blocks
+}
+
+///|
+/// Finds the last source line of the item signature following an anchored doc
+/// block. MoonBit's tokenizer keeps braces in strings and comments out of the
+/// delimiter stream, so a body-opening `{` is authoritative. Balanced `()` or
+/// `[]` keep a multiline signature open, balanced attributes and implementation
+/// comments are skipped, and a blank line before the declaration leaves detached
+/// documentation at its source position.
+fn moonbit_signature_end_line_number(
+  snapshot : @model.TextSnapshot,
+  first_line_number : Int,
+) -> Int? {
+  let line_count = snapshot.line_count()
+  if first_line_number > line_count {
+    return None
+  }
+  let tokenizer : &@syntax.LineTokenizer = @lang_moonbit.MoonbitTokenizer()
+  let mut state = tokenizer.initial_state()
+  let mut line_number = first_line_number
+  let mut delimiter_depth = 0
+  let mut attribute_depth = 0
+  let mut fallback_line_number = first_line_number
+  while line_number <= line_count {
+    let line = snapshot.get_line_content(line_number)
+    let (tokens, next_state) = tokenizer.tokenize_line(line, state)
+    state = next_state
+    if tokens.is_empty() {
+      if delimiter_depth > 0 || attribute_depth > 0 {
+        line_number += 1
+        continue
+      }
+      return None
+    }
+    if line == "///|" {
+      return None
+    }
+    if tokens[0].tag == Comment || tokens[0].tag == CommentDoc {
+      line_number += 1
+      continue
+    }
+    if tokens[0].tag == Attribute || attribute_depth > 0 {
+      for token in tokens {
+        if token.tag != Delimiter {
+          continue
+        }
+        let delimiter = line[token.start:token.end].to_owned()
+        for char in delimiter {
+          match char {
+            '(' | '[' => attribute_depth += 1
+            ')' | ']' => attribute_depth = (attribute_depth - 1).max(0)
+            _ => ()
+          }
+        }
+      }
+      fallback_line_number = line_number
+      line_number += 1
+      continue
+    }
+    for token in tokens {
+      if token.tag != Delimiter {
+        continue
+      }
+      let delimiter = line[token.start:token.end].to_owned()
+      for char in delimiter {
+        match char {
+          '{' => if delimiter_depth == 0 { return Some(line_number) }
+          '(' | '[' => delimiter_depth += 1
+          ')' | ']' => delimiter_depth = (delimiter_depth - 1).max(0)
+          _ => ()
+        }
+      }
+    }
+    fallback_line_number = line_number
+    if delimiter_depth == 0 {
+      return Some(line_number)
+    }
+    line_number += 1
+  }
+  Some(fallback_line_number)
 }
 
 ///|

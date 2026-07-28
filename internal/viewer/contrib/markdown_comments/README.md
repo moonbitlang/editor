@@ -10,8 +10,14 @@ and only whole-line block comments are accepted.
 
 `normalize_markdown_comment_blocks` is the shared provider/detector boundary.
 It validates 1-based half-open line ranges, orders blocks, rejects later
-overlaps, drops exact-empty bodies, and preserves the viewer's all-lines-visible
-fallback. Invalid and overlapping inputs are reported through `LogHandle`.
+overlaps, validates optional zero-through-line-count render positions, drops
+exact-empty bodies, and preserves the viewer's all-lines-visible fallback.
+Invalid and overlapping inputs are reported through `LogHandle`.
+
+`MarkdownCommentBlock.line_range` always names the source lines hidden by the
+root contribution. Providers may separately set `render_after_line_number` to
+mount the rendered ViewZone after related source, such as a declaration's full
+signature. Detectors leave it unset and keep the historical after-range layout.
 
 `resolve_markdown_comment_blocks` is the root-facing resolver. The first
 matching provider result is authoritative, including an empty result. Only an

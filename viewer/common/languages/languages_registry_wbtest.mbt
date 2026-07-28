@@ -211,7 +211,7 @@ priv struct NamedHoverProvider {
 
 ///|
 fn markdown_comment_block(markdown : String) -> @language.MarkdownCommentBlock {
-  { line_range: LineRange(1, 2), markdown }
+  { line_range: LineRange(1, 2), markdown, render_after_line_number: None }
 }
 
 ///|

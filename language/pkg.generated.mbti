@@ -91,6 +91,7 @@ pub(all) struct Location {
 pub(all) struct MarkdownCommentBlock {
   line_range : @common.LineRange
   markdown : String
+  render_after_line_number : Int?
 } derive(Eq, @debug.Debug)
 
 // Type aliases

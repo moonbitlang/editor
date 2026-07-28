@@ -21,10 +21,12 @@ fn block(
   start_line_number : Int,
   end_line_number_exclusive : Int,
   markdown : String,
+  render_after_line_number? : Int,
 ) -> @language.MarkdownCommentBlock {
   {
     line_range: LineRange(start_line_number, end_line_number_exclusive),
     markdown,
+    render_after_line_number,
   }
 }
 
@@ -247,6 +249,30 @@ test "normalization drops exact-empty bodies but preserves whitespace bodies" {
     @log.LogService().log_handle(),
   )
   assert_eq(normalized, [block(2, 3, " ")])
+}
+
+///|
+test "normalization validates and preserves explicit render positions" {
+  let memory = @log.MemoryLogger()
+  let log_handle = @log.LogService(logger=memory).log_handle()
+  assert_eq(
+    normalize_markdown_comment_blocks(
+      [
+        block(1, 2, "before first", render_after_line_number=0),
+        block(2, 3, "after signature", render_after_line_number=3),
+        block(3, 4, "outside", render_after_line_number=4),
+      ],
+      3,
+      log_handle,
+    ),
+    [
+      block(1, 2, "before first", render_after_line_number=0),
+      block(2, 3, "after signature", render_after_line_number=3),
+    ],
+  )
+  let entries = memory.entries()
+  assert_eq(entries.length(), 1)
+  assert_true(entries[0].message.contains("invalid render position"))
 }
 
 ///|

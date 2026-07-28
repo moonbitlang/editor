@@ -13,7 +13,9 @@ Backend-neutral contracts for readonly language features.
   `CancellationToken`.
 - `MarkdownCommentProvider` is the synchronous open registration contract for
   whole-line Markdown comment blocks. Detection and result normalization remain
-  viewer-contribution responsibilities.
+  viewer-contribution responsibilities. A block may set
+  `render_after_line_number` to place its rendered ViewZone after a related
+  source signature while keeping `line_range` as the source lines to hide.
 - `CancellationTokenSource` owns cancellation. Repeated token reads are
   identity-stable; cancellation notifies listeners once in registration order,
   parent cancellation propagates, and `dispose(cancel=...)` separates listener

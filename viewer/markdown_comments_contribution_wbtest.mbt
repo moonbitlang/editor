@@ -41,10 +41,12 @@ fn markdown_contribution_block(
   start_line_number : Int,
   end_line_number_exclusive : Int,
   markdown : String,
+  render_after_line_number? : Int,
 ) -> @language.MarkdownCommentBlock {
   {
     line_range: LineRange(start_line_number, end_line_number_exclusive),
     markdown,
+    render_after_line_number,
   }
 }
 
@@ -378,6 +380,33 @@ test "Markdown comments replace start middle EOF blocks while preserving model t
       assert_eq(viewer.test_view_model().get_whitespaces().length(), 3)
       assert_eq(viewer.get_value(), source)
       assert_eq(viewer.get_model().unwrap().get_line_content(3), "three")
+    },
+    provider_blocks=blocks,
+  )
+}
+
+///|
+test "Markdown comments can render after a related source signature" {
+  let source = "hidden docs\npub fn sample(\n  value : Int,\n) -> Int {\n  value\n}"
+  let blocks = [
+    markdown_contribution_block(
+      1,
+      2,
+      "Rendered docs",
+      render_after_line_number=4,
+    ),
+  ]
+  with_markdown_contribution_viewer(
+    source,
+    (viewer, _provider_blocks) => {
+      let state = markdown_contribution_state(viewer)
+      assert_eq(state.rendered.length(), 1)
+      assert_true(state.rendered.contains("1:2:4"))
+      assert_eq(state.rendered["1:2:4"].zone.after_line_number, 4)
+      assert_true(
+        viewer.test_view_model().get_hidden_areas() == [Range(1, 1, 1, 1)],
+      )
+      assert_eq(viewer.get_value(), source)
     },
     provider_blocks=blocks,
   )

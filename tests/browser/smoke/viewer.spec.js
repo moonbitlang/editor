@@ -62,6 +62,20 @@ test('renders MoonBit documentation comments through the real workbench', async 
   await expect(markdown.locator('strong')).toHaveText('native shell');
   await expect(markdown).not.toContainText('|');
   await expect(page.locator('.view-lines')).not.toContainText('Fixture entry point');
+  const signature = page.locator('.view-line', { hasText: 'fn main' }).first();
+  const firstBodyLine = page.locator('.view-line', {
+    hasText: 'let event',
+  }).first();
+  const [signatureBox, markdownBox, bodyBox] = await Promise.all([
+    signature.boundingBox(),
+    markdown.boundingBox(),
+    firstBodyLine.boundingBox(),
+  ]);
+  expect(signatureBox).not.toBeNull();
+  expect(markdownBox).not.toBeNull();
+  expect(bodyBox).not.toBeNull();
+  expect(markdownBox.y).toBeGreaterThan(signatureBox.y);
+  expect(bodyBox.y).toBeGreaterThan(markdownBox.y);
   expect(await page.evaluate(() => globalThis.__readonlyEditorSource)).toContain(
     '///|\n/// # Fixture entry point',
   );
