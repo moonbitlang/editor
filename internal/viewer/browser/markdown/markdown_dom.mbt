@@ -13,6 +13,27 @@ priv struct MarkdownDomLifetime {
 }
 
 ///|
+/// Installs one renderer-owned lifetime into a caller-owned target. All HTML
+/// policy runs in an inert parsed fragment; only the policy-processed result
+/// reaches the live DOM. Reusing the target first disposes its previous
+/// lifetime.
+///
+/// ```d2
+/// html: converted HTML
+/// parse: inert template parse
+/// inputs: checkbox and input policy
+/// media: image URI policy
+/// links: anchor URI and action policy
+/// diagrams: diagram discovery and wheel ownership
+/// target: caller-owned target
+/// mermaid: serialized Mermaid queue
+///
+/// html -> parse
+/// parse -> inputs -> media -> links -> diagrams
+/// diagrams -> target: replace children once
+/// target -> mermaid: enqueue exact enabled wrappers
+/// mermaid -> target: freshness-checked SVG commit
+/// ```
 fn install_markdown_dom(
   target : @rdom.Element,
   html : String,

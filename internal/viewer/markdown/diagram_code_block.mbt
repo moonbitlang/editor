@@ -1,6 +1,21 @@
 ///|
-/// Renders the package-owned exact diagram fence before any caller override.
-/// Unknown, unlabelled, and failed diagram blocks keep the existing fallback.
+/// Renders package-owned exact lowercase `d2` and `diago` fences before any
+/// caller override. Unknown, unlabelled, and failed diagram blocks keep the
+/// existing fallback.
+///
+/// ```d2
+/// fence: fenced code block
+/// language: exact d2 or diago?
+/// compile: Diago parse, layout, and SVG render
+/// wrapper: diagram wrapper with compiled SVG
+/// fallback: caller override or ordinary code HTML
+///
+/// fence -> language
+/// language -> compile: yes
+/// language -> fallback: no
+/// compile -> wrapper: success
+/// compile -> fallback: failure
+/// ```
 fn render_diagram_code_block(code_block : MarkdownCodeBlock) -> String? {
   match code_block.language_id {
     Some("diago") | Some("d2") =>

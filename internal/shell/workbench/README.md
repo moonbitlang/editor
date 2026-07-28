@@ -23,7 +23,13 @@ reusable `viewer`, file tree, remote transport, and browser-test observability.
 - `RemoteDocumentProvider` maps read/watch/close to protocol packets. Active URI
   and generation guards discard stale async results. Every snapshot becomes a
   new `TextModel`; reloads save/restore viewer scroll state, while user opens
-  reset it.
+  reset it. Before publishing the stable initialized state, the workbench uses
+  the Viewer's explicit `fold_top_level` action for ordinary MoonBit `.mbt`
+  models, presenting their declarations as an initial outline. This is a
+  reference-host policy: `.mbt.md` documents, extensionless sources, other
+  languages, and external Viewer embedders remain expanded by default.
+  Watched-file replacements install a fresh model and therefore reapply the
+  policy; subsequent folding interactions on that model remain user-controlled.
 - The protocol client correlates in-flight requests by ID and resolves all
   pending requests on connection loss. Watch results and diagnostics are push
   paths; diagnostics update the workbench-retained `MarkerService` rather than
