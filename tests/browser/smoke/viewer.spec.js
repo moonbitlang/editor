@@ -116,16 +116,26 @@ test('renders MoonBit documentation comments through the real workbench', async 
   const firstBodyLine = page.locator('.view-line', {
     hasText: 'let event',
   }).first();
-  const [signatureBox, markdownBox, bodyBox] = await Promise.all([
+  const [signatureBox, markdownBox] = await Promise.all([
     signature.boundingBox(),
     markdown.boundingBox(),
-    firstBodyLine.boundingBox(),
   ]);
   expect(signatureBox).not.toBeNull();
   expect(markdownBox).not.toBeNull();
-  expect(bodyBox).not.toBeNull();
   expect(markdownBox.y).toBeGreaterThan(signatureBox.y);
-  expect(bodyBox.y).toBeGreaterThan(markdownBox.y);
+
+  await page
+    .locator('.margin-view-overlays .cldr.codicon-folding-collapsed')
+    .first()
+    .click({ force: true });
+  await expect(firstBodyLine).toBeVisible();
+  const [expandedMarkdownBox, bodyBox] = await Promise.all([
+    markdown.boundingBox(),
+    firstBodyLine.boundingBox(),
+  ]);
+  expect(expandedMarkdownBox).not.toBeNull();
+  expect(bodyBox).not.toBeNull();
+  expect(bodyBox.y).toBeGreaterThan(expandedMarkdownBox.y);
   expect(await page.evaluate(() => globalThis.__readonlyEditorSource)).toContain(
     '///|\n/// # Fixture entry point',
   );
