@@ -24,8 +24,10 @@ just build                       # check + production assets + native server
 just build-moon-web              # production browser assets only
 just build-browser-tests         # browser-correctness scenario bundles
 just build-browser-perf-tests    # perf scenarios + pinned Monaco oracle
+just                             # check, build, and serve with repository defaults
 just test-browser-component      # direct Viewer subset of browser correctness
 just dev ROOT=. PORT=5173        # build and run the reference app
+just list                        # list every available recipe
 ```
 
 Playwright owns `http://127.0.0.1:5174` by default and uses the deterministic
@@ -109,10 +111,11 @@ a self-contained ESM fixture, so CI never depends on public network access; the
 explicit live-CDN smoke remains opt-in diagnostic coverage.
 
 The corresponding real-shell proof is
-`tests/browser/smoke/viewer.spec.js`: it opens the fixture through the native
+`tests/browser/smoke/viewer.spec.js`: it opens fixtures through the native
 remote protocol and verifies that the workbench-installed MoonBit provider
-renders the anchored documentation while the underlying model retains the raw
-`///|` and `///` source.
+renders every `///|` item separator, including the separators above anchored
+documentation, while the underlying model retains the raw `///|` and `///`
+source.
 
 The folding-versus-own-hidden-source branch stays in the focused mounted
 Viewer/ViewZones matrices: it is a source-membership and whitespace-visibility

@@ -38,14 +38,17 @@ is invalid, the viewer keeps the safe tokenized source code visible.
 
 ```sh
 npm install
-just check
-just build
-just dev ROOT=. PORT=5173
+just
 ```
 
 Open `http://127.0.0.1:5173/`. The dev server is the internal native backend
 shell: it serves `web/dist` and talks to the browser workbench over the
 readonly remote protocol WebSocket.
+
+`just` checks the repository, builds the browser assets and native server, then
+serves the current checkout with the default root and port. Use
+`just dev ROOT=<workspace> PORT=<port>` to override either value, or `just list`
+to show every recipe.
 
 ## Validation
 

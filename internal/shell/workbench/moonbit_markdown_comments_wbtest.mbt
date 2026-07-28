@@ -1,5 +1,5 @@
 ///|
-test "MoonBit Markdown comments omit the item boundary from a core-shaped block" {
+test "MoonBit Markdown comments prefix a core-shaped block with its item boundary" {
   let blocks = moonbit_markdown_comments_in_snapshot(
     TextSnapshot(
       "///|\n/// # Sample API\n///\n/// Uses **shell rendering**.\npub fn sample() -> Unit {}",
@@ -8,21 +8,34 @@ test "MoonBit Markdown comments omit the item boundary from a core-shaped block"
   assert_eq(blocks, [
     {
       line_range: LineRange(1, 5),
-      markdown: "# Sample API\n\nUses **shell rendering**.",
+      markdown: "---\n\n# Sample API\n\nUses **shell rendering**.",
     },
   ])
 }
 
 ///|
-test "MoonBit Markdown comments ignore unanchored false and detached groups" {
+test "MoonBit Markdown comments render separators and ignore detached groups" {
   let blocks = moonbit_markdown_comments_in_snapshot(
     TextSnapshot(
       "///|\nlet first = 1\n/// detached\n///| shadow\n///|\n\n/// separated\n///|\n/// Valid docs\npub fn valid() -> Unit {}\n///|\n/// Second docs\npub fn second() -> Unit {}",
     ),
   )
   assert_eq(blocks, [
-    { line_range: LineRange(8, 10), markdown: "Valid docs" },
-    { line_range: LineRange(11, 13), markdown: "Second docs" },
+    { line_range: LineRange(1, 2), markdown: "---" },
+    { line_range: LineRange(5, 6), markdown: "---" },
+    { line_range: LineRange(8, 10), markdown: "---\n\nValid docs" },
+    { line_range: LineRange(11, 13), markdown: "---\n\nSecond docs" },
+  ])
+}
+
+///|
+test "MoonBit Markdown comments render consecutive undocumented item separators" {
+  let blocks = moonbit_markdown_comments_in_snapshot(
+    TextSnapshot("///|\nfn first {}\n///|\nfn second {}"),
+  )
+  assert_eq(blocks, [
+    { line_range: LineRange(1, 2), markdown: "---" },
+    { line_range: LineRange(3, 4), markdown: "---" },
   ])
 }
 
@@ -36,7 +49,7 @@ test "MoonBit Markdown comments preserve body whitespace Unicode and fences" {
   assert_eq(blocks, [
     {
       line_range: LineRange(1, 11),
-      markdown: "\n\n indented\n| literal pipe\n\tTabbed\nUnicode 中\n```mbt\nlet value = 1\n```",
+      markdown: "---\n\n\n\n indented\n| literal pipe\n\tTabbed\nUnicode 中\n```mbt\nlet value = 1\n```",
     },
   ])
 }
@@ -46,7 +59,9 @@ test "MoonBit Markdown comments keep an EOF half-open range after CRLF normaliza
   let blocks = moonbit_markdown_comments_in_snapshot(
     TextSnapshot("let before = 1\r\n///|\r\n/// EOF docs"),
   )
-  assert_eq(blocks, [{ line_range: LineRange(2, 4), markdown: "EOF docs" }])
+  assert_eq(blocks, [
+    { line_range: LineRange(2, 4), markdown: "---\n\nEOF docs" },
+  ])
 }
 
 ///|
@@ -79,7 +94,7 @@ test "workbench installs the provider only for MoonBit models" {
     fail("expected the workbench MoonBit provider")
   }
   assert_eq(blocks, [
-    { line_range: LineRange(1, 3), markdown: "Registered docs" },
+    { line_range: LineRange(1, 3), markdown: "---\n\nRegistered docs" },
   ])
   assert_true(handle.markdown_comment_provider_result(plaintext) is None)
 }
