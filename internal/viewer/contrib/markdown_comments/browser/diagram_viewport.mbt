@@ -137,6 +137,30 @@ pub struct MarkdownCommentDiagramViewports {
 /// Diago SVG. Geometry is initialized at the next animation-frame boundary.
 /// `on_size_changed` invalidates the owning Markdown-comment ViewZone whenever
 /// this component writes a new inline viewport height.
+///
+/// ```d2
+/// group: MarkdownCommentDiagramViewports
+/// target: borrowed Markdown target
+/// wrapper: borrowed diagram wrapper and SVG
+/// controller: one controller per direct Diago SVG
+/// listeners: pointer, keyboard, wheel listeners
+/// observer: ResizeObserver
+/// frame: pending layout frame
+/// cursor: optional document body-cursor lease
+/// callback: ViewZone measurement callback
+///
+/// target -> wrapper: contains
+/// group -> controller: owns many
+/// controller -> wrapper: temporarily enhances
+/// controller -> listeners: owns
+/// controller -> observer: owns
+/// controller -> frame: owns
+/// controller -> cursor: owns while resizing
+/// controller -> callback: inline height changed
+/// ```
+///
+/// Disposal walks the owned controllers in reverse and restores every borrowed
+/// wrapper attribute and inline style before the caller replaces the target.
 #alias(new, deprecated)
 pub fn MarkdownCommentDiagramViewports::MarkdownCommentDiagramViewports(
   target : @rdom.Element,

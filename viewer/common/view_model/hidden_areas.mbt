@@ -207,6 +207,28 @@ fn ViewModel::capture_stable_viewport(self : ViewModel) -> StableViewport {
 /// hidden. Returns whether the view-line mapping changed — Monaco's
 /// `ViewFlushedEvent`/`ViewLineMappingChangedEvent`/`HiddenAreasChangedEvent`
 /// emissions, which the frame-based caller turns into a re-render.
+///
+/// ```mermaid
+/// flowchart TD
+///   A[Replace one source range set] --> B[Merge every source]
+///   B --> C{Union changed or forced?}
+///   C -->|no| D[Return false]
+///   C -->|yes| E[Capture top visible model position]
+///   E --> F[Apply ranges to projected lines]
+///   F --> G{Line mapping changed?}
+///   G -->|yes| H[Reproject cursor]
+///   H --> I[Invalidate decorations]
+///   I --> J[Flush layout line count and height]
+///   G -->|no| K[Keep existing mapping]
+///   J --> L{Captured anchor still visible?}
+///   K --> L
+///   L -->|yes| M[Recover viewport scroll offset]
+///   L -->|no| N[Keep new projection position]
+///   M --> O{Line mapping changed?}
+///   N --> O
+///   O -->|yes| P[Emit changed-only outgoing event]
+///   O -->|no| Q[Return false without an event]
+/// ```
 pub fn ViewModel::set_hidden_areas(
   self : ViewModel,
   ranges : Array[@base_common.Range],
