@@ -208,6 +208,37 @@ async function textPoint(page, text, occurrence = 0) {
   return point;
 }
 
+async function emptyContentPoint(page, viewLineNumber) {
+  const point = await page.locator(`${editorSelector} .view-lines`).evaluate(
+    (viewLines, wantedViewLineNumber) => {
+      const line = viewLines.querySelector(
+        `.view-line[data-line="${wantedViewLineNumber}"]`,
+      );
+      const content = line?.querySelector('.view-line-content');
+      const editor = viewLines.closest('.monaco-editor');
+      if (!line || !content || !editor) return null;
+      const lineRect = line.getBoundingClientRect();
+      const contentRect = content.getBoundingClientRect();
+      const editorRect = editor.getBoundingClientRect();
+      const x = Math.min(editorRect.right - 20, contentRect.right + 24);
+      const y = lineRect.top + lineRect.height / 2;
+      return {
+        x,
+        y,
+        isBeyondText: x > contentRect.right,
+        hitLineNumber:
+          document.elementFromPoint(x, y)?.closest('.view-line')?.dataset.line ??
+          null,
+      };
+    },
+    viewLineNumber,
+  );
+  expect(point).not.toBeNull();
+  expect(point.isBeyondText).toBe(true);
+  expect(point.hitLineNumber).toBe(String(viewLineNumber));
+  return point;
+}
+
 test('public API and ContentFlush expose ordered internal-version cursor events', async ({
   page,
 }) => {
@@ -616,6 +647,47 @@ test('real single click and drag keep visible selection and mouse event pairs co
   expect(current.selection.activeLine).toBe(2);
   expect(current.selection.activeColumn).toBeGreaterThan(current.selection.anchorColumn);
   await expect.poll(() => page.locator(`${editorSelector} .selected-text`).count()).toBeGreaterThan(0);
+  await expectFocused(page);
+});
+
+test('line-width empty content click and drag resolve to line ends', async ({
+  page,
+}) => {
+  await mountCursorFixture(page);
+  const lineTwoEmpty = await emptyContentPoint(page, 2);
+  const lineSixEmpty = await emptyContentPoint(page, 6);
+
+  await setPosition(page, 1, 1);
+  await page.mouse.click(lineTwoEmpty.x, lineTwoEmpty.y);
+  await settle(page);
+  let current = await state(page);
+  expect(current.position).toEqual({ line: 2, column: 19 });
+  expect(current.selection).toEqual({
+    anchorLine: 2,
+    anchorColumn: 19,
+    activeLine: 2,
+    activeColumn: 19,
+  });
+  expectOneCursorPair(await events(page), current, 'mouse', 'Explicit');
+  await expectFocused(page);
+
+  await setPosition(page, 1, 1);
+  await page.mouse.move(lineTwoEmpty.x, lineTwoEmpty.y);
+  await page.mouse.down();
+  await page.mouse.move(lineSixEmpty.x, lineSixEmpty.y, { steps: 8 });
+  await page.mouse.up();
+  await settle(page);
+  current = await state(page);
+  expect(current.selection).toEqual({
+    anchorLine: 2,
+    anchorColumn: 19,
+    activeLine: 4,
+    activeColumn: 1,
+  });
+  expectAdjacentCursorPairs(await events(page));
+  await expect
+    .poll(() => page.locator(`${editorSelector} .selected-text`).count())
+    .toBeGreaterThan(0);
   await expectFocused(page);
 });
 

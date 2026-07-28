@@ -16,8 +16,10 @@
 }
 
 .view-line {
+  box-sizing: border-box;
   position: absolute;
   left: 0;
+  width: 100%;
   /* top and height are written inline by the recycler (18px lines). */
   white-space: pre;
 }
