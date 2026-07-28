@@ -7,6 +7,7 @@ test "wildcard bind reports loopback and discovered LAN URLs" {
       #|  "Readonly editor native server listening on:",
       #|  "  Local:   http://127.0.0.1:5173/",
       #|  "  Network: http://192.168.1.24:5173/",
+      #|  "  WARNING: no authentication; use only on a trusted network.",
       #|]
     ),
   )
@@ -21,6 +22,7 @@ test "wildcard bind explains LAN fallback when route discovery fails" {
       #|  "Readonly editor native server listening on:",
       #|  "  Local:   http://127.0.0.1:4173/",
       #|  "  Network: use this device's LAN IPv4 address on port 4173",
+      #|  "  WARNING: no authentication; use only on a trusted network.",
       #|]
     ),
   )
@@ -43,6 +45,7 @@ test "concrete binds report only reachable listener routes" {
       #|[
       #|  "Readonly editor native server listening on:",
       #|  "  Network: http://192.168.1.24:5173/",
+      #|  "  WARNING: no authentication; use only on a trusted network.",
       #|]
     ),
   )

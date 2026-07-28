@@ -27,11 +27,14 @@ Public entry points also include `native_server_host`, hover/check parsers, and
 the configurable constructors. The `main` package accepts `--root`, `--host`,
 `--port`, `--asset-dir`, and `--moon-command`.
 
-Loopback remains the default because the reference server has no authentication
-and exposes workspace source files. On a trusted LAN, launch it with
-`just dev HOST=0.0.0.0` (or `just serve HOST=0.0.0.0` after building). Other
-devices can open the printed Network URL; local clients can continue to use the
-printed Local URL.
+The reusable API, direct CLI, and lower-level `just serve` recipe remain
+loopback-only by default. The developer launcher instead defaults to
+`HOST=0.0.0.0`, so plain `just dev` prints both the Local URL and the LAN URL
+detected from the default route. Set `HOST=127.0.0.1` to bind and print only the
+Local URL.
+
+**Warning:** the reference server has no authentication and exposes workspace
+source files. Use the default Just launcher only on a trusted LAN.
 
 ## Boundary and validation
 
@@ -39,5 +42,5 @@ This package is native-only and is not part of the reusable viewer API. It owns
 concrete host/provider behavior, but not protocol packet routing or browser UI.
 
 Run `moon test internal/shell/server_host_native --target native`, `just build`,
-or launch it with `just dev ROOT=. PORT=5173`. Add `HOST=0.0.0.0` only when the
-workspace may be shared with the local network.
+or launch it with `just dev ROOT=. PORT=5173`. Use `HOST=127.0.0.1` when the
+workspace must remain local to the development machine.

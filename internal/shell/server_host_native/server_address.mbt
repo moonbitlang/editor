@@ -47,10 +47,16 @@ fn editor_server_listening_messages(
           "  Network: use this device's LAN IPv4 address on port \{port}",
         )
     }
+    messages.push(
+      "  WARNING: no authentication; use only on a trusted network.",
+    )
   } else if bind_host == "127.0.0.1" {
     messages.push("  Local:   " + editor_server_url(bind_host, port))
   } else {
     messages.push("  Network: " + editor_server_url(bind_host, port))
+    messages.push(
+      "  WARNING: no authentication; use only on a trusted network.",
+    )
   }
   messages
 }
