@@ -1,6 +1,7 @@
 ///|
 struct DevServerConfig {
   root : String
+  host : String
   port : Int
   asset_dir : String
   moon_command : String
@@ -11,6 +12,7 @@ async fn main {
   let config = parse_args(@env.args()[1:])
   @server_host_native.run_native_editor_server(
     config.root,
+    host=config.host,
     port=config.port,
     asset_dir=config.asset_dir,
     moon_command=config.moon_command,
@@ -22,6 +24,7 @@ async fn main {
 ///|
 fn parse_args(args : ArrayView[String]) -> DevServerConfig {
   let mut root = "."
+  let mut host = "127.0.0.1"
   let mut port = 5173
   let mut asset_dir = "web/dist"
   let mut moon_command = "moon"
@@ -38,6 +41,11 @@ fn parse_args(args : ArrayView[String]) -> DevServerConfig {
           port = parse_port(args[i + 1], port)
           i = i + 1
         }
+      "--host" =>
+        if i + 1 < args.length() {
+          host = args[i + 1]
+          i = i + 1
+        }
       "--asset-dir" =>
         if i + 1 < args.length() {
           asset_dir = args[i + 1]
@@ -52,7 +60,7 @@ fn parse_args(args : ArrayView[String]) -> DevServerConfig {
     }
     i = i + 1
   }
-  { root, port, asset_dir, moon_command }
+  { root, host, port, asset_dir, moon_command }
 }
 
 ///|

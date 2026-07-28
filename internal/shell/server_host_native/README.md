@@ -7,9 +7,13 @@ Native effect adapter and executable backend for the reference shell.
 - `NativeServerHost` implements `server.ServerHost`: root-contained text reads,
   one-level directory reads, and polling watches (500 ms by default).
 - `run_native_editor_server` serves `web/dist` over HTTP and `/protocol` over
-  WebSocket. Each connection owns an isolated remote-server session, unbounded
-  outbox, and socket writer, so closing one connection cannot dispose another's
-  watches and concurrent watch/diagnostic pushes cannot interleave frames.
+  WebSocket. It binds to `127.0.0.1` by default. Pass `host="0.0.0.0"` to
+  accept IPv4 traffic from every interface; startup output then includes the
+  localhost URL and, when the operating system has a default route, the
+  selected LAN URL. Each connection owns an isolated remote-server session,
+  unbounded outbox, and socket writer, so closing one connection cannot dispose
+  another's watches and concurrent watch/diagnostic pushes cannot interleave
+  frames.
 - `MoonWorkspaceLanguageProvider` implements hover with
   `moon ide hover --output-json --no-check`. Definition, references, document
   symbols currently return no result.
@@ -20,8 +24,14 @@ Native effect adapter and executable backend for the reference shell.
   Moon CLI output parsing are owned here; protocol policy remains in `server`.
 
 Public entry points also include `native_server_host`, hover/check parsers, and
-the configurable constructors. The `main` package accepts `--root`, `--port`,
-`--asset-dir`, and `--moon-command`.
+the configurable constructors. The `main` package accepts `--root`, `--host`,
+`--port`, `--asset-dir`, and `--moon-command`.
+
+Loopback remains the default because the reference server has no authentication
+and exposes workspace source files. On a trusted LAN, launch it with
+`just dev HOST=0.0.0.0` (or `just serve HOST=0.0.0.0` after building). Other
+devices can open the printed Network URL; local clients can continue to use the
+printed Local URL.
 
 ## Boundary and validation
 
@@ -29,4 +39,5 @@ This package is native-only and is not part of the reusable viewer API. It owns
 concrete host/provider behavior, but not protocol packet routing or browser UI.
 
 Run `moon test internal/shell/server_host_native --target native`, `just build`,
-or launch it with `just dev ROOT=. PORT=5173`.
+or launch it with `just dev ROOT=. PORT=5173`. Add `HOST=0.0.0.0` only when the
+workspace may be shared with the local network.
