@@ -111,8 +111,9 @@ explicit live-CDN smoke remains opt-in diagnostic coverage.
 The corresponding real-shell proof is
 `tests/browser/smoke/viewer.spec.js`: it opens fixtures through the native
 remote protocol and verifies that the workbench-installed MoonBit provider
-renders anchored documentation and undocumented `///|` item separators while
-the underlying model retains the raw `///|` and `///` source.
+renders every `///|` item separator, including the separators above anchored
+documentation, while the underlying model retains the raw `///|` and `///`
+source.
 
 The folding-versus-own-hidden-source branch stays in the focused mounted
 Viewer/ViewZones matrices: it is a source-membership and whitespace-visibility
