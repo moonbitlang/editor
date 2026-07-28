@@ -316,17 +316,19 @@ fn enqueue(queue : @aqueue.Queue[String], message : String) -> Unit {
 
 ///|
 /// Starts the native reference server: static assets over HTTP and the remote
-/// workspace protocol over WebSocket.
+/// workspace protocol over WebSocket. The default listener is loopback-only;
+/// `host="0.0.0.0"` opts into every IPv4 interface and LAN URL discovery.
 pub async fn run_native_editor_server(
   root : String,
+  host? : String = "127.0.0.1",
   port? : Int = 5173,
   asset_dir? : String = "web/dist",
   moon_command? : String = "moon",
   log? : (String) -> Unit = println,
 ) -> Unit {
-  let host = NativeServerHost::NativeServerHost()
+  let server_host = NativeServerHost::NativeServerHost()
   let root = realpath_or_normalized(root)
-  let addr = @socket.Addr::parse("127.0.0.1:\{port}")
+  let addr = @socket.Addr::parse("\{host}:\{port}")
   let http_server = @http.Server(addr, reuse_addr=true)
   // The diagnostics check runs outlive any single protocol connection, so
   // they run on the server-lifetime task group.
@@ -336,9 +338,16 @@ pub async fn run_native_editor_server(
     }
     let sessions = ProtocolSessions::new()
     let remote_server = moon_backed_remote_server(
-      root, host, moon_command, spawn_task, sessions,
+      root, server_host, moon_command, spawn_task, sessions,
     )
-    log("Readonly editor native server listening on http://127.0.0.1:\{port}/")
+    let network_host = if host == "0.0.0.0" {
+      default_route_ipv4_address()
+    } else {
+      None
+    }
+    for message in editor_server_listening_messages(host, port, network_host) {
+      log(message)
+    }
     http_server.run_forever() <| ((request, _body, conn) => {
       handle_native_editor_request(
         remote_server, sessions, asset_dir, request, conn,

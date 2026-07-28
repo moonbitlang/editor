@@ -26,7 +26,8 @@ just build-browser-tests         # browser-correctness scenario bundles
 just build-browser-perf-tests    # perf scenarios + pinned Monaco oracle
 just                             # check, build, and serve with repository defaults
 just test-browser-component      # direct Viewer subset of browser correctness
-just dev ROOT=. PORT=5173        # build and run the reference app
+just dev ROOT=. PORT=5173        # build, serve, and print Local/Network URLs
+just dev HOST=127.0.0.1          # explicitly restrict access to loopback
 just list                        # list every available recipe
 ```
 
@@ -36,6 +37,14 @@ running server explicitly; only that opt-in path may reuse an existing server.
 The direct Playwright CLI starts the native server without rebuilding assets
 and assumes the matching browser-build profile has already run; use the
 `just test-browser-*` recipes when bundle freshness matters.
+
+`just dev` defaults to `HOST=0.0.0.0`: it binds every IPv4 interface and prints
+reachable Local and detected Network URLs. Set `HOST=127.0.0.1` to restrict the
+listener and startup output to the Local URL. The reusable server API, direct
+CLI, and lower-level `just serve` recipe remain loopback-only by default.
+
+**Warning:** the reference server has no authentication and exposes workspace
+source files. The default `just dev` launcher is intended only for trusted LANs.
 
 ## Test Layers
 
