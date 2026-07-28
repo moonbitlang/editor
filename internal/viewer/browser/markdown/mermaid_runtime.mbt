@@ -56,8 +56,8 @@ fn MermaidRuntime::enqueue(
 ///
 /// ```mermaid
 /// flowchart TD
-///   A[enqueue request] --> B{runtime already running?}
-///   B -->|yes| C[leave request queued]
+///   A[enqueue request or finish previous] --> B{running or queue empty?}
+///   B -->|yes| C[return]
 ///   B -->|no| D[dequeue oldest request]
 ///   D --> E{cached API uses same loader?}
 ///   E -->|yes| F[initialize and render]
@@ -74,7 +74,7 @@ fn MermaidRuntime::enqueue(
 ///   I --> K[finish request]
 ///   J --> K
 ///   K --> L[clear running flag]
-///   L --> B
+///   L --> A
 /// ```
 fn MermaidRuntime::pump(self : MermaidRuntime) -> Unit {
   if self.running || self.requests.length() == 0 {
