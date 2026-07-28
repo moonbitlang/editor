@@ -396,9 +396,31 @@ fn set_workbench_model(
     }
     ResetScroll => viewer.set_model(Some(text_model))
   }
+  // The reference workbench presents `.mbt` sources as a top-level outline.
+  // Keep this a host policy instead of changing the reusable Viewer's default:
+  // other registered languages and external embedders retain expanded models.
+  // `set_model` computes folding ranges synchronously, so the collapse is part
+  // of the stable initialization state and never needs a timer or render hook.
+  if should_auto_fold_top_level(text_model) {
+    viewer.fold_top_level()
+  }
   // Matches TextFileEditor.setInput: model, restored state/options, then the
   // separate ICodeEditor.handleInitialized boundary.
   viewer.handle_initialized()
+}
+
+///|
+/// Whether the reference workbench applies its initial outline policy.
+///
+/// Folding itself remains language-neutral; the host opts in only for ordinary
+/// MoonBit source files because their top-level declarations are the
+/// workbench's primary reading surface. In particular, `.mbt.md` documents and
+/// extensionless sources remain expanded. Fresh models, including watched-file
+/// replacements, reapply the policy, while in-model folding interactions stay
+/// entirely user-controlled.
+fn should_auto_fold_top_level(text_model : @model.TextModel) -> Bool {
+  text_model.get_language_id() == "moonbit" &&
+  text_model.display_name.has_suffix(".mbt")
 }
 
 ///|

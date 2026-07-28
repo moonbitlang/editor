@@ -4,10 +4,32 @@ import {
   collectReadonlyEvents,
   openMainFixture,
   openWorkspaceFile,
+  waitForReady,
   workspaceItem,
 } from '../support/app.js';
 
 const mainFixture = 'tests/fixtures/workspace/src/main.mbt';
+
+async function waitForSourceText(page, needle) {
+  await expect
+    .poll(
+      () =>
+        page.evaluate(
+          (text) => globalThis.__readonlyEditorSource?.includes(text) ?? false,
+          needle,
+        ),
+      { timeout: 7_000 },
+    )
+    .toBeTruthy();
+}
+
+async function unfoldMainBody(page) {
+  const collapsed = page.locator(
+    '.margin-view-overlays .cldr.codicon-folding-collapsed',
+  );
+  await expect(collapsed).toHaveCount(1, { timeout: 7_000 });
+  await collapsed.click({ force: true });
+}
 
 test('starts from native-served static assets', async ({ page }) => {
   const requestedPaths = [];
@@ -37,7 +59,12 @@ test('renders fixture workspace through the native protocol', async ({ page }) =
     'readonly-remote://workspace/src/main.mbt',
   );
   await expect(page.locator('.monaco-editor.readonly-editor')).toContainText('fn main');
-  await expect(page.locator('.monaco-editor.readonly-editor')).toContainText('startup_event');
+  await expect(page.locator('.monaco-editor.readonly-editor')).not.toContainText(
+    'startup_event',
+  );
+  await expect(
+    page.locator('.margin-view-overlays .cldr.codicon-folding-collapsed'),
+  ).toHaveCount(1);
   await expect(page.locator('.editor-shell')).not.toContainText('readonly provider');
 
   const mainSymbol = page.locator('.view-line span', { hasText: 'main' }).first();
@@ -46,6 +73,29 @@ test('renders fixture workspace through the native protocol', async ({ page }) =
 
   expect(await events.some('moonbit:render')).toBeTruthy();
   expect(await events.some('dom:mounted')).toBeTruthy();
+});
+
+test('opens MoonBit models as a top-level outline without enforcing later folds', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await openWorkspaceFile(page, 'src/events.mbt');
+
+  const editor = page.locator('.monaco-editor.readonly-editor');
+  const collapsed = page.locator(
+    '.margin-view-overlays .cldr.codicon-folding-collapsed',
+  );
+  await expect(editor).toContainText('pub struct StartupEvent');
+  await expect(editor).toContainText('pub fn startup_event');
+  await expect(editor).not.toContainText('message : String');
+  await expect(editor).not.toContainText('readonly fixture ready');
+  await expect(collapsed).toHaveCount(2);
+
+  // The policy is initial, not enforced: an ordinary chevron click leaves the
+  // selected top-level declaration expanded for the rest of this model.
+  await collapsed.first().click({ force: true });
+  await expect(editor).toContainText('message : String');
+  await expect(collapsed).toHaveCount(1);
 });
 
 test('renders MoonBit documentation comments through the real workbench', async ({
@@ -69,7 +119,12 @@ test('renders MoonBit documentation comments through the real workbench', async 
 
 test('shows hover through pointer interaction', async ({ page }) => {
   await page.goto('/');
-  await openMainFixture(page);
+  await waitForReady(page);
+  await expect(page.locator('.editor-shell')).toHaveAttribute(
+    'data-source-uri',
+    'readonly-remote://workspace/src/main.mbt',
+  );
+  await unfoldMainBody(page);
 
   const symbol = page.locator('.view-line span', { hasText: 'startup_event' }).first();
   await expect(symbol).toBeVisible();
@@ -161,6 +216,8 @@ test('updates and recovers watched fixture files from disk changes', async ({ pa
       original.replace('println(event.message)', 'println("synced from disk")'),
       'utf8',
     );
+    await waitForSourceText(page, 'println("synced from disk")');
+    await unfoldMainBody(page);
     await expect(page.locator('.mtk5')).toContainText('"synced from disk"', {
       timeout: 7_000,
     });
@@ -179,6 +236,8 @@ test('updates and recovers watched fixture files from disk changes', async ({ pa
     await expect(page.locator('.editor-shell')).toHaveAttribute('data-status', 'ready', {
       timeout: 7_000,
     });
+    await waitForSourceText(page, 'println("restored from disk")');
+    await unfoldMainBody(page);
     await expect(page.locator('.mtk5')).toContainText('"restored from disk"', {
       timeout: 7_000,
     });
@@ -207,6 +266,11 @@ test('keeps one tab watch active after another tab disconnects', async ({
       ),
       'utf8',
     );
+    await waitForSourceText(
+      remainingPage,
+      'println("remaining tab still watched")',
+    );
+    await unfoldMainBody(remainingPage);
     await expect(remainingPage.locator('.mtk5')).toContainText(
       '"remaining tab still watched"',
       { timeout: 7_000 },
