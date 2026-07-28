@@ -72,7 +72,7 @@ fn TreeNode::from_stats(
       nodes.push(TreeNode::from_stat(stat, expanded=false))
     }
   }
-  @vec.Vector(nodes)
+  Vector(nodes)
 }
 
 ///|
