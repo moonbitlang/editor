@@ -28,11 +28,15 @@ fences use Mermaid's official browser implementation, loaded lazily from the
 pinned `https://cdn.jsdelivr.net/npm/mermaid@11.16.0/` ESM distribution.
 Mermaid is not an npm dependency and is not bundled into the viewer.
 
-Embedders that want diagram rendering must allow `https://cdn.jsdelivr.net` in
-their module-script CSP, including Mermaid's relative ESM chunks, and must
-permit the inline styles used inside Mermaid SVG output. Dynamic `import()`
-cannot attach SRI metadata. If the CDN is offline or blocked, or if a diagram
-is invalid, the viewer keeps the safe tokenized source code visible.
+Diago's generated inline SVG can contain active HTML and is not a sanitization
+boundary. Embedders must trust every viewer Markdown source that can contain
+`d2` or `diago` fences, including workspace comments, hover-provider results,
+and agent-feedback bodies. Embedders that enable Mermaid rendering must allow
+`https://cdn.jsdelivr.net` in their module-script CSP, including Mermaid's
+relative ESM chunks, and must permit the inline styles used inside Mermaid SVG
+output. Dynamic `import()` cannot attach SRI metadata. If the CDN is offline or
+blocked, or if a diagram is invalid, the viewer keeps the safe tokenized source
+code visible.
 
 ## Repository Development
 
