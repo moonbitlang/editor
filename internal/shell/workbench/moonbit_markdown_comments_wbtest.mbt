@@ -14,15 +14,28 @@ test "MoonBit Markdown comments omit the item boundary from a core-shaped block"
 }
 
 ///|
-test "MoonBit Markdown comments ignore unanchored false and detached groups" {
+test "MoonBit Markdown comments render separators and ignore detached groups" {
   let blocks = moonbit_markdown_comments_in_snapshot(
     TextSnapshot(
       "///|\nlet first = 1\n/// detached\n///| shadow\n///|\n\n/// separated\n///|\n/// Valid docs\npub fn valid() -> Unit {}\n///|\n/// Second docs\npub fn second() -> Unit {}",
     ),
   )
   assert_eq(blocks, [
+    { line_range: LineRange(1, 2), markdown: "---" },
+    { line_range: LineRange(5, 6), markdown: "---" },
     { line_range: LineRange(8, 10), markdown: "Valid docs" },
     { line_range: LineRange(11, 13), markdown: "Second docs" },
+  ])
+}
+
+///|
+test "MoonBit Markdown comments render consecutive undocumented item separators" {
+  let blocks = moonbit_markdown_comments_in_snapshot(
+    TextSnapshot("///|\nfn first {}\n///|\nfn second {}"),
+  )
+  assert_eq(blocks, [
+    { line_range: LineRange(1, 2), markdown: "---" },
+    { line_range: LineRange(3, 4), markdown: "---" },
   ])
 }
 

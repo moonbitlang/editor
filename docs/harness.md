@@ -109,10 +109,10 @@ a self-contained ESM fixture, so CI never depends on public network access; the
 explicit live-CDN smoke remains opt-in diagnostic coverage.
 
 The corresponding real-shell proof is
-`tests/browser/smoke/viewer.spec.js`: it opens the fixture through the native
+`tests/browser/smoke/viewer.spec.js`: it opens fixtures through the native
 remote protocol and verifies that the workbench-installed MoonBit provider
-renders the anchored documentation while the underlying model retains the raw
-`///|` and `///` source.
+renders anchored documentation and undocumented `///|` item separators while
+the underlying model retains the raw `///|` and `///` source.
 
 The folding-versus-own-hidden-source branch stays in the focused mounted
 Viewer/ViewZones matrices: it is a source-membership and whitespace-visibility

@@ -67,6 +67,31 @@ test('renders MoonBit documentation comments through the real workbench', async 
   );
 });
 
+test('renders undocumented MoonBit item anchors as horizontal separators', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await openWorkspaceFile(page, 'src/events.mbt');
+
+  const first = page.locator(
+    '.moonbit-viewer-markdown-comment[data-start-line="1"][data-end-line="2"]',
+  );
+  const second = page.locator(
+    '.moonbit-viewer-markdown-comment[data-start-line="6"][data-end-line="7"]',
+  );
+  await expect(first.locator('hr')).toBeVisible();
+  await expect(second.locator('hr')).toBeVisible();
+  const firstBox = await first.boundingBox();
+  const firstCodeLineBox = await page
+    .locator('.view-line[data-line="2"]')
+    .boundingBox();
+  expect(firstBox?.height).toBe(firstCodeLineBox?.height);
+  await expect(page.locator('.view-lines')).not.toContainText('///|');
+  expect(await page.evaluate(() => globalThis.__readonlyEditorSource)).toContain(
+    '///|\npub struct StartupEvent',
+  );
+});
+
 test('shows hover through pointer interaction', async ({ page }) => {
   await page.goto('/');
   await openMainFixture(page);

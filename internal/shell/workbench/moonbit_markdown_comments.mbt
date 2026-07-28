@@ -1,7 +1,7 @@
-// MoonBit documentation comments are anchored by the formatter's exact
-// top-level `///|` separator. The generic `///` detector cannot distinguish
-// that marker from Markdown content, so the reference shell owns this
-// language-specific adapter and keeps the reusable Viewer language-neutral.
+// MoonBit documentation comments and item separators are anchored by the
+// formatter's exact top-level `///|` marker. The generic `///` detector cannot
+// distinguish that marker from Markdown content, so the reference shell owns
+// this language-specific adapter and keeps the reusable Viewer language-neutral.
 
 ///|
 priv struct MoonBitMarkdownCommentProvider {}
@@ -25,10 +25,10 @@ fn install_moonbit_markdown_comment_provider(
 }
 
 ///|
-/// Returns anchored MoonBit documentation blocks. An undocumented `///|`
-/// remains ordinary source; an anchored block hides the marker together with
-/// its consecutive `///` documentation lines while omitting the marker from
-/// the Markdown body.
+/// Returns anchored MoonBit documentation and item-separator blocks. An
+/// undocumented `///|` becomes a Markdown horizontal rule. A documented block
+/// hides the marker together with its consecutive `///` lines while omitting
+/// the marker from the Markdown body.
 fn moonbit_markdown_comments_in_snapshot(
   snapshot : @model.TextSnapshot,
 ) -> Array[@language.MarkdownCommentBlock] {
@@ -55,12 +55,14 @@ fn moonbit_markdown_comments_in_snapshot(
         None => break
       }
     }
-    if !contents.is_empty() {
-      blocks.push({
-        line_range: LineRange(start_line_number, line_number),
-        markdown: contents.join("\n"),
-      })
-    }
+    blocks.push({
+      line_range: LineRange(start_line_number, line_number),
+      markdown: if contents.is_empty() {
+        "---"
+      } else {
+        contents.join("\n")
+      },
+    })
   }
   blocks
 }
