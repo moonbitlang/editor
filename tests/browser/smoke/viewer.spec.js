@@ -58,7 +58,7 @@ test('renders MoonBit documentation comments through the real workbench', async 
     '.moonbit-viewer-markdown-comment[data-start-line="1"][data-end-line="5"]',
   );
   await expect(markdown).toBeVisible();
-  await expect(markdown.locator('h1')).toHaveText('Fixture entry point');
+  await expect(markdown.locator('hr + h1')).toHaveText('Fixture entry point');
   await expect(markdown.locator('strong')).toHaveText('native shell');
   await expect(markdown).not.toContainText('|');
   await expect(page.locator('.view-lines')).not.toContainText('Fixture entry point');

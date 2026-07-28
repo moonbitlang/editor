@@ -25,10 +25,10 @@ fn install_moonbit_markdown_comment_provider(
 }
 
 ///|
-/// Returns anchored MoonBit documentation and item-separator blocks. An
-/// undocumented `///|` becomes a Markdown horizontal rule. A documented block
-/// hides the marker together with its consecutive `///` lines while omitting
-/// the marker from the Markdown body.
+/// Returns anchored MoonBit documentation and item-separator blocks. Every
+/// exact `///|` becomes a Markdown horizontal rule; consecutive `///` lines,
+/// when present, follow that separator as the documentation body. The source
+/// marker and documentation lines are hidden together.
 fn moonbit_markdown_comments_in_snapshot(
   snapshot : @model.TextSnapshot,
 ) -> Array[@language.MarkdownCommentBlock] {
@@ -60,7 +60,7 @@ fn moonbit_markdown_comments_in_snapshot(
       markdown: if contents.is_empty() {
         "---"
       } else {
-        contents.join("\n")
+        "---\n\n" + contents.join("\n")
       },
     })
   }
