@@ -226,6 +226,48 @@ extern "js" fn open_markdown_comment_link(uri : String) -> Unit =
   #| }
 
 ///|
+/// Reconciles the current model's normalized Markdown blocks with the
+/// model-scoped rendered-zone map. Provider execution and ViewZone publication
+/// are both reentrant boundaries, so a generation check separates every
+/// external phase from the next state mutation.
+///
+/// ```mermaid
+/// sequenceDiagram
+///   participant V as Viewer
+///   participant P as provider or detector
+///   participant R as stable-key reconciler
+///   participant Z as ViewZones
+///   participant H as hidden-area projection
+///   V->>V: increment generation
+///   V->>P: resolve normalized blocks
+///   Note over V,P: provider may synchronously mutate or replace the model
+///   P-->>V: blocks
+///   V->>V: verify model and generation
+///   V->>R: reconcile by half-open source range
+///   R->>Z: dispose removals, update bodies, add zones
+///   Z-->>V: publish synchronous zone changes
+///   V->>V: verify model and generation again
+///   V->>H: replace the markdown-comments source ranges
+///   V->>V: schedule render
+/// ```
+///
+/// ```d2
+/// source: TextModel source truth
+/// blocks: normalized Markdown blocks
+/// zones: measured rendered ViewZones
+/// hidden: markdown-comments hidden ranges
+/// projection: ViewModel projection
+/// browser: browser View
+/// copy: tokens, selection, and copy
+///
+/// source -> blocks: provider or language rule
+/// blocks -> zones: Markdown body
+/// blocks -> hidden: owned line ranges
+/// zones -> projection: replacement geometry
+/// hidden -> projection: remove source lines visually
+/// projection -> browser
+/// source -> copy: unchanged model coordinates
+/// ```
 fn Viewer::refresh_markdown_comments(
   self : Viewer,
   force_update~ : Bool,

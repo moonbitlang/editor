@@ -20,6 +20,18 @@ test "exact diago fence renders wrapped SVG before the caller override" {
 }
 
 ///|
+test "exact d2 alias renders through the same Diago adapter" {
+  let rendered = render_markdown("```d2\nsource -> viewer\n```")
+  assert_true(
+    rendered.html.contains(
+      "class=\"moonbit-viewer-markdown-diagram\" data-diagram-language=\"diago\"",
+    ),
+  )
+  assert_true(rendered.html.contains("<svg"))
+  assert_true(rendered.has_code_block)
+}
+
+///|
 test "invalid diago falls through to the supplied tokenized renderer" {
   let rendered = render_markdown(
     "```diago\na ->\n```",
