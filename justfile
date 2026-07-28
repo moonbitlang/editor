@@ -1,4 +1,6 @@
-default:
+default: dev
+
+list:
     just --list
 
 check:
