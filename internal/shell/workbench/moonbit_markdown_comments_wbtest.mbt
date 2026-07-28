@@ -203,10 +203,41 @@ test "MoonBit signature placement expands coalesced delimiter tokens" {
 }
 
 ///|
+test "MoonBit signature placement crosses verified where specifications" {
+  assert_eq(
+    moonbit_signature_end_line_number(
+      TextSnapshot(
+        "pub fn sample(\n  value : Int,\n) -> Int where {\n  proof_require: value > 0,\n  proof_ensure: result => {\n    result > value\n  },\n} {\n  value + 1\n}",
+      ),
+      1,
+    ),
+    Some(8),
+  )
+}
+
+///|
 test "MoonBit Markdown comments do not cross a blank line to find an item" {
   assert_eq(
     moonbit_markdown_comments_in_snapshot(
       TextSnapshot("///|\n/// Detached docs\n\npub fn later() -> Unit {}"),
+    ),
+    [
+      {
+        line_range: LineRange(1, 3),
+        markdown: "---\n\nDetached docs",
+        render_after_line_number: None,
+      },
+    ],
+  )
+}
+
+///|
+test "MoonBit Markdown comments stay detached across comments and attributes at EOF" {
+  assert_eq(
+    moonbit_markdown_comments_in_snapshot(
+      TextSnapshot(
+        "///|\n/// Detached docs\n// No declaration follows.\n#alias(\n  old_sample,\n  deprecated,\n)",
+      ),
     ),
     [
       {

@@ -78,9 +78,10 @@ fn moonbit_markdown_comments_in_snapshot(
 /// Finds the last source line of the item signature following an anchored doc
 /// block. MoonBit's tokenizer keeps braces in strings and comments out of the
 /// delimiter stream, so a body-opening `{` is authoritative. Balanced `()` or
-/// `[]` keep a multiline signature open, balanced attributes and implementation
-/// comments are skipped, and a blank line before the declaration leaves detached
-/// documentation at its source position.
+/// `[]` keep a multiline signature open, `where { ... }` specifications and
+/// balanced attributes are crossed, and implementation comments are skipped. A
+/// blank line or an attribute/comment-only tail without a declaration leaves
+/// detached documentation at its source position.
 fn moonbit_signature_end_line_number(
   snapshot : @model.TextSnapshot,
   first_line_number : Int,
@@ -94,13 +95,19 @@ fn moonbit_signature_end_line_number(
   let mut line_number = first_line_number
   let mut delimiter_depth = 0
   let mut attribute_depth = 0
+  let mut specification_depth = 0
+  let mut awaiting_specification_block = false
+  let mut saw_signature_candidate = false
   let mut fallback_line_number = first_line_number
   while line_number <= line_count {
     let line = snapshot.get_line_content(line_number)
     let (tokens, next_state) = tokenizer.tokenize_line(line, state)
     state = next_state
     if tokens.is_empty() {
-      if delimiter_depth > 0 || attribute_depth > 0 {
+      if delimiter_depth > 0 ||
+        attribute_depth > 0 ||
+        specification_depth > 0 ||
+        awaiting_specification_block {
         line_number += 1
         continue
       }
@@ -127,18 +134,38 @@ fn moonbit_signature_end_line_number(
           }
         }
       }
-      fallback_line_number = line_number
       line_number += 1
       continue
     }
+    saw_signature_candidate = true
     for token in tokens {
+      let token_text = line[token.start:token.end].to_owned()
+      if token.tag == Keyword &&
+        token_text == "where" &&
+        specification_depth == 0 {
+        awaiting_specification_block = true
+        continue
+      }
       if token.tag != Delimiter {
         continue
       }
-      let delimiter = line[token.start:token.end].to_owned()
-      for char in delimiter {
+      for char in token_text {
+        if specification_depth > 0 {
+          match char {
+            '{' => specification_depth += 1
+            '}' => specification_depth -= 1
+            _ => ()
+          }
+          continue
+        }
         match char {
-          '{' => if delimiter_depth == 0 { return Some(line_number) }
+          '{' =>
+            if awaiting_specification_block {
+              specification_depth = 1
+              awaiting_specification_block = false
+            } else if delimiter_depth == 0 {
+              return Some(line_number)
+            }
           '(' | '[' => delimiter_depth += 1
           ')' | ']' => delimiter_depth = (delimiter_depth - 1).max(0)
           _ => ()
@@ -146,12 +173,18 @@ fn moonbit_signature_end_line_number(
       }
     }
     fallback_line_number = line_number
-    if delimiter_depth == 0 {
+    if delimiter_depth == 0 &&
+      specification_depth == 0 &&
+      !awaiting_specification_block {
       return Some(line_number)
     }
     line_number += 1
   }
-  Some(fallback_line_number)
+  if saw_signature_candidate {
+    Some(fallback_line_number)
+  } else {
+    None
+  }
 }
 
 ///|
