@@ -24,8 +24,10 @@ just build                       # check + production assets + native server
 just build-moon-web              # production browser assets only
 just build-browser-tests         # browser-correctness scenario bundles
 just build-browser-perf-tests    # perf scenarios + pinned Monaco oracle
+just                             # check, build, and serve with repository defaults
 just test-browser-component      # direct Viewer subset of browser correctness
 just dev ROOT=. PORT=5173        # build and run the reference app
+just list                        # list every available recipe
 ```
 
 Playwright owns `http://127.0.0.1:5174` by default and uses the deterministic
