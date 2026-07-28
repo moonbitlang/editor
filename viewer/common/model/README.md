@@ -46,6 +46,9 @@ decorations. This is the viewer's reduced `vs/editor/common/model` boundary.
 - `delta_decorations`/`change_decorations` and the range-query APIs store regular,
   overview-ruler, and injected-text decorations in augmented interval trees.
   Decoration, token, and dispose events are part of the public model surface.
+  The viewer-only `inline_hidden_suffix` option shares the injected-text tree
+  and invalidation event because it also changes line projection; a valid range
+  is single-line and ends at that line's maximum column.
 - `GuidesTextModelPart` computes indentation guides over a snapshot.
 - Token stores, state queues, backends, attached-view aggregation, and
   scheduling are package-private implementations in this package.

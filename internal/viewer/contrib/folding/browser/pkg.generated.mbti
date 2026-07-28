@@ -102,6 +102,8 @@ pub struct FoldingModel {
 }
 #alias(new, deprecated)
 pub fn FoldingModel::FoldingModel(@model.TextModel, FoldingDecorationAccess) -> Self
+pub fn FoldingModel::collapsed_signature_start_line_for_suffix(Self, Int) -> Int?
+pub fn FoldingModel::collapsed_signature_suffix_column(Self, Int) -> Int?
 pub fn FoldingModel::dispose(Self) -> Unit
 pub fn FoldingModel::get_all_regions_at_line(Self, Int, filter? : (FoldingRegion, Int) -> Bool) -> Array[FoldingRegion]
 pub fn FoldingModel::get_region_at_line(Self, Int) -> FoldingRegion?
@@ -109,6 +111,7 @@ pub fn FoldingModel::get_regions_inside(Self, FoldingRegion?, filter? : RegionFi
 pub fn FoldingModel::on_did_change(Self, (FoldingModelChangeEvent) -> Unit) -> @common.Disposable
 pub fn FoldingModel::regions(Self) -> FoldingRegions
 pub fn FoldingModel::remove_manual_ranges(Self, Array[LineRange]) -> Unit
+pub fn FoldingModel::set_signature_folding_ranges(Self, Array[SignatureFoldingRange]) -> Unit
 pub fn FoldingModel::text_model(Self) -> @model.TextModel
 pub fn FoldingModel::toggle_collapse_state(Self, Array[FoldingRegion]) -> Unit
 pub fn FoldingModel::update(Self, FoldingRegions, selection? : SelectedLines) -> Unit
@@ -166,6 +169,7 @@ pub struct HiddenRangeModel {
 #alias(new, deprecated)
 pub fn HiddenRangeModel::HiddenRangeModel(FoldingModel) -> Self
 pub fn HiddenRangeModel::adjust_selections(Self, Array[@core.Selection]) -> Bool
+pub fn HiddenRangeModel::adjust_signature_suffixes(Self, Array[@core.Selection]) -> Bool
 pub fn HiddenRangeModel::dispose(Self) -> Unit
 pub fn HiddenRangeModel::has_ranges(Self) -> Bool
 pub fn HiddenRangeModel::hidden_ranges(Self) -> Array[@common.Range]
@@ -202,6 +206,11 @@ pub(all) enum RegionFilter {
 pub struct SelectedLines {
   starts_inside : (Int, Int) -> Bool
 }
+
+pub struct SignatureFoldingRange {
+  // private fields
+} derive(Eq, @debug.Debug)
+pub fn SignatureFoldingRange::SignatureFoldingRange(Int, Int, Int, Int, Int) -> Self
 
 // Type aliases
 

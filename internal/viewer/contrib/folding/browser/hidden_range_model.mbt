@@ -61,39 +61,65 @@ pub fn HiddenRangeModel::hidden_ranges(
 /// outermost collapsed region (the header line stays visible), reusing the
 /// previous array entries when unchanged so no event fires for no change.
 fn HiddenRangeModel::update_hidden_ranges(self : HiddenRangeModel) -> Unit {
-  let mut update_hidden_areas = false
-  let new_hidden_areas : Array[@base_common.Range] = []
-  let mut k = 0
-  let mut last_collapsed_start = 0x7FFFFFFF
-  let mut last_collapsed_end = -1
+  let candidates : Array[@base_common.Range] = []
   let ranges = self.folding_model.regions()
   for i in 0..<ranges.length() {
     if !ranges.is_collapsed(i) {
       continue
     }
-    // the first line is not hidden
-    let start_line_number = ranges.get_start_line_number(i) + 1
+    // Ordinary folds keep their first line. Signature folds can keep a
+    // multiline declaration prefix and begin hiding at the body instead.
+    let start_line_number = self.folding_model.first_hidden_line_number(i)
     let end_line_number = ranges.get_end_line_number(i)
-    if last_collapsed_start <= start_line_number &&
-      end_line_number <= last_collapsed_end {
-      // ignore ranges contained in collapsed regions
+    if start_line_number > end_line_number {
       continue
     }
+    candidates.push(Range(start_line_number, 1, end_line_number, 1))
+  }
+  // Signature folds can begin hiding after a nested fold in their visible
+  // declaration prefix. Sort by the projected hidden interval rather than the
+  // outer region start, with the widest same-start range first, then coalesce
+  // overlapping or adjacent intervals into the actual hidden-line union.
+  candidates.sort_by((left, right) => {
+    let start_delta = left.start_line_number - right.start_line_number
+    if start_delta != 0 {
+      start_delta
+    } else {
+      right.end_line_number - left.end_line_number
+    }
+  })
+  let merged_candidates : Array[@base_common.Range] = []
+  for candidate in candidates {
+    if merged_candidates is [.., previous] &&
+      candidate.start_line_number <= previous.end_line_number + 1 {
+      if candidate.end_line_number > previous.end_line_number {
+        merged_candidates[merged_candidates.length() - 1] = Range(
+          previous.start_line_number,
+          1,
+          candidate.end_line_number,
+          1,
+        )
+      }
+    } else {
+      merged_candidates.push(candidate)
+    }
+  }
+  let new_hidden_areas : Array[@base_common.Range] = []
+  let mut update_hidden_areas = false
+  let mut k = 0
+  for candidate in merged_candidates {
     if !update_hidden_areas &&
       k < self.hidden_ranges.length() &&
-      self.hidden_ranges[k].start_line_number == start_line_number &&
-      self.hidden_ranges[k].end_line_number == end_line_number {
-      // reuse the old ranges
+      self.hidden_ranges[k].start_line_number == candidate.start_line_number &&
+      self.hidden_ranges[k].end_line_number == candidate.end_line_number {
       new_hidden_areas.push(self.hidden_ranges[k])
-      k += 1
     } else {
       update_hidden_areas = true
-      new_hidden_areas.push(Range(start_line_number, 1, end_line_number, 1))
+      new_hidden_areas.push(candidate)
     }
-    last_collapsed_start = start_line_number
-    last_collapsed_end = end_line_number
+    k += 1
   }
-  if update_hidden_areas || k < self.hidden_ranges.length() {
+  if update_hidden_areas || k != self.hidden_ranges.length() {
     self.apply_hidden_ranges(new_hidden_areas)
   }
 }
@@ -121,9 +147,63 @@ pub fn HiddenRangeModel::is_hidden(self : HiddenRangeModel, line : Int) -> Bool 
 }
 
 ///|
+fn HiddenRangeModel::adjust_signature_suffix_position(
+  self : HiddenRangeModel,
+  position : @base_common.Position,
+) -> @base_common.Position? {
+  match
+    self.folding_model.hidden_signature_suffix_boundary(
+      position.line_number,
+      position.column,
+    ) {
+    Some(column) => Some(Position(position.line_number, column))
+    None => None
+  }
+}
+
+///|
+/// Clamps selection endpoints that enter a collapsed signature's same-line
+/// hidden suffix after the fold was created.
+pub fn HiddenRangeModel::adjust_signature_suffixes(
+  self : HiddenRangeModel,
+  selections : Array[@core.Selection],
+) -> Bool {
+  let mut has_changes = false
+  for i in 0..<selections.length() {
+    let mut selection = selections[i]
+    let selection_start = selection.start()
+    let selection_end = selection.end()
+    match self.adjust_signature_suffix_position(selection_start) {
+      Some(adjusted_start) => {
+        selection = selection.set_start_position(
+          adjusted_start.line_number,
+          adjusted_start.column,
+        )
+        has_changes = true
+      }
+      None => ()
+    }
+    match self.adjust_signature_suffix_position(selection_end) {
+      Some(adjusted_end) => {
+        selection = selection.set_end_position(
+          adjusted_end.line_number,
+          adjusted_end.column,
+        )
+        has_changes = true
+      }
+      None => ()
+    }
+    selections[i] = selection
+  }
+  has_changes
+}
+
+///|
 /// `adjustSelections` (`hiddenRangeModel.ts:96`): moves selection endpoints
-/// that landed inside a hidden range up to the fold's (visible) header
-/// line, in place. Returns whether anything moved.
+/// that landed inside a hidden range up to the fold's (visible) header line.
+/// The signature-folding extension also clamps endpoints inside a same-line
+/// hidden suffix to its visible boundary. Mutates in place and returns whether
+/// anything moved.
 pub fn HiddenRangeModel::adjust_selections(
   self : HiddenRangeModel,
   selections : Array[@core.Selection],
@@ -140,23 +220,51 @@ pub fn HiddenRangeModel::adjust_selections(
       None => None
     }
   }
+  let adjust_position = (position : @base_common.Position) => {
+    let mut adjusted = position
+    let mut changed = false
+    match adjust_line(position.line_number) {
+      Some(adjusted_line) => {
+        adjusted = Position(
+          adjusted_line,
+          editor_model.snapshot.get_line_max_column(adjusted_line),
+        )
+        changed = true
+      }
+      None => ()
+    }
+    match self.adjust_signature_suffix_position(adjusted) {
+      Some(adjusted_suffix) => {
+        adjusted = adjusted_suffix
+        changed = true
+      }
+      None => ()
+    }
+    if changed {
+      Some(adjusted)
+    } else {
+      None
+    }
+  }
   for i in 0..<selections.length() {
     let mut selection = selections[i]
-    match adjust_line(selection.start().line_number) {
-      Some(adjusted_start_line) => {
+    let selection_start = selection.start()
+    let selection_end = selection.end()
+    match adjust_position(selection_start) {
+      Some(adjusted_start) => {
         selection = selection.set_start_position(
-          adjusted_start_line,
-          editor_model.snapshot.get_line_max_column(adjusted_start_line),
+          adjusted_start.line_number,
+          adjusted_start.column,
         )
         has_changes = true
       }
       None => ()
     }
-    match adjust_line(selection.end().line_number) {
-      Some(adjusted_end_line) => {
+    match adjust_position(selection_end) {
+      Some(adjusted_end) => {
         selection = selection.set_end_position(
-          adjusted_end_line,
-          editor_model.snapshot.get_line_max_column(adjusted_end_line),
+          adjusted_end.line_number,
+          adjusted_end.column,
         )
         has_changes = true
       }

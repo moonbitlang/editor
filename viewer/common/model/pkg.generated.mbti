@@ -173,8 +173,9 @@ pub struct ModelDecorationOptions {
   description : String
   before : InjectedTextOptions?
   after : InjectedTextOptions?
+  inline_hidden_suffix : Bool
 } derive(@debug.Debug)
-pub fn ModelDecorationOptions::ModelDecorationOptions(String, message? : String, inline_class_name? : String, inline_class_name_affects_letter_spacing? : Bool, z_index? : Int, is_whole_line? : Bool, show_if_collapsed? : Bool, should_fill_line_on_line_break? : Bool, stickiness? : TrackedRangeStickiness, overview_ruler? : ModelDecorationOverviewRulerOptions, minimap? : ModelDecorationMinimapOptions, glyph_margin_class_name? : String, lines_decorations_class_name? : String, first_line_decoration_class_name? : String, margin_class_name? : String, after_content_class_name? : String, collapse_on_replace_edit? : Bool, description? : String, before? : InjectedTextOptions, after? : InjectedTextOptions) -> Self
+pub fn ModelDecorationOptions::ModelDecorationOptions(String, message? : String, inline_class_name? : String, inline_class_name_affects_letter_spacing? : Bool, z_index? : Int, is_whole_line? : Bool, show_if_collapsed? : Bool, should_fill_line_on_line_break? : Bool, stickiness? : TrackedRangeStickiness, overview_ruler? : ModelDecorationOverviewRulerOptions, minimap? : ModelDecorationMinimapOptions, glyph_margin_class_name? : String, lines_decorations_class_name? : String, first_line_decoration_class_name? : String, margin_class_name? : String, after_content_class_name? : String, collapse_on_replace_edit? : Bool, description? : String, before? : InjectedTextOptions, after? : InjectedTextOptions, inline_hidden_suffix? : Bool) -> Self
 
 pub(all) struct ModelDecorationOverviewRulerOptions {
   color : String?

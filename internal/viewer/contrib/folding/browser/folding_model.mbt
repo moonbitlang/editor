@@ -12,14 +12,14 @@
 /// function record instead of a MoonBit trait object: the source boundary is
 /// three callbacks, not a runtime-subtyped object hierarchy.
 pub struct FoldingDecorationAccess {
-  priv get_decoration_option_ : (Bool, Bool, Bool) -> @model.ModelDecorationOptions
+  priv get_decoration_option_ : (Bool, Bool, Bool, Bool) -> @model.ModelDecorationOptions
   priv change_decorations_ : ((@model.ModelDecorationsChangeAccessor) -> Unit) -> Unit
   priv remove_decorations_ : (Array[String]) -> Unit
 }
 
 ///|
 fn FoldingDecorationAccess::new(
-  get_decoration_option : (Bool, Bool, Bool) -> @model.ModelDecorationOptions,
+  get_decoration_option : (Bool, Bool, Bool, Bool) -> @model.ModelDecorationOptions,
   change_decorations : ((@model.ModelDecorationsChangeAccessor) -> Unit) -> Unit,
   remove_decorations : (Array[String]) -> Unit,
 ) -> FoldingDecorationAccess {
@@ -36,8 +36,11 @@ fn FoldingDecorationAccess::get_decoration_option(
   is_collapsed : Bool,
   is_hidden : Bool,
   is_manual : Bool,
+  is_signature : Bool,
 ) -> @model.ModelDecorationOptions {
-  (self.get_decoration_option_)(is_collapsed, is_hidden, is_manual)
+  (self.get_decoration_option_)(
+    is_collapsed, is_hidden, is_manual, is_signature,
+  )
 }
 
 ///|
@@ -73,8 +76,45 @@ pub struct FoldingModel {
   priv decoration_access : FoldingDecorationAccess
   priv mut regions : FoldingRegions
   priv mut editor_decoration_ids : Array[String]
+  priv mut signature_folding_ranges : Map[String, SignatureFoldingRange]
+  priv mut signature_decoration_ids : Array[String]
   priv update_event_emitter : @base_common.Emitter[FoldingModelChangeEvent]
 }
+
+///|
+/// A host-provided declaration fold whose visible prefix is its complete
+/// signature. The outer range supplies the chevron and owns the complete
+/// declaration; `first_hidden_line_number` keeps multiline signatures in the
+/// view, while `hidden_suffix_*` removes the body-opening delimiter from the
+/// final visible signature line. A zero suffix column means that line is
+/// hidden in full.
+pub struct SignatureFoldingRange {
+  priv start_line_number : Int
+  priv end_line_number : Int
+  priv first_hidden_line_number : Int
+  priv hidden_suffix_line_number : Int
+  priv hidden_suffix_column : Int
+} derive(Eq, @debug.Debug)
+
+///|
+pub fn SignatureFoldingRange::SignatureFoldingRange(
+  start_line_number : Int,
+  end_line_number : Int,
+  first_hidden_line_number : Int,
+  hidden_suffix_line_number : Int,
+  hidden_suffix_column : Int,
+) -> SignatureFoldingRange {
+  {
+    start_line_number,
+    end_line_number,
+    first_hidden_line_number,
+    hidden_suffix_line_number,
+    hidden_suffix_column,
+  }
+}
+
+///|
+const SIGNATURE_FOLDING_RANGE_TYPE : String = "moonbit.editor.signature"
 
 ///|
 #alias(new, deprecated)
@@ -87,8 +127,273 @@ pub fn FoldingModel::FoldingModel(
     decoration_access,
     regions: FoldingRegions(FixedArray::make(0, 0U), FixedArray::make(0, 0U)),
     editor_decoration_ids: [],
+    signature_folding_ranges: Map([]),
+    signature_decoration_ids: [],
     update_event_emitter: Emitter(),
   }
+}
+
+///|
+fn FoldingModel::signature_folding_range_at(
+  self : FoldingModel,
+  index : Int,
+) -> SignatureFoldingRange? {
+  if self.regions.get_type(index) != Some(SIGNATURE_FOLDING_RANGE_TYPE) {
+    return None
+  }
+  self.signature_folding_range_for_lines(
+    self.regions.get_start_line_number(index),
+    self.regions.get_end_line_number(index),
+  )
+}
+
+///|
+fn signature_folding_range_key(
+  start_line_number : Int,
+  end_line_number : Int,
+) -> String {
+  "\{start_line_number}:\{end_line_number}"
+}
+
+///|
+fn FoldingModel::signature_folding_range_for_lines(
+  self : FoldingModel,
+  start_line_number : Int,
+  end_line_number : Int,
+) -> SignatureFoldingRange? {
+  self.signature_folding_ranges.get(
+    signature_folding_range_key(start_line_number, end_line_number),
+  )
+}
+
+///|
+fn FoldingModel::is_signature_folding_range(
+  self : FoldingModel,
+  index : Int,
+) -> Bool {
+  self.signature_folding_range_at(index) is Some(_)
+}
+
+///|
+fn FoldingModel::first_hidden_line_number(
+  self : FoldingModel,
+  index : Int,
+) -> Int {
+  self.first_hidden_line_number_in(self.regions, index)
+}
+
+///|
+fn FoldingModel::first_hidden_line_number_in(
+  self : FoldingModel,
+  regions : FoldingRegions,
+  index : Int,
+) -> Int {
+  let signature_range = if regions.get_type(index) ==
+    Some(SIGNATURE_FOLDING_RANGE_TYPE) {
+    self.signature_folding_range_for_lines(
+      regions.get_start_line_number(index),
+      regions.get_end_line_number(index),
+    )
+  } else {
+    None
+  }
+  match signature_range {
+    Some(range) => range.first_hidden_line_number
+    None => regions.get_start_line_number(index) + 1
+  }
+}
+
+///|
+/// A collapsed region can leave a multiline signature prefix visible. The
+/// stack retains the earliest line actually hidden by every active ancestor,
+/// so nested folding controls disappear only when their own header is hidden.
+priv struct CollapsedDecorationVisibility {
+  end_line_number : Int
+  earliest_hidden_line_number : Int
+}
+
+///|
+fn region_hidden_by_collapsed_ancestors(
+  stack : Array[CollapsedDecorationVisibility],
+  start_line_number : Int,
+) -> Bool {
+  while stack is [.., previous] && previous.end_line_number < start_line_number {
+    stack.pop() |> ignore
+  }
+  stack is [.., previous] &&
+  previous.earliest_hidden_line_number <= start_line_number
+}
+
+///|
+fn track_collapsed_region_visibility(
+  stack : Array[CollapsedDecorationVisibility],
+  first_hidden_line_number : Int,
+  end_line_number : Int,
+) -> Unit {
+  guard first_hidden_line_number <= end_line_number else { return }
+  let earliest_hidden_line_number = match stack {
+    [.., previous] =>
+      previous.earliest_hidden_line_number.min(first_hidden_line_number)
+    _ => first_hidden_line_number
+  }
+  stack.push({ end_line_number, earliest_hidden_line_number })
+}
+
+///|
+/// Returns the visible boundary for a cursor inside a collapsed signature's
+/// same-line hidden suffix.
+fn FoldingModel::hidden_signature_suffix_boundary(
+  self : FoldingModel,
+  line_number : Int,
+  column : Int,
+) -> Int? {
+  match self.collapsed_signature_suffix_column(line_number) {
+    Some(boundary) if column > boundary => Some(boundary)
+    _ => None
+  }
+}
+
+///|
+/// Returns the model column at the displayed end of a collapsed signature
+/// line whose remaining source suffix is projected away.
+pub fn FoldingModel::collapsed_signature_suffix_column(
+  self : FoldingModel,
+  line_number : Int,
+) -> Int? {
+  let mut boundary : Int? = None
+  for index in 0..<self.regions.length() {
+    guard self.regions.is_collapsed(index) else { continue }
+    guard self.signature_folding_range_at(index) is Some(range) else {
+      continue
+    }
+    if range.hidden_suffix_column > 0 &&
+      range.hidden_suffix_line_number == line_number {
+      boundary = Some(
+        boundary
+        .unwrap_or(range.hidden_suffix_column)
+        .min(range.hidden_suffix_column),
+      )
+    }
+  }
+  boundary
+}
+
+///|
+/// Returns the outer fold's start line for a collapsed signature suffix line.
+pub fn FoldingModel::collapsed_signature_start_line_for_suffix(
+  self : FoldingModel,
+  line_number : Int,
+) -> Int? {
+  let mut start_line_number : Int? = None
+  for index in 0..<self.regions.length() {
+    guard self.regions.is_collapsed(index) else { continue }
+    guard self.signature_folding_range_at(index) is Some(range) else {
+      continue
+    }
+    if range.hidden_suffix_column > 0 &&
+      range.hidden_suffix_line_number == line_number {
+      let candidate = self.regions.get_start_line_number(index)
+      start_line_number = Some(
+        start_line_number.unwrap_or(candidate).min(candidate),
+      )
+    }
+  }
+  start_line_number
+}
+
+///|
+fn FoldingModel::refresh_signature_decorations(self : FoldingModel) -> Unit {
+  let decorations : Array[@model.ModelDeltaDecoration] = []
+  for index in 0..<self.regions.length() {
+    guard self.regions.is_collapsed(index) else { continue }
+    guard self.signature_folding_range_at(index) is Some(range) else {
+      continue
+    }
+    guard range.hidden_suffix_column > 0 else { continue }
+    decorations.push({
+      range: Range(
+        range.hidden_suffix_line_number,
+        range.hidden_suffix_column,
+        range.hidden_suffix_line_number,
+        self.text_model.snapshot.get_line_max_column(
+          range.hidden_suffix_line_number,
+        ),
+      ),
+      options: ModelDecorationOptions(
+        "",
+        description="folding-signature-hidden-suffix",
+        inline_hidden_suffix=true,
+        stickiness=NeverGrowsWhenTypingAtEdges,
+      ),
+    })
+  }
+  self.decoration_access.change_decorations(accessor => {
+    self.signature_decoration_ids = (accessor.delta_decorations)(
+      self.signature_decoration_ids,
+      decorations,
+    )
+  })
+}
+
+///|
+/// Installs declaration-sized outer ranges used by a host's explicit outline
+/// action. The ranges are user-defined only for reconciliation purposes: they
+/// survive option-triggered provider recomputation, but render with ordinary
+/// folding controls and are replaced on the next call.
+pub fn FoldingModel::set_signature_folding_ranges(
+  self : FoldingModel,
+  signature_ranges : Array[SignatureFoldingRange],
+) -> Unit {
+  let provider_ranges : Array[FoldRange] = []
+  let mut existing_signature_count = 0
+  for index in 0..<self.regions.length() {
+    if self.regions.get_type(index) != Some(SIGNATURE_FOLDING_RANGE_TYPE) {
+      provider_ranges.push(self.regions.to_fold_range(index))
+    } else {
+      existing_signature_count += 1
+    }
+  }
+  // The compact region store has a hard 16-bit region limit. Provider ranges
+  // have already passed their configurable (normally much smaller) limit;
+  // keep only as many signature ranges as can safely coexist with them.
+  let signature_limit = (MAX_FOLDING_REGIONS - provider_ranges.length()).max(0)
+  let signature_fold_ranges : Array[FoldRange] = []
+  let signature_ranges_by_key : Map[String, SignatureFoldingRange] = Map([])
+  let mut signatures_unchanged = true
+  for range in signature_ranges {
+    if signature_fold_ranges.length() >= signature_limit {
+      break
+    }
+    signature_fold_ranges.push({
+      start_line_number: range.start_line_number,
+      end_line_number: range.end_line_number,
+      type_: Some(SIGNATURE_FOLDING_RANGE_TYPE),
+      is_collapsed: false,
+      source: UserDefined,
+    })
+    signature_ranges_by_key[signature_folding_range_key(
+      range.start_line_number,
+      range.end_line_number,
+    )] = range
+    let key = signature_folding_range_key(
+      range.start_line_number,
+      range.end_line_number,
+    )
+    if self.signature_folding_ranges.get(key) != Some(range) {
+      signatures_unchanged = false
+    }
+  }
+  if signatures_unchanged &&
+    existing_signature_count == signature_fold_ranges.length() {
+    return
+  }
+  let merged = FoldingRegions::sanitize_and_merge(
+    Ranges(provider_ranges),
+    Ranges(signature_fold_ranges),
+    Some(self.text_model.snapshot.line_count()),
+  )
+  self.signature_folding_ranges = signature_ranges_by_key
+  self.update_post(FoldingRegions::from_fold_ranges(merged))
 }
 
 ///|
@@ -132,25 +437,33 @@ pub fn FoldingModel::toggle_collapse_state(
     let k : Ref[Int] = { val: 0 }
     // end of the range where decorations need to be updated
     let dirty_region_end_line : Ref[Int] = { val: -1 }
-    // the end of the last hidden lines
-    let last_hidden_line : Ref[Int] = { val: -1 }
+    let visibility_stack : Array[CollapsedDecorationVisibility] = []
     let update_decorations_until = (index : Int) => {
       while k.val < index {
+        let start_line_number = self.regions.get_start_line_number(k.val)
         let end_line_number = self.regions.get_end_line_number(k.val)
         let is_collapsed = self.regions.is_collapsed(k.val)
+        let is_hidden = region_hidden_by_collapsed_ancestors(
+          visibility_stack, start_line_number,
+        )
         if end_line_number <= dirty_region_end_line.val {
           let is_manual = self.regions.get_source(k.val) != Provider
           (accessor.change_decoration_options)(
             self.editor_decoration_ids[k.val],
             self.decoration_access.get_decoration_option(
               is_collapsed,
-              end_line_number <= last_hidden_line.val,
+              is_hidden,
               is_manual,
+              self.is_signature_folding_range(k.val),
             ),
           )
         }
-        if is_collapsed && end_line_number > last_hidden_line.val {
-          last_hidden_line.val = end_line_number
+        if is_collapsed {
+          track_collapsed_region_visibility(
+            visibility_stack,
+            self.first_hidden_line_number(k.val),
+            end_line_number,
+          )
         }
         k.val += 1
       }
@@ -174,6 +487,7 @@ pub fn FoldingModel::toggle_collapse_state(
     }
     update_decorations_until(self.regions.length())
   })
+  self.refresh_signature_decorations()
   self.update_event_emitter.fire({
     model: self,
     collapse_state_changed: Some(toggled_regions),
@@ -233,12 +547,15 @@ pub fn FoldingModel::update_post(
   new_regions : FoldingRegions,
 ) -> Unit {
   let new_editor_decorations : Array[@model.ModelDeltaDecoration] = []
-  let mut last_hidden_line = -1
+  let visibility_stack : Array[CollapsedDecorationVisibility] = []
   for index in 0..<new_regions.length() {
     let start_line_number = new_regions.get_start_line_number(index)
     let end_line_number = new_regions.get_end_line_number(index)
     let is_collapsed = new_regions.is_collapsed(index)
     let is_manual = new_regions.get_source(index) != Provider
+    let is_hidden = region_hidden_by_collapsed_ancestors(
+      visibility_stack, start_line_number,
+    )
     let decoration_range : @base_common.Range = Range(
       start_line_number,
       self.text_model.snapshot.get_line_max_column(start_line_number),
@@ -249,12 +566,21 @@ pub fn FoldingModel::update_post(
       range: decoration_range,
       options: self.decoration_access.get_decoration_option(
         is_collapsed,
-        end_line_number <= last_hidden_line,
+        is_hidden,
         is_manual,
+        new_regions.get_type(index) == Some(SIGNATURE_FOLDING_RANGE_TYPE) &&
+        self.signature_folding_range_for_lines(
+          start_line_number, end_line_number,
+        )
+        is Some(_),
       ),
     })
-    if is_collapsed && end_line_number > last_hidden_line {
-      last_hidden_line = end_line_number
+    if is_collapsed {
+      track_collapsed_region_visibility(
+        visibility_stack,
+        self.first_hidden_line_number_in(new_regions, index),
+        end_line_number,
+      )
     }
   }
   self.decoration_access.change_decorations(accessor => {
@@ -264,6 +590,7 @@ pub fn FoldingModel::update_post(
     )
   })
   self.regions = new_regions
+  self.refresh_signature_decorations()
   self.update_event_emitter.fire({ model: self, collapse_state_changed: None })
 }
 
@@ -287,7 +614,7 @@ fn FoldingModel::current_folded_or_manual_ranges(
           if is_collapsed &&
             selection is Some(sel) &&
             (sel.starts_inside)(
-              dec_range.start_line_number + 1,
+              self.first_hidden_line_number(i),
               dec_range.end_line_number,
             ) {
             is_collapsed = false // uncollapse is the range is blocked
@@ -311,6 +638,7 @@ fn FoldingModel::current_folded_or_manual_ranges(
 /// `dispose` (`foldingModel.ts:231`).
 pub fn FoldingModel::dispose(self : FoldingModel) -> Unit {
   self.decoration_access.remove_decorations(self.editor_decoration_ids)
+  self.decoration_access.remove_decorations(self.signature_decoration_ids)
 }
 
 ///|

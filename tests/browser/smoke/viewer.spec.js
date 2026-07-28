@@ -91,11 +91,29 @@ test('opens MoonBit models as a top-level outline without enforcing later folds'
   await expect(editor).not.toContainText('readonly fixture ready');
   await expect(collapsed).toHaveCount(2);
 
+  const functionLine = editor.locator('.view-line', {
+    hasText: 'pub fn startup_event',
+  });
+  await expect(functionLine.locator('.folded-signature-hidden-suffix')).toHaveCount(
+    0,
+  );
+  await expect(functionLine.locator('.inline-folded')).toHaveCount(0);
+  expect((await functionLine.innerText()).replaceAll('\u00a0', ' ').trim()).toBe(
+    'pub fn startup_event() -> StartupEvent',
+  );
+  // The struct still uses ordinary Monaco-style folding; the signature-only
+  // presentation is limited to top-level functions.
+  await expect(editor.locator('.inline-folded')).toHaveCount(1);
+
   // The policy is initial, not enforced: an ordinary chevron click leaves the
   // selected top-level declaration expanded for the rest of this model.
   await collapsed.first().click({ force: true });
   await expect(editor).toContainText('message : String');
   await expect(collapsed).toHaveCount(1);
+
+  await collapsed.first().click({ force: true });
+  await expect(editor).toContainText('readonly fixture ready');
+  await expect(collapsed).toHaveCount(0);
 });
 
 test('renders MoonBit documentation comments through the real workbench', async ({

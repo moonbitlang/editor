@@ -311,6 +311,28 @@ test "matrix model before and after injections keep source order" {
 }
 
 ///|
+test "matrix hidden suffix can split a UTF-16 surrogate pair" {
+  let model = inline_reference_model(TestTextModel::create("😀x"))
+  model.delta_decorations([], [
+    {
+      range: Range(1, 2, 1, 4),
+      options: ModelDecorationOptions("", inline_hidden_suffix=true),
+    },
+  ])
+  |> ignore
+  let lines = ViewModelLinesFromProjectedModel(
+    model,
+    font_info=@config.FontInfo::default(),
+    tab_size=4,
+    wrapping_column=0,
+    wrapping_indent=Same,
+  )
+  let data = lines.get_view_line_data(1)
+  assert_eq(data.content.length(), 1)
+  assert_eq(data.content[0].to_int(), 0xD83D)
+}
+
+///|
 /// Injected-text accumulation and clipping (`inlineDecorations.ts:213-267`).
 test "matrix same-position injections preserve accumulated order" {
   let options = [

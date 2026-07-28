@@ -125,6 +125,7 @@ priv struct LineBreaksRequest {
   model_line_number : Int
   line_text : String
   injected_text : Array[InjectedText]
+  force_projection : Bool
 }
 
 ///|
@@ -169,7 +170,31 @@ pub fn LineBreaksComputer::add_request(
   line_text : String,
   injected_text : Array[InjectedText],
 ) -> Unit {
-  self.requests.push({ model_line_number, line_text, injected_text })
+  self.add_request_with_projection(
+    model_line_number,
+    line_text,
+    injected_text,
+    force_projection=false,
+  )
+}
+
+///|
+/// Package-local extension for source text that has already been projected
+/// (for example, by excluding a folded signature's line suffix). Such a line
+/// still needs projection data when it neither wraps nor injects text.
+fn LineBreaksComputer::add_request_with_projection(
+  self : LineBreaksComputer,
+  model_line_number : Int,
+  line_text : String,
+  injected_text : Array[InjectedText],
+  force_projection~ : Bool,
+) -> Unit {
+  self.requests.push({
+    model_line_number,
+    line_text,
+    injected_text,
+    force_projection,
+  })
 }
 
 ///|
@@ -183,7 +208,8 @@ pub fn LineBreaksComputer::finalize(
   let result : Array[ModelLineProjectionData?] = []
   for request in self.requests {
     let has_injections = request.injected_text.length() > 0
-    if !has_injections && self.wrapping_column <= 0 {
+    let requires_projection = has_injections || request.force_projection
+    if !requires_projection && self.wrapping_column <= 0 {
       // No wrapping and nothing injected: `createLineBreaks` would return
       // null before doing any work.
       result.push(None)
@@ -198,7 +224,7 @@ pub fn LineBreaksComputer::finalize(
         self.classifier,
         request.model_line_number,
         projected_line,
-        has_injections,
+        requires_projection,
         self.tab_size,
         self.wrapping_column,
         columns_for_full_width_char,
@@ -220,7 +246,7 @@ fn create_line_breaks(
   classifier : WrappingCharacterClassifier,
   model_line_number : Int,
   projected_line : ProjectedTextLine,
-  has_injections : Bool,
+  requires_projection : Bool,
   tab_size : Int,
   first_line_break_column : Int,
   columns_for_full_width_char : Double,
@@ -230,7 +256,7 @@ fn create_line_breaks(
   let line_text = projected_line.text
   let len = line_text.length()
   if first_line_break_column <= 0 || len <= 1 {
-    if !has_injections {
+    if !requires_projection {
       return None
     }
     // A `LineBreakData` with no real break: injected text still needs the
@@ -312,7 +338,7 @@ fn create_line_breaks(
     prev_char_code_class = char_code_class
     i = i + 1
   }
-  if breaking_offsets.length() == 0 && !has_injections {
+  if breaking_offsets.length() == 0 && !requires_projection {
     return None
   }
   // Add last segment.

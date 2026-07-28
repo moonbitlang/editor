@@ -24,9 +24,12 @@ reusable `viewer`, file tree, remote transport, and browser-test observability.
   new `TextModel`; reloads save/restore viewer scroll state, while user opens
   reset it. Before publishing the stable initialized state, the workbench uses
   the Viewer's explicit `fold_top_level` action for ordinary MoonBit `.mbt`
-  models, presenting their declarations as an initial outline. This is a
-  reference-host policy: `.mbt.md` documents, extensionless sources, other
-  languages, and external Viewer embedders remain expanded by default.
+  models, presenting their declarations as an initial outline. Top-level
+  function folds retain every source-formatted signature line and hide the
+  opening body delimiter, body, closing brace, and generic ellipsis; other
+  declaration folds keep their ordinary presentation. This is a reference-host
+  policy: `.mbt.md` documents, extensionless sources, other languages, and
+  external Viewer embedders remain expanded by default.
   Watched-file replacements install a fresh model and therefore reapply the
   policy; subsequent folding interactions on that model remain user-controlled.
 - The protocol client correlates in-flight requests by ID and resolves all

@@ -209,7 +209,19 @@ feedback, and decorations. Public values remain in `viewer/common/**` and
 concrete browser and contribution mechanisms live in
 `internal/viewer/browser/**` and `internal/viewer/contrib/**`. Those
 lower-level packages do not import the root facade, so Viewer-facing
-composition stays here without reversing dependencies. Each hover request
+composition stays here without reversing dependencies.
+
+`fold_top_level` remains an explicit host action rather than an attachment
+default. For MoonBit models it lexically identifies brace-bodied top-level
+functions, installs declaration-sized outer folds, and preserves every
+source-formatted signature line while hiding the body delimiter, body, closing
+brace, and collapsed ellipsis. `declare` and extern declarations without bodies
+are ignored; comments and string literals do not participate in brace matching.
+Package-qualified method declarations are included. Other
+languages and MoonBit declaration kinds retain ordinary level-one folding, and
+ordinary nested/user folds keep Monaco's `inline-folded` presentation.
+
+Each hover request
 captures the physical `TextModel`, its internal content version, a
 Viewer-lifetime monotonic generation, and a caller-owned cancellation token.
 Replacement, content invalidation, detach, model disposal, and Viewer disposal

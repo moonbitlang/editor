@@ -77,7 +77,7 @@ fn TestDecorationProvider::access(
   self : TestDecorationProvider,
 ) -> FoldingDecorationAccess {
   FoldingDecorationAccess::new(
-    (is_collapsed, is_hidden, is_manual) => {
+    (is_collapsed, is_hidden, is_manual, _is_signature) => {
       self.get_decoration_option(is_collapsed, is_hidden, is_manual)
     },
     callback => self.change_decorations(callback),

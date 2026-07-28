@@ -2,8 +2,8 @@
 /// (`text_model_decorations.mbt`): local companions for the plan's test
 /// matrix rows — emitter deferred brackets + `fire`, delta id/node reuse
 /// semantics, search filters (ownerId / filterOutValidation / margin /
-/// overview-ruler tree routing), options normalization, and the tree0↔tree1
-/// migration in `change_decoration_options`.
+/// overview-ruler tree routing), options normalization, and regular/overview/
+/// projection tree migration in `change_decoration_options`.
 
 ///|
 fn wb_model(text : String) -> TextModel {
@@ -257,6 +257,30 @@ test "changeDecorationOptions migrates between tree0 and tree1" {
     (accessor.change_decoration_options)(id, wb_options("plain-again"))
   })
   assert_eq(model.get_overview_ruler_decorations().length(), 0)
+  assert_names_eq(model.get_all_decorations().map(d => d.options.class_name), [
+    "plain-again",
+  ])
+}
+
+///|
+test "changeDecorationOptions migrates projection effects between trees" {
+  let model = wb_model("alpha")
+  let id = model.change_decorations(accessor => {
+    (accessor.add_decoration)(Range(1, 2, 1, 6), wb_options("plain"))
+  })
+  assert_eq(model.get_injected_text_decorations().length(), 0)
+  model.change_decorations(accessor => {
+    (accessor.change_decoration_options)(
+      id,
+      ModelDecorationOptions("projected", inline_hidden_suffix=true),
+    )
+  })
+  assert_eq(model.get_injected_text_decorations().length(), 1)
+  assert_eq(model.get_all_decorations().length(), 1)
+  model.change_decorations(accessor => {
+    (accessor.change_decoration_options)(id, wb_options("plain-again"))
+  })
+  assert_eq(model.get_injected_text_decorations().length(), 0)
   assert_names_eq(model.get_all_decorations().map(d => d.options.class_name), [
     "plain-again",
   ])

@@ -34,12 +34,20 @@ fn Viewer::folding_controller(
 /// This is the host-facing mechanism for applying an initial fold policy. It
 /// intentionally supplies no blocked lines, unlike Monaco's
 /// `editor.foldLevel1` action, so the region containing the current selection
-/// is folded as well. The call does nothing when folding is disabled or no
-/// folding model is attached.
+/// is folded as well. MoonBit functions install declaration-sized ranges first:
+/// their complete, source-formatted signatures stay visible while the body
+/// delimiter, body, and closing brace are hidden. Other languages and MoonBit
+/// declaration kinds keep ordinary level-one folding. The call does nothing
+/// when folding is disabled or no folding model is attached.
 pub fn Viewer::fold_top_level(self : Viewer) -> Unit {
   guard self.get_options().folding else { return }
   guard self.folding_controller() is Some(controller) else { return }
   guard controller.folding_model is Some(folding_model) else { return }
+  if folding_model.text_model().get_language_id() == "moonbit" {
+    folding_model.set_signature_folding_ranges(
+      moonbit_signature_folding_ranges(folding_model.text_model().snapshot),
+    )
+  }
   @folding_browser.set_collapse_state_at_level(folding_model, 1, true, [])
 }
 
@@ -69,6 +77,22 @@ fn Viewer::folding_on_model_changed(self : Viewer) -> Unit {
   controller.local_to_dispose.push(
     hidden_range_model.on_did_change(hidden_ranges => {
       self.folding_on_hidden_ranges_changes(hidden_ranges)
+    }),
+  )
+  // A signature body can live entirely in the suffix of its final declaration
+  // line. Collapsing that range changes projected visibility without changing
+  // the hidden-line union, so HiddenRangeModel does not emit. Reconcile those
+  // suffixes directly from the folding state transition as well; this covers
+  // gutter, command, and API re-collapses, not just the initial outline fold.
+  controller.local_to_dispose.push(
+    folding_model.on_did_change(_ => {
+      match (controller.hidden_range_model, self.get_selections()) {
+        (Some(current_hidden_range_model), Some(selections)) =>
+          if current_hidden_range_model.adjust_signature_suffixes(selections) {
+            self.set_selections(selections)
+          }
+        _ => ()
+      }
     }),
   )
   self.trigger_folding_model_changed()
@@ -185,10 +209,14 @@ fn Viewer::folding_on_cursor_position_changed(self : Viewer) -> Unit {
     return
   }
   guard controller.folding_model is Some(folding_model) else { return }
+  let selections = self.get_selections().unwrap_or([])
+  if hidden_range_model.adjust_signature_suffixes(selections) {
+    self.set_selections(selections)
+    return
+  }
   if !hidden_range_model.has_ranges() {
     return
   }
-  let selections = self.get_selections().unwrap_or([])
   if selections.length() > 0 {
     let to_toggle : Array[@folding_browser.FoldingRegion] = []
     for selection in selections {
@@ -230,6 +258,7 @@ fn Viewer::folding_on_editor_mouse_down(
   guard controller.hidden_range_model is Some(hidden_range_model) else {
     return
   }
+  guard controller.folding_model is Some(folding_model) else { return }
   guard e.target.range() is Some(range) else { return }
   if !e.event.left_button && !e.event.middle_button {
     return
@@ -251,9 +280,13 @@ fn Viewer::folding_on_editor_mouse_down(
       }
       icon_clicked = true
     }
-    MouseTargetContentEmpty(detail~, ..) =>
+    MouseTargetContentEmpty(detail~, ..) => {
+      let has_projected_suffix = folding_model.collapsed_signature_suffix_column(
+          range.start_line_number,
+        )
+        is Some(_)
       if self.get_options().unfold_on_click_after_end_of_line &&
-        hidden_range_model.has_ranges() {
+        (hidden_range_model.has_ranges() || has_projected_suffix) {
         if !detail.is_after_lines {
           // proceed: a click past the end of a real line's text
           ()
@@ -263,15 +296,23 @@ fn Viewer::folding_on_editor_mouse_down(
       } else {
         return
       }
+    }
     MouseTargetContentText(..) => {
       guard self.get_model() is Some(model) else { return }
-      if hidden_range_model.has_ranges() &&
-        range.start_column ==
-        model.snapshot.get_line_max_column(range.start_line_number) {
+      let projected_suffix_column = folding_model.collapsed_signature_suffix_column(
+        range.start_line_number,
+      )
+      let visible_end_column = projected_suffix_column.unwrap_or(
+        model.snapshot.get_line_max_column(range.start_line_number),
+      )
+      let can_unfold_at_visible_end = match projected_suffix_column {
+        Some(_) => self.get_options().unfold_on_click_after_end_of_line
+        None => hidden_range_model.has_ranges()
+      }
+      if can_unfold_at_visible_end && range.start_column == visible_end_column {
         // proceed: the click sits at/after the end of the line's text — on a
-        // folded header that is the collapsed `⋯` after-content (the DOM
-        // `offsetWidth` line width includes it, so the hit stays
-        // CONTENT_TEXT)
+        // normal folded header this is the collapsed `⋯`; a signature fold
+        // maps its projected line end back to the visible signature boundary.
         ()
       } else {
         return
@@ -309,14 +350,21 @@ fn Viewer::folding_on_editor_mouse_up(
     }
   } else {
     guard self.get_model() is Some(model) else { return }
-    if range.start_column != model.snapshot.get_line_max_column(line_number) {
+    let visible_end_column = folding_model
+      .collapsed_signature_suffix_column(line_number)
+      .unwrap_or(model.snapshot.get_line_max_column(line_number))
+    if range.start_column != visible_end_column {
       return
     }
   }
-  guard folding_model.get_region_at_line(line_number) is Some(region) else {
+  let region_start_line_number = folding_model
+    .collapsed_signature_start_line_for_suffix(line_number)
+    .unwrap_or(line_number)
+  guard folding_model.get_region_at_line(region_start_line_number)
+    is Some(region) else {
     return
   }
-  if region.start_line_number() == line_number {
+  if region.start_line_number() == region_start_line_number {
     let is_collapsed = region.is_collapsed()
     if icon_clicked || is_collapsed {
       let surrounding = e.event.alt_key
@@ -361,7 +409,7 @@ fn Viewer::folding_on_editor_mouse_up(
         }
       }
       folding_model.toggle_collapse_state(to_toggle)
-      self.folding_reveal(Position(line_number, 1))
+      self.folding_reveal(Position(region_start_line_number, 1))
     }
   }
 }

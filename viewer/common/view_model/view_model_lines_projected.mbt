@@ -123,6 +123,9 @@ fn ViewModelLinesFromProjectedModel::construct_lines(
     )
   }
   let injected_text_buckets = line_injected_text_from_decorations(self.model)
+  let inline_hidden_suffix_cutoffs = line_inline_hidden_suffix_cutoffs(
+    self.model,
+  )
   let computer = monospace_line_breaks_computer_factory.create_line_breaks_computer(
     font_info=self.font_info,
     tab_size=self.tab_size,
@@ -131,11 +134,32 @@ fn ViewModelLinesFromProjectedModel::construct_lines(
   )
   let line_count = self.model.snapshot.line_count()
   for model_line_number in 1..<=line_count {
-    computer.add_request(
-      model_line_number,
-      self.model.snapshot.line_text(model_line_number - 1),
-      injected_text_buckets[model_line_number - 1],
-    )
+    let line_index = model_line_number - 1
+    let line_text = self.model.snapshot.line_text(line_index)
+    match inline_hidden_suffix_cutoffs[line_index] {
+      Some(cutoff) => {
+        let visible_injected_text : Array[InjectedText] = []
+        for item in injected_text_buckets[line_index] {
+          if item.position.column < cutoff {
+            visible_injected_text.push(item)
+          }
+        }
+        computer.add_request_with_projection(
+          model_line_number,
+          self.model.snapshot.get_value_in_range(
+            Range(model_line_number, 1, model_line_number, cutoff + 1),
+          ),
+          visible_injected_text,
+          force_projection=true,
+        )
+      }
+      None =>
+        computer.add_request(
+          model_line_number,
+          line_text,
+          injected_text_buckets[line_index],
+        )
+    }
   }
   let line_break_data = computer.finalize()
   // The sorted hidden-area walk of `_constructLines` (`viewModelLines.ts:140`).
@@ -864,6 +888,41 @@ fn line_injected_text_from_decorations(
     )
   }
   buckets
+}
+
+///|
+/// Derives the earliest projected-text cutoff for every model line carrying
+/// an `inline_hidden_suffix` decoration. Only well-formed one-line suffix
+/// ranges are honored; malformed extension ranges remain ordinary model
+/// decorations instead of deleting an arbitrary middle segment.
+fn line_inline_hidden_suffix_cutoffs(model : @model.TextModel) -> Array[Int?] {
+  let snapshot = model.snapshot
+  let cutoffs : Array[Int?] = []
+  for _ in 0..<snapshot.line_count() {
+    cutoffs.push(None)
+  }
+  for decoration in model.get_injected_text_decorations() {
+    guard decoration.options.inline_hidden_suffix else { continue }
+    let range = decoration.range
+    guard range.start_line_number == range.end_line_number else { continue }
+    let line_index = @base_common.clamp_int(
+      range.start_line_number - 1,
+      0,
+      snapshot.line_count() - 1,
+    )
+    let line_text = snapshot.line_text(line_index)
+    guard range.end_column >= line_text.length() + 1 else { continue }
+    let cutoff = @base_common.clamp_int(
+      range.start_column - 1,
+      0,
+      line_text.length(),
+    )
+    match cutoffs[line_index] {
+      Some(existing) => cutoffs[line_index] = Some(existing.min(cutoff))
+      None => cutoffs[line_index] = Some(cutoff)
+    }
+  }
+  cutoffs
 }
 
 ///|

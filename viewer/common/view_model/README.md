@@ -28,6 +28,9 @@ model line + grammar tokens + injected-text decorations
   large-file as-is collection adds an identity arm without changing consumers.
 - Injected text is projected before line breaking, so its width affects wrapping;
   source mappings, tokens, and decorations remain anchored to model offsets.
+  A model decoration marked `inline_hidden_suffix` truncates the projected line
+  before wrapping while leaving the backing source unchanged. This is the
+  generic projection seam used by signature-aware folding.
 - Viewport construction uses one `get_view_lines_data` batch and a parallel
   needed mask. Each participating `Projected` model line constructs Monaco's
   five-callback injected-decoration context, computes absolute-view-line inline

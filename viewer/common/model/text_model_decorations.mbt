@@ -222,14 +222,16 @@ fn options_in_overview_ruler(options : ModelDecorationOptions) -> Bool {
 ///|
 /// `isNodeInjectedText` (`textModel.ts:2188-2190`) over
 /// `isOptionsInjectedText`: the node carries `before`/`after` injected-text
-/// options.
+/// options or the viewer's projection-affecting hidden-suffix extension.
 fn is_node_injected_text(node : IntervalNode) -> Bool {
   node.options is Some(options) && options_is_injected_text(options)
 }
 
 ///|
 fn options_is_injected_text(options : ModelDecorationOptions) -> Bool {
-  options.before is Some(_) || options.after is Some(_)
+  options.before is Some(_) ||
+  options.after is Some(_) ||
+  options.inline_hidden_suffix
 }
 
 // #endregion
@@ -237,9 +239,9 @@ fn options_is_injected_text(options : ModelDecorationOptions) -> Bool {
 // #region DecorationsTrees (textModel.ts:2196-2353)
 
 ///|
-/// `DecorationsTrees`: tree0 holds decorations that do not show up in the
-/// overview ruler, tree1 those that do, and the injected-text tree is the
-/// stubbed-empty third slot (see file header).
+/// `DecorationsTrees`: tree0 holds regular decorations, tree1 those that show
+/// in the overview ruler, and the third tree holds injected-text and other
+/// line-projection decorations (see file header).
 struct DecorationsTrees {
   decorations_tree_0 : IntervalTree
   decorations_tree_1 : IntervalTree
@@ -758,8 +760,8 @@ pub fn TextModel::get_all_decorations(
 
 ///|
 /// `getInjectedTextDecorations` (`textModel.ts`): every decoration carrying
-/// `before`/`after` injected-text options. `owner_id = 0` matches all
-/// owners (the tree's filter semantics).
+/// `before`/`after` injected-text options or another line-projection effect.
+/// `owner_id = 0` matches all owners (the tree's filter semantics).
 pub fn TextModel::get_injected_text_decorations(
   self : TextModel,
   owner_id? : Int = 0,
@@ -842,10 +844,9 @@ fn TextModel::change_decoration_impl(
 }
 
 ///|
-/// `_changeDecorationOptionsImpl` (`textModel.ts:1936-1975`). The
-/// injected-text/line-height/font arms are dropped with their features;
-/// `changedWhetherInjectedText` is constantly false, so only the
-/// overview-ruler tree migration remains.
+/// `_changeDecorationOptionsImpl` (`textModel.ts:1936-1975`). Decorations
+/// migrate when their overview-ruler or line-projection classification
+/// changes. The line-height/font arms remain N-A for the uniform-line viewer.
 fn TextModel::change_decoration_options_impl(
   self : TextModel,
   _owner_id : Int,
@@ -853,13 +854,15 @@ fn TextModel::change_decoration_options_impl(
   options : ModelDecorationOptions,
 ) -> Unit {
   guard self.decorations.get(decoration_id) is Some(node) else { return }
+  let node_was_injected_text = is_node_injected_text(node)
+  let node_is_injected_text = options_is_injected_text(options)
   let node_was_in_overview_ruler = is_node_in_overview_ruler(node)
   let node_is_in_overview_ruler = options_in_overview_ruler(options)
   self.on_did_change_decorations.check_affected_and_fire(node.options.unwrap())
   self.on_did_change_decorations.check_affected_and_fire(options)
-  let moved_in_overview_ruler = node_was_in_overview_ruler !=
-    node_is_in_overview_ruler
-  if moved_in_overview_ruler {
+  let moved_between_trees = node_was_injected_text != node_is_injected_text ||
+    node_was_in_overview_ruler != node_is_in_overview_ruler
+  if moved_between_trees {
     self.decorations_tree.delete(node)
     node.set_options(options)
     self.decorations_tree.insert(node)
@@ -870,8 +873,7 @@ fn TextModel::change_decoration_options_impl(
 
 ///|
 /// `_deltaDecorationsImpl` (`textModel.ts:1976-2062`): the two-pointer
-/// old/new walk with node reuse. Injected-text/line-height/font record arms
-/// dropped with their features.
+/// old/new walk with node reuse. Line-height/font record arms are N-A.
 fn TextModel::delta_decorations_impl(
   self : TextModel,
   owner_id : Int,

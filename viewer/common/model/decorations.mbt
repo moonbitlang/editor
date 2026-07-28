@@ -129,6 +129,11 @@ pub struct ModelDecorationOptions {
   /// `model.ts`), stored in the interval tree's injected-text slot.
   before : InjectedTextOptions?
   after : InjectedTextOptions?
+  /// Viewer extension: exclude the decorated suffix from line projection.
+  /// The range must stay on one line and end at that line's maximum column.
+  /// Folding uses this to keep a declaration signature visible without
+  /// letting its body delimiter or trailing text affect soft wrapping.
+  inline_hidden_suffix : Bool
 } derive(Debug)
 
 ///|
@@ -182,8 +187,9 @@ pub struct ModelDecorationsChangedEvent {
   affects_minimap : Bool
   affects_overview_ruler : Bool
   affects_glyph_margin : Bool
-  /// Whether the change touched injected-text (`before`/`after`) options —
-  /// the viewer's whole-event stand-in for Monaco's per-line
+  /// Whether the change touched a line-projection decoration (`before`,
+  /// `after`, or `inline_hidden_suffix`) — the viewer's whole-event stand-in
+  /// for Monaco's per-line
   /// `onDidChangeContentOrInjectedText` (consumers rebuild the projection
   /// when set).
   affects_injected_text : Bool
@@ -219,6 +225,7 @@ pub fn ModelDecorationOptions::ModelDecorationOptions(
   description? : String = "",
   before? : InjectedTextOptions,
   after? : InjectedTextOptions,
+  inline_hidden_suffix? : Bool = false,
 ) -> ModelDecorationOptions {
   {
     class_name: clean_class_name(class_name),
@@ -245,5 +252,6 @@ pub fn ModelDecorationOptions::ModelDecorationOptions(
     description,
     before,
     after,
+    inline_hidden_suffix,
   }
 }
