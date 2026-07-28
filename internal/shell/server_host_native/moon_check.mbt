@@ -29,8 +29,8 @@ pub fn MoonCheckDiagnostics::MoonCheckDiagnostics(
     publish,
     running: Ref(false),
     dirty: Ref(false),
-    revisions: Default::default(),
-    published: Ref(Default::default()),
+    revisions: {},
+    published: Ref({}),
   }
 }
 
@@ -129,7 +129,7 @@ pub fn parse_moon_check_diagnostics(
   raw : String,
 ) -> Map[String, Array[@language.Diagnostic]] {
   let prefix = normalize_host_path(root) + "/"
-  let grouped : Map[String, Array[@language.Diagnostic]] = Default::default()
+  let grouped : Map[String, Array[@language.Diagnostic]] = Map([])
   for line in raw.split("\n") {
     let trimmed = line.trim(char_set="\r\n ").to_owned()
     if trimmed == "" {

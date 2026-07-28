@@ -355,12 +355,7 @@ struct FakeWatchListener {
 
 ///|
 fn FakeServerHost::new() -> FakeServerHost {
-  {
-    files: Default::default(),
-    errors: Default::default(),
-    directories: Default::default(),
-    listeners: Default::default(),
-  }
+  { files: {}, errors: {}, directories: {}, listeners: {} }
 }
 
 ///|
