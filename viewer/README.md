@@ -8,6 +8,28 @@ ownership and lifecycle rules that are not obvious from signatures.
 
 ## Construction and ownership
 
+```d2
+direction: down
+
+host: host element — caller-owned
+model: TextModel — caller-owned
+
+viewer: Viewer {
+  config: EditorConfigurationState
+  slot: ViewerModelSlot {
+    data: "ModelData?" {
+      browser: "ModelBrowserData? — View + mouse handler"
+    }
+  }
+  mount: ViewerMount
+  contribs: EditorContributions
+  delivery: CursorEventDelivery
+}
+
+viewer.mount -> host: mounts into, never owns
+viewer.slot.data -> model: borrows readonly
+```
+
 - Browser embedders call `Viewer::create(host, services~, options~)`. The host
   element must stay mounted and must not receive host-rendered children.
   This is the only public construction path. The package keeps a private
@@ -184,12 +206,13 @@ no current viewer UI for definition or references.
 
 ## Runtime pipeline
 
-```text
-TextModel (caller-owned)
-  -> TokenizationTextModelPart
-  -> ViewModel + ViewLayout + cursor outgoing dispatcher (per model)
-  -> typed ViewEvent FIFO -> View + ViewParts (per model, browser only)
-  -> shared animation-frame queue -> read/measure then DOM write
+```mermaid
+flowchart LR
+  A[TextModel<br>caller-owned] --> B[Tokenization<br>model part]
+  B --> C[ViewModel + ViewLayout<br>per model]
+  C --> D[Typed ViewEvent<br>FIFO]
+  D --> E[View + ViewParts<br>browser only]
+  E --> F[Shared frame queue:<br>measure, then DOM write]
 ```
 
 `base/browser` owns the one realm-global frame coordinator. ViewModel smooth
