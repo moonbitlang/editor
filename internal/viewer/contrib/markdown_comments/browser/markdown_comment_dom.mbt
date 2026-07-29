@@ -209,22 +209,6 @@ pub fn MarkdownCommentDom::set_margin_fold_lane_width(
 }
 
 ///|
-/// Marks this zone as a whole-document Markdown presentation — an opened
-/// Markdown file rendered as one block — so the stylesheet can apply its
-/// full-width page padding. Ordinary documentation zones keep the compact
-/// comment padding.
-pub fn MarkdownCommentDom::set_document_presentation(
-  self : MarkdownCommentDom,
-  document : Bool,
-) -> Unit {
-  if document {
-    self.outer.set_attribute("data-markdown-document", "true")
-  } else {
-    self.outer.remove_attribute("data-markdown-document")
-  }
-}
-
-///|
 /// Opts this caller-owned zone into the accessibility tree after ViewZones has
 /// applied its default per-zone `aria-hidden`. The shared container remains a
 /// presentation node; unrelated zones retain their hidden default.

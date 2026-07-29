@@ -37,7 +37,6 @@ pub fn MarkdownCommentDom::expose_accessible_content(Self) -> Unit
 pub fn MarkdownCommentDom::observe_size(Self, (Int) -> Unit) -> MarkdownCommentSizeObserver
 pub fn MarkdownCommentDom::observe_viewport_width(Self, () -> Unit) -> MarkdownCommentViewportObserver
 pub fn MarkdownCommentDom::pin_to_content_viewport(Self) -> Unit
-pub fn MarkdownCommentDom::set_document_presentation(Self, Bool) -> Unit
 pub fn MarkdownCommentDom::set_margin_fold_lane_width(Self, Int) -> Unit
 
 pub struct MarkdownCommentSizeObserver {
