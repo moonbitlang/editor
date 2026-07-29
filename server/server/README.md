@@ -17,7 +17,10 @@ effects are supplied through `ServerHost`.
   starts or replaces watches, closes documents, and routes feature requests.
 - Feature requests use the cached URI/revision (a non-empty requested revision
   must match), adapt the snapshot to a `TextModel`, and never reread the active
-  file implicitly. Reference locations are enriched with line previews.
+  file implicitly. Hover additionally revalidates the captured cache entry
+  after its provider returns, including normalized text, so a watch replacement
+  cannot be packaged under the old request. Reference locations are enriched
+  with line previews.
 - Open and watch updates notify the optional document-sync listener used by the
   native diagnostics runner. Watch callbacks emit later packets; immediate
   request results are returned from `handle_client_packet`.

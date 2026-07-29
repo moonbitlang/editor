@@ -5,11 +5,221 @@
 /// startup.
 priv struct RemoteLanguageClient {
   log_service : @log.LogService
+  freshness : RemoteLanguageFreshness
+}
+
+///|
+/// Exact workbench-side identity for one document synchronization. The
+/// caller-owned `version` remains part of the boundary record, while
+/// `content_version` is the mutable TextModel freshness key.
+priv struct RemoteDocumentStamp {
+  generation : Int
+  model : @model.TextModel
+  model_identity : Int
+  model_version : Int
+  content_version : Int
+  uri : String
+  revision : String
+}
+
+///|
+/// Subscriptions retained for the one model generation that may accept remote
+/// hover and diagnostic results.
+priv struct RemoteDocumentRegistration {
+  stamp : RemoteDocumentStamp
+  mut content_subscription : @base_common.Disposable?
+  mut dispose_subscription : @base_common.Disposable?
+}
+
+///|
+/// Workbench-owned remote result gate. Only a fresh document sync establishes a
+/// generation; content mutation, replacement, or disposal clears owner `moon`
+/// markers before retiring it.
+priv struct RemoteLanguageFreshness {
+  markers : @markers.MarkerService
+  mut generation : Int
+  mut current : RemoteDocumentRegistration?
+}
+
+///|
+fn RemoteLanguageFreshness::RemoteLanguageFreshness(
+  markers : @markers.MarkerService,
+) -> RemoteLanguageFreshness {
+  { markers, generation: 0, current: None }
+}
+
+///|
+fn RemoteDocumentStamp::matches_model(
+  self : RemoteDocumentStamp,
+  model : @model.TextModel,
+) -> Bool {
+  !model.is_disposed() &&
+  model.same(self.model) &&
+  model.identity() == self.model_identity &&
+  model.version == self.model_version &&
+  model.get_version_id() == self.content_version &&
+  model.uri.to_string() == self.uri &&
+  model.revision == self.revision
+}
+
+///|
+fn RemoteLanguageFreshness::is_current(
+  self : RemoteLanguageFreshness,
+  stamp : RemoteDocumentStamp,
+) -> Bool {
+  match self.current {
+    Some(registration) =>
+      registration.stamp.generation == stamp.generation &&
+      registration.stamp.model.same(stamp.model) &&
+      registration.stamp.model_identity == stamp.model_identity &&
+      registration.stamp.model_version == stamp.model_version &&
+      registration.stamp.content_version == stamp.content_version &&
+      registration.stamp.uri == stamp.uri &&
+      registration.stamp.revision == stamp.revision &&
+      stamp.generation == self.generation &&
+      stamp.matches_model(registration.stamp.model)
+    None => false
+  }
+}
+
+///|
+fn RemoteLanguageFreshness::capture_model(
+  self : RemoteLanguageFreshness,
+  model : @model.TextModel,
+) -> RemoteDocumentStamp? {
+  match self.current {
+    Some(registration) =>
+      if registration.stamp.matches_model(model) {
+        Some(registration.stamp)
+      } else {
+        None
+      }
+    None => None
+  }
+}
+
+///|
+fn RemoteLanguageFreshness::invalidate_generation(
+  self : RemoteLanguageFreshness,
+  generation : Int,
+) -> Unit {
+  match self.current {
+    Some(registration) =>
+      if registration.stamp.generation == generation {
+        self.invalidate()
+      }
+    None => ()
+  }
+}
+
+///|
+fn RemoteLanguageFreshness::invalidate(self : RemoteLanguageFreshness) -> Unit {
+  self.generation += 1
+  guard self.current is Some(registration) else { return }
+  self.current = None
+  match registration.content_subscription {
+    Some(subscription) => subscription.dispose()
+    None => ()
+  }
+  match registration.dispose_subscription {
+    Some(subscription) => subscription.dispose()
+    None => ()
+  }
+  self.markers.remove_owner_resource("moon", registration.stamp.model.uri)
+}
+
+///|
+/// Establishes the sole acceptable result generation before Viewer attachment,
+/// so URI-keyed markers cannot seed the replacement model.
+fn RemoteLanguageFreshness::note_document(
+  self : RemoteLanguageFreshness,
+  model : @model.TextModel,
+) -> Unit {
+  self.invalidate()
+  // The incoming URI can retain markers from an older time it was active even
+  // when it differs from the outgoing model.
+  self.markers.remove_owner_resource("moon", model.uri)
+  let stamp : RemoteDocumentStamp = {
+    generation: self.generation,
+    model,
+    model_identity: model.identity(),
+    model_version: model.version,
+    content_version: model.get_version_id(),
+    uri: model.uri.to_string(),
+    revision: model.revision,
+  }
+  let registration : RemoteDocumentRegistration = {
+    stamp,
+    content_subscription: None,
+    dispose_subscription: None,
+  }
+  self.current = Some(registration)
+  registration.content_subscription = Some(
+    model.on_did_change_content(_ => {
+      self.invalidate_generation(stamp.generation)
+    }),
+  )
+  registration.dispose_subscription = Some(
+    model.on_will_dispose(() => self.invalidate_generation(stamp.generation)),
+  )
+}
+
+///|
+fn RemoteLanguageFreshness::prepare_diagnostics(
+  self : RemoteLanguageFreshness,
+  payload : @remote_protocol.DiagnosticsPayload,
+) -> RemoteDocumentStamp? {
+  match self.current {
+    Some(registration) => {
+      let stamp = registration.stamp
+      if stamp.uri == payload.uri.to_string() &&
+        stamp.revision == payload.revision &&
+        self.is_current(stamp) {
+        Some(stamp)
+      } else {
+        None
+      }
+    }
+    None => None
+  }
+}
+
+///|
+fn RemoteLanguageFreshness::apply_diagnostics(
+  self : RemoteLanguageFreshness,
+  stamp : RemoteDocumentStamp,
+  payload : @remote_protocol.DiagnosticsPayload,
+) -> Bool {
+  if !self.is_current(stamp) ||
+    stamp.uri != payload.uri.to_string() ||
+    stamp.revision != payload.revision {
+    return false
+  }
+  self.markers.set_diagnostics("moon", payload.uri, payload.diagnostics)
+  true
+}
+
+///|
+fn RemoteLanguageFreshness::accept_hover(
+  self : RemoteLanguageFreshness,
+  stamp : RemoteDocumentStamp,
+  payload : @remote_protocol.HoverResultPayload,
+) -> @language.Hover? {
+  if self.is_current(stamp) &&
+    payload.uri.to_string() == stamp.uri &&
+    payload.revision == stamp.revision {
+    payload.hover
+  } else {
+    None
+  }
 }
 
 ///|
 fn register_remote_language_providers(services : WorkbenchServices) -> Unit {
-  let client = RemoteLanguageClient::{ log_service: services.log_service }
+  let client = RemoteLanguageClient::{
+    log_service: services.log_service,
+    freshness: services.remote_language,
+  }
   let selector = @language.LanguageSelector::LanguageFilter(
     LanguageFilter(scheme="readonly-remote"),
   )
@@ -51,12 +261,13 @@ impl @language.HoverProvider for RemoteLanguageClient with fn provide_hover(
   position,
   _token,
 ) {
+  guard self.freshness.capture_model(model) is Some(stamp) else { return None }
   let offset = model.get_offset_at(position)
   let response = protocol_request("hover", id => {
     Hover({ id, uri: model.uri, document_revision: model.revision, offset })
   })
   match response {
-    HoverResult(payload) => payload.hover
+    HoverResult(payload) => self.freshness.accept_hover(stamp, payload)
     packet => {
       self.emit_remote_error("hover", model, packet)
       None
@@ -71,13 +282,12 @@ impl @language.HoverProvider for RemoteLanguageClient with fn provide_hover(
 fn apply_remote_diagnostics_cmd(
   payload : @remote_protocol.DiagnosticsPayload,
 ) -> @rabbita.Cmd {
-  @cmd.custom_cmd(_ => {
-    workbench_services().markers.set_diagnostics(
-      "moon",
-      payload.uri,
-      payload.diagnostics,
-    )
-  })
+  let freshness = workbench_services().remote_language
+  match freshness.prepare_diagnostics(payload) {
+    Some(stamp) =>
+      @cmd.custom_cmd(_ => freshness.apply_diagnostics(stamp, payload) |> ignore)
+    None => @rabbita.none
+  }
 }
 
 ///|

@@ -84,7 +84,7 @@ async fn read_native_text_file(
   match validate_native_file(root, target) {
     Some(error) => ServerHostReadError(error.0, error.1)
     None =>
-      match try_read_text_file(target, path.display_name()) {
+      match try_read_text_file(root, path) {
         Some(content) => ServerHostReadOk(content)
         None => ServerHostReadError(Unavailable, "Unable to read source file.")
       }
@@ -179,7 +179,8 @@ async fn poll_native_file_watch(
 
 ///|
 async fn native_file_signature(path : String) -> String {
-  if !@fs.exists(path) {
+  let exists = Some(@fs.exists(path)) catch { _ => None }
+  if exists != Some(true) {
     return "missing"
   }
   match (Some(@fs.mtime(path)) catch { _ => None }) {
@@ -189,46 +190,80 @@ async fn native_file_signature(path : String) -> String {
 }
 
 ///|
+/// One coherent native-file observation used by semantic providers. Text is
+/// normalized exactly as a TextModel snapshot, while the signature remains the
+/// provider revision exposed on the wire.
+priv struct NativeDiskSnapshot {
+  signature : String
+  text : String
+  normalized_text : String
+} derive(Eq)
+
+///|
+/// Reads a validated file only when its signature stays stable across the
+/// read. Callers that run external tools re-read this snapshot afterwards.
+async fn read_native_disk_snapshot(
+  root : String,
+  path : @workspace.SourcePath,
+) -> NativeDiskSnapshot? {
+  let target = workspace_file_path(root, path)
+  guard validate_native_file(root, target) is None else { return None }
+  let before = native_file_signature(target)
+  guard before != "missing" else { return None }
+  guard (Some(@fs.read_file(target)) catch { _ => None }) is Some(data) else {
+    return None
+  }
+  guard (Some(data.text()) catch { _ => None }) is Some(text) else {
+    return None
+  }
+  guard !text.contains("\u{0}") else { return None }
+  let after = native_file_signature(target)
+  guard before == after else { return None }
+  Some({
+    signature: after,
+    text,
+    normalized_text: @model.TextSnapshot(text).get_value(),
+  })
+}
+
+///|
 async fn validate_native_file(
   root : String,
   target : String,
 ) -> (@workspace.FileSystemProviderErrorCode, String)? {
   let root_real = realpath_or_normalized(root)
-  if !@fs.exists(target) {
+  let exists = Some(@fs.exists(target)) catch { _ => None }
+  if exists != Some(true) {
     return Some((FileNotFound, "Source file does not exist."))
   }
   let target_real = realpath_or_normalized(target)
   if !is_under_root(root_real, target_real) {
     return Some((InvalidUri, "Source path escapes the workspace root."))
   }
-  match @fs.kind(target_real) {
-    Directory => Some((IsDirectory, "Source path is a directory."))
-    Regular => None
-    _ => Some((InvalidData, "Source path is not a regular text file."))
+  match (Some(@fs.kind(target_real)) catch { _ => None }) {
+    Some(Directory) => Some((IsDirectory, "Source path is a directory."))
+    Some(Regular) => None
+    Some(_) => Some((InvalidData, "Source path is not a regular text file."))
+    None => Some((Unavailable, "Unable to inspect source file."))
   }
 }
 
 ///|
 async fn try_read_text_file(
-  target : String,
-  display_name : String,
+  root : String,
+  path : @workspace.SourcePath,
 ) -> @workspace.DocumentContent? {
-  let data = Some(@fs.read_file(target)) catch { _ => None }
-  match data {
-    Some(data) => {
-      let text = data.text()
-      if text.contains("\u{0}") {
-        None
-      } else {
-        Some(
-          DocumentContent(
-            text,
-            display_name~,
-            language_id=@workspace.infer_language_id(display_name),
-            revision=native_file_signature(target),
-          ),
-        )
-      }
+  match read_native_disk_snapshot(root, path) {
+    Some(snapshot) => {
+      let display_name = path.display_name()
+      Some(
+        DocumentContent(
+          snapshot.text,
+          display_name~,
+          language_id=@workspace.infer_language_id(display_name),
+          revision=snapshot.signature,
+        ),
+      )
     }
     None => None
   }

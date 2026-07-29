@@ -33,8 +33,11 @@ reusable `viewer`, file tree, remote transport, and browser-test observability.
   policy; subsequent folding interactions on that model remain user-controlled.
 - The protocol client correlates in-flight requests by ID and resolves all
   pending requests on connection loss. Watch results and diagnostics are push
-  paths; diagnostics update the workbench-retained `MarkerService` rather than
-  a field recovered from `ViewerServices`.
+  paths. Remote hover and diagnostics are accepted only for the exact
+  registered model identity, version, URI, revision, and content generation.
+  Model change, replacement, and disposal retire that generation and clear
+  only owner `moon`; diagnostics update the workbench-retained `MarkerService`
+  rather than a field recovered from `ViewerServices`.
 - Public Viewer lifecycle subscriptions update shell state and drive tree
   `autoReveal`. Build/render/hover telemetry comes from the internal
   Viewer-id-keyed `internal/viewer/browser/testing` registry; diagnostic
