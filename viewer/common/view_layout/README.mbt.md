@@ -132,7 +132,8 @@ test "a wider measured line grows the content width" {
 ## Whitespace and view zones
 
 ViewZones use only the incremental whitespace transaction and generated-ID
-APIs; the former reduced whole-array adapter and zone indexes are gone. Adding
+APIs; the former reduced whole-array adapter and zone indexes are gone. Browser
+DOM mounting and the public mutable delegate live above this package. Adding
 whitespace after a line pushes every later line down.
 
 ```mbt check
@@ -188,7 +189,9 @@ heights, line-height products, and public vertical offsets use `Double` like
 JavaScript Number; multiple valid Int32 heights therefore never re-enter 32-bit
 arithmetic. Source-owned downstream `|0` coercion points in searches and
 viewport entry remain explicit. Pending operations commit in cleanup even when a
-raising callback exits the transaction.
+raising callback exits the transaction. `ViewLayout` exposes that incremental
+transaction plus ID-bearing whitespace hit, viewport, all-data,
+explicit-scroll-top, and saved-scroll facades.
 
 ## Reveal
 
