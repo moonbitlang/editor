@@ -7,3 +7,7 @@ import {
 }
 
 supported_targets = "js"
+
+import {
+  "moonbitlang/editor/syntax",
+} for "wbtest"

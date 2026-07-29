@@ -70,6 +70,7 @@ pub struct MarkerDecorationsHandle {
 }
 pub fn MarkerDecorationsHandle::acquire_model(Self, @model.TextModel) -> @common.Disposable
 pub fn MarkerDecorationsHandle::get_live_markers_for_model(Self, @model.TextModel) -> Array[(@common.Range, Marker)]
+pub fn MarkerDecorationsHandle::get_live_resolved_marker_decorations_for_model(Self, @model.TextModel) -> Array[ResolvedMarkerDecoration]
 pub fn MarkerDecorationsHandle::on_did_change_marker_decorations(Self, (@model.TextModel) -> Unit) -> @common.Disposable
 
 pub struct MarkerDecorationsService {
@@ -171,6 +172,12 @@ pub(all) struct RelatedInformation {
   end_line_number : Int
   end_column : Int
 } derive(Eq, @debug.Debug)
+
+pub(all) struct ResolvedMarkerDecoration {
+  range : @common.Range
+  marker : Marker
+  options : @model.ModelDecorationOptions
+}
 
 pub(all) struct ResourceMarker {
   resource : @common.Uri

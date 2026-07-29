@@ -860,6 +860,13 @@ scroll-frame scheduler or perf harness.
 - The local first slice follows the compiler's ASCII-space token-prefix rule
   for `mbt check ...`/`moonbit check ...` and explicitly defers other MoonBit
   Markdown modes.
+- **DEFERRED: Monaco's `squiggly-inline-unnecessary` source-glyph opacity and
+  `squiggly-inline-deprecated` source-glyph strike.**
+  Markdown diagnostics reuse resolved range/class/z-index order, severity
+  squiggles, and the `showUnused` underline. Changing only the exact tokenized
+  source glyphs requires a text-affecting overlap projection; an empty absolute
+  overlay cannot reproduce either inline effect, so this first slice does not
+  fake them.
 
 ## Validation and Exit Gate
 
@@ -986,3 +993,19 @@ checks do not replace the focused evidence above.
   workbench still contains no Markdown-selection branch. Focused suites passed
   7 remote-protocol JS tests, 12 workbench JS tests, 10 native server tests,
   and 17 native-host tests.
+- 2026-07-29, Milestone 5: compiler-recognized `mbt check` fences now retain
+  source-bearing semantic DOM rows whose UTF-16 boundaries map directly back to
+  the original `.mbt.md` model. A presentation-local bridge reuses
+  `ContentHoverComputer`, the shared safe hover-row renderer, and resolved live
+  marker-decoration policy; browser FFI is limited to caret text-node offsets
+  and geometry. Full model, revision, attachment, projection, block, offset,
+  and request stamps reject stale completions before DOM mutation. Nested
+  quote/list indentation, astral offsets, synthetic and non-semantic regions,
+  language-plus-marker rows, diagnostics, returned-range clipping, copy,
+  two-Viewer isolation, replacement, theme, same-URI model swap, cancellation,
+  and disposal were exercised with real Chromium pointer geometry. Focused
+  suites passed 23 language, 47 marker, 64 hover-core, 15 hover-browser, 7
+  Markdown-document, and 249 Viewer tests; the component suite passed 76 tests
+  with the existing opt-in live-network case skipped. The public Viewer
+  interface retained SHA-256
+  `0b1ef32ddc28847e96dc826455ac7bb7f26b22942279d6e616e3fa4f1cea7595`.

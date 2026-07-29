@@ -49,6 +49,14 @@
   position: relative;
 }
 
+.moonbit-viewer-markdown-code-line {
+  position: relative;
+  display: inline-block;
+  min-width: 1ch;
+  min-height: var(--editor-line-height, 20px);
+  overflow-wrap: normal;
+}
+
 .moonbit-viewer-markdown-document-overlays {
   position: absolute;
   inset: 0;

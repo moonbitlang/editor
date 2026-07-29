@@ -14,26 +14,24 @@
 /// Splits `text` on `\r\n` / `\r` / `\n`. Mirrors `strings.splitLines`.
 fn split_lines(text : String) -> Array[String] {
   let lines = []
-  let start = StringBuilder::new()
   let len = text.length()
   let mut i = 0
+  let mut line_start = 0
   while i < len {
     let code = text[i].to_int()
     if code == 13 { // \r
-      lines.push(start.to_string())
-      start.reset()
+      lines.push(text.unsafe_substring(start=line_start, end=i))
       if i + 1 < len && text[i + 1].to_int() == 10 {
         i += 1 // consume the \n of a \r\n pair
       }
+      line_start = i + 1
     } else if code == 10 { // \n
-      lines.push(start.to_string())
-      start.reset()
-    } else {
-      start.write_string(text[i:i + 1].to_owned())
+      lines.push(text.unsafe_substring(start=line_start, end=i))
+      line_start = i + 1
     }
     i += 1
   }
-  lines.push(start.to_string())
+  lines.push(text.unsafe_substring(start=line_start, end=len))
   lines
 }
 

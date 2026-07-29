@@ -30,6 +30,11 @@ Backend-neutral diagnostic storage and marker-to-decoration projection.
   `get_marker(uri, id)` scans that order (model decoration ids carry an identity
   prefix), while `get_live_markers(uri)` returns the ordered union.
   `get_live_markers_for_model(model)` is the model-specific hover boundary.
+  `get_live_resolved_marker_decorations_for_model(model)` returns the same live
+  marker occurrences together with their tracked ranges and
+  `create_decoration_option` result. Browser presentations use that resolved
+  form to reuse the Code decoration severity/tag/range policy without creating
+  another marker store or synthetic model decoration.
 - A real `model.on_will_dispose` event finalizes the active identity regardless
   of outstanding leases. Only that path may clear markers for `inmemory`,
   `internal`, or `vscode` resources, and only after the URI's final live identity

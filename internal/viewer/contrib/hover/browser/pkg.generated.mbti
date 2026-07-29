@@ -4,10 +4,13 @@ package "moonbitlang/editor/internal/viewer/contrib/hover/browser"
 import {
   "moonbit-community/rabbita/dom",
   "moonbitlang/editor/base/common",
+  "moonbitlang/editor/internal/viewer/browser/markdown_document",
   "moonbitlang/editor/internal/viewer/browser/view",
   "moonbitlang/editor/internal/viewer/contrib/hover",
   "moonbitlang/editor/internal/viewer/ui/scrollbar",
   "moonbitlang/editor/language",
+  "moonbitlang/editor/viewer/common/markers",
+  "moonbitlang/editor/viewer/common/model",
   "moonbitlang/editor/viewer/common/view_model",
 }
 
@@ -29,6 +32,10 @@ pub fn hover_on_event(@hover.HoverController, EditorEvent, EditorContext, sticky
 pub fn hover_prefer_above(Double, Double, Double, Bool) -> Bool
 
 pub let hover_prefer_above_default : Bool
+
+pub fn markdown_hover_clamped_origin(Double, Double, Double, Double, Double, Double, Double, Double, Double) -> (Double, Double)
+
+pub fn render_hover_rows(Array[@hover.HoverPart], String) -> HoverRowsRender
 
 // Errors
 
@@ -121,6 +128,44 @@ pub(all) enum EditorEvent {
   MouseMoved(@moonbitlang/editor/viewer/browser.MouseTarget)
   EscapePressed
 }
+
+pub struct HoverRowsRender {
+  // private fields
+}
+pub fn HoverRowsRender::dispose(Self) -> Unit
+pub fn HoverRowsRender::mount_into(Self, @dom.Element) -> Bool
+
+pub struct MarkdownDocumentHoverBridge {
+  // private fields
+}
+pub fn MarkdownDocumentHoverBridge::MarkdownDocumentHoverBridge(@markdown_document.MarkdownDocumentView, @model.TextModel, @hover.ContentHoverComputer, @markers.MarkerDecorationsHandle, Int, () -> Bool, (async () -> Unit noraise) -> Unit) -> Self
+pub fn MarkdownDocumentHoverBridge::activate(Self) -> Unit
+pub fn MarkdownDocumentHoverBridge::after_projection_replaced(Self) -> Unit
+pub fn MarkdownDocumentHoverBridge::before_projection_replaced(Self) -> Unit
+pub fn MarkdownDocumentHoverBridge::dispose(Self) -> Unit
+pub fn MarkdownDocumentHoverBridge::layout_changed(Self) -> Unit
+pub fn MarkdownDocumentHoverBridge::request_generation(Self) -> Int
+pub fn MarkdownDocumentHoverBridge::widget_visible(Self) -> Bool
+
+pub(all) struct MarkdownDocumentHoverMetadata {
+  model_identity : Int
+  uri : String
+  revision : String
+  source_position : @common.Position
+  source_offset : Int
+  block_index : Int
+  returned_range : @common.Range?
+}
+
+pub struct MarkdownDocumentHoverWidget {
+  wrapper : @dom.Element
+  // private fields
+}
+pub fn MarkdownDocumentHoverWidget::MarkdownDocumentHoverWidget(@dom.Element) -> Self
+pub fn MarkdownDocumentHoverWidget::dispose(Self) -> Unit
+pub fn MarkdownDocumentHoverWidget::hide(Self) -> Unit
+pub fn MarkdownDocumentHoverWidget::is_visible(Self) -> Bool
+pub fn MarkdownDocumentHoverWidget::show(Self, Array[@hover.HoverPart], String, MarkdownDocumentHoverMetadata, Double, @dom.Element, @dom.Element) -> Unit
 
 pub(all) struct RenderedContentHover {
   show_at_position : @common.Position

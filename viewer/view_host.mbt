@@ -101,7 +101,7 @@ fn Viewer::flush_render(self : Viewer) -> Unit {
   let browser = match presentation {
     Code(code) => code
     Markdown(markdown) => {
-      self.flush_markdown_document_render(model_data, markdown)
+      self.flush_markdown_document_render(model_data, markdown.view)
       return
     }
   }

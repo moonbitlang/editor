@@ -15,6 +15,30 @@ replacement, hide, and retained-widget teardown. Browser view and scrollbar
 dependencies are internal packages under `internal/viewer/**`. The emitted
 stylesheet remains at `viewer/contrib/hover/hover.css`.
 
+`render_hover_rows` is the shared safe row-rendering boundary. It returns a
+single-owner `HoverRowsRender`: `mount_into` succeeds at most once, and
+`dispose` is idempotent and releases every nested Markdown renderer. Both the
+Code content widget and the Markdown document bridge use this lifetime, so
+they share content and sanitization policy without sharing widget state.
+
+`MarkdownDocumentHoverWidget` is a presentation-local bridge over the original
+`TextModel`. Browser FFI supplies only caret text-node offsets and measured DOM
+rectangles; MoonBit resolves the retained semantic row, converts its UTF-16
+boundary to the original model position, runs `ContentHoverComputer`, projects
+live marker decorations, and owns request cancellation. Every async completion
+is gated by model identity, caller and content versions, URI/revision, attach
+generation, projection generation/source version, block identity, source
+offset, and request token. Content/theme replacement, layout, marker change,
+model replacement, pointer exit, and disposal invalidate the relevant
+presentation-local state before DOM mutation.
+
+Projected diagnostics consume the marker package's resolved class, z-index,
+and range metadata in the same overlay order as Code. Markdown owns the visible
+severity squiggles plus the `showUnused` underline gate. Monaco's inline
+unnecessary opacity and deprecated strike change the actual source glyphs;
+those text-mutating effects are intentionally deferred for the readonly
+Markdown projection rather than approximated on an empty overlay span.
+
 Exact callable types are in `pkg.generated.mbti`. Run focused tests with:
 
 ```sh
