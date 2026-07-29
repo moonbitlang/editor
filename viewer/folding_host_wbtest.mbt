@@ -41,6 +41,214 @@ test "folding: public fold_top_level collapses every outer region only" {
 }
 
 ///|
+test "folding: MoonBit outline keeps the complete signature and opening brace" {
+  let text =
+    #|fn f(
+    #|  display_param : X,
+    #|) -> ReturnType {
+    #|  use(display_param)
+    #|}
+    #|tail
+  let viewer = Viewer::Viewer()
+  viewer.set_model(Some(test_model(text, language_id="moonbit")))
+  viewer.set_position(Position(4, 3))
+  viewer.fold_top_level()
+  let view_model = viewer.test_view_model()
+  guard viewer.folding_controller() is Some(controller)
+  guard controller.folding_model is Some(folding_model)
+  guard folding_model.get_region_at_line(3) is Some(region)
+  assert_eq(region.start_line_number(), 3)
+  assert_eq(region.end_line_number(), 5)
+  assert_true(region.is_collapsed())
+  assert_eq(view_model.line_count(), 4)
+  assert_eq(view_model.lines().get_view_line_content(1), "fn f(")
+  assert_eq(view_model.lines().get_view_line_content(2), "  display_param : X,")
+  assert_eq(view_model.lines().get_view_line_content(3), ") -> ReturnType {")
+  assert_eq(view_model.lines().get_view_line_content(4), "tail")
+  debug_inspect(
+    view_model.get_hidden_areas(),
+    content=(
+      #|[
+      #|  {
+      #|    start_line_number: 4,
+      #|    start_column: 1,
+      #|    end_line_number: 5,
+      #|    end_column: 1,
+      #|  },
+      #|]
+    ),
+  )
+  guard viewer.get_position() is Some(position)
+  assert_position(position, Position(3, 18))
+  let mut saw_outline_body = false
+  for decoration in folding_model.text_model().get_all_decorations() {
+    if decoration.options.description ==
+      "folding-collapsed-outline-body-highlighted-visual-decoration" {
+      saw_outline_body = true
+      assert_eq(decoration.options.after_content_class_name, None)
+      assert_eq(decoration.range.start_line_number, 3)
+    }
+  }
+  assert_true(saw_outline_body)
+  folding_model.toggle_collapse_state([region])
+  assert_eq(view_model.line_count(), 6)
+  viewer.dispose()
+}
+
+///|
+test "folding: MoonBit outline scan ignores bodyless functions and literal braces" {
+  let text =
+    #|extern "js" fn foreign() -> Int = "() => ({ value: 1 })"
+    #|let callback : (Int) -> Int =
+    #|  fn(value) {
+    #|    value + 1
+    #|  }
+    #|declare pub fn declared() -> Int
+    #|fn[T] real(value : T) -> T {
+    #|  let quoted = "\{"}"}"
+    #|  let block = /* { */ value /* } */
+    #|  let raw =
+    #|    #| }
+    #|  let interpolated =
+    #|    $| }
+    #|  block
+    #|}
+  let model = test_model(text, language_id="moonbit")
+  let folds = moonbit_function_body_folds(model.snapshot)
+  assert_eq(folds.length(), 1)
+  assert_eq(folds[0].declaration_start_line_number, 7)
+  assert_eq(folds[0].body_start_line_number, 7)
+  assert_eq(folds[0].body_end_line_number, 15)
+}
+
+///|
+test "folding: formatted modifiers and impl headers remain visible" {
+  let text =
+    #|pub
+    #|  fn first() -> Int {
+    #|    1
+    #|  }
+    #|impl Eq for X with
+    #|  fn equal(self, other) {
+    #|    true
+    #|  }
+    #|tail
+  let viewer = Viewer::Viewer()
+  viewer.set_model(Some(test_model(text, language_id="moonbit")))
+  viewer.fold_top_level()
+  let view_model = viewer.test_view_model()
+  assert_eq(view_model.line_count(), 5)
+  assert_eq(view_model.lines().get_view_line_content(1), "pub")
+  assert_eq(
+    view_model.lines().get_view_line_content(2),
+    "  fn first() -> Int {",
+  )
+  assert_eq(view_model.lines().get_view_line_content(3), "impl Eq for X with")
+  assert_eq(
+    view_model.lines().get_view_line_content(4),
+    "  fn equal(self, other) {",
+  )
+  assert_eq(view_model.lines().get_view_line_content(5), "tail")
+  viewer.dispose()
+}
+
+///|
+test "folding: repeated MoonBit outline fold is idempotent" {
+  let viewer = Viewer::Viewer()
+  viewer.set_model(
+    Some(test_model("fn f() -> Int {\n  1\n}\ntail", language_id="moonbit")),
+  )
+  let mut hidden_area_changes = 0
+  viewer.on_did_change_hidden_areas(() => hidden_area_changes += 1) |> ignore
+  viewer.fold_top_level()
+  let changes_after_first_fold = hidden_area_changes
+  viewer.fold_top_level()
+  assert_eq(hidden_area_changes, changes_after_first_fold)
+  viewer.dispose()
+}
+
+///|
+test "folding: MoonBit outline survives folding decoration option updates" {
+  let viewer = Viewer::Viewer()
+  viewer.set_model(
+    Some(test_model("fn f() -> Int {\n  1\n}\ntail", language_id="moonbit")),
+  )
+  viewer.fold_top_level()
+  guard viewer.folding_controller() is Some(controller)
+  guard controller.folding_model is Some(folding_model)
+  viewer.update_options(ViewerOptions(show_folding_controls=Never))
+  let regions = folding_model.regions()
+  assert_eq(regions.length(), 1)
+  assert_eq(regions.get_start_line_number(0), 1)
+  assert_eq(regions.get_end_line_number(0), 3)
+  assert_eq(
+    regions.get_type(0),
+    Some(@folding_browser.OUTLINE_BODY_FOLDING_RANGE_TYPE),
+  )
+  assert_true(regions.is_collapsed(0))
+  assert_eq(viewer.test_view_model().line_count(), 2)
+  let mut saw_outline_body = false
+  for decoration in folding_model.text_model().get_all_decorations() {
+    if decoration.options.description ==
+      "folding-no-controls-outline-body-range-decoration" {
+      saw_outline_body = true
+      assert_eq(decoration.options.after_content_class_name, None)
+    }
+  }
+  assert_true(saw_outline_body)
+  viewer.dispose()
+}
+
+///|
+test "folding: MoonBit outline respects the configured folding limit" {
+  let viewer = Viewer::Viewer(options=ViewerOptions(folding_maximum_regions=1))
+  viewer.set_model(
+    Some(
+      test_model(
+        "fn f() -> Int {\n  1\n}\nfn g() -> Int {\n  2\n}\ntail",
+        language_id="moonbit",
+      ),
+    ),
+  )
+  viewer.fold_top_level()
+  guard viewer.folding_controller() is Some(controller)
+  guard controller.folding_model is Some(folding_model)
+  let regions = folding_model.regions()
+  assert_eq(regions.length(), 1)
+  assert_eq(
+    regions.get_type(0),
+    Some(@folding_browser.OUTLINE_BODY_FOLDING_RANGE_TYPE),
+  )
+  assert_true(regions.is_collapsed(0))
+  viewer.dispose()
+}
+
+///|
+test "folding: MoonBit outline preserves signatures with same-line bodies" {
+  let text =
+    #|fn f(
+    #|  display_param : X,
+    #|) -> ReturnType { display_param }
+    #|tail
+  let viewer = Viewer::Viewer()
+  viewer.set_model(Some(test_model(text, language_id="moonbit")))
+  viewer.fold_top_level()
+  guard viewer.folding_controller() is Some(controller)
+  guard controller.folding_model is Some(folding_model)
+  assert_eq(folding_model.regions().length(), 0)
+  let view_model = viewer.test_view_model()
+  assert_eq(view_model.line_count(), 4)
+  assert_eq(view_model.lines().get_view_line_content(1), "fn f(")
+  assert_eq(view_model.lines().get_view_line_content(2), "  display_param : X,")
+  assert_eq(
+    view_model.lines().get_view_line_content(3),
+    ") -> ReturnType { display_param }",
+  )
+  assert_eq(view_model.lines().get_view_line_content(4), "tail")
+  viewer.dispose()
+}
+
+///|
 test "folding: toggling a region folds its lines out of the view axis" {
   with_test_viewer("a\n  b\n  c\nd\n  e", viewer => {
     let view_model = viewer.test_view_model()

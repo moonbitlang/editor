@@ -44,6 +44,7 @@ fn TestDecorationProvider::get_decoration_option(
   is_collapsed : Bool,
   is_hidden : Bool,
   _is_manual : Bool,
+  _is_outline_body : Bool,
 ) -> @model.ModelDecorationOptions {
   if is_hidden {
     test_hidden_decoration
@@ -77,8 +78,10 @@ fn TestDecorationProvider::access(
   self : TestDecorationProvider,
 ) -> FoldingDecorationAccess {
   FoldingDecorationAccess::new(
-    (is_collapsed, is_hidden, is_manual) => {
-      self.get_decoration_option(is_collapsed, is_hidden, is_manual)
+    (is_collapsed, is_hidden, is_manual, is_outline_body) => {
+      self.get_decoration_option(
+        is_collapsed, is_hidden, is_manual, is_outline_body,
+      )
     },
     callback => self.change_decorations(callback),
     decoration_ids => self.remove_decorations(decoration_ids),

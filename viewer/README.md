@@ -209,7 +209,21 @@ feedback, and decorations. Public values remain in `viewer/common/**` and
 concrete browser and contribution mechanisms live in
 `internal/viewer/browser/**` and `internal/viewer/contrib/**`. Those
 lower-level packages do not import the root facade, so Viewer-facing
-composition stays here without reversing dependencies. Each hover request
+composition stays here without reversing dependencies.
+
+`fold_top_level` remains an explicit host action rather than an attachment
+default. For MoonBit models it lexically identifies brace-bodied top-level
+functions and uses the opening-brace line as each function's fold header. This
+keeps every source-formatted signature line and `{` visible while hiding later
+body lines and the closing brace; its collapsed chevron omits the generic
+ellipsis. The fold is therefore anchored on the final signature line, an
+intentional interaction trade-off that avoids partial-line projection and its
+cursor/wrapping coordinate machinery. `declare` and `=`-backed bodyless
+functions are ignored, and comments and strings do not participate in brace
+matching. Other languages and MoonBit declaration kinds retain ordinary
+level-one folding.
+
+Each hover request
 captures the physical `TextModel`, its internal content version, a
 Viewer-lifetime monotonic generation, and a caller-owned cancellation token.
 Replacement, content invalidation, detach, model disposal, and Viewer disposal

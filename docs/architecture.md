@@ -198,7 +198,10 @@ editor common/browser layers; editor common never depends on them.
   `viewer/contrib/quick_diff/browser/quick_diff.css`.
 - `internal/viewer/contrib/folding/browser` currently owns the complete
   js-only folding implementation, including ranges, hidden areas, decorations,
-  and controller. Its emitted stylesheet remains at
+  controller, and the language-neutral outline-body range presentation used by
+  explicit host outlines. The root Viewer computes MoonBit function-body
+  ranges without importing a concrete syntax package; ordinary provider/user
+  folding remains the Monaco behavior port. Its emitted stylesheet remains at
   `viewer/contrib/folding/browser/folding.css`.
 - `internal/viewer/contrib/markdown_comments` owns multi-target whole-line
   comment detection, provider/configuration resolution, and normalized block
