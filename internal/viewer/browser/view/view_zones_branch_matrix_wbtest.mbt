@@ -757,7 +757,32 @@ test "ViewZones layoutZone rereads geometry but retains ordinal width and nodes"
     ),
   )
   assert_eq(original_node.get_attribute("monaco-view-zone"), Some(id))
+  assert_eq(original_node.get_attribute("aria-hidden"), Some("true"))
   assert_eq(replacement_node.get_attribute("monaco-view-zone"), Some(""))
+}
+
+///|
+test "ViewZones disposal restores caller aria-hidden state" {
+  install_view_lifecycle_test_browser()
+  defer restore_view_lifecycle_test_browser()
+  let fixture = view_zones_branch_fixture(
+    "/view-zones-dispose-accessibility.txt",
+    "abcdef",
+    @view_model.ViewModelOptions::no_wrap(),
+    20,
+  )
+  defer fixture.dispose()
+  let absent = @rdom.document().create_element("div")
+  let visible = @rdom.document().create_element("div")
+  visible.set_attribute("aria-hidden", "false")
+  fixture.add_zone(ViewZone(1, absent, height_in_px=1.0)) |> ignore
+  fixture.add_zone(ViewZone(1, visible, height_in_px=1.0)) |> ignore
+  assert_eq(absent.get_attribute("aria-hidden"), Some("true"))
+  assert_eq(visible.get_attribute("aria-hidden"), Some("true"))
+
+  fixture.view.dispose()
+  assert_false(view_zone_element_has_attribute(absent, "aria-hidden"))
+  assert_eq(visible.get_attribute("aria-hidden"), Some("false"))
 }
 
 ///|

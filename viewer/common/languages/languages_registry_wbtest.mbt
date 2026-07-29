@@ -129,6 +129,7 @@ test "markdown comment providers preserve order disposal and authoritative empty
       blocks: [markdown_comment_block("second")],
       calls: second_calls,
     },
+    foldable=true,
   )
 
   guard languages.markdown_comment_provider_result(model, log_service)
@@ -147,6 +148,14 @@ test "markdown comment providers preserve order disposal and authoritative empty
   }
   assert_eq(second_result, [markdown_comment_block("second")])
   assert_eq(second_calls.val, 1)
+  let handle = languages.language_handle(log_service.log_handle())
+  guard handle.markdown_comment_provider_render_result(model)
+    is Some(render_result) else {
+    fail("expected the retained provider presentation result")
+  }
+  assert_true(render_result.foldable)
+  assert_eq(render_result.blocks, second_result)
+  assert_eq(second_calls.val, 2)
 
   second.dispose()
   assert_true(

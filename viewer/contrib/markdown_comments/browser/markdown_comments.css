@@ -3,6 +3,7 @@
  * ViewZones owns vertical position and measured height, while the Markdown
  * contribution pins horizontal geometry to the visible editor viewport. */
 .moonbit-viewer-markdown-comment {
+  position: relative;
   box-sizing: border-box;
   overflow-x: clip;
   /* The full-scroll-height .view-lines plane is z-index 1. Keep caller-owned
@@ -36,11 +37,123 @@
   cursor: text;
 }
 
-.moonbit-viewer-markdown-comment-content > :first-child {
+.moonbit-viewer-markdown-comment-body {
+  min-width: 0;
+}
+
+.moonbit-viewer-markdown-comment-preview {
+  display: none;
+}
+
+.moonbit-viewer-markdown-comment[data-documentation-foldable="true"]
+  .moonbit-viewer-markdown-comment-content {
+  /* Keep the ellipsized preview clear of the hover/focus-revealed accessible
+   * toggle pinned to the top-right corner. */
+  padding-right: 34px;
+}
+
+.moonbit-viewer-markdown-comment[data-documentation-foldable="true"][data-documentation-expanded="false"]
+  .moonbit-viewer-markdown-comment-full {
+  display: none;
+}
+
+.moonbit-viewer-markdown-comment[data-documentation-foldable="true"][data-documentation-expanded="false"]
+  .moonbit-viewer-markdown-comment-preview {
+  display: block;
+}
+
+.moonbit-viewer-markdown-comment-preview > :not(hr) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The visible fold affordance lives in the gutter beside the code-folding
+ * chevrons; the margin plane is aria-hidden (Monaco parity), so this content
+ * button remains the keyboard and screen-reader control. Opacity keeps it
+ * focusable and hit-testable while invisible until pointer hover or keyboard
+ * focus reveals it. */
+.moonbit-viewer-markdown-comment-toggle {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  color: var(--vscode-descriptionForeground, var(--vscode-editor-foreground));
+  background: transparent;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.moonbit-viewer-markdown-comment-toggle[hidden] {
+  display: none;
+}
+
+.moonbit-viewer-markdown-comment-toggle:hover,
+.moonbit-viewer-markdown-comment-toggle:focus-visible {
+  opacity: 1;
+  color: var(--vscode-foreground, var(--vscode-editor-foreground));
+  background: var(--vscode-toolbar-hoverBackground, rgba(127, 127, 127, 0.18));
+}
+
+.moonbit-viewer-markdown-comment-toggle:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder, currentColor);
+  outline-offset: 1px;
+}
+
+/* The margin ViewZone node spans the entire gutter for the zone's height.
+ * The chevron mirrors the code-folding `.cldr` geometry: the icon box is the
+ * line-decorations lane (right edge of the gutter, shifted the same 2px as
+ * `folding.css` `margin-left`), flex-centered at 140% like the code icons,
+ * so both fold controls share one column. */
+.moonbit-viewer-markdown-comment-margin {
+  pointer-events: none;
+}
+
+.moonbit-viewer-markdown-comment-margin-toggle.codicon {
+  position: absolute;
+  top: 4px;
+  right: -2px;
+  /* The later `.margin-view-overlays` sibling otherwise paints above the
+   * zones container and intercepts the click. */
+  z-index: 1;
+  /* Default `lineDecorationsWidth` (10px) plus the 16px folding-control
+   * reserve; the contribution inlines the effective lane width at mount. */
+  width: 26px;
+  height: var(--editor-line-height, 18px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 140%;
+  pointer-events: auto;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.5s;
+}
+
+/* Match the code-folding reveal: collapsed chevrons stay visible, expanded
+ * chevrons surface while the pointer is over the gutter. */
+.margin:hover .moonbit-viewer-markdown-comment-margin-toggle,
+.moonbit-viewer-markdown-comment-margin-toggle.codicon-folding-collapsed {
+  opacity: 1;
+}
+
+.moonbit-viewer-markdown-comment-margin-toggle.codicon[hidden] {
+  display: none;
+}
+
+.moonbit-viewer-markdown-comment-body > :first-child {
   margin-top: 0;
 }
 
-.moonbit-viewer-markdown-comment-content > :last-child {
+.moonbit-viewer-markdown-comment-body > :last-child {
   margin-bottom: 0;
 }
 
@@ -101,7 +214,7 @@
 
 /* An item separator replaces one source line. Its content box is otherwise
  * 15px tall (6px + 1px + 8px), so retain the configured line geometry. */
-.moonbit-viewer-markdown-comment-content > hr:only-child {
+.moonbit-viewer-markdown-comment-body > hr:only-child {
   margin-bottom: calc(var(--editor-line-height, 18px) - 15px);
 }
 

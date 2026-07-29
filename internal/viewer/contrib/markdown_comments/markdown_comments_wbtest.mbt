@@ -335,18 +335,18 @@ test "resolver normalizes provider ranges and reports discarded entries" {
       ],
       calls,
     },
+    foldable=true,
   )
   let memory = @log.MemoryLogger()
   let log_handle = @log.LogService(logger=memory).log_handle()
   let handle = registry.language_handle(log_handle)
-  assert_eq(
-    resolve_markdown_comment_blocks(
-      test_model("one\ntwo\nthree\nfour\nfive\nsix"),
-      handle,
-      log_handle,
-    ),
-    [block(1, 3, "first"), block(3, 5, "third")],
+  let resolved = resolve_markdown_comment_blocks_with_presentation(
+    test_model("one\ntwo\nthree\nfour\nfive\nsix"),
+    handle,
+    log_handle,
   )
+  assert_true(resolved.foldable)
+  assert_eq(resolved.blocks, [block(1, 3, "first"), block(3, 5, "third")])
   assert_eq(calls.val, 1)
   assert_eq(memory.entries().length(), 2)
   registration.dispose()

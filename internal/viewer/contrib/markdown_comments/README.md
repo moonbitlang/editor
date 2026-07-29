@@ -18,6 +18,11 @@ matching provider result is authoritative, including an empty result. Only an
 absent provider falls back to the model language's configured comment rules;
 both paths pass through the same normalizer.
 
+`resolve_markdown_comment_blocks_with_presentation` also returns the explicit
+foldability captured from the selected provider registration. Configuration
+detection is always non-foldable, so a leading Markdown thematic break is never
+treated as provenance.
+
 This package has no DOM or browser dependencies. Run its focused suite on both
 portable targets with:
 

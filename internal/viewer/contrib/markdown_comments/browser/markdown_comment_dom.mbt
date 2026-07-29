@@ -1,10 +1,23 @@
 ///|
-/// The stable DOM pair retained by one whole-line Markdown-comment ViewZone.
-/// `outer` is the caller-owned ViewZone node; `content` is both the shared
-/// Markdown renderer target and the auto-height ResizeObserver target.
+/// The stable DOM retained by one whole-line Markdown-comment ViewZone.
+/// `outer` is the caller-owned ViewZone node; `content` is the auto-height
+/// ResizeObserver target. `full` and `preview` are independent shared-Markdown
+/// targets so folding never reparses or mutates the complete rendered body.
+/// `margin` is the caller-owned margin ViewZone node: ViewZones keeps its
+/// top/height synced with `outer`, and `margin_toggle` sits in the
+/// line-decorations lane so the documentation fold control lines up with the
+/// code-folding chevrons. The whole margin plane is `aria-hidden` (Monaco
+/// parity), so that chevron stays mouse-only while `toggle` carries keyboard
+/// and screen-reader access from inside the exposed content zone.
 pub(all) struct MarkdownCommentDom {
   outer : @rdom.Element
   content : @rdom.Element
+  full : @rdom.Element
+  preview : @rdom.Element
+  toggle : @rdom.Element
+  toggle_icon : @rdom.Element
+  margin : @rdom.Element
+  margin_toggle : @rdom.Element
 }
 
 ///|
@@ -20,10 +33,146 @@ pub fn MarkdownCommentDom::MarkdownCommentDom(
   outer.set_attribute("class", "moonbit-viewer-markdown-comment")
   outer.set_attribute("data-start-line", start_line_number.to_string())
   outer.set_attribute("data-end-line", end_line_number_exclusive.to_string())
+  outer.set_attribute("data-documentation-foldable", "false")
+  outer.set_attribute("data-documentation-expanded", "true")
   let content = document.create_element("div")
   content.set_attribute("class", "moonbit-viewer-markdown-comment-content")
+  let full = document.create_element("div")
+  full.set_attribute(
+    "class", "moonbit-viewer-markdown-comment-body moonbit-viewer-markdown-comment-full",
+  )
+  let preview = document.create_element("div")
+  preview.set_attribute(
+    "class", "moonbit-viewer-markdown-comment-body moonbit-viewer-markdown-comment-preview",
+  )
+  let toggle = document.create_element("button")
+  toggle.set_attribute("class", "moonbit-viewer-markdown-comment-toggle")
+  toggle.set_attribute("type", "button")
+  toggle.set_attribute("hidden", "")
+  toggle.set_attribute("aria-hidden", "true")
+  toggle.set_attribute("tabindex", "-1")
+  let toggle_icon = document.create_element("span")
+  toggle_icon.set_attribute("class", "codicon codicon-chevron-right")
+  toggle_icon.set_attribute("aria-hidden", "true")
+  toggle.append_child(toggle_icon.as_node())
+  let margin = document.create_element("div")
+  margin.set_attribute("class", "moonbit-viewer-markdown-comment-margin")
+  let margin_toggle = document.create_element("div")
+  margin_toggle.set_attribute(
+    "class",
+    markdown_comment_margin_toggle_class(expanded=false),
+  )
+  margin_toggle.set_attribute("hidden", "")
+  margin.append_child(margin_toggle.as_node())
+  content.append_child(full.as_node())
+  content.append_child(preview.as_node())
+  outer.append_child(toggle.as_node())
   outer.append_child(content.as_node())
-  { outer, content }
+  { outer, content, full, preview, toggle, toggle_icon, margin, margin_toggle }
+}
+
+///|
+/// The gutter chevron reuses the code-folding margin icons (`.cldr` +
+/// `codicon-folding-*`) so both fold controls render identically in the
+/// line-decorations lane.
+fn markdown_comment_margin_toggle_class(expanded~ : Bool) -> String {
+  if expanded {
+    "moonbit-viewer-markdown-comment-margin-toggle cldr codicon codicon-folding-expanded"
+  } else {
+    "moonbit-viewer-markdown-comment-margin-toggle cldr codicon codicon-folding-collapsed"
+  }
+}
+
+///|
+/// Makes this documentation body collapsible without owning either Markdown
+/// renderer. The caller retains `expanded` across same-key body replacement;
+/// newly mounted blocks pass a fresh `false` ref. The returned lifetime removes
+/// every listener before the caller replaces or removes the DOM.
+pub fn MarkdownCommentDom::enable_folding(
+  self : MarkdownCommentDom,
+  expanded : Ref[Bool],
+  on_did_toggle : () -> Unit,
+) -> @base_common.Disposable {
+  self.outer.set_attribute("data-documentation-foldable", "true")
+  self.toggle.remove_attribute("hidden")
+  self.toggle.remove_attribute("aria-hidden")
+  self.toggle.remove_attribute("tabindex")
+  self.margin_toggle.remove_attribute("hidden")
+  let apply_state = () => {
+    let is_expanded = expanded.val
+    let label = if is_expanded {
+      "Collapse API documentation"
+    } else {
+      "Expand API documentation"
+    }
+    self.outer.set_attribute(
+      "data-documentation-expanded",
+      if is_expanded {
+        "true"
+      } else {
+        "false"
+      },
+    )
+    self.toggle.set_attribute(
+      "aria-expanded",
+      if is_expanded {
+        "true"
+      } else {
+        "false"
+      },
+    )
+    self.toggle.set_attribute("aria-label", label)
+    self.toggle.set_attribute("title", label)
+    self.toggle_icon.set_attribute(
+      "class",
+      if is_expanded {
+        "codicon codicon-chevron-down"
+      } else {
+        "codicon codicon-chevron-right"
+      },
+    )
+    self.margin_toggle.set_attribute(
+      "class",
+      markdown_comment_margin_toggle_class(expanded=is_expanded),
+    )
+    self.margin_toggle.set_attribute("title", label)
+  }
+  apply_state()
+  let stop_mouse_down : @rdom.Listener = event => event.stop_propagation()
+  let toggle_documentation : @rdom.Listener = event => {
+    event.prevent_default()
+    event.stop_propagation()
+    expanded.val = !expanded.val
+    apply_state()
+    on_did_toggle()
+  }
+  self.toggle.add_event_listener("mousedown", stop_mouse_down)
+  self.toggle.add_event_listener("click", toggle_documentation)
+  self.margin_toggle.add_event_listener("mousedown", stop_mouse_down)
+  self.margin_toggle.add_event_listener("click", toggle_documentation)
+  @base_common.Disposable::from(() => {
+    self.toggle.remove_event_listener("mousedown", stop_mouse_down)
+    self.toggle.remove_event_listener("click", toggle_documentation)
+    self.margin_toggle.remove_event_listener("mousedown", stop_mouse_down)
+    self.margin_toggle.remove_event_listener("click", toggle_documentation)
+  })
+}
+
+///|
+/// Restores the ordinary full-body presentation for a one-line or
+/// separator-only block. Stale preview children may remain renderer-owned in
+/// their hidden target until the entry is replaced or disposed.
+pub fn MarkdownCommentDom::disable_folding(self : MarkdownCommentDom) -> Unit {
+  self.outer.set_attribute("data-documentation-foldable", "false")
+  self.outer.set_attribute("data-documentation-expanded", "true")
+  self.toggle.set_attribute("hidden", "")
+  self.toggle.set_attribute("aria-hidden", "true")
+  self.toggle.set_attribute("tabindex", "-1")
+  self.toggle.remove_attribute("aria-expanded")
+  self.toggle.remove_attribute("aria-label")
+  self.toggle.remove_attribute("title")
+  self.margin_toggle.set_attribute("hidden", "")
+  self.margin_toggle.remove_attribute("title")
 }
 
 ///|
@@ -44,6 +193,29 @@ pub fn MarkdownCommentDom::pin_to_content_viewport(
     "width",
     "var(--moonbit-viewer-visible-content-width, 0px)",
   )
+}
+
+///|
+/// Pins the gutter chevron to the rendered line-decorations lane — the
+/// configured `lineDecorationsWidth` plus the folding-control reserve. The
+/// lane is right-aligned inside the margin ViewZone node, so this width keeps
+/// the chevron centered on the same column as the code-folding icons. The
+/// stylesheet default matches the default 10px + 16px reserve.
+pub fn MarkdownCommentDom::set_margin_fold_lane_width(
+  self : MarkdownCommentDom,
+  width_px : Int,
+) -> Unit {
+  @base_browser.set_style_property(self.margin_toggle, "width", "\{width_px}px")
+}
+
+///|
+/// Opts this caller-owned zone into the accessibility tree after ViewZones has
+/// applied its default per-zone `aria-hidden`. The shared container remains a
+/// presentation node; unrelated zones retain their hidden default.
+pub fn MarkdownCommentDom::expose_accessible_content(
+  self : MarkdownCommentDom,
+) -> Unit {
+  self.outer.remove_attribute("aria-hidden")
 }
 
 ///|

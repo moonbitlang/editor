@@ -13,7 +13,10 @@ The viewer's DOM-free language registry and token-to-HTML helpers.
 - Markdown-comment lookup returns the first matching provider's raw synchronous
   result. `None` means no provider matched; `Some([])` is authoritative. A
   provider failure is logged and remains authoritative as `Some([])` so a later
-  provider or configuration fallback cannot silently replace it.
+  provider or configuration fallback cannot silently replace it. Registration
+  may additionally opt the winning provider into foldable API-document
+  presentation; the render-result lookup captures that flag and the raw blocks
+  from the same registry entry.
 - `set_language_configuration` stores the normalized comments and folding-rules
   slices of Monaco's `LanguageConfiguration`. Empty present comment delimiters
   are rejected; region markers remain whole-line predicates rather than regular
@@ -35,7 +38,8 @@ surface and run `moon test --target js viewer/common/languages`.
 
 `Languages::language_handle(log_handle)` returns the opaque capability consumed
 by `ViewerServices`. It exposes configuration lookup, raw Markdown-comment
-provider selection, and contained hover resolution; registrations, tokenizer
+provider selection (including its registration-level presentation result), and
+contained hover resolution; registrations, tokenizer
 mutation, document-symbol queries, and the concrete registry lifecycle stay on
 the caller-retained `Languages` value. The handle borrows its backing and never
 disposes it.

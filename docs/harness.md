@@ -130,6 +130,11 @@ The folding-versus-own-hidden-source branch stays in the focused mounted
 Viewer/ViewZones matrices: it is a source-membership and whitespace-visibility
 contract, not a browser-geometry dependency.
 
+The API-document presentation branch is covered by that real-shell test: its
+documented fixture verifies the first-line collapsed preview, bounded toggle,
+mouse expansion, keyboard collapse, accessible state, and ViewZone height
+change; undocumented separators remain control-free.
+
 ## Browser Rules
 
 - Smoke tests use the sidebar and remote protocol when testing the workbench;

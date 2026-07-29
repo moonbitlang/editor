@@ -3,6 +3,8 @@ package "moonbitlang/editor/internal/viewer/contrib/markdown_comments/browser"
 
 import {
   "moonbit-community/rabbita/dom",
+  "moonbitlang/core/ref",
+  "moonbitlang/editor/base/common",
 }
 
 // Values
@@ -20,12 +22,22 @@ pub fn MarkdownCommentDiagramViewports::dispose(Self) -> Unit
 pub(all) struct MarkdownCommentDom {
   outer : @dom.Element
   content : @dom.Element
+  full : @dom.Element
+  preview : @dom.Element
+  toggle : @dom.Element
+  toggle_icon : @dom.Element
+  margin : @dom.Element
+  margin_toggle : @dom.Element
 }
 #alias(new, deprecated)
 pub fn MarkdownCommentDom::MarkdownCommentDom(Int, Int) -> Self
+pub fn MarkdownCommentDom::disable_folding(Self) -> Unit
+pub fn MarkdownCommentDom::enable_folding(Self, @ref.Ref[Bool], () -> Unit) -> @common.Disposable
+pub fn MarkdownCommentDom::expose_accessible_content(Self) -> Unit
 pub fn MarkdownCommentDom::observe_size(Self, (Int) -> Unit) -> MarkdownCommentSizeObserver
 pub fn MarkdownCommentDom::observe_viewport_width(Self, () -> Unit) -> MarkdownCommentViewportObserver
 pub fn MarkdownCommentDom::pin_to_content_viewport(Self) -> Unit
+pub fn MarkdownCommentDom::set_margin_fold_lane_width(Self, Int) -> Unit
 
 pub struct MarkdownCommentSizeObserver {
   // private fields
