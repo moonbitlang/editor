@@ -197,7 +197,14 @@ async fn main {
     build_js_package(bundle.package_path)
   }
 
-  let build_dir = "_build/js/debug/build/tests/browser/moonbit"
+  // The committed moon.work namespaces member artifacts by module name on
+  // current moon releases; older layouts keep the bare package path.
+  let plain_build_dir = "_build/js/debug/build/tests/browser/moonbit"
+  let build_dir = if @fs.exists(plain_build_dir) {
+    plain_build_dir
+  } else {
+    "_build/js/debug/build/moonbitlang/editor/tests/browser/moonbit"
+  }
   if !@fs.exists(build_dir) {
     fail("isolated MoonBit browser build did not produce its expected output")
   }

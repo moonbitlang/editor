@@ -23,12 +23,25 @@ async fn build_js_package(package_path : String) -> Unit {
 }
 
 ///|
+/// The committed moon.work namespaces member artifacts by module name on
+/// current moon releases; older layouts keep the bare package path.
+async fn resolved_build_dir(package_path : String) -> String {
+  let plain = "_build/js/debug/build/\{package_path}"
+  if @fs.exists(plain) {
+    return plain
+  }
+  "_build/js/debug/build/moonbitlang/editor/\{package_path}"
+}
+
+///|
 async fn main {
   build_js_package("internal/shell/web")
   build_js_package("internal/shell/examples/embedded_viewer")
 
-  let source_dir = "_build/js/debug/build/internal/shell/web"
-  let embed_source_dir = "_build/js/debug/build/internal/shell/examples/embedded_viewer"
+  let source_dir = resolved_build_dir("internal/shell/web")
+  let embed_source_dir = resolved_build_dir(
+    "internal/shell/examples/embedded_viewer",
+  )
   if !@fs.exists(source_dir) || !@fs.exists(embed_source_dir) {
     fail("isolated MoonBit web build did not produce its expected output")
   }
