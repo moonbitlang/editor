@@ -23,9 +23,17 @@ pub(all) struct MarkdownSection {
 } derive(Eq, Debug)
 
 ///|
-/// Whether collapsing this section would hide anything.
-pub fn MarkdownSection::is_foldable(self : MarkdownSection) -> Bool {
-  self.body_anchor_indexes.length() > 0
+/// Whether collapsing this section would actually hide something.
+///
+/// This is deliberately defined by the hideable run rather than by the body
+/// anchor count: an anchor that produced no in-place root element cannot be
+/// hidden, so a body made only of such anchors must not be given a control
+/// that does nothing.
+pub fn MarkdownSection::is_foldable(
+  self : MarkdownSection,
+  projection : MarkdownDocumentProjection,
+) -> Bool {
+  self.body_rendered_element_indexes(projection).length() > 0
 }
 
 ///|
@@ -53,6 +61,22 @@ pub fn MarkdownSection::body_rendered_element_indexes(
 }
 
 ///|
+/// The level at which this anchor opens a section, or `None` if it opens none.
+///
+/// A heading only bounds a section when it is a *top-level* block, which is
+/// exactly when it produced a root element. A heading nested in a blockquote or
+/// a list item renders inside its container and has no root ordinal of its own,
+/// so it can neither be hidden independently nor end the enclosing section --
+/// treating it as a boundary would leave the container's following siblings
+/// stranded outside every section.
+fn markdown_anchor_section_level(anchor : MarkdownBlockAnchor) -> Int? {
+  match (anchor.heading_level, anchor.rendered_element_index) {
+    (Some(level), Some(_)) => Some(level)
+    _ => None
+  }
+}
+
+///|
 /// Derives the section tree from a parsed projection.
 ///
 /// A heading at level `L` opens a section whose body runs to the anchor before
@@ -68,7 +92,7 @@ pub fn markdown_sections(
   let anchors = projection.block_anchors
   let sections = []
   for index, anchor in anchors {
-    guard anchor.heading_level is Some(level) else { continue }
+    guard markdown_anchor_section_level(anchor) is Some(level) else { continue }
     // The body ends before the next anchor that is a heading at this level or
     // shallower; a deeper heading is part of this body and opens its own
     // nested section on its own iteration.
@@ -78,7 +102,7 @@ pub fn markdown_sections(
         follower < anchors.length()
         follower = follower + 1 {
       let candidate = anchors[follower]
-      if candidate.heading_level is Some(candidate_level) &&
+      if markdown_anchor_section_level(candidate) is Some(candidate_level) &&
         candidate_level <= level {
         break
       }
@@ -139,7 +163,7 @@ pub fn markdown_section_at_source_offset(
 ///
 /// `source` must be the exact snapshot the projection was parsed from; passing
 /// a different string yields keys that will not match on the next reprojection.
-pub fn MarkdownSection::stable_key(
+fn MarkdownSection::stable_key(
   self : MarkdownSection,
   projection : MarkdownDocumentProjection,
   source : String,
@@ -175,20 +199,32 @@ fn markdown_section_heading_text(
   while trimmed.has_prefix("#") {
     trimmed = trimmed[1:].to_owned()
   }
-  // A closing ATX sequence is decoration, not content.
-  while trimmed.has_suffix("#") {
-    trimmed = trimmed[0:trimmed.length() - 1].to_owned()
+  // A closing ATX sequence is decoration only when whitespace-delimited.
+  // CommonMark keeps `# C#` as the text `C#`, so stripping every trailing `#`
+  // unconditionally would collide `# C` with `# C#`.
+  let mut hashes = 0
+  while hashes < trimmed.length() &&
+        trimmed[trimmed.length() - 1 - hashes] == '#' {
+    hashes = hashes + 1
+  }
+  if hashes > 0 {
+    let before = trimmed.length() - hashes
+    if before == 0 || trimmed[before - 1] == ' ' || trimmed[before - 1] == '\t' {
+      trimmed = trimmed[0:before].to_owned()
+    }
   }
   let collapsed = StringBuilder::new()
   let mut in_space = false
+  let mut wrote_any = false
   for unit in trimmed.trim(chars=" \t\r") {
     if unit == ' ' || unit == '\t' {
       in_space = true
     } else {
-      if in_space && collapsed.to_string().length() > 0 {
+      if in_space && wrote_any {
         collapsed.write_char(' ')
       }
       in_space = false
+      wrote_any = true
       collapsed.write_char(unit)
     }
   }

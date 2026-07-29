@@ -23,6 +23,7 @@ pub fn MarkdownDocumentView::content_height(Self) -> Double
 pub fn MarkdownDocumentView::content_width(Self) -> Double
 pub fn MarkdownDocumentView::dispose(Self) -> Unit
 pub fn MarkdownDocumentView::has_rendered_source_anchors(Self) -> Bool
+pub fn MarkdownDocumentView::hidden_root_elements(Self) -> Array[Int]
 pub fn MarkdownDocumentView::language_id(Self) -> String
 pub fn MarkdownDocumentView::layout(Self, Double, Double) -> Unit
 pub fn MarkdownDocumentView::listen_semantic_dom(Self, String, (@dom.Event) -> Unit) -> Unit
@@ -38,6 +39,7 @@ pub fn MarkdownDocumentView::scroll_left(Self) -> Double
 pub fn MarkdownDocumentView::scroll_top(Self) -> Double
 pub fn MarkdownDocumentView::scroll_width(Self) -> Double
 pub fn MarkdownDocumentView::semantic_code_lines(Self) -> Array[MarkdownSemanticCodeLineDom]
+pub fn MarkdownDocumentView::set_hidden_root_elements(Self, Array[Int]) -> Unit
 pub fn MarkdownDocumentView::set_scroll_position(Self, scroll_top? : Double, scroll_left? : Double) -> Unit
 pub fn MarkdownDocumentView::source_model_version(Self) -> Int
 pub fn MarkdownDocumentView::viewport(Self) -> @dom.Element

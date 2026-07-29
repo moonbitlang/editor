@@ -9,6 +9,8 @@ import {
 // Values
 pub fn markdown_section_at_source_offset(Array[MarkdownSection], Int) -> MarkdownSection?
 
+pub fn markdown_section_keys(Array[MarkdownSection], MarkdownDocumentProjection, String) -> Array[String]
+
 pub fn markdown_sections(MarkdownDocumentProjection) -> Array[MarkdownSection]
 
 pub fn render_markdown(String, language_id? : String, code_block_renderer? : (MarkdownCodeBlock, String?) -> String) -> MarkdownRenderFact
@@ -76,7 +78,7 @@ pub(all) struct MarkdownSection {
   body_source_range : @common.OffsetRange?
 } derive(Eq, @debug.Debug)
 pub fn MarkdownSection::body_rendered_element_indexes(Self, MarkdownDocumentProjection) -> Array[Int]
-pub fn MarkdownSection::is_foldable(Self) -> Bool
+pub fn MarkdownSection::is_foldable(Self, MarkdownDocumentProjection) -> Bool
 
 // Type aliases
 

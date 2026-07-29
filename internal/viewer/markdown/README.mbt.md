@@ -235,7 +235,7 @@ test "a deeper heading nests, a same-level heading ends the section" {
       (
         section.level,
         section.body_anchor_indexes.length(),
-        section.is_foldable(),
+        section.is_foldable(projection),
       )
     }),
     content=(
@@ -261,7 +261,9 @@ test "an empty section is not foldable" {
       ),
     ).projection
   debug_inspect(
-    @markdown.markdown_sections(projection).map(section => section.is_foldable()),
+    @markdown.markdown_sections(projection).map(section => {
+      section.is_foldable(projection)
+    }),
     content=(
       #|[false, true]
     ),

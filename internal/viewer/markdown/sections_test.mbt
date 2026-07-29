@@ -8,7 +8,7 @@
 fn describe_sections(source : String) -> Array[String] {
   let projection = @markdown.render_markdown(source).projection
   @markdown.markdown_sections(projection).map(section => {
-    "level \{section.level} heading@\{section.heading_anchor_index} body\{Repr(section.body_anchor_indexes)} foldable=\{section.is_foldable()}"
+    "level \{section.level} heading@\{section.heading_anchor_index} body\{Repr(section.body_anchor_indexes)} foldable=\{section.is_foldable(projection)}"
   })
 }
 
@@ -274,7 +274,7 @@ test "a code fence inside a section is part of that section's body" {
   }
   debug_inspect(
     (
-      example.is_foldable(),
+      example.is_foldable(projection),
       // the fence's own anchor is inside the section's source span
       example.source_range.contains(block.block_source_range.start),
       block.is_moonbit_check_fence(MoonBitMarkdown),
@@ -433,6 +433,90 @@ test "editing a later section does not change an earlier section's key" {
     (before, after, before[0] == after[0]),
     content=(
       #|(["1|Stable|0", "1|Other|0"], ["1|Stable|0", "1|Other|0"], true)
+    ),
+  )
+}
+
+///|
+test "a heading inside a blockquote does not end the enclosing section" {
+  debug_inspect(
+    describe_sections(
+      (
+        #|# A
+        #|
+        #|> # quoted
+        #|> quoted text
+        #|
+        #|after
+        #|
+        #|# B
+        #|
+      ),
+    ),
+    content=(
+      #|[
+      #|  "level 1 heading@0 body[1, 2, 3, 4] foldable=true",
+      #|  "level 1 heading@5 body[] foldable=false",
+      #|]
+    ),
+  )
+}
+
+///|
+test "a closing hash sequence is stripped only when whitespace-delimited" {
+  debug_inspect(
+    (
+      describe_keys(
+        (
+          #|# C
+          #|
+          #|body
+          #|
+        ),
+      ),
+      describe_keys(
+        (
+          #|# C#
+          #|
+          #|body
+          #|
+        ),
+      ),
+      describe_keys(
+        (
+          #|# C ###
+          #|
+          #|body
+          #|
+        ),
+      ),
+    ),
+    content=(
+      #|(["1|C|0"], ["1|C#|0"], ["1|C|0"])
+    ),
+  )
+}
+
+///|
+test "a body of only non-rendering anchors is not foldable" {
+  let source =
+    #|# Only a link definition
+    #|
+    #|[ref]: https://example.com
+    #|
+    #|# Next
+    #|
+  let projection = @markdown.render_markdown(source).projection
+  debug_inspect(
+    @markdown.markdown_sections(projection).map(section => {
+      (
+        section.body_anchor_indexes.length(),
+        section.body_rendered_element_indexes(projection).length(),
+        section.is_foldable(projection),
+      )
+    }),
+    content=(
+      #|[(0, 0, false), (0, 0, false)]
     ),
   )
 }
