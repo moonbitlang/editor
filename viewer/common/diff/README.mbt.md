@@ -158,12 +158,7 @@ instead of recomputing a diff.
 ```mbt check
 ///|
 test "inverse yields the unchanged regions between hunks" {
-  let changed = [
-    @diff.LineRangeMapping(
-      @base_common.LineRange(2, 3),
-      @base_common.LineRange(2, 3),
-    ),
-  ]
+  let changed = [@diff.LineRangeMapping(LineRange(2, 3), LineRange(2, 3))]
   debug_inspect(
     @diff.LineRangeMapping::inverse(changed, 4, 4).map(m => m.to_string()),
     content=(
@@ -179,14 +174,8 @@ test "inverse yields the unchanged regions between hunks" {
 ```mbt check
 ///|
 test "join covers two mappings and changed_line_count measures the modified side" {
-  let first = @diff.LineRangeMapping(
-    @base_common.LineRange(1, 2),
-    @base_common.LineRange(1, 3),
-  )
-  let second = @diff.LineRangeMapping(
-    @base_common.LineRange(4, 5),
-    @base_common.LineRange(5, 6),
-  )
+  let first = @diff.LineRangeMapping(LineRange(1, 2), LineRange(1, 3))
+  let second = @diff.LineRangeMapping(LineRange(4, 5), LineRange(5, 6))
   debug_inspect(
     (
       first.join(second).to_string(),

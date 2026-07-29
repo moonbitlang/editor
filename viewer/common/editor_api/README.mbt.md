@@ -81,15 +81,10 @@ induced by a model edit without keeping its own shadow copy.
 ///|
 test "a selection event pairs new and old state with model versions" {
   let event : @editor_api.CursorSelectionChangedEvent = {
-    selection: @core.Selection(
-      @base_common.Position(2, 1),
-      @base_common.Position(2, 8),
-    ),
+    selection: Selection(Position(2, 1), Position(2, 8)),
     secondary_selections: [],
     model_version_id: 7,
-    old_selections: Some([
-      @core.Selection(@base_common.Position(1, 1), @base_common.Position(1, 1)),
-    ]),
+    old_selections: Some([Selection(Position(1, 1), Position(1, 1))]),
     old_model_version_id: 6,
     source: "mouse",
     reason: Explicit,

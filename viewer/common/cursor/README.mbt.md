@@ -30,7 +30,7 @@ A collapsed state is a caret: anchor and position coincide.
 ```mbt check
 ///|
 test "a collapsed state has no selection" {
-  let state = @cursor.SingleCursorState::collapsed(@base_common.Position(3, 5))
+  let state = @cursor.SingleCursorState::collapsed(Position(3, 5))
   debug_inspect(
     (state.has_selection(), state.selection(), state.selection_start_kind),
     content=(
@@ -54,9 +54,9 @@ is the difference between a plain click and a shift-click.
 ```mbt check
 ///|
 test "moved either extends from the anchor or restarts" {
-  let start = @cursor.SingleCursorState::collapsed(@base_common.Position(2, 1))
-  let extended = start.moved(true, @base_common.Position(4, 7))
-  let restarted = start.moved(false, @base_common.Position(4, 7))
+  let start = @cursor.SingleCursorState::collapsed(Position(2, 1))
+  let extended = start.moved(true, Position(4, 7))
+  let restarted = start.moved(false, Position(4, 7))
   debug_inspect(
     (
       (extended.has_selection(), extended.selection()),
@@ -92,13 +92,13 @@ past the anchor keeps the whole anchor range covered.
 ///|
 test "a Word or Line anchor keeps its shape while dragging" {
   let word_anchor = @cursor.SingleCursorState(
-    @base_common.Position(2, 5),
-    @base_common.Position(2, 10),
+    Position(2, 5),
+    Position(2, 10),
     Word,
-    @base_common.Position(2, 10),
+    Position(2, 10),
   )
-  let dragged_right = word_anchor.moved(true, @base_common.Position(4, 1))
-  let dragged_left = word_anchor.moved(true, @base_common.Position(1, 1))
+  let dragged_right = word_anchor.moved(true, Position(4, 1))
+  let dragged_left = word_anchor.moved(true, Position(1, 1))
   debug_inspect(
     (
       word_anchor.selection_start_kind,
@@ -129,9 +129,9 @@ rather than living in a separate sticky-column variable.
 ```mbt check
 ///|
 test "the leftover visible column travels with the state" {
-  let state = @cursor.SingleCursorState::collapsed(@base_common.Position(1, 1)).moved(
+  let state = @cursor.SingleCursorState::collapsed(Position(1, 1)).moved(
     false,
-    @base_common.Position(2, 3),
+    Position(2, 3),
     leftover_visible_columns=6,
   )
   debug_inspect(
@@ -156,7 +156,7 @@ full, model-only, and view-only shapes; the two partial constructors retain
 ```mbt check
 ///|
 test "partial states retain None on the absent side" {
-  let state = @cursor.SingleCursorState::collapsed(@base_common.Position(1, 1))
+  let state = @cursor.SingleCursorState::collapsed(Position(1, 1))
   let model_only = @cursor.CursorState::from_model_state(state)
   let view_only = @cursor.CursorState::from_view_state(state)
   debug_inspect(
@@ -183,7 +183,7 @@ differ.
 ///|
 /// An identity projection: model and view coordinates coincide.
 fn identity_context() -> @cursor.CursorContext {
-  @cursor.CursorContext(
+  CursorContext(
     view_to_model=position => position,
     view_range_to_model=range => range,
     model_to_view=position => position,
@@ -195,7 +195,7 @@ test "setting one side derives the other" {
   let cursor = @cursor.Cursor()
   cursor.set_model_state(
     identity_context(),
-    @cursor.SingleCursorState::collapsed(@base_common.Position(5, 2)),
+    @cursor.SingleCursorState::collapsed(Position(5, 2)),
   )
   debug_inspect(
     (cursor.model_state.position, cursor.view_state.position),
@@ -242,14 +242,14 @@ fn controller_for(text : String) -> @cursor.CursorsController raise {
     "rev-1",
     text,
   )
-  @cursor.CursorsController(model, identity_context())
+  CursorsController(model, identity_context())
 }
 
 ///|
 test "an identical transition produces no change" {
   let controller = controller_for("fn main {\n  println(1)\n}\n")
-  let first = controller.move_to(@base_common.Position(2, 3), false)
-  let repeat = controller.move_to(@base_common.Position(2, 3), false)
+  let first = controller.move_to(Position(2, 3), false)
+  let repeat = controller.move_to(Position(2, 3), false)
   debug_inspect(
     (
       first.map(change => (change.reason, change.selections)),
@@ -287,7 +287,7 @@ past the end of a line or beyond the last line.
 ///|
 test "out-of-range positions are clamped into the document" {
   let controller = controller_for("ab\ncd\n")
-  controller.move_to(@base_common.Position(99, 99), false) |> ignore
+  controller.move_to(Position(99, 99), false) |> ignore
   debug_inspect(
     controller.get_model_selection(),
     content=(
@@ -307,8 +307,8 @@ transition path rather than a separate "extend" code path.
 ///|
 test "move_to_select extends from the existing anchor" {
   let controller = controller_for("alpha\nbeta\ngamma\n")
-  @cursor.move_to(controller, @base_common.Position(1, 2))
-  @cursor.move_to_select(controller, @base_common.Position(3, 4))
+  @cursor.move_to(controller, Position(1, 2))
+  @cursor.move_to_select(controller, Position(3, 4))
   let selection = controller.get_model_selection()
   debug_inspect(
     (selection.direction(), selection.start(), selection.end()),
@@ -332,7 +332,7 @@ side effect of `set_value`.
 ///|
 test "a forwarded content flush resets to the document start" {
   let controller = controller_for("alpha\nbeta\n")
-  @cursor.move_to(controller, @base_common.Position(2, 3))
+  @cursor.move_to(controller, Position(2, 3))
   let before = controller.get_model_selection().position
 
   // Stand in for the view model: forward the internal event to the controller.

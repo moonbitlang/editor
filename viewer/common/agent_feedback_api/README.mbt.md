@@ -26,7 +26,7 @@ test "a feedback item is an id, a place, a kind, a state, and replies" {
     id: "fb-1",
     text: "This branch is unreachable.",
     resource: @base_common.Uri::parse("file:///src/main.mbt"),
-    range: @base_common.Range(12, 3, 12, 20),
+    range: Range(12, 3, 12, 20),
     kind: AgentReview,
     replies: ["Agreed.", "Fixed in the next commit."],
     state: Accepted,
@@ -105,7 +105,7 @@ fn in_memory_handle(
   items : Array[@agent_feedback_api.AgentFeedback],
   log : Array[String],
 ) -> @agent_feedback_api.AgentFeedbackHandle {
-  @agent_feedback_api.AgentFeedbackHandle(
+  AgentFeedbackHandle(
     on_did_change_feedback=_ => @base_common.Disposable::from(() => ()),
     on_did_change_navigation=_ => @base_common.Disposable::from(() => ()),
     is_feedback_enabled=uri => uri.scheme == "file",
@@ -144,11 +144,7 @@ test "the handle forwards each operation to its host callback" {
   let log = []
   let handle = in_memory_handle(items, log)
   let uri = @base_common.Uri::parse("file:///src/main.mbt")
-  let created = handle.add_feedback(
-    uri,
-    @base_common.Range(4, 1, 4, 9),
-    "Look here",
-  )
+  let created = handle.add_feedback(uri, Range(4, 1, 4, 9), "Look here")
   handle.accept_feedback(uri, created.id)
   handle.add_reply(uri, created.id, "Acknowledged")
   handle.update_feedback(uri, created.id, "Look here instead")
@@ -195,10 +191,10 @@ test "optional kind and state arrive at the host as None" {
   let items : Array[@agent_feedback_api.AgentFeedback] = []
   let handle = in_memory_handle(items, [])
   let uri = @base_common.Uri::parse("file:///src/main.mbt")
-  let defaulted = handle.add_feedback(uri, @base_common.Range(1, 1, 1, 1), "a")
+  let defaulted = handle.add_feedback(uri, Range(1, 1, 1, 1), "a")
   let explicit = handle.add_feedback(
     uri,
-    @base_common.Range(2, 1, 2, 1),
+    Range(2, 1, 2, 1),
     "b",
     kind=AgentReview,
     state=Submitted,
