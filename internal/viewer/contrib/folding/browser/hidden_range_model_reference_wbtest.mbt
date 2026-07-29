@@ -29,8 +29,12 @@ test "hasRanges" {
   assert_false(hidden_range_model.has_ranges())
   let ranges = compute_ranges(text_model, false)
   folding_model.update(ranges)
-  guard folding_model.get_region_at_line(1) is Some(region1)
-  guard folding_model.get_region_at_line(6) is Some(region6)
+  guard folding_model.get_region_at_line(1) is Some(region1) else {
+    fail("expected a folding region at line 1")
+  }
+  guard folding_model.get_region_at_line(6) is Some(region6) else {
+    fail("expected a folding region at line 6")
+  }
   folding_model.toggle_collapse_state([region1, region6])
   assert_hidden_ranges(
     hidden_range_model.hidden_ranges(),
@@ -48,7 +52,9 @@ test "hasRanges" {
   assert_false(hidden_range_model.is_hidden(8))
   assert_false(hidden_range_model.is_hidden(9))
   assert_false(hidden_range_model.is_hidden(10))
-  guard folding_model.get_region_at_line(4) is Some(region4)
+  guard folding_model.get_region_at_line(4) is Some(region4) else {
+    fail("expected a folding region at line 4")
+  }
   folding_model.toggle_collapse_state([region4])
   assert_hidden_ranges(
     hidden_range_model.hidden_ranges(),
@@ -66,9 +72,15 @@ test "hasRanges" {
   assert_true(hidden_range_model.is_hidden(8))
   assert_true(hidden_range_model.is_hidden(9))
   assert_false(hidden_range_model.is_hidden(10))
-  guard folding_model.get_region_at_line(1) is Some(region1b)
-  guard folding_model.get_region_at_line(6) is Some(region6b)
-  guard folding_model.get_region_at_line(4) is Some(region4b)
+  guard folding_model.get_region_at_line(1) is Some(region1b) else {
+    fail("expected a folding region at line 1")
+  }
+  guard folding_model.get_region_at_line(6) is Some(region6b) else {
+    fail("expected a folding region at line 6")
+  }
+  guard folding_model.get_region_at_line(4) is Some(region4b) else {
+    fail("expected a folding region at line 4")
+  }
   folding_model.toggle_collapse_state([region1b, region6b, region4b])
   assert_hidden_ranges(hidden_range_model.hidden_ranges(), [], "3")
   assert_false(hidden_range_model.has_ranges())
@@ -90,7 +102,9 @@ test "adjustSelections moves endpoints out of hidden ranges" {
   )
   let hidden_range_model = HiddenRangeModel(folding_model)
   folding_model.update(compute_ranges(text_model, false))
-  guard folding_model.get_region_at_line(1) is Some(region1)
+  guard folding_model.get_region_at_line(1) is Some(region1) else {
+    fail("expected a folding region at line 1")
+  }
   folding_model.toggle_collapse_state([region1])
   assert_hidden_ranges(hidden_range_model.hidden_ranges(), [(2, 3)], "hidden")
   // A caret on hidden line 2 snaps to the fold header's end (line 1).
