@@ -272,8 +272,8 @@ code-folding column inside the `aria-hidden` gutter, and an accessible
 in-content button revealed by hover or keyboard focus.
 A single block spanning the whole model — the workbench's whole-document
 Markdown provider for opened `.md` files — additionally opts its zone into a
-bounded reading measure; the presentation flag is geometric and
-language-neutral.
+full-width reading surface with page-like padding; the presentation flag is
+geometric and language-neutral.
 Same-key body replacement preserves the user's expanded state while disposing
 the old toggle and viewport group before the renderers replace their targets
 and mount fresh browser lifetimes. Entry

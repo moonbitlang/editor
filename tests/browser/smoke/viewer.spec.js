@@ -218,7 +218,7 @@ test('renders Markdown files as a whole-document reading surface', async ({
   await expect(
     markdown.locator('.monaco-tokenized-source', { hasText: 'readme_snippet' }),
   ).toBeVisible();
-  // A whole document reads at a bounded measure and exposes no fold control.
+  // A whole document reads at full width and exposes no fold control.
   await expect(markdown).toHaveAttribute('data-documentation-foldable', 'false');
   await expect(
     markdown.locator('.moonbit-viewer-markdown-comment-toggle'),
