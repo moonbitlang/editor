@@ -302,6 +302,45 @@ test "the hidden run is the body's ordinals, never the heading's" {
 }
 ```
 
+### Reconciliation keys
+
+A source or theme replacement rebuilds the article wholesale, so element
+identity cannot carry fold state across it, and anchor indexes shift whenever
+anything earlier in the document is edited. `markdown_section_keys` derives a
+key per section from the heading's level, its normalized text, and its ordinal
+among identical headings.
+
+```mbt check
+///|
+test "repeated headings differ only by occurrence" {
+  let source =
+    #|## Example
+    #|
+    #|first
+    #|
+    #|## Example
+    #|
+    #|second
+    #|
+  let projection = @markdown.render_markdown(source).projection
+  debug_inspect(
+    @markdown.markdown_section_keys(
+      @markdown.markdown_sections(projection),
+      projection,
+      source,
+    ).map(key => key.replace_all(old="\u{1f}", new="|")),
+    content=(
+      #|["2|Example|0", "2|Example|1"]
+    ),
+  )
+}
+```
+
+The normalization is what makes a key survive an edit: ATX markers and a
+closing `##` sequence are stripped, interior whitespace collapses, and a setext
+heading keys identically to its ATX equivalent — so re-spelling a heading's
+markup does not silently drop its fold state.
+
 Consumers must collapse by hiding those retained elements with `display:none`.
 Re-rendering, or hiding with `visibility:hidden` or a zero height, would break
 the `.mbt.md` semantic-fence contract: the hover bridge resolves a caret through

@@ -126,3 +126,90 @@ pub fn markdown_section_at_source_offset(
   }
   found
 }
+
+///|
+/// A reconciliation key that survives a source or theme reprojection.
+///
+/// Element identity cannot be used: a reprojection replaces the article
+/// wholesale, so every node is new. Anchor index alone is not enough either —
+/// editing one paragraph shifts every later index. The key is therefore the
+/// heading's level, its normalized text, and its ordinal among identical
+/// (level, text) pairs, which is stable under edits elsewhere in the document
+/// and still distinguishes repeated headings such as two `## Example` sections.
+///
+/// `source` must be the exact snapshot the projection was parsed from; passing
+/// a different string yields keys that will not match on the next reprojection.
+pub fn MarkdownSection::stable_key(
+  self : MarkdownSection,
+  projection : MarkdownDocumentProjection,
+  source : String,
+  occurrence : Int,
+) -> String {
+  let text = markdown_section_heading_text(self, projection, source)
+  "\{self.level}\u{1f}\{text}\u{1f}\{occurrence}"
+}
+
+///|
+/// The heading's normalized source text: leading ATX markers and surrounding
+/// whitespace removed, interior whitespace collapsed to single spaces. Setext
+/// headings keep only their first line, so `Title\n=====` and `# Title` produce
+/// the same text and therefore the same key.
+fn markdown_section_heading_text(
+  section : MarkdownSection,
+  projection : MarkdownDocumentProjection,
+  source : String,
+) -> String {
+  guard section.heading_anchor_index >= 0 &&
+    section.heading_anchor_index < projection.block_anchors.length() else {
+    return ""
+  }
+  let range = projection.block_anchors[section.heading_anchor_index].source_range
+  let start = range.start.max(0).min(source.length())
+  let end = range.end_exclusive.max(start).min(source.length())
+  let raw = source[start:end].to_owned()
+  let first_line = match raw.find("\n") {
+    Some(index) => raw[0:index].to_owned()
+    None => raw
+  }
+  let mut trimmed = first_line.trim(chars=" \t\r")
+  while trimmed.has_prefix("#") {
+    trimmed = trimmed[1:].to_owned()
+  }
+  // A closing ATX sequence is decoration, not content.
+  while trimmed.has_suffix("#") {
+    trimmed = trimmed[0:trimmed.length() - 1].to_owned()
+  }
+  let collapsed = StringBuilder::new()
+  let mut in_space = false
+  for unit in trimmed.trim(chars=" \t\r") {
+    if unit == ' ' || unit == '\t' {
+      in_space = true
+    } else {
+      if in_space && collapsed.to_string().length() > 0 {
+        collapsed.write_char(' ')
+      }
+      in_space = false
+      collapsed.write_char(unit)
+    }
+  }
+  collapsed.to_string()
+}
+
+///|
+/// Assigns each section its reconciliation key, resolving the occurrence
+/// ordinal for repeated headings. Returned in the same order as `sections`.
+pub fn markdown_section_keys(
+  sections : Array[MarkdownSection],
+  projection : MarkdownDocumentProjection,
+  source : String,
+) -> Array[String] {
+  let seen : Map[String, Int] = Map([])
+  let keys = []
+  for section in sections {
+    let base = section.stable_key(projection, source, 0)
+    let occurrence = seen.get(base).unwrap_or(0)
+    seen[base] = occurrence + 1
+    keys.push(section.stable_key(projection, source, occurrence))
+  }
+  keys
+}

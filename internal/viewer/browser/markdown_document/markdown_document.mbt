@@ -506,6 +506,73 @@ pub fn MarkdownDocumentView::apply_marker_unused_visibility(
 }
 
 ///|
+/// Hides exactly the root elements at `hidden_element_indexes` and shows every
+/// other rendered root element.
+///
+/// This is a pure visibility operation over already-rendered nodes: it never
+/// re-renders, never rebuilds the projection, and never advances
+/// `projection_generation`. That is what preserves the `.mbt.md` semantic-fence
+/// contract across folding — the hover bridge resolves a caret through retained
+/// per-line boundary maps plus a DOM descendant check, both of which survive a
+/// visibility change untouched.
+///
+/// `display:none` is required rather than `visibility:hidden` or a zero height:
+/// only `display:none` removes the subtree from hit testing, so
+/// `caretPositionFromPoint` cannot return a node inside hidden content and the
+/// bridge's descendant check fails closed. A hidden-but-hit-testable element
+/// would produce hovers on text the reader cannot see.
+///
+/// The view owns no fold policy. Which sections are collapsed, and how that
+/// survives a source or theme replacement, belongs to the root Viewer; a
+/// replacement resets every element to visible and the root re-applies.
+/// Out-of-range indexes are ignored so a stale caller cannot abort a render.
+pub fn MarkdownDocumentView::set_hidden_root_elements(
+  self : MarkdownDocumentView,
+  hidden_element_indexes : Array[Int],
+) -> Unit {
+  guard !self.disposed else { return }
+  let children = self.article.get_children()
+  let hidden : Set[Int] = Set([])
+  for index in hidden_element_indexes {
+    if index >= 0 && index < children.length() {
+      hidden.add(index)
+    }
+  }
+  for index, child in children {
+    if hidden.contains(index) {
+      child.set_attribute("style", markdown_hidden_element_style)
+      child.set_attribute("aria-hidden", "true")
+    } else {
+      child.remove_attribute("style")
+      child.remove_attribute("aria-hidden")
+    }
+  }
+}
+
+///|
+/// The root-element ordinals currently hidden, in document order. Read back for
+/// tests and for the root Viewer's reconciliation.
+pub fn MarkdownDocumentView::hidden_root_elements(
+  self : MarkdownDocumentView,
+) -> Array[Int] {
+  let result = []
+  guard !self.disposed else { return result }
+  for index, child in self.article.get_children() {
+    if child.get_attribute("style") is Some(style) &&
+      style == markdown_hidden_element_style {
+      result.push(index)
+    }
+  }
+  result
+}
+
+///|
+/// Collapsed body elements are removed from layout *and* from the
+/// accessibility tree; a collapsed section must not be reachable by a screen
+/// reader any more than by the pointer.
+let markdown_hidden_element_style : String = "display:none"
+
+///|
 /// Snapshot of the current replacement-scoped line registry. The returned
 /// array may be reordered by a caller without mutating the view's registry.
 pub fn MarkdownDocumentView::semantic_code_lines(
