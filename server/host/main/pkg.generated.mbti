@@ -1,0 +1,14 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitlang/editor-server/host/main"
+
+// Values
+
+// Errors
+
+// Types and methods
+type DevServerConfig
+
+// Type aliases
+
+// Traits
+

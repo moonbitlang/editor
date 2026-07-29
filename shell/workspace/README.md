@@ -1,4 +1,4 @@
-# internal/shell/workspace
+# shell/workspace
 
 Backend-neutral readonly source, document, filesystem, and tree contracts for
 host packages.
@@ -28,4 +28,4 @@ browser, native, server-routing, or process effects. `DocumentSnapshot` is host
 data: adapters create `viewer/common/model.TextModel`; viewer core must not
 import this package.
 
-Run `moon test internal/shell/workspace --target js` and `just check`.
+Run `moon test shell/workspace --target js` and `just check`.

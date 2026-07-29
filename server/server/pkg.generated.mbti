@@ -1,0 +1,73 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitlang/editor-server/server"
+
+import {
+  "moonbitlang/core/debug",
+  "moonbitlang/editor/base/common",
+  "moonbitlang/editor/language",
+  "moonbitlang/editor/shell/remote_protocol",
+  "moonbitlang/editor/shell/workspace",
+}
+
+// Values
+pub fn remote_document_uri(String) -> @common.Uri?
+
+pub fn resolve_remote_directory_uri(@common.Uri, request_id? : String) -> RemoteDirectoryResult
+
+pub fn resolve_remote_document_uri(@common.Uri, request_id? : String) -> RemotePathResult
+
+// Errors
+
+// Types and methods
+pub(all) enum RemoteDirectoryResult {
+  ParsedRemoteDirectory(String, String)
+  RemoteDirectoryError(@remote_protocol.ProtocolError)
+} derive(@debug.Debug)
+
+pub(all) enum RemotePathResult {
+  ParsedRemotePath(@workspace.SourcePath)
+  RemotePathError(@remote_protocol.ProtocolError)
+} derive(@debug.Debug)
+
+pub struct RemoteServer {
+  // private fields
+}
+pub fn RemoteServer::close_document(Self, @remote_protocol.DocumentRequest) -> Unit
+pub async fn RemoteServer::definition(Self, @remote_protocol.DocumentPositionRequest) -> @remote_protocol.ServerPacket
+pub fn RemoteServer::dispose_watches(Self) -> Unit
+pub async fn RemoteServer::document_symbols(Self, @remote_protocol.DocumentRevisionRequest) -> @remote_protocol.ServerPacket
+pub async fn RemoteServer::handle_client_packet(Self, @remote_protocol.ClientPacket, async (@remote_protocol.ServerPacket) -> Unit, (async () -> Unit) -> Unit) -> Array[@remote_protocol.ServerPacket]
+pub async fn RemoteServer::hover(Self, @remote_protocol.DocumentPositionRequest) -> @remote_protocol.ServerPacket
+pub fn RemoteServer::new_session(Self) -> Self
+pub async fn RemoteServer::open_document(Self, @remote_protocol.DocumentRequest) -> @remote_protocol.ServerPacket
+pub async fn RemoteServer::references(Self, @remote_protocol.DocumentPositionRequest) -> @remote_protocol.ServerPacket
+pub async fn RemoteServer::resolve_directory(Self, @remote_protocol.DocumentRequest) -> @remote_protocol.ServerPacket
+pub fn RemoteServer::set_document_sync_listener(Self, ((@workspace.DocumentSnapshot) -> Unit)?) -> Unit
+pub async fn RemoteServer::watch_document(Self, @remote_protocol.DocumentRequest, async (@remote_protocol.ServerPacket) -> Unit, (async () -> Unit) -> Unit) -> @remote_protocol.ServerPacket
+pub fn RemoteServer::with_language_providers(String, &ServerHost, &@language.HoverProvider, &@language.DefinitionProvider, &@language.ReferencesProvider, &@language.DocumentSymbolProvider) -> Self
+
+pub(all) enum ServerHostReadResult {
+  ServerHostReadOk(@workspace.DocumentContent)
+  ServerHostReadError(@workspace.FileSystemProviderErrorCode, String)
+} derive(@debug.Debug)
+
+pub(all) enum ServerHostResolveResult {
+  ServerHostResolveOk(Array[@workspace.WorkspaceStat])
+  ServerHostResolveError(@workspace.FileSystemProviderErrorCode, String)
+} derive(@debug.Debug)
+
+pub struct ServerWatch {
+  // private fields
+}
+pub fn ServerWatch::ServerWatch(() -> Unit) -> Self
+pub fn ServerWatch::dispose(Self) -> Unit
+
+// Type aliases
+
+// Traits
+pub(open) trait ServerHost {
+  async fn read_directory(Self, String, String) -> ServerHostResolveResult
+  async fn read_text_file(Self, String, @workspace.SourcePath) -> ServerHostReadResult
+  fn watch_text_file(Self, String, @workspace.SourcePath, async (@workspace.FileChangeType) -> Unit, (async () -> Unit) -> Unit) -> ServerWatch
+}
+

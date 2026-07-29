@@ -1,10 +1,10 @@
 import {
   "moonbitlang/editor/base/common" @base_common,
   "moonbitlang/editor/language",
-  "moonbitlang/editor/internal/shell/remote_protocol",
-  "moonbitlang/editor/internal/shell/server",
+  "moonbitlang/editor/shell/remote_protocol",
+  "moonbitlang/editor-server/server",
   "moonbitlang/editor/viewer/common/model",
-  "moonbitlang/editor/internal/shell/workspace",
+  "moonbitlang/editor/shell/workspace",
   "moonbitlang/async",
   "moonbitlang/async/aqueue",
   "moonbitlang/async/fs",

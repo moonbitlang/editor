@@ -1,7 +1,7 @@
 import {
   "moonbitlang/core/immut/vector" @vec,
   "moonbitlang/editor/base/common" @base_common,
-  "moonbitlang/editor/internal/shell/workspace",
+  "moonbitlang/editor/shell/workspace",
   "moonbit-community/rabbita",
   "moonbit-community/rabbita/cmd",
   "moonbit-community/rabbita/html",

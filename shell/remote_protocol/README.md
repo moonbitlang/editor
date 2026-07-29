@@ -1,4 +1,4 @@
-# internal/shell/remote_protocol
+# shell/remote_protocol
 
 MoonBit-owned JSON contract between the reference browser workbench and native
 server. Protocol version `4` is carried by every packet and must match exactly.
@@ -23,7 +23,7 @@ The public surface is the packet/payload types plus `protocol_version`,
 
 ## Boundary and validation
 
-This package may depend on domain types and `internal/shell/workspace`, but not
+This package may depend on domain types and `shell/workspace`, but not
 on browser, viewer implementation, server routing, or native effects.
 
-Run `moon test internal/shell/remote_protocol --target js` and `just check`.
+Run `moon test shell/remote_protocol --target js` and `just check`.

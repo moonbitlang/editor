@@ -5,9 +5,6 @@ import {
 }
 
 ///|
-/// Keep bundle output independent from a parent `moon.work`. Without this
-/// override, the same package is emitted under a workspace-qualified path and
-/// a stale tree from the other mode can be copied into `web/dist`.
 async fn build_js_package(package_path : String) -> Unit {
   let status = @process.run(
     "moon",
@@ -19,7 +16,6 @@ async fn build_js_package(package_path : String) -> Unit {
       "_build",
       package_path,
     ],
-    extra_env={ "MOON_WORK": "off" },
   )
   if status != 0 {
     fail("moon build failed for \{package_path} with exit code \{status}")
