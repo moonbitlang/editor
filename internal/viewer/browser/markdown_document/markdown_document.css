@@ -22,12 +22,14 @@
   overscroll-behavior: contain;
 }
 
+/* The article flows across the full viewport like the source it replaces —
+ * the reading surface reserves no centered measure or side margins (and the
+ * pointer therefore never leaves the article sideways while inside the
+ * viewport). Modest padding keeps text off the edges. */
 .moonbit-viewer-markdown-document-article {
   box-sizing: border-box;
-  max-width: 980px;
   min-height: 100%;
-  margin: 0 auto;
-  padding: 32px 48px 64px;
+  padding: 16px 24px 64px;
   line-height: 1.6;
   overflow-wrap: anywhere;
 }
