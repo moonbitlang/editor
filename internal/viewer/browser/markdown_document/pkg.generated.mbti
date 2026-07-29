@@ -54,3 +54,4 @@ pub(all) struct MarkdownSemanticCodeLineDom {
 // Type aliases
 
 // Traits
+

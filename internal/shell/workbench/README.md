@@ -76,12 +76,10 @@ sequenceDiagram
   WB->>V: replace model, restore scroll
 ```
 
-Opened `.md` documents render as one whole-file Markdown block through the
-same provider seam and rendering pipeline as API documentation — tokenized
-code fences, Mermaid, and Diago included. The view projection cannot hide
-every model line, so the block spans `[1, line_count)`: a newline-terminated
-file leaves only its empty last line as source. One-line and blank documents
-keep their plain source view, and `.mbt.md` stays with the MoonBit provider.
+Opened `.md` and `.mbt.md` documents are not a workbench feature: the Viewer's
+own presentation routing renders them as readonly Markdown documents while the
+workbench keeps supplying ordinary URI-backed models (see the
+presentation-agnostic bullet above).
 
 The MoonBit Markdown provider registration explicitly opts its API-document
 results into presentation folding. Multi-line documentation initially shows

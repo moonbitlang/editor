@@ -41,15 +41,6 @@
   min-width: 0;
 }
 
-/* A whole-document zone — an opened Markdown file rendered as one block —
- * flows across the full content viewport like the source it replaces. Modest
- * padding keeps text off the gutter and scrollbar without reserving margins. */
-.moonbit-viewer-markdown-comment[data-markdown-document="true"]
-  .moonbit-viewer-markdown-comment-content {
-  padding: 16px 24px 48px 8px;
-  line-height: 1.6;
-}
-
 .moonbit-viewer-markdown-comment-preview {
   display: none;
 }

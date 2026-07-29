@@ -429,12 +429,6 @@ fn Viewer::refresh_markdown_comments(
   for block in blocks {
     next.set(markdown_comment_key(block), block)
   }
-  // A single block spanning the model (an opened Markdown document) gets the
-  // bounded reading-measure presentation; documentation zones keep the full
-  // content width.
-  let document_presentation = blocks is [only] &&
-    only.line_range.start_line_number == 1 &&
-    only.line_range.end_line_number_exclusive >= model.get_line_count()
   let old_keys : Array[String] = []
   for key, _ in state.rendered {
     old_keys.push(key)
@@ -480,7 +474,6 @@ fn Viewer::refresh_markdown_comments(
           }
           existing.block = block
           existing.foldable = foldable
-          existing.dom.set_document_presentation(document_presentation)
         }
         None => {
           let dom = @markdown_comments_browser.MarkdownCommentDom(
@@ -504,7 +497,6 @@ fn Viewer::refresh_markdown_comments(
           )
           let zone_id = accessor.add_zone(zone)
           dom.expose_accessible_content()
-          dom.set_document_presentation(document_presentation)
           // `add_zone` writes the ordinary scroll-plane `width: 100%`.
           // Replace it before any observer or renderer can measure the node.
           dom.pin_to_content_viewport()
