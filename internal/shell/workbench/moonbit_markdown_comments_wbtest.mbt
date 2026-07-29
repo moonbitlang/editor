@@ -14,10 +14,26 @@ test "MoonBit Markdown comments prefix a core-shaped block with its item boundar
 }
 
 ///|
+test "MoonBit Markdown comments retain inline text on a detached item boundary" {
+  let blocks = moonbit_markdown_comments_in_snapshot(
+    TextSnapshot(
+      "///| Port of `base/common/uri.ts`.\n///\n/// Reviewed deviations follow.\n\n///|\npub fn next() -> Unit {}",
+    ),
+  )
+  assert_eq(blocks, [
+    {
+      line_range: LineRange(1, 4),
+      markdown: "---\n\nPort of `base/common/uri.ts`.\n\nReviewed deviations follow.",
+    },
+    { line_range: LineRange(5, 6), markdown: "---" },
+  ])
+}
+
+///|
 test "MoonBit Markdown comments render separators and ignore detached groups" {
   let blocks = moonbit_markdown_comments_in_snapshot(
     TextSnapshot(
-      "///|\nlet first = 1\n/// detached\n///| shadow\n///|\n\n/// separated\n///|\n/// Valid docs\npub fn valid() -> Unit {}\n///|\n/// Second docs\npub fn second() -> Unit {}",
+      "///|\nlet first = 1\n/// detached\n///|shadow\n///|\n\n/// separated\n///|\n/// Valid docs\npub fn valid() -> Unit {}\n///|\n/// Second docs\npub fn second() -> Unit {}",
     ),
   )
   assert_eq(blocks, [

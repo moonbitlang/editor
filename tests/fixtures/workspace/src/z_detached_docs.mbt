@@ -1,5 +1,4 @@
-///|
-/// # Detached overview
+///| # Detached overview
 ///
 /// This Markdown has no top-level body.
 
