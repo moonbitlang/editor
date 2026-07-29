@@ -973,3 +973,16 @@ checks do not replace the focused evidence above.
   existing opt-in live-network case skipped, including real Chromium
   rendering, tokenization, source/theme replacement, full-width resize, swap,
   and disposal coverage.
+- 2026-07-29, Milestone 4: the workbench now gates hover and diagnostics on
+  exact model identity, public version, mutable content version, URI, revision,
+  and registration generation, clearing owner `moon` markers before a
+  replacement can attach. The server revalidates physical cached-snapshot
+  identity after provider suspension. Native hover uses ordinary
+  `moon ide hover` and accepts results only across coherent matching pre/post
+  disk snapshots. `MoonCheckDiagnostics` captures producing revision,
+  normalized text, disk signature, and sync generation, reruns dirty
+  single-flight work, and replays only exact compatible sets per document.
+  The remote protocol and public interface shapes remain unchanged; the
+  workbench still contains no Markdown-selection branch. Focused suites passed
+  7 remote-protocol JS tests, 12 workbench JS tests, 10 native server tests,
+  and 17 native-host tests.

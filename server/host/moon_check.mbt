@@ -5,15 +5,28 @@
 /// collapse into one follow-up run.
 pub struct MoonCheckDiagnostics {
   priv root : String
-  priv moon_command : String
   priv publish : (@base_common.Uri, String, Array[@language.Diagnostic]) -> Unit
+  priv collect_check : async () -> String?
   priv running : Ref[Bool]
   priv dirty : Ref[Bool]
-  /// Latest synced revision per workspace URI, stamped onto pushed packets.
-  priv revisions : Map[String, String]
-  /// Last pushed set per workspace URI, replayed on document sync and used to
-  /// push clears for files whose diagnostics disappeared.
-  priv published : Ref[Map[String, Array[@language.Diagnostic]]]
+  priv sync_generation : Ref[Int]
+  /// Exact synced model state per workspace URI.
+  priv documents : Map[String, SyncedDocumentStamp]
+  /// Last accepted set per workspace URI, including its producing state.
+  priv published : Ref[Map[String, PublishedDiagnosticSet]]
+}
+
+///|
+priv struct SyncedDocumentStamp {
+  revision : String
+  normalized_text : String
+}
+
+///|
+priv struct PublishedDiagnosticSet {
+  revision : String
+  normalized_text : String
+  diagnostics : Array[@language.Diagnostic]
 }
 
 ///|
@@ -23,28 +36,63 @@ pub fn MoonCheckDiagnostics::MoonCheckDiagnostics(
   publish : (@base_common.Uri, String, Array[@language.Diagnostic]) -> Unit,
   moon_command? : String = "moon",
 ) -> MoonCheckDiagnostics {
+  let root = normalize_host_path(root)
+  new_moon_check_diagnostics(root, publish, () => {
+    // `moon check` exits nonzero whenever errors exist, so the exit code is
+    // ignored and stdout is parsed unconditionally.
+    Some(
+      @process.collect_stdout(
+        moon_command,
+        ["check", "--output-json"],
+        cwd=root,
+      ).1.text(),
+    ) catch {
+      _ => None
+    }
+  })
+}
+
+///|
+fn new_moon_check_diagnostics(
+  root : String,
+  publish : (@base_common.Uri, String, Array[@language.Diagnostic]) -> Unit,
+  collect_check : async () -> String?,
+) -> MoonCheckDiagnostics {
   {
     root: normalize_host_path(root),
-    moon_command,
     publish,
+    collect_check,
     running: Ref(false),
     dirty: Ref(false),
-    revisions: {},
+    sync_generation: Ref(0),
+    documents: {},
     published: Ref({}),
   }
 }
 
 ///|
-/// Records the latest synced revision and replays the last published set so a
-/// freshly opened document paints known markers before the next check lands.
+/// Records the exact synced state. A freshly opened document replays only a
+/// diagnostic set produced for the same revision and normalized text.
 pub fn MoonCheckDiagnostics::note_document(
   self : MoonCheckDiagnostics,
   document : @workspace.DocumentSnapshot,
 ) -> Unit {
   let key = document.uri.to_string()
-  self.revisions.set(key, document.revision)
+  let stamp : SyncedDocumentStamp = {
+    revision: document.revision,
+    normalized_text: @model.TextSnapshot(document.text).get_value(),
+  }
+  self.sync_generation.val += 1
+  self.documents.set(key, stamp)
+  if self.running.val {
+    self.dirty.val = true
+  }
   match self.published.val.get(key) {
-    Some(diagnostics) => self.emit(key, diagnostics)
+    Some(published) =>
+      if published.revision == stamp.revision &&
+        published.normalized_text == stamp.normalized_text {
+        self.emit(key, published.revision, published.diagnostics)
+      }
     None => ()
   }
 }
@@ -62,6 +110,11 @@ pub fn MoonCheckDiagnostics::schedule(
   }
   self.running.val = true
   spawn_task(() => {
+    // The scheduler may be cancelled or the injected/process collector may
+    // raise. A later sync must still be able to start a new run.
+    defer {
+      self.running.val = false
+    }
     for ;; {
       self.dirty.val = false
       self.run_once()
@@ -69,52 +122,136 @@ pub fn MoonCheckDiagnostics::schedule(
         break
       }
     }
-    self.running.val = false
   })
 }
 
 ///|
 async fn MoonCheckDiagnostics::run_once(self : MoonCheckDiagnostics) -> Unit {
-  // `moon check` exits nonzero whenever errors exist, so the exit code is
-  // ignored and stdout is parsed unconditionally; only a spawn/read failure
-  // skips publishing.
-  let raw = Some(
-    @process.collect_stdout(
-      self.moon_command,
-      ["check", "--output-json"],
-      cwd=self.root,
-    ).1.text(),
-  ) catch {
-    _ => None
+  let generation = self.sync_generation.val
+  let documents = copy_synced_documents(self.documents)
+  let before = capture_native_disk_snapshots(self.root, documents)
+  let raw = (self.collect_check)()
+  let after = capture_native_disk_snapshots(self.root, documents)
+  if self.sync_generation.val != generation ||
+    !same_native_disk_snapshot_map(before, after) {
+    self.dirty.val = true
+    return
   }
   guard raw is Some(raw) else { return }
   let next = parse_moon_check_diagnostics(self.root, raw)
-  for key, _diagnostics in self.published.val {
-    if !next.contains(key) {
-      self.emit(key, [])
+  let accepted = copy_published_diagnostic_sets(self.published.val)
+  for key, document in documents {
+    // A stable disk/model mismatch is not a clear for the last accepted model.
+    // Preserve that key and continue so historical entries cannot suppress
+    // diagnostics for compatible active documents.
+    if !native_disk_matches_document(before, key, document) {
+      continue
+    }
+    let diagnostics = next.get(key).unwrap_or([])
+    if !diagnostics.is_empty() || self.published.val.contains(key) {
+      self.emit(key, document.revision, diagnostics)
+    }
+    if !diagnostics.is_empty() {
+      accepted.set(key, {
+        revision: document.revision,
+        normalized_text: document.normalized_text,
+        diagnostics,
+      })
+    } else {
+      accepted.remove(key)
     }
   }
-  for key, diagnostics in next {
-    self.emit(key, diagnostics)
-  }
-  self.published.val = next
+  self.published.val = accepted
 }
 
 ///|
 fn MoonCheckDiagnostics::emit(
   self : MoonCheckDiagnostics,
   uri_key : String,
+  revision : String,
   diagnostics : Array[@language.Diagnostic],
 ) -> Unit {
   let uri = Some(@base_common.Uri::parse(uri_key)) catch { _ => None }
   match uri {
-    Some(uri) =>
-      (self.publish)(
-        uri,
-        self.revisions.get(uri_key).unwrap_or(""),
-        diagnostics,
-      )
+    Some(uri) => (self.publish)(uri, revision, diagnostics)
     None => ()
+  }
+}
+
+///|
+fn copy_synced_documents(
+  documents : Map[String, SyncedDocumentStamp],
+) -> Map[String, SyncedDocumentStamp] {
+  let copy : Map[String, SyncedDocumentStamp] = Map([])
+  for key, document in documents {
+    copy.set(key, document)
+  }
+  copy
+}
+
+///|
+fn copy_published_diagnostic_sets(
+  published : Map[String, PublishedDiagnosticSet],
+) -> Map[String, PublishedDiagnosticSet] {
+  let copy : Map[String, PublishedDiagnosticSet] = Map([])
+  for key, diagnostic_set in published {
+    copy.set(key, diagnostic_set)
+  }
+  copy
+}
+
+///|
+async fn capture_native_disk_snapshots(
+  root : String,
+  documents : Map[String, SyncedDocumentStamp],
+) -> Map[String, NativeDiskSnapshot] {
+  let snapshots : Map[String, NativeDiskSnapshot] = Map([])
+  for key, _document in documents {
+    let uri = Some(@base_common.Uri::parse(key)) catch { _ => None }
+    match uri {
+      Some(uri) =>
+        match @server.resolve_remote_document_uri(uri) {
+          ParsedRemotePath(path) =>
+            match read_native_disk_snapshot(root, path) {
+              Some(snapshot) => snapshots.set(key, snapshot)
+              None => ()
+            }
+          RemotePathError(_) => ()
+        }
+      None => ()
+    }
+  }
+  snapshots
+}
+
+///|
+fn same_native_disk_snapshot_map(
+  left : Map[String, NativeDiskSnapshot],
+  right : Map[String, NativeDiskSnapshot],
+) -> Bool {
+  if left.length() != right.length() {
+    return false
+  }
+  for key, snapshot in left {
+    match right.get(key) {
+      Some(other) => if snapshot != other { return false }
+      None => return false
+    }
+  }
+  true
+}
+
+///|
+fn native_disk_matches_document(
+  snapshots : Map[String, NativeDiskSnapshot],
+  key : String,
+  document : SyncedDocumentStamp,
+) -> Bool {
+  match snapshots.get(key) {
+    Some(disk) =>
+      disk.signature == document.revision &&
+      disk.normalized_text == document.normalized_text
+    None => false
   }
 }
 

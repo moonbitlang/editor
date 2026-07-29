@@ -264,6 +264,51 @@ async test "answers hover and definition from cached provider state" {
 }
 
 ///|
+async test "hover rejects a same-revision cache replacement during provider await" {
+  let host = FakeServerHost::new()
+  host.files.set("main.mbt", "pub fn old {}\n")
+  host.revisions.set("main.mbt", "same-revision")
+  let started = @async.Semaphore(1, initial_value=0)
+  let release_gate = @async.Semaphore(1, initial_value=0)
+  let hover_provider = DelayedHoverProvider::{ started, release_gate }
+  let other_provider = FakeLanguageProvider::{  }
+  let server = @server.RemoteServer::with_language_providers(
+    "/workspace", host, hover_provider, other_provider, other_provider, other_provider,
+  )
+  let uri = expect_remote_uri("main.mbt")
+  ignore(
+    server.watch_document(
+      { id: "watch-1", uri },
+      _packet => (),
+      noop_watch_spawner,
+    ),
+  )
+  @async.with_task_group() <| group => {
+    let request = group.spawn(() => {
+      server.hover({
+        id: "hover-1",
+        uri,
+        document_revision: "same-revision",
+        offset: 7,
+      })
+    })
+    started.acquire()
+    // The provider-owned revision and byte length are deliberately reused.
+    // Normalized content still replaces the cache generation.
+    host.files.set("main.mbt", "pub fn new {}\n")
+    host.emit("main.mbt", Changed)
+    release_gate.release()
+    match request.wait() {
+      RemoteError(error) => {
+        assert_eq(error.request_id, "hover-1")
+        assert_true(error.code == ProtocolInvalidPacket)
+      }
+      _ => fail("expected the raced hover to be rejected")
+    }
+  }
+}
+
+///|
 async test "answers symbols from cached provider state" {
   let host = FakeServerHost::new()
   host.files.set("main.mbt", "pub fn main { // TODO }\n")
@@ -342,6 +387,7 @@ fn test_remote_server(
 ///|
 struct FakeServerHost {
   files : Map[String, String]
+  revisions : Map[String, String]
   errors : Map[String, (@workspace.FileSystemProviderErrorCode, String)]
   directories : Map[String, Array[@workspace.WorkspaceStat]]
   listeners : Map[String, Array[FakeWatchListener]]
@@ -355,7 +401,7 @@ struct FakeWatchListener {
 
 ///|
 fn FakeServerHost::new() -> FakeServerHost {
-  { files: {}, errors: {}, directories: {}, listeners: {} }
+  { files: {}, revisions: {}, errors: {}, directories: {}, listeners: {} }
 }
 
 ///|
@@ -403,7 +449,9 @@ impl @server.ServerHost for FakeServerHost with fn read_text_file(
             DocumentContent(
               text,
               display_name=path.display_name(),
-              revision="rev-" + text.length().to_string(),
+              revision=self.revisions
+                .get(key)
+                .unwrap_or("rev-" + text.length().to_string()),
             ),
           )
         None => ServerHostReadError(FileNotFound, "missing file")
@@ -436,6 +484,30 @@ fn noop_watch_spawner(_task : async () -> Unit) -> Unit {
 
 ///|
 struct FakeLanguageProvider {}
+
+///|
+struct DelayedHoverProvider {
+  started : @async.Semaphore
+  release_gate : @async.Semaphore
+}
+
+///|
+impl @language.HoverProvider for DelayedHoverProvider with fn provide_hover(
+  self,
+  model,
+  position,
+  _token,
+) {
+  self.started.release()
+  self.release_gate.acquire() catch {
+    _ => return None
+  }
+  let offset = model.get_offset_at(position)
+  Some({
+    range: model.snapshot.range_of(OffsetRange(offset, offset + 3)),
+    contents: [PlainText("Delayed hover")],
+  })
+}
 
 ///|
 impl @language.HoverProvider for FakeLanguageProvider with fn provide_hover(

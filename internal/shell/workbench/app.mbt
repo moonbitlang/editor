@@ -94,6 +94,7 @@ priv struct WorkbenchServices {
   viewer : @viewer.ViewerServices
   languages : @languages.Languages
   markers : @markers.MarkerService
+  remote_language : RemoteLanguageFreshness
   agent_feedback : @agent_feedback.AgentFeedbackService
   log_service : @log.LogService
 }
@@ -114,6 +115,7 @@ fn workbench_services() -> WorkbenchServices {
       let markers = @markers.MarkerService(
         schedule=@base_browser.queue_microtask,
       )
+      let remote_language = RemoteLanguageFreshness(markers)
       let agent_feedback = @agent_feedback.AgentFeedbackService()
       let viewer = @viewer.ViewerServices(
         languages=languages.language_handle(log_service.log_handle()),
@@ -125,6 +127,7 @@ fn workbench_services() -> WorkbenchServices {
         viewer,
         languages,
         markers,
+        remote_language,
         agent_feedback,
         log_service,
       }
@@ -186,7 +189,10 @@ fn install_viewer_event_subscriptions(viewer : @viewer.Viewer) -> Unit {
     dispatch_workbench_msg(ViewerEvent(DidScroll(event)))
   })
   |> ignore
-  viewer.on_did_dispose(() => dispatch_workbench_msg(ViewerEvent(DidDispose)))
+  viewer.on_did_dispose(() => {
+    workbench_services().remote_language.invalidate()
+    dispatch_workbench_msg(ViewerEvent(DidDispose))
+  })
   |> ignore
 }
 
@@ -388,6 +394,7 @@ fn set_workbench_model(
   view_state : DocumentViewState,
 ) -> Unit {
   let viewer = workbench_viewer()
+  workbench_services().remote_language.note_document(text_model)
   sync_document_feedback(text_model)
   match view_state {
     PreserveScroll => {
@@ -474,7 +481,10 @@ fn active_document_error_update(
   error : @workspace.DocumentError,
 ) -> (@rabbita.Cmd, WorkbenchModel) {
   emit_event("language:error", error.to_json().stringify())
-  let clear = viewer_cmd(() => workbench_viewer().set_model(None))
+  let clear = viewer_cmd(() => {
+    workbench_services().remote_language.invalidate()
+    workbench_viewer().set_model(None)
+  })
   if error.code == FileNotFound {
     (
       @rabbita.batch([clear, dom_mounted_status_cmd("missing")]),

@@ -385,16 +385,21 @@ pub async fn RemoteServer::hover(
     self.cached_document(request.uri, request.document_revision, request.id) {
     Some(document) => {
       let model = text_model_from_document(document)
-      HoverResult({
-        id: request.id,
-        uri: request.uri,
-        revision: document.revision,
-        hover: self.hover_provider.provide_hover(
-          model,
-          model.get_position_at(request.offset),
-          @language.CancellationToken::none(),
-        ),
-      })
+      let hover = self.hover_provider.provide_hover(
+        model,
+        model.get_position_at(request.offset),
+        @language.CancellationToken::none(),
+      )
+      if self.is_current_document(document) {
+        HoverResult({
+          id: request.id,
+          uri: document.uri,
+          revision: document.revision,
+          hover,
+        })
+      } else {
+        self.missing_cached_document_error(request.id)
+      }
     }
     None => self.missing_cached_document_error(request.id)
   }
@@ -615,12 +620,39 @@ fn RemoteServer::tracked_document(
 ) -> @workspace.DocumentSnapshot {
   match self.documents.get(document.uri.to_string()) {
     Some(previous) =>
-      if previous.revision == document.revision {
+      if same_document_snapshot(previous, document) {
         previous
       } else {
         document
       }
     None => document
+  }
+}
+
+///|
+/// Revision strings are provider-owned and may be reused. Cache identity is
+/// retained only when the normalized provider snapshot is also unchanged.
+fn same_document_snapshot(
+  left : @workspace.DocumentSnapshot,
+  right : @workspace.DocumentSnapshot,
+) -> Bool {
+  left.uri.to_string() == right.uri.to_string() &&
+  left.revision == right.revision &&
+  @model.TextSnapshot(left.text).equals(@model.TextSnapshot(right.text))
+}
+
+///|
+/// Provider calls may suspend while a watch replaces the cache entry. Only the
+/// exact captured entry may be packaged as a response.
+fn RemoteServer::is_current_document(
+  self : RemoteServer,
+  document : @workspace.DocumentSnapshot,
+) -> Bool {
+  match self.documents.get(document.uri.to_string()) {
+    Some(current) =>
+      physical_equal(current, document) &&
+      same_document_snapshot(current, document)
+    None => false
   }
 }
 

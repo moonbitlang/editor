@@ -19,35 +19,80 @@ pub fn MoonWorkspaceLanguageProvider::MoonWorkspaceLanguageProvider(
 }
 
 ///|
-/// Runs `moon ide hover` at the requested position. `--no-check` reuses the
-/// check artifacts the diagnostics runner keeps fresh instead of re-checking
-/// the workspace per hover.
+/// Runs `moon ide hover` at the requested position. The ordinary command
+/// checks current disk content before answering; exact pre/post disk snapshots
+/// additionally prevent a raced result from being assigned the model revision.
 pub impl @language.HoverProvider for MoonWorkspaceLanguageProvider with fn provide_hover(
   self,
   model,
   position,
   _token,
 ) {
+  self.provide_hover_with_runner(model, position, args => {
+    let output = Some(
+      @process.collect_stdout(self.moon_command, args, cwd=self.root),
+    ) catch {
+      _ => None
+    }
+    match output {
+      Some((exit_code, data)) =>
+        match (Some(data.text()) catch { _ => None }) {
+          Some(raw) => Some((exit_code, raw))
+          None => None
+        }
+      None => None
+    }
+  })
+}
+
+///|
+async fn MoonWorkspaceLanguageProvider::provide_hover_with_runner(
+  self : MoonWorkspaceLanguageProvider,
+  model : @model.TextModel,
+  position : @base_common.Position,
+  run : async (Array[String]) -> (Int, String)?,
+) -> @language.Hover? {
   match @server.resolve_remote_document_uri(model.uri) {
     ParsedRemotePath(path) => {
+      let model_identity = model.identity()
+      let model_version = model.version
+      let content_version = model.get_version_id()
+      let model_uri = model.uri.to_string()
+      let model_revision = model.revision
+      let model_text = model.snapshot.get_value()
+      guard read_native_disk_snapshot(self.root, path) is Some(before) else {
+        return None
+      }
+      guard before.signature == model_revision &&
+        before.normalized_text == model_text else {
+        return None
+      }
+      guard !model.is_disposed() &&
+        model.identity() == model_identity &&
+        model.version == model_version &&
+        model.get_version_id() == content_version &&
+        model.uri.to_string() == model_uri &&
+        model.revision == model_revision &&
+        model.snapshot.get_value() == model_text else {
+        return None
+      }
       let loc = "\{path.to_string()}:\{position.line_number}:\{position.column}"
-      let output = Some(
-        @process.collect_stdout(
-          self.moon_command,
-          ["ide", "hover", "--loc", loc, "--output-json", "--no-check"],
-          cwd=self.root,
-        ),
-      ) catch {
-        _ => None
+      let output = run(["ide", "hover", "--loc", loc, "--output-json"])
+      guard read_native_disk_snapshot(self.root, path) is Some(after) &&
+        after == before &&
+        !model.is_disposed() &&
+        model.identity() == model_identity &&
+        model.version == model_version &&
+        model.get_version_id() == content_version &&
+        model.uri.to_string() == model_uri &&
+        model.revision == model_revision &&
+        model.snapshot.get_value() == model_text else {
+        return None
       }
       match output {
         // A missing hover exits nonzero with a plain-text notice, so only an
         // exit-0 payload is parsed.
-        Some((0, data)) =>
-          match (Some(data.text()) catch { _ => None }) {
-            Some(raw) => parse_moon_hover_output(raw, position)
-            None => None
-          }
+        Some((0, raw)) => parse_moon_hover_output(raw, position)
         _ => None
       }
     }
