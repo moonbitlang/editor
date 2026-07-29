@@ -41,6 +41,17 @@
   min-width: 0;
 }
 
+/* A whole-document zone — an opened Markdown file rendered as one block —
+ * reads best at a bounded measure with page-like padding. The zone itself
+ * still spans the content viewport; only the inner content narrows. */
+.moonbit-viewer-markdown-comment[data-markdown-document="true"]
+  .moonbit-viewer-markdown-comment-content {
+  max-width: 960px;
+  margin-inline: auto;
+  padding: 20px 32px 48px;
+  line-height: 1.6;
+}
+
 .moonbit-viewer-markdown-comment-preview {
   display: none;
 }

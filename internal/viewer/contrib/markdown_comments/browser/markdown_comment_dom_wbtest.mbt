@@ -431,6 +431,25 @@ test "MarkdownCommentDom creates the stable half-open ViewZone target shape" {
 }
 
 ///|
+test "MarkdownCommentDom toggles the whole-document presentation attribute" {
+  let harness = install_markdown_comment_browser_test_dom()
+  defer harness.dispose()
+  let dom = MarkdownCommentDom(1, 4)
+  assert_false(
+    markdown_comment_test_has_attribute(dom.outer, "data-markdown-document"),
+  )
+  dom.set_document_presentation(true)
+  assert_eq(
+    markdown_comment_test_attribute(dom.outer, "data-markdown-document"),
+    "true",
+  )
+  dom.set_document_presentation(false)
+  assert_false(
+    markdown_comment_test_has_attribute(dom.outer, "data-markdown-document"),
+  )
+}
+
+///|
 test "MarkdownCommentDom toggles accessible folding state and releases listeners" {
   let harness = install_markdown_comment_browser_test_dom()
   defer harness.dispose()
