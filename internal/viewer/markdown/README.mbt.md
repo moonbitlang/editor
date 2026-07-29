@@ -202,6 +202,113 @@ or active model language, threads tokenizer state across lines, and emits the
 existing `monaco-tokenized-source`/`mtk*` classes. Hover and whole-line Markdown
 comments both use that owner.
 
+## Sections
+
+`markdown_sections` derives the heading tree from an already-parsed projection.
+A heading at level `L` owns every following anchor until the next anchor at
+level `L` or shallower; a deeper heading is part of that body *and* opens its
+own nested section. Sections are emitted in document order, outermost first.
+
+The heading level is retained during the same parse that produced the HTML and
+the source projection (`MarkdownBlockAnchor::heading_level`), so section
+structure can never describe a different parse than the document.
+
+```mbt check
+///|
+test "a deeper heading nests, a same-level heading ends the section" {
+  let projection = @markdown.render_markdown(
+      (
+        #|# Outer
+        #|
+        #|outer body
+        #|
+        #|## Inner
+        #|
+        #|inner body
+        #|
+        #|# Next
+        #|
+      ),
+    ).projection
+  debug_inspect(
+    @markdown.markdown_sections(projection).map(section => {
+      (
+        section.level,
+        section.body_anchor_indexes.length(),
+        section.is_foldable(),
+      )
+    }),
+    content=(
+      #|[(1, 3, true), (2, 1, true), (1, 0, false)]
+    ),
+  )
+}
+```
+
+A heading with no body carries no fold control, mirroring how separator-only or
+one-line API blocks stay expanded without a toggle.
+
+```mbt check
+///|
+test "an empty section is not foldable" {
+  let projection = @markdown.render_markdown(
+      (
+        #|# Empty
+        #|# Has a body
+        #|
+        #|text
+        #|
+      ),
+    ).projection
+  debug_inspect(
+    @markdown.markdown_sections(projection).map(section => section.is_foldable()),
+    content=(
+      #|[false, true]
+    ),
+  )
+}
+```
+
+`body_rendered_element_indexes` is the run of root-element ordinals a collapse
+would hide. It excludes the heading's own element — the heading stays visible as
+the affordance — and skips anchors that produced no in-place root element, so
+hiding the run never shifts an unrelated element's ordinal.
+
+```mbt check
+///|
+test "the hidden run is the body's ordinals, never the heading's" {
+  let projection = @markdown.render_markdown(
+      (
+        #|# Title
+        #|
+        #|first
+        #|
+        #|second
+        #|
+      ),
+    ).projection
+  guard @markdown.markdown_sections(projection) is [section, ..] else {
+    fail("expected one section")
+  }
+  debug_inspect(
+    (
+      projection.block_anchors[section.heading_anchor_index].rendered_element_index,
+      section.body_rendered_element_indexes(projection),
+    ),
+    content=(
+      #|(Some(0), [1, 2])
+    ),
+  )
+}
+```
+
+Consumers must collapse by hiding those retained elements with `display:none`.
+Re-rendering, or hiding with `visibility:hidden` or a zero height, would break
+the `.mbt.md` semantic-fence contract: the hover bridge resolves a caret through
+retained per-line boundary maps and a DOM descendant check, so hidden-but-
+hit-testable content would produce hovers on text the reader cannot see. See
+`docs/exec-plans/markdown-section-folding.md`.
+
 Browser DOM policy, URI rewriting, listeners, target reuse, and disposal live
 in `internal/viewer/browser/markdown`.
 

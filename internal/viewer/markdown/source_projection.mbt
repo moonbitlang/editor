@@ -25,6 +25,10 @@ pub(all) struct MarkdownBlockAnchor {
   index : Int
   source_range : @common.OffsetRange
   rendered_element_index : Int?
+  /// The ATX or setext heading level for a heading anchor, otherwise `None`.
+  /// Retained during the one parse that produces the HTML and this projection,
+  /// so section structure cannot describe a different parse than the document.
+  heading_level : Int?
 } derive(Eq, Debug)
 
 ///|
@@ -140,6 +144,7 @@ fn markdown_document_projection(doc : @cmark.Doc) -> MarkdownDocumentProjection 
               rendered_element_indices,
               block.meta().id,
             ),
+            heading_level: markdown_block_heading_level(block),
           })
         None => ()
       }
@@ -183,6 +188,17 @@ fn markdown_rendered_element_indices(doc : @cmark.Doc) -> Array[(Int, Int)] {
     block => add(block)
   }
   result
+}
+
+///|
+/// The heading level for a heading block, otherwise `None`. ATX and setext
+/// headings are indistinguishable here on purpose: section structure depends on
+/// the level, not on how the level was spelled.
+fn markdown_block_heading_level(block : @cmark.Block) -> Int? {
+  match block {
+    Heading(node) => Some(node.v.level)
+    _ => None
+  }
 }
 
 ///|
