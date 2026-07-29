@@ -93,6 +93,8 @@ priv struct RegisteredViewZone {
   mut is_visible : Bool
   dom_node : FastViewZoneDomNode
   margin_dom_node : FastViewZoneDomNode?
+  caller_aria_hidden_present : Bool
+  caller_aria_hidden_value : String
 }
 
 ///|
@@ -147,7 +149,9 @@ fn ViewZones::ViewZones(
   dom_node.set_attribute("class", "view-zones")
   dom_node_cache.set_position("absolute")
   dom_node.set_attribute("role", "presentation")
-  dom_node.set_attribute("aria-hidden", "true")
+  // Individual caller-owned nodes are hidden when registered. Keeping the
+  // shared content container itself visible to the accessibility tree lets an
+  // explicitly interactive contribution expose only its own zone afterward.
 
   let margin_dom_node = document.create_element("div")
   let margin_dom_node_cache = FastViewZoneDomNode::FastViewZoneDomNode(
@@ -203,13 +207,17 @@ fn ViewZones::install_context(
 
 ///|
 /// `ViewPart.dispose`: superclass state is represented by the dirty flag;
-/// clear it first, then lose the complete model-scoped registry.
+/// clear it first, restore caller-owned accessibility state, then lose the
+/// complete model-scoped registry.
 fn ViewZones::dispose(self : ViewZones) -> Unit {
   if self.disposed {
     return
   }
   self.disposed = true
   self.should_render = false
+  for _, zone in self.zones {
+    restore_view_zone_aria_hidden(zone)
+  }
   self.zones.clear()
   self.context = None
 }
@@ -480,6 +488,13 @@ fn ViewZones::add_zone(
   zone : @editor_browser.ViewZone,
 ) -> String {
   let props = self.compute_whitespace_props(zone)
+  let caller_aria_hidden_present = view_zone_element_has_attribute(
+    zone.dom_node,
+    "aria-hidden",
+  )
+  let caller_aria_hidden_value = zone.dom_node
+    .get_attribute("aria-hidden")
+    .unwrap_or("")
   let whitespace_id = whitespace_accessor.insert_whitespace(
     props.after_view_line_number,
     self.zone_ordinal(zone),
@@ -496,6 +511,8 @@ fn ViewZones::add_zone(
       Some(node) => Some(FastViewZoneDomNode(node))
       None => None
     },
+    caller_aria_hidden_present,
+    caller_aria_hidden_value,
   }
 
   // Exact phase: after whitespace insertion and wrapper capture, before every
@@ -508,6 +525,7 @@ fn ViewZones::add_zone(
   @base_browser.set_style_property(registered.dom_node.element, "width", "100%")
   registered.dom_node.set_display("none")
   registered.dom_node.element.set_attribute("monaco-view-zone", whitespace_id)
+  registered.dom_node.element.set_attribute("aria-hidden", "true")
   self.dom_node.append_child(registered.dom_node.element.as_node())
   match registered.margin_dom_node {
     Some(margin_dom_node) => {
@@ -536,6 +554,7 @@ fn ViewZones::remove_zone(
 
   zone.dom_node.element.remove_attribute("monaco-visible-view-zone")
   zone.dom_node.element.remove_attribute("monaco-view-zone")
+  restore_view_zone_aria_hidden(zone)
   @base_browser.remove_element(zone.dom_node.element)
   match zone.margin_dom_node {
     Some(margin_dom_node) => {
@@ -547,6 +566,18 @@ fn ViewZones::remove_zone(
   }
   self.should_render = true
   true
+}
+
+///|
+fn restore_view_zone_aria_hidden(zone : RegisteredViewZone) -> Unit {
+  if zone.caller_aria_hidden_present {
+    zone.dom_node.element.set_attribute(
+      "aria-hidden",
+      zone.caller_aria_hidden_value,
+    )
+  } else {
+    zone.dom_node.element.remove_attribute("aria-hidden")
+  }
 }
 
 ///|
@@ -756,3 +787,18 @@ fn css_pixels(value : Int) -> String {
 fn css_pixels_double(value : Double) -> String {
   value.to_string() + "px"
 }
+
+///|
+extern "js" fn view_zone_element_has_attribute(
+  element : @rdom.Element,
+  name : String,
+) -> Bool =
+  #| (element, name) => {
+  #|   if (typeof element.hasAttribute === "function") {
+  #|     return element.hasAttribute(name);
+  #|   }
+  #|   if (typeof element.attributes?.has === "function") {
+  #|     return element.attributes.has(name);
+  #|   }
+  #|   return element.getAttribute?.(name) != null;
+  #| }

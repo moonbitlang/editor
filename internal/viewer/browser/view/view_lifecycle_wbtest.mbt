@@ -125,13 +125,15 @@ test "View mounts both ViewZones containers at the source relative positions" {
     view.view_zones.dom_node().get_attribute("role"),
     Some("presentation"),
   )
-  assert_eq(
-    view.view_zones.dom_node().get_attribute("aria-hidden"),
-    Some("true"),
-  )
+  // The lightweight DOM binding normalizes an absent attribute to `Some("")`.
+  assert_eq(view.view_zones.dom_node().get_attribute("aria-hidden"), Some(""))
   assert_eq(
     view.view_zones.margin_dom_node().get_attribute("class"),
     Some("margin-view-zones"),
+  )
+  assert_eq(
+    view.view_zones.margin_dom_node().get_attribute("aria-hidden"),
+    Some("true"),
   )
   restore_view_lifecycle_test_browser()
 }

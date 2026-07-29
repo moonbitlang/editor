@@ -43,6 +43,13 @@ reusable `viewer`, file tree, remote transport, and browser-test observability.
 - Agent-feedback state is enabled per opened resource and persisted in
   `localStorage`; this reference host has no agent execution loop.
 
+The MoonBit Markdown provider registration explicitly opts its API-document
+results into presentation folding. Multi-line documentation initially shows
+only its first source line; the adjacent accessible control expands or
+collapses the full rendered Markdown without changing source coordinates or
+code-folding state. Generic or third-party providers remain expanded unless
+their own registration opts in, regardless of Markdown content.
+
 The only exported functions are `start_app`, `mount_app`, and the harness-facing
 `emit_event`; see `pkg.generated.mbti`.
 

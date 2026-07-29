@@ -53,6 +53,8 @@ Caller-owned widget and zone nodes remain owned by their callers. A part may
 mount, position, hide, and unmount such a node according to its contract.
 ViewZones does not replace a supplied node's class, full style attribute, or
 contents; it writes only the required layout properties and marker attributes.
+Content zones default to `aria-hidden=true` while registered, and removal
+restores the caller's original attribute presence and value.
 
 ## Event, render, and disposal lifecycle
 

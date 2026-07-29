@@ -32,9 +32,14 @@ fn MarkdownCommentContributionState::MarkdownCommentContributionState() -> Markd
 ///|
 priv struct RenderedMarkdownComment {
   mut block : @language.MarkdownCommentBlock
+  mut foldable : Bool
+  dom : @markdown_comments_browser.MarkdownCommentDom
   zone : @editor_browser.ViewZone
   zone_id : String
   mut rendered_markdown : @browser_markdown.RenderedMarkdown
+  mut preview_rendered_markdown : @browser_markdown.RenderedMarkdown?
+  mut fold_lifetime : @base_common.Disposable?
+  fold_expanded : Ref[Bool]
   mut diagram_viewports : @markdown_comments_browser.MarkdownCommentDiagramViewports
   size_observer : @markdown_comments_browser.MarkdownCommentSizeObserver
   mut measured_height : Double
@@ -42,11 +47,28 @@ priv struct RenderedMarkdownComment {
 }
 
 ///|
+fn RenderedMarkdownComment::dispose_body_resources(
+  self : RenderedMarkdownComment,
+) -> Unit {
+  match self.fold_lifetime {
+    Some(lifetime) => lifetime.dispose()
+    None => ()
+  }
+  self.fold_lifetime = None
+  self.diagram_viewports.dispose()
+  self.rendered_markdown.dispose.dispose()
+  match self.preview_rendered_markdown {
+    Some(preview) => preview.dispose.dispose()
+    None => ()
+  }
+  self.preview_rendered_markdown = None
+}
+
+///|
 fn RenderedMarkdownComment::dispose_render_resources(
   self : RenderedMarkdownComment,
 ) -> Unit {
-  self.diagram_viewports.dispose()
-  self.rendered_markdown.dispose.dispose()
+  self.dispose_body_resources()
   self.size_observer.dispose()
 }
 
@@ -219,6 +241,112 @@ fn render_markdown_comment_body(
 }
 
 ///|
+/// Selects the first non-empty Markdown source line as the collapsed preview
+/// only for an item-delimited API document with meaningful content after it.
+/// The leading exact thematic break remains visible in both presentations;
+/// ordinary whole-line Markdown keeps its historical always-expanded surface.
+fn markdown_comment_folded_preview(
+  markdown : String,
+  foldable : Bool,
+) -> String? {
+  if !foldable {
+    return None
+  }
+  let normalized = markdown
+    .replace_all(old="\r\n", new="\n")
+    .replace_all(old="\r", new="\n")
+  let has_leading_separator = normalized == "---" ||
+    normalized.has_prefix("---\n")
+  if !has_leading_separator {
+    return None
+  }
+  let mut first_line = true
+  let mut preview_line : String? = None
+  let mut has_more = false
+  for line_view in normalized.split("\n") {
+    let line = line_view.to_owned()
+    if first_line {
+      first_line = false
+      if line == "---" {
+        continue
+      }
+    }
+    if line.trim().is_empty() {
+      continue
+    }
+    match preview_line {
+      None => preview_line = Some(line)
+      Some(_) => {
+        has_more = true
+        break
+      }
+    }
+  }
+  guard has_more && preview_line is Some(preview) else { return None }
+  let trimmed_preview = preview.trim()
+  // A fence opener is not a self-contained Markdown preview and cmark expects
+  // the closing delimiter. Keep diagram/code-first documentation expanded
+  // instead of synthesizing or truncating its source semantics.
+  if trimmed_preview.has_prefix("```") || trimmed_preview.has_prefix("~~~") {
+    return None
+  }
+  Some("---\n\n" + preview)
+}
+
+///|
+/// Builds the complete and optional one-line Markdown lifetimes before
+/// mounting diagram controls. The visibility toggle invalidates only the
+/// existing coalesced size observer; ViewZone height still has one writer.
+fn render_markdown_comment_presentations(
+  model : @model.TextModel,
+  markdown : String,
+  foldable : Bool,
+  dom : @markdown_comments_browser.MarkdownCommentDom,
+  fold_expanded : Ref[Bool],
+  size_observer : @markdown_comments_browser.MarkdownCommentSizeObserver,
+  mermaid_theme : @browser_markdown.MermaidTheme,
+) -> (
+  @browser_markdown.RenderedMarkdown,
+  @browser_markdown.RenderedMarkdown?,
+  @base_common.Disposable?,
+  @markdown_comments_browser.MarkdownCommentDiagramViewports,
+) {
+  let on_size_changed = () => size_observer.request_measure()
+  let rendered_markdown = render_markdown_comment_body(
+    model,
+    markdown,
+    dom.full,
+    on_size_changed,
+    mermaid_theme,
+  )
+  let (preview_rendered_markdown, fold_lifetime) = match
+    markdown_comment_folded_preview(markdown, foldable) {
+    Some(preview_markdown) => {
+      let preview = render_markdown_comment_body(
+        model,
+        preview_markdown,
+        dom.preview,
+        on_size_changed,
+        mermaid_theme,
+      )
+      let lifetime = dom.enable_folding(fold_expanded, on_size_changed)
+      (Some(preview), Some(lifetime))
+    }
+    None => {
+      dom.disable_folding()
+      (None, None)
+    }
+  }
+  let diagram_viewports = @markdown_comments_browser.MarkdownCommentDiagramViewports(
+    rendered_markdown.element,
+    on_size_changed,
+  )
+  (
+    rendered_markdown, preview_rendered_markdown, fold_lifetime, diagram_viewports,
+  )
+}
+
+///|
 extern "js" fn open_markdown_comment_link(uri : String) -> Unit =
   #| uri => {
   #|   const opened = globalThis.open?.(uri, "_blank", "noopener,noreferrer");
@@ -285,11 +413,13 @@ fn Viewer::refresh_markdown_comments(
   // any nested refresh then invalidates this attempt before it mutates zones.
   state.generation += 1
   let generation = state.generation
-  let blocks = @markdown_comments.resolve_markdown_comment_blocks(
+  let resolved = @markdown_comments.resolve_markdown_comment_blocks_with_presentation(
     model,
     self.services.languages,
     self.services.log_service,
   )
+  let blocks = resolved.blocks
+  let foldable = resolved.foldable
   guard self.markdown_comment_refresh_is_current(state, model, generation) else {
     return
   }
@@ -324,37 +454,54 @@ fn Viewer::refresh_markdown_comments(
       match state.rendered.get(key) {
         Some(existing) => {
           existing.generation.val = generation
-          if existing.block.markdown != block.markdown {
-            existing.diagram_viewports.dispose()
-            existing.rendered_markdown.dispose.dispose()
-            existing.rendered_markdown = render_markdown_comment_body(
+          if existing.block.markdown != block.markdown ||
+            existing.foldable != foldable {
+            existing.dispose_body_resources()
+            let (
+              rendered_markdown,
+              preview_rendered_markdown,
+              fold_lifetime,
+              diagram_viewports,
+            ) = render_markdown_comment_presentations(
               model,
               block.markdown,
-              existing.rendered_markdown.element,
-              () => existing.size_observer.request_measure(),
+              foldable,
+              existing.dom,
+              existing.fold_expanded,
+              existing.size_observer,
               mermaid_theme,
             )
-            existing.diagram_viewports = MarkdownCommentDiagramViewports(
-              existing.rendered_markdown.element,
-              () => existing.size_observer.request_measure(),
-            )
+            existing.rendered_markdown = rendered_markdown
+            existing.preview_rendered_markdown = preview_rendered_markdown
+            existing.fold_lifetime = fold_lifetime
+            existing.diagram_viewports = diagram_viewports
             existing.size_observer.request_measure()
           }
           existing.block = block
+          existing.foldable = foldable
         }
         None => {
           let dom = @markdown_comments_browser.MarkdownCommentDom(
             block.line_range.start_line_number,
             block.line_range.end_line_number_exclusive,
           )
+          // Keep the gutter chevron on the code-folding column: the rendered
+          // lane is the configured `lineDecorationsWidth` plus the folding
+          // control reserve, and other contributions (e.g. agent feedback)
+          // may have widened it before this zone mounted.
+          dom.set_margin_fold_lane_width(
+            self.configuration.snapshot().layout_decorations_width().to_int(),
+          )
           let zone = @editor_browser.ViewZone(
             block.line_range.end_line_number_exclusive - 1,
             dom.outer,
+            margin_dom_node=dom.margin,
             ignore_hidden_area_source=markdown_comment_hidden_source,
             suppress_mouse_down=false,
             height_in_lines=1.0,
           )
           let zone_id = accessor.add_zone(zone)
+          dom.expose_accessible_content()
           // `add_zone` writes the ordinary scroll-plane `width: 100%`.
           // Replace it before any observer or renderer can measure the node.
           dom.pin_to_content_viewport()
@@ -364,22 +511,31 @@ fn Viewer::refresh_markdown_comments(
               state, key, zone_id, entry_generation, height,
             )
           })
-          let rendered_markdown = render_markdown_comment_body(
+          let fold_expanded = Ref(false)
+          let (
+            rendered_markdown,
+            preview_rendered_markdown,
+            fold_lifetime,
+            diagram_viewports,
+          ) = render_markdown_comment_presentations(
             model,
             block.markdown,
-            dom.content,
-            () => size_observer.request_measure(),
+            foldable,
+            dom,
+            fold_expanded,
+            size_observer,
             mermaid_theme,
-          )
-          let diagram_viewports = @markdown_comments_browser.MarkdownCommentDiagramViewports(
-            rendered_markdown.element,
-            () => size_observer.request_measure(),
           )
           let entry : RenderedMarkdownComment = {
             block,
+            foldable,
+            dom,
             zone,
             zone_id,
             rendered_markdown,
+            preview_rendered_markdown,
+            fold_lifetime,
+            fold_expanded,
             diagram_viewports,
             size_observer,
             measured_height: 0.0,
@@ -420,6 +576,10 @@ fn Viewer::markdown_comments_on_theme_changed(
   let mermaid_theme = markdown_comment_mermaid_theme(viewer_theme)
   for _, entry in state.rendered {
     entry.rendered_markdown.rerender_mermaid(mermaid_theme)
+    match entry.preview_rendered_markdown {
+      Some(preview) => preview.rerender_mermaid(mermaid_theme)
+      None => ()
+    }
   }
 }
 

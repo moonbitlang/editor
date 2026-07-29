@@ -221,6 +221,13 @@ editor common/browser layers; editor common never depends on them.
   zone ids, and the one hidden-area source. Its emitted stylesheet remains at
   `viewer/contrib/markdown_comments/browser/markdown_comments.css`.
 
+The content ViewZones container is presentation-only but not globally hidden
+from accessibility. Registration applies `aria-hidden=true` to each caller
+node by default; the Markdown contribution removes it from its own zone after
+registration so links and the documentation fold control are discoverable,
+while unrelated ViewZones and the margin container retain their hidden default.
+Removal restores the caller node's original `aria-hidden` presence and value.
+
 The root editor registry has two distinct ownership layers. Its process-wide
 contribution-description table contains constructors only; the adjacent command
 and keybinding tables likewise contain no per-Viewer state.
@@ -253,11 +260,21 @@ recreated even when normalized ranges did not change. Viewer theme changes
 rerender retained Mermaid SVGs in place and send accepted size changes through
 the existing observer and generation-checked ViewZone height writer.
 
-Each rendered entry retains the shared Markdown renderer, its diagram-viewport
-group, and the existing size observer. Same-key body replacement disposes the
-old viewport group before the renderer replaces its target and mounts a fresh
-group; entry teardown orders viewport, renderer, and observer disposal before
-zone removal. The only diagram-to-ViewZone invalidation chain runs from the
+Each rendered entry retains the full and optional preview shared-Markdown
+renderers, its expanded-state ref and toggle lifetime, its diagram-viewport
+group, and the existing size observer. Newly mounted item-delimited multi-line
+API documentation from a foldable provider registration starts on the
+first-line preview; ordinary Markdown and
+separator-only or one-line API blocks remain expanded without a control.
+The fold state has two affordances sharing one listener lifetime: a
+mouse-only chevron on the ViewZone's margin node, aligned with the
+code-folding column inside the `aria-hidden` gutter, and an accessible
+in-content button revealed by hover or keyboard focus.
+Same-key body replacement preserves the user's expanded state while disposing
+the old toggle and viewport group before the renderers replace their targets
+and mount fresh browser lifetimes. Entry
+teardown orders toggle, viewport, renderers, and observer disposal before zone
+removal. The only diagram-to-ViewZone invalidation chain runs from the
 viewport-height callback through
 `MarkdownCommentSizeObserver::request_measure` to
 `Viewer::apply_markdown_comment_height`; the final step keeps the existing

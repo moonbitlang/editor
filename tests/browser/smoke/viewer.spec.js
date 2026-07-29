@@ -122,9 +122,73 @@ test('renders MoonBit documentation comments through the real workbench', async 
     '.moonbit-viewer-markdown-comment[data-start-line="1"][data-end-line="5"]',
   );
   await expect(markdown).toBeVisible();
-  await expect(markdown.locator('hr + h1')).toHaveText('Fixture entry point');
-  await expect(markdown.locator('strong')).toHaveText('native shell');
+  await expect(markdown).toHaveAttribute('data-documentation-foldable', 'true');
+  await expect(markdown).toHaveAttribute('data-documentation-expanded', 'false');
+  const preview = markdown.locator('.moonbit-viewer-markdown-comment-preview');
+  const full = markdown.locator('.moonbit-viewer-markdown-comment-full');
+  const toggle = markdown.getByRole('button', {
+    name: 'Expand API documentation',
+  });
+  await expect(preview).toBeVisible();
+  await expect(preview.locator('hr + h1')).toHaveText('Fixture entry point');
+  await expect(preview).not.toContainText('native shell');
+  await expect(full).toBeHidden();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  const collapsedBox = await markdown.boundingBox();
+  const toggleBox = await toggle.boundingBox();
+  expect(collapsedBox).not.toBeNull();
+  expect(toggleBox).not.toBeNull();
+  expect(toggleBox.y + toggleBox.height).toBeLessThanOrEqual(
+    collapsedBox.y + collapsedBox.height + 1,
+  );
+
+  await toggle.click();
+  await expect(markdown).toHaveAttribute('data-documentation-expanded', 'true');
+  await expect(preview).toBeHidden();
+  await expect(full).toBeVisible();
+  await expect(full.locator('strong')).toHaveText('native shell');
+  await expect
+    .poll(async () => (await markdown.boundingBox())?.height ?? 0)
+    .toBeGreaterThan(collapsedBox?.height ?? 0);
+  const expandedHeight = (await markdown.boundingBox())?.height ?? 0;
+
+  const collapse = markdown.getByRole('button', {
+    name: 'Collapse API documentation',
+  });
+  await collapse.focus();
+  await collapse.press('Enter');
+  await expect(markdown).toHaveAttribute('data-documentation-expanded', 'false');
+  await expect(preview).toBeVisible();
+  await expect(full).toBeHidden();
+  await expect
+    .poll(async () => (await markdown.boundingBox())?.height ?? 0)
+    .toBeLessThan(expandedHeight);
   await expect(markdown).not.toContainText('|');
+
+  // The gutter chevron shares the code-folding column: same codicon family,
+  // horizontally centered on the collapsed `fn main` chevron, and it drives
+  // the same fold state with the mouse.
+  const gutterToggle = page.locator(
+    '.moonbit-viewer-markdown-comment-margin-toggle',
+  );
+  await expect(gutterToggle).toHaveClass(/codicon-folding-collapsed/);
+  const codeChevron = page.locator(
+    '.margin-view-overlays .cldr.codicon-folding-collapsed',
+  );
+  const gutterBox = await gutterToggle.boundingBox();
+  const codeBox = await codeChevron.boundingBox();
+  expect(gutterBox).not.toBeNull();
+  expect(codeBox).not.toBeNull();
+  expect(
+    Math.abs(gutterBox.x + gutterBox.width / 2 - (codeBox.x + codeBox.width / 2)),
+  ).toBeLessThanOrEqual(1);
+
+  await gutterToggle.click();
+  await expect(markdown).toHaveAttribute('data-documentation-expanded', 'true');
+  await expect(gutterToggle).toHaveClass(/codicon-folding-expanded/);
+  await gutterToggle.click();
+  await expect(markdown).toHaveAttribute('data-documentation-expanded', 'false');
+  await expect(gutterToggle).toHaveClass(/codicon-folding-collapsed/);
   await expect(page.locator('.view-lines')).not.toContainText('Fixture entry point');
   expect(await page.evaluate(() => globalThis.__readonlyEditorSource)).toContain(
     '///|\n/// # Fixture entry point',
@@ -145,6 +209,16 @@ test('renders undocumented MoonBit item anchors as horizontal separators', async
   );
   await expect(first.locator('hr')).toBeVisible();
   await expect(second.locator('hr')).toBeVisible();
+  await expect(first).toHaveAttribute('data-documentation-foldable', 'false');
+  await expect(second).toHaveAttribute('data-documentation-foldable', 'false');
+  await expect(first.locator('.moonbit-viewer-markdown-comment-toggle')).toBeHidden();
+  await expect(second.locator('.moonbit-viewer-markdown-comment-toggle')).toBeHidden();
+  const marginToggles = page.locator(
+    '.moonbit-viewer-markdown-comment-margin-toggle',
+  );
+  await expect(marginToggles).toHaveCount(2);
+  await expect(marginToggles.nth(0)).toBeHidden();
+  await expect(marginToggles.nth(1)).toBeHidden();
   const firstBox = await first.boundingBox();
   const firstCodeLineBox = await page
     .locator('.view-line[data-line="2"]')

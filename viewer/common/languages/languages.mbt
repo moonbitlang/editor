@@ -60,6 +60,20 @@ fn[T] LanguageFeatureRegistry::snapshot_matching(
 }
 
 ///|
+priv struct RegisteredMarkdownCommentProvider {
+  provider : &@language.MarkdownCommentProvider
+  foldable : Bool
+}
+
+///|
+/// Raw result plus the registration-level presentation capability captured
+/// from the same winning provider entry.
+pub(all) struct MarkdownCommentProviderResult {
+  blocks : Array[@language.MarkdownCommentBlock]
+  foldable : Bool
+}
+
+///|
 /// Public language registry for tokenization and language-feature providers.
 /// Hosts normally use the process-wide `@languages.languages` value; tests and
 /// embedded viewers that need isolation can create a fresh registry and pass it
@@ -70,7 +84,7 @@ pub struct Languages {
     &@language.DocumentSymbolProvider,
   ]
   priv markdown_comment_provider : LanguageFeatureRegistry[
-    &@language.MarkdownCommentProvider,
+    RegisteredMarkdownCommentProvider,
   ]
   /// Per-language comment/folding configuration — the viewer's stand-in for
   /// Monaco's `ILanguageConfigurationService` registrations.
@@ -83,9 +97,7 @@ pub struct Languages {
 /// recover either the mutable registry or its concrete LogService.
 pub struct LanguageHandle {
   priv get_language_configuration_callback : (String) -> LanguageConfiguration
-  priv markdown_comment_provider_result_callback : (@model.TextModel) -> Array[
-    @language.MarkdownCommentBlock,
-  ]?
+  priv markdown_comment_provider_result_callback : (@model.TextModel) -> MarkdownCommentProviderResult?
   priv hover_at_callback : async (
     @model.TextModel,
     Int,
@@ -134,6 +146,19 @@ pub fn LanguageHandle::markdown_comment_provider_result(
   self : LanguageHandle,
   model : @model.TextModel,
 ) -> Array[@language.MarkdownCommentBlock]? {
+  match (self.markdown_comment_provider_result_callback)(model) {
+    Some(result) => Some(result.blocks)
+    None => None
+  }
+}
+
+///|
+/// Returns the first matching provider's blocks and registration-level
+/// foldability from one captured registry entry.
+pub fn LanguageHandle::markdown_comment_provider_render_result(
+  self : LanguageHandle,
+  model : @model.TextModel,
+) -> MarkdownCommentProviderResult? {
   (self.markdown_comment_provider_result_callback)(model)
 }
 
@@ -205,8 +230,9 @@ pub fn Languages::register_markdown_comment_provider(
   self : Languages,
   selector : @language.LanguageSelector,
   provider : &@language.MarkdownCommentProvider,
+  foldable? : Bool = false,
 ) -> @base_common.Disposable {
-  self.markdown_comment_provider.register(selector, provider)
+  self.markdown_comment_provider.register(selector, { provider, foldable })
 }
 
 ///|
@@ -217,10 +243,14 @@ pub fn Languages::markdown_comment_provider_result(
   model : @model.TextModel,
   log_service : @log.LogService,
 ) -> Array[@language.MarkdownCommentBlock]? {
-  self.markdown_comment_provider_result_with_log_handle(
-    model,
-    log_service.log_handle(),
-  )
+  match
+    self.markdown_comment_provider_result_with_log_handle(
+      model,
+      log_service.log_handle(),
+    ) {
+    Some(result) => Some(result.blocks)
+    None => None
+  }
 }
 
 ///|
@@ -228,10 +258,10 @@ fn Languages::markdown_comment_provider_result_with_log_handle(
   self : Languages,
   model : @model.TextModel,
   log_service : @log.LogHandle,
-) -> Array[@language.MarkdownCommentBlock]? {
+) -> MarkdownCommentProviderResult? {
   let providers = self.markdown_comment_provider.snapshot_matching(model)
   guard providers is [captured, ..] else { return None }
-  let result = captured.entry.provider.provide_markdown_comments(model) catch {
+  let blocks = captured.entry.provider.provider.provide_markdown_comments(model) catch {
     _ => {
       log_provider_failure(
         log_service,
@@ -242,7 +272,7 @@ fn Languages::markdown_comment_provider_result_with_log_handle(
       []
     }
   }
-  Some(result)
+  Some({ blocks, foldable: captured.entry.provider.foldable })
 }
 
 ///|

@@ -232,6 +232,12 @@ extern "js" fn markdown_contribution_test_parent(
 ) -> @rdom.Element = "element => element.parentNode"
 
 ///|
+extern "js" fn markdown_contribution_test_dispatch(
+  element : @rdom.Element,
+  event_type : String,
+) -> Unit = "(element, type) => element.dispatchEvent(new Event(type, { cancelable: true }))"
+
+///|
 extern "js" fn markdown_contribution_test_disconnect_count() -> Int = "() => globalThis.__markdownContributionDisconnectCount"
 
 ///|
@@ -272,6 +278,7 @@ fn with_markdown_contribution_viewer(
   text : String,
   body : (Viewer, Ref[Array[@language.MarkdownCommentBlock]]) -> Unit raise,
   provider_blocks? : Array[@language.MarkdownCommentBlock],
+  provider_foldable? : Bool = false,
   configure_line_comments? : Bool = false,
 ) -> Unit raise {
   install_mounted_test_browser()
@@ -293,9 +300,11 @@ fn with_markdown_contribution_viewer(
   let registration = match provider_blocks {
     Some(_) =>
       Some(
-        registry.register_markdown_comment_provider(LanguageId("plaintext"), MutableMarkdownContributionProvider::{
-          blocks,
-        }),
+        registry.register_markdown_comment_provider(
+          LanguageId("plaintext"),
+          MutableMarkdownContributionProvider::{ blocks, },
+          foldable=provider_foldable,
+        ),
       )
     None => None
   }
@@ -354,8 +363,11 @@ test "Markdown comments replace start middle EOF blocks while preserving model t
           Some(markdown_comment_hidden_source),
         )
         assert_true(
+          same_mounted_test_element(entry.zone.dom_node, entry.dom.outer),
+        )
+        assert_true(
           same_mounted_test_element(
-            entry.zone.dom_node,
+            entry.dom.content,
             markdown_contribution_test_parent(entry.rendered_markdown.element),
           ),
         )
@@ -833,12 +845,12 @@ test "Markdown comment height callbacks ignore zero disconnected stale and dispo
     (viewer, provider_blocks) => {
       let state = markdown_contribution_state(viewer)
       let entry = state.rendered["2:3"]
-      let target = entry.rendered_markdown.element
+      let target = entry.dom.content
       // Discard the fixture's ordinary pending paint. Executing a live Viewer
       // paint would enter font measurement, which is intentionally outside
       // this narrow observer/generation test DOM.
       viewer.cancel_render_frame()
-      if mounted_test_frame_count() > 0 {
+      while mounted_test_frame_count() > 0 {
         run_one_mounted_test_frame()
       }
 

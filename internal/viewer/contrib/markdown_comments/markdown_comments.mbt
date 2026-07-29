@@ -132,24 +132,49 @@ pub fn resolve_markdown_comment_blocks(
   languages : @languages.LanguageHandle,
   log_service : @log.LogHandle,
 ) -> Array[@language.MarkdownCommentBlock] {
+  resolve_markdown_comment_blocks_with_presentation(
+    model, languages, log_service,
+  ).blocks
+}
+
+///|
+/// The normalized blocks plus the explicit presentation capability captured
+/// from the same winning provider registration. Configuration-backed detection
+/// is never foldable.
+pub(all) struct ResolvedMarkdownCommentBlocks {
+  blocks : Array[@language.MarkdownCommentBlock]
+  foldable : Bool
+}
+
+///|
+pub fn resolve_markdown_comment_blocks_with_presentation(
+  model : @model.TextModel,
+  languages : @languages.LanguageHandle,
+  log_service : @log.LogHandle,
+) -> ResolvedMarkdownCommentBlocks {
   let snapshot = model.snapshot()
-  let raw_blocks = match languages.markdown_comment_provider_result(model) {
-    Some(provider_blocks) => provider_blocks
+  let (raw_blocks, foldable) = match
+    languages.markdown_comment_provider_render_result(model) {
+    Some(provider_result) => (provider_result.blocks, provider_result.foldable)
     None => {
       let configuration = languages.get_language_configuration(
         model.get_language_id(),
       )
       match configuration.comments {
-        Some(rule) => detect_markdown_comments_in_snapshot(snapshot, rule)
-        None => []
+        Some(rule) =>
+          (detect_markdown_comments_in_snapshot(snapshot, rule), false)
+        None => ([], false)
       }
     }
   }
-  normalize_markdown_comment_blocks(
-    raw_blocks,
-    snapshot.line_count(),
-    log_service,
-  )
+  {
+    blocks: normalize_markdown_comment_blocks(
+      raw_blocks,
+      snapshot.line_count(),
+      log_service,
+    ),
+    foldable,
+  }
 }
 
 ///|

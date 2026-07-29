@@ -18,9 +18,11 @@ impl @language.MarkdownCommentProvider for MoonBitMarkdownCommentProvider with f
 fn install_moonbit_markdown_comment_provider(
   languages : @languages.Languages,
 ) -> Unit {
-  languages.register_markdown_comment_provider(LanguageId("moonbit"), MoonBitMarkdownCommentProvider::{
-
-  })
+  languages.register_markdown_comment_provider(
+    LanguageId("moonbit"),
+    MoonBitMarkdownCommentProvider::{  },
+    foldable=true,
+  )
   |> ignore
 }
 

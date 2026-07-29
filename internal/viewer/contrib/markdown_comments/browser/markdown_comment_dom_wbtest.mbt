@@ -83,6 +83,8 @@ extern "js" fn install_markdown_comment_browser_test_dom() -> MarkdownCommentBro
   #|     }
   #|     setAttribute(name, value) { this.attributes.set(name, String(value)); }
   #|     getAttribute(name) { return this.attributes.get(name) ?? ""; }
+  #|     hasAttribute(name) { return this.attributes.has(name); }
+  #|     removeAttribute(name) { this.attributes.delete(name); }
   #|     closest(selector) {
   #|       if (!selector.startsWith('.')) return null;
   #|       const wanted = selector.slice(1);
@@ -163,6 +165,12 @@ extern "js" fn markdown_comment_test_attribute(
 ) -> String = "(element, name) => element.getAttribute(name)"
 
 ///|
+extern "js" fn markdown_comment_test_has_attribute(
+  element : @rdom.Element,
+  name : String,
+) -> Bool = "(element, name) => element.hasAttribute(name)"
+
+///|
 extern "js" fn markdown_comment_test_child_count(
   element : @rdom.Element,
 ) -> Int = "element => element.childNodes.length"
@@ -177,6 +185,18 @@ extern "js" fn markdown_comment_test_same_element(
   left : @rdom.Element,
   right : @rdom.Element,
 ) -> Bool = "(left, right) => left === right"
+
+///|
+extern "js" fn markdown_comment_test_child(
+  element : @rdom.Element,
+  index : Int,
+) -> @rdom.Element = "(element, index) => element.childNodes[index]"
+
+///|
+extern "js" fn markdown_comment_test_dispatch(
+  element : @rdom.Element,
+  event_type : String,
+) -> Unit = "(element, type) => element.dispatchEvent(new Event(type, { cancelable: true }))"
 
 ///|
 extern "js" fn markdown_comment_test_set_measurement(
@@ -356,13 +376,148 @@ test "MarkdownCommentDom creates the stable half-open ViewZone target shape" {
     markdown_comment_test_attribute(dom.content, "class"),
     "moonbit-viewer-markdown-comment-content",
   )
-  assert_eq(markdown_comment_test_child_count(dom.outer), 1)
+  assert_eq(markdown_comment_test_child_count(dom.outer), 2)
   assert_true(
     markdown_comment_test_same_element(
       markdown_comment_test_first_child(dom.outer),
+      dom.toggle,
+    ),
+  )
+  assert_true(
+    markdown_comment_test_same_element(
+      markdown_comment_test_child(dom.outer, 1),
       dom.content,
     ),
   )
+  assert_eq(markdown_comment_test_child_count(dom.content), 2)
+  assert_true(
+    markdown_comment_test_same_element(
+      markdown_comment_test_child(dom.content, 0),
+      dom.full,
+    ),
+  )
+  assert_true(
+    markdown_comment_test_same_element(
+      markdown_comment_test_child(dom.content, 1),
+      dom.preview,
+    ),
+  )
+  assert_eq(
+    markdown_comment_test_attribute(dom.outer, "data-documentation-foldable"),
+    "false",
+  )
+  assert_eq(markdown_comment_test_attribute(dom.toggle, "hidden"), "")
+  assert_eq(
+    markdown_comment_test_attribute(dom.margin, "class"),
+    "moonbit-viewer-markdown-comment-margin",
+  )
+  assert_eq(markdown_comment_test_child_count(dom.margin), 1)
+  assert_true(
+    markdown_comment_test_same_element(
+      markdown_comment_test_first_child(dom.margin),
+      dom.margin_toggle,
+    ),
+  )
+  assert_eq(
+    markdown_comment_test_attribute(dom.margin_toggle, "class"),
+    "moonbit-viewer-markdown-comment-margin-toggle cldr codicon codicon-folding-collapsed",
+  )
+  assert_eq(markdown_comment_test_attribute(dom.margin_toggle, "hidden"), "")
+  dom.set_margin_fold_lane_width(28)
+  assert_eq(markdown_comment_test_style(dom.margin_toggle, "width"), "28px")
+  dom.outer.set_attribute("aria-hidden", "true")
+  dom.expose_accessible_content()
+  assert_false(markdown_comment_test_has_attribute(dom.outer, "aria-hidden"))
+}
+
+///|
+test "MarkdownCommentDom toggles accessible folding state and releases listeners" {
+  let harness = install_markdown_comment_browser_test_dom()
+  defer harness.dispose()
+  let dom = MarkdownCommentDom(3, 7)
+  let expanded = Ref(false)
+  let toggles = Ref(0)
+  let lifetime = dom.enable_folding(expanded, () => toggles.val += 1)
+  assert_eq(
+    markdown_comment_test_attribute(dom.outer, "data-documentation-foldable"),
+    "true",
+  )
+  assert_eq(
+    markdown_comment_test_attribute(dom.outer, "data-documentation-expanded"),
+    "false",
+  )
+  assert_eq(
+    markdown_comment_test_attribute(dom.toggle, "aria-expanded"),
+    "false",
+  )
+  assert_eq(
+    markdown_comment_test_attribute(dom.toggle, "aria-label"),
+    "Expand API documentation",
+  )
+  assert_eq(
+    markdown_comment_test_attribute(dom.toggle_icon, "class"),
+    "codicon codicon-chevron-right",
+  )
+  assert_false(markdown_comment_test_has_attribute(dom.margin_toggle, "hidden"))
+  assert_eq(
+    markdown_comment_test_attribute(dom.margin_toggle, "class"),
+    "moonbit-viewer-markdown-comment-margin-toggle cldr codicon codicon-folding-collapsed",
+  )
+  assert_eq(
+    markdown_comment_test_attribute(dom.margin_toggle, "title"),
+    "Expand API documentation",
+  )
+
+  markdown_comment_test_dispatch(dom.margin_toggle, "click")
+  assert_true(expanded.val)
+  assert_eq(toggles.val, 1)
+  assert_eq(
+    markdown_comment_test_attribute(dom.outer, "data-documentation-expanded"),
+    "true",
+  )
+  assert_eq(
+    markdown_comment_test_attribute(dom.toggle, "aria-expanded"),
+    "true",
+  )
+  assert_eq(
+    markdown_comment_test_attribute(dom.toggle, "aria-label"),
+    "Collapse API documentation",
+  )
+  assert_eq(
+    markdown_comment_test_attribute(dom.toggle_icon, "class"),
+    "codicon codicon-chevron-down",
+  )
+  assert_eq(
+    markdown_comment_test_attribute(dom.margin_toggle, "class"),
+    "moonbit-viewer-markdown-comment-margin-toggle cldr codicon codicon-folding-expanded",
+  )
+  assert_eq(
+    markdown_comment_test_attribute(dom.margin_toggle, "title"),
+    "Collapse API documentation",
+  )
+
+  markdown_comment_test_dispatch(dom.toggle, "click")
+  assert_false(expanded.val)
+  assert_eq(toggles.val, 2)
+  lifetime.dispose()
+  lifetime.dispose()
+  markdown_comment_test_dispatch(dom.toggle, "click")
+  markdown_comment_test_dispatch(dom.margin_toggle, "click")
+  assert_false(expanded.val)
+  assert_eq(toggles.val, 2)
+
+  dom.disable_folding()
+  assert_eq(
+    markdown_comment_test_attribute(dom.outer, "data-documentation-foldable"),
+    "false",
+  )
+  assert_eq(
+    markdown_comment_test_attribute(dom.outer, "data-documentation-expanded"),
+    "true",
+  )
+  assert_eq(markdown_comment_test_attribute(dom.toggle, "aria-hidden"), "true")
+  assert_eq(markdown_comment_test_attribute(dom.margin_toggle, "hidden"), "")
+  assert_false(markdown_comment_test_has_attribute(dom.margin_toggle, "title"))
 }
 
 ///|

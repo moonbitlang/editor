@@ -690,8 +690,9 @@ test('public Viewer replaces whole-line source with themed Markdown while model 
       )
       .toEqual({ complete: true, width: 180, height: 48 });
 
-    // The retained ViewZones container is intentionally aria-hidden, so this
-    // deferred-accessibility surface cannot be located through the role tree.
+    // Generic ViewZones default to aria-hidden per caller node. The Markdown
+    // contribution explicitly exposes its interactive rendered zones while
+    // the shared container remains presentation-only.
     const link = zones.nth(0).locator('a');
     await expect(link).toHaveText('fixture link');
     await expect(link).toHaveAttribute('role', 'link');
@@ -701,10 +702,10 @@ test('public Viewer replaces whole-line source with themed Markdown while model 
       'user-select',
       'text',
     );
-    await expect(page.locator(`${editor} .view-zones`)).toHaveAttribute(
+    await expect(page.locator(`${editor} .view-zones`)).not.toHaveAttribute(
       'aria-hidden',
-      'true',
     );
+    await expect(zones.nth(0)).not.toHaveAttribute('aria-hidden');
 
     await expect
       .poll(() =>

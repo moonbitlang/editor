@@ -115,6 +115,8 @@ fn view_zones_geometry_fixture(
     is_visible: false,
     dom_node: FastViewZoneDomNode(content_zone),
     margin_dom_node: Some(FastViewZoneDomNode(margin_zone)),
+    caller_aria_hidden_present: false,
+    caller_aria_hidden_value: "",
   }
   part.zones.set(whitespace_id.val, registered)
   let visible = layout.get_whitespace_viewport_data(0.0, 100.0)

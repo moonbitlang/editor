@@ -103,6 +103,7 @@ test('ViewZones preserve caller DOM and use generated transaction IDs', async ({
     const primaryChild = primary.locator('.vz-primary-child');
     const primaryMargin = page.locator(`${host} .vz-primary-margin`);
     await expect(primary).toHaveAttribute('monaco-view-zone', initial.primaryId);
+    await expect(primary).toHaveAttribute('aria-hidden', 'true');
     await expect(primaryMargin).toHaveAttribute(
       'monaco-view-zone',
       initial.primaryId,
@@ -206,7 +207,7 @@ test('ViewZones preserve caller DOM and use generated transaction IDs', async ({
     });
     expect(attachment).toMatchObject({
       contentRole: 'presentation',
-      contentAria: 'true',
+      contentAria: null,
       contentDataPart: null,
       contentPosition: 'absolute',
       contentTop: '',
@@ -291,6 +292,7 @@ test('ViewZones preserve caller DOM and use generated transaction IDs', async ({
     await settle(page);
     expect(await retainedPrimary.getAttribute('monaco-view-zone')).toBeNull();
     expect(await retainedPrimary.getAttribute('monaco-visible-view-zone')).toBeNull();
+    expect(await retainedPrimary.getAttribute('aria-hidden')).toBeNull();
     expect(await retainedMargin.getAttribute('monaco-view-zone')).toBeNull();
     expect(await retainedPrimary.evaluate((node) => node.isConnected)).toBe(false);
     expect(
