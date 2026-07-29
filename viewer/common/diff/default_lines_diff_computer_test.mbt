@@ -178,7 +178,9 @@ test "empty original document maps to one whole-document change" {
   assert_eq(hunks(result), hunk(1, 2, 1, 3))
   // This trivial branch is the one place inner changes are populated
   // (`defaultLinesDiffComputer.ts:33`).
-  guard result.changes[0].inner_changes is Some(inner)
+  guard result.changes[0].inner_changes is Some(inner) else {
+    fail("expected inner changes on the first hunk")
+  }
   assert_eq(
     inner.map(@diff.RangeMapping::to_string).join(", "),
     "{[1,1 -> 1,1]->[1,1 -> 2,2]}",

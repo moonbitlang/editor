@@ -74,11 +74,15 @@ test "join" {
 ///|
 test "intersect / intersection_length" {
   // Overlapping.
-  guard or_(3, 8).intersect(or_(5, 10)) is Some(i)
+  guard or_(3, 8).intersect(or_(5, 10)) is Some(i) else {
+    fail("expected an intersection")
+  }
   assert_true(i.equals(or_(5, 8)))
   assert_eq(or_(3, 8).intersection_length(or_(5, 10)), 3)
   // Touching: empty intersection, length 0.
-  guard or_(3, 5).intersect(or_(5, 9)) is Some(touch)
+  guard or_(3, 5).intersect(or_(5, 9)) is Some(touch) else {
+    fail("expected touching ranges to intersect emptily, not None")
+  }
   assert_true(touch.is_empty())
   assert_eq(or_(3, 5).intersection_length(or_(5, 9)), 0)
   // Disjoint: None.

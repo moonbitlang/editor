@@ -5,8 +5,12 @@
 ///|
 test "folding: contribution computes indent regions on model attach" {
   with_test_viewer("a\n  b\n  c\nd\n  e", viewer => {
-    guard viewer.folding_controller() is Some(controller)
-    guard controller.folding_model is Some(folding_model)
+    guard viewer.folding_controller() is Some(controller) else {
+      fail("expected a folding controller")
+    }
+    guard controller.folding_model is Some(folding_model) else {
+      fail("expected an attached folding model")
+    }
     let regions = folding_model.regions()
     assert_eq(regions.length(), 2)
     assert_eq(regions.get_start_line_number(0), 1)
@@ -20,8 +24,12 @@ test "folding: contribution computes indent regions on model attach" {
 test "folding: public fold_top_level collapses every outer region only" {
   with_test_viewer("root\n  child\n    leaf\nnext\n  item\ntail", viewer => {
     let view_model = viewer.test_view_model()
-    guard viewer.folding_controller() is Some(controller)
-    guard controller.folding_model is Some(folding_model)
+    guard viewer.folding_controller() is Some(controller) else {
+      fail("expected a folding controller")
+    }
+    guard controller.folding_model is Some(folding_model) else {
+      fail("expected an attached folding model")
+    }
     let regions = folding_model.regions()
     assert_eq(regions.length(), 3)
     viewer.set_position(Position(3, 1))
@@ -35,7 +43,9 @@ test "folding: public fold_top_level collapses every outer region only" {
     assert_eq(view_model.lines().get_view_line_content(3), "tail")
     // The API does not preserve a blocked selection: folding the containing
     // outer region snaps the caret to its header.
-    guard viewer.get_selection() is Some(selection)
+    guard viewer.get_selection() is Some(selection) else {
+      fail("expected a selection")
+    }
     assert_eq(selection.start().line_number, 1)
   })
 }
@@ -54,9 +64,15 @@ test "folding: MoonBit outline keeps the complete signature and opening brace" {
   viewer.set_position(Position(4, 3))
   viewer.fold_top_level()
   let view_model = viewer.test_view_model()
-  guard viewer.folding_controller() is Some(controller)
-  guard controller.folding_model is Some(folding_model)
-  guard folding_model.get_region_at_line(3) is Some(region)
+  guard viewer.folding_controller() is Some(controller) else {
+    fail("expected a folding controller")
+  }
+  guard controller.folding_model is Some(folding_model) else {
+    fail("expected an attached folding model")
+  }
+  guard folding_model.get_region_at_line(3) is Some(region) else {
+    fail("expected a folding region at line 3")
+  }
   assert_eq(region.start_line_number(), 3)
   assert_eq(region.end_line_number(), 5)
   assert_true(region.is_collapsed())
@@ -78,7 +94,9 @@ test "folding: MoonBit outline keeps the complete signature and opening brace" {
       #|]
     ),
   )
-  guard viewer.get_position() is Some(position)
+  guard viewer.get_position() is Some(position) else {
+    fail("expected a cursor position")
+  }
   assert_position(position, Position(3, 18))
   let mut saw_outline_body = false
   for decoration in folding_model.text_model().get_all_decorations() {
@@ -174,8 +192,12 @@ test "folding: MoonBit outline survives folding decoration option updates" {
     Some(test_model("fn f() -> Int {\n  1\n}\ntail", language_id="moonbit")),
   )
   viewer.fold_top_level()
-  guard viewer.folding_controller() is Some(controller)
-  guard controller.folding_model is Some(folding_model)
+  guard viewer.folding_controller() is Some(controller) else {
+    fail("expected a folding controller")
+  }
+  guard controller.folding_model is Some(folding_model) else {
+    fail("expected an attached folding model")
+  }
   viewer.update_options(ViewerOptions(show_folding_controls=Never))
   let regions = folding_model.regions()
   assert_eq(regions.length(), 1)
@@ -211,8 +233,12 @@ test "folding: MoonBit outline respects the configured folding limit" {
     ),
   )
   viewer.fold_top_level()
-  guard viewer.folding_controller() is Some(controller)
-  guard controller.folding_model is Some(folding_model)
+  guard viewer.folding_controller() is Some(controller) else {
+    fail("expected a folding controller")
+  }
+  guard controller.folding_model is Some(folding_model) else {
+    fail("expected an attached folding model")
+  }
   let regions = folding_model.regions()
   assert_eq(regions.length(), 1)
   assert_eq(
@@ -233,8 +259,12 @@ test "folding: MoonBit outline preserves signatures with same-line bodies" {
   let viewer = Viewer::Viewer()
   viewer.set_model(Some(test_model(text, language_id="moonbit")))
   viewer.fold_top_level()
-  guard viewer.folding_controller() is Some(controller)
-  guard controller.folding_model is Some(folding_model)
+  guard viewer.folding_controller() is Some(controller) else {
+    fail("expected a folding controller")
+  }
+  guard controller.folding_model is Some(folding_model) else {
+    fail("expected an attached folding model")
+  }
   assert_eq(folding_model.regions().length(), 0)
   let view_model = viewer.test_view_model()
   assert_eq(view_model.line_count(), 4)
@@ -253,9 +283,15 @@ test "folding: toggling a region folds its lines out of the view axis" {
   with_test_viewer("a\n  b\n  c\nd\n  e", viewer => {
     let view_model = viewer.test_view_model()
     assert_eq(view_model.line_count(), 5)
-    guard viewer.folding_controller() is Some(controller)
-    guard controller.folding_model is Some(folding_model)
-    guard folding_model.get_region_at_line(1) is Some(region)
+    guard viewer.folding_controller() is Some(controller) else {
+      fail("expected a folding controller")
+    }
+    guard controller.folding_model is Some(folding_model) else {
+      fail("expected an attached folding model")
+    }
+    guard folding_model.get_region_at_line(1) is Some(region) else {
+      fail("expected a folding region at line 1")
+    }
     folding_model.toggle_collapse_state([region])
     // Lines 2-3 fold away; the header and the second block stay.
     assert_eq(view_model.line_count(), 3)
@@ -289,7 +325,9 @@ test "folding: toggling a region folds its lines out of the view axis" {
     }
     assert_true(saw_collapsed)
     // Toggling back restores every line.
-    guard folding_model.get_region_at_line(1) is Some(region_again)
+    guard folding_model.get_region_at_line(1) is Some(region_again) else {
+      fail("expected a folding region at line 1")
+    }
     folding_model.toggle_collapse_state([region_again])
     assert_eq(view_model.line_count(), 5)
     assert_eq(view_model.get_hidden_areas().length(), 0)
@@ -306,7 +344,9 @@ test "folding: fold and unfold actions work off the selection" {
     assert_eq(view_model.line_count(), 2)
     // The caret was inside the fold; `onHiddenRangesChanges` snapped it to
     // the header line.
-    guard viewer.get_selection() is Some(selection)
+    guard viewer.get_selection() is Some(selection) else {
+      fail("expected a selection")
+    }
     assert_eq(selection.start().line_number, 1)
     viewer.set_position(Position(1, 1))
     viewer.folding_unfold_action()
@@ -318,9 +358,15 @@ test "folding: fold and unfold actions work off the selection" {
 test "folding: disabling the option clears folds and detaches the model state" {
   with_test_viewer("a\n  b\n  c\nd", viewer => {
     let view_model = viewer.test_view_model()
-    guard viewer.folding_controller() is Some(controller)
-    guard controller.folding_model is Some(folding_model)
-    guard folding_model.get_region_at_line(1) is Some(region)
+    guard viewer.folding_controller() is Some(controller) else {
+      fail("expected a folding controller")
+    }
+    guard controller.folding_model is Some(folding_model) else {
+      fail("expected an attached folding model")
+    }
+    guard folding_model.get_region_at_line(1) is Some(region) else {
+      fail("expected a folding region at line 1")
+    }
     folding_model.toggle_collapse_state([region])
     assert_eq(view_model.line_count(), 2)
     viewer.update_options(ViewerOptions(folding=false))
