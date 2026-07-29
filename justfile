@@ -22,10 +22,10 @@ build-browser-perf-tests: build-moon-web
     moon run --target native scripts/build-browser-tests.mbtx -- perf
 
 build: check build-moon-web
-    moon -C server build
+    moon build
 
 serve *args:
-    sh -c 'ROOT=.; HOST=127.0.0.1; PORT=5173; ASSET_DIR=web/dist; MOON_COMMAND=moon; for arg do case "$arg" in ROOT=*) ROOT="${arg#ROOT=}";; HOST=*) HOST="${arg#HOST=}";; PORT=*) PORT="${arg#PORT=}";; ASSET_DIR=*) ASSET_DIR="${arg#ASSET_DIR=}";; MOON_COMMAND=*) MOON_COMMAND="${arg#MOON_COMMAND=}";; esac; done; case "$ROOT" in /*) ;; *) ROOT="$(cd "$ROOT" && pwd)" || exit 1;; esac; case "$ASSET_DIR" in /*) ;; *) ASSET_DIR="$(cd "$ASSET_DIR" && pwd)" || exit 1;; esac; moon -C server run host/main -- --root "$ROOT" --host "$HOST" --port "$PORT" --asset-dir "$ASSET_DIR" --moon-command "$MOON_COMMAND"' sh {{ args }}
+    sh -c 'ROOT=.; HOST=127.0.0.1; PORT=5173; ASSET_DIR=web/dist; MOON_COMMAND=moon; for arg do case "$arg" in ROOT=*) ROOT="${arg#ROOT=}";; HOST=*) HOST="${arg#HOST=}";; PORT=*) PORT="${arg#PORT=}";; ASSET_DIR=*) ASSET_DIR="${arg#ASSET_DIR=}";; MOON_COMMAND=*) MOON_COMMAND="${arg#MOON_COMMAND=}";; esac; done; case "$ROOT" in /*) ;; *) ROOT="$(cd "$ROOT" && pwd)" || exit 1;; esac; case "$ASSET_DIR" in /*) ;; *) ASSET_DIR="$(cd "$ASSET_DIR" && pwd)" || exit 1;; esac; moon run server/host/main -- --root "$ROOT" --host "$HOST" --port "$PORT" --asset-dir "$ASSET_DIR" --moon-command "$MOON_COMMAND"' sh {{ args }}
 
 dev *args: build
     just serve HOST=0.0.0.0 {{ args }}

@@ -33,4 +33,4 @@ Server owns URI policy, cache/watch lifecycle, protocol dispatch, and provider
 routing. It must not import browser/workbench/web packages; filesystem, process,
 timer, socket, and concrete tool behavior stay in a host adapter.
 
-Run `moon -C server test server` and `just check`.
+Run `moon test server/server` and `just check`.
