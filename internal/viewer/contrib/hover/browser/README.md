@@ -41,6 +41,18 @@ before a pending async hover may commit. Before measuring each row set, the
 widget temporarily releases its previous locked box against the full Markdown
 viewport, then clamps and locks the resulting readable natural size.
 
+Hover-range painting is a behavior port of VS Code revision
+`b18492a288de038fbc7643aae6de8247029d11bd`,
+`RenderedContentHoverParts::_createEditorDecorations`, and
+`DecorationsOverlay::_renderNormalDecoration`. Code uses a model decoration
+that the ViewModel clips into wrapped view rows. The independent Markdown
+surface instead coalesces adjacent raw browser `Range.getClientRects()` into
+row-local fragments and mounts one line-relative overlay per fragment; a range
+confined to one wrapped row cannot paint another row. Browser FFI supplies only
+raw rectangles and line metrics, while MoonBit owns row normalization, source
+projection, DOM lifetime, and freshness. Diagnostic squiggles retain their
+separate 3 px vertical paint policy.
+
 Projected diagnostics consume the marker package's resolved class, z-index,
 and range metadata in the same overlay order as Code. Markdown owns the visible
 severity squiggles plus the `showUnused` underline gate. Monaco's inline

@@ -937,14 +937,17 @@ fn markdown_marker_severity_name(marker : @markers.Marker) -> String {
 
 ///|
 /// Measures one displayed UTF-16 range against its source-bearing line. Source
-/// to displayed-boundary selection stays in MoonBit; this helper exposes only
-/// the resulting browser geometry.
-extern "js" fn markdown_measure_text_range(
+/// to displayed-boundary selection and visual-row policy stay in MoonBit. The
+/// browser primitive returns either the union `[left, width]`, or
+/// `[line height, line box height]` followed by raw line-relative
+/// `[left, top, width, height]` client rects.
+extern "js" fn markdown_measure_text_range_raw(
   line : @rdom.Element,
   start : Int,
   end_exclusive : Int,
+  include_client_rects : Bool,
 ) -> Array[Double] =
-  #| (line, start, end) => {
+  #| (line, start, end, includeClientRects) => {
   #|   const document = line.ownerDocument;
   #|   const walker = document.createTreeWalker(
   #|     line,
@@ -966,18 +969,132 @@ extern "js" fn markdown_measure_text_range(
   #|   const first = locate(start);
   #|   walker.currentNode = line;
   #|   const last = locate(end);
-  #|   if (!first || !last) return [0, 1];
+  #|   if (!first || !last) return includeClientRects ? [0, 0] : [0, 1];
   #|   const range = document.createRange();
   #|   range.setStart(first[0], first[1]);
   #|   range.setEnd(last[0], last[1]);
-  #|   const rect = range.getBoundingClientRect();
   #|   const lineRect = line.getBoundingClientRect();
-  #|   return [rect.left - lineRect.left, Math.max(rect.width, 1)];
+  #|   if (!includeClientRects) {
+  #|     const boundingRect = range.getBoundingClientRect();
+  #|     return [
+  #|       boundingRect.left - lineRect.left,
+  #|       Math.max(boundingRect.width, 1),
+  #|     ];
+  #|   }
+  #|   const computedLineHeight = Number.parseFloat(
+  #|     line.ownerDocument.defaultView?.getComputedStyle(line).lineHeight || "",
+  #|   );
+  #|   const lineHeight =
+  #|     Number.isFinite(computedLineHeight) && computedLineHeight > 0
+  #|       ? computedLineHeight
+  #|       : 0;
+  #|   const geometry = [lineHeight, lineRect.height];
+  #|   for (const rect of range.getClientRects()) {
+  #|     geometry.push(
+  #|       rect.left - lineRect.left,
+  #|       rect.top - lineRect.top,
+  #|       rect.width,
+  #|       rect.height,
+  #|     );
+  #|   }
+  #|   return geometry;
   #| }
 
 ///|
-fn MarkdownDocumentHoverBridge::append_projected_span(
-  _self : MarkdownDocumentHoverBridge,
+fn markdown_measure_text_range_union(
+  line : @rdom.Element,
+  start : Int,
+  end_exclusive : Int,
+) -> Array[Double] {
+  markdown_measure_text_range_raw(line, start, end_exclusive, false)
+}
+
+///|
+fn markdown_measure_text_range_client_rects(
+  line : @rdom.Element,
+  start : Int,
+  end_exclusive : Int,
+) -> Array[Double] {
+  markdown_measure_text_range_raw(line, start, end_exclusive, true)
+}
+
+///|
+/// Converts browser glyph rects to Monaco-shaped visual-row boxes and
+/// coalesces only touching pieces on the same row. Keeping this arithmetic in
+/// MoonBit makes wrapping policy testable without a browser DOM.
+fn markdown_hover_fragment_geometry(measured : Array[Double]) -> Array[Double] {
+  guard measured.length() >= 2 else { return [] }
+  let line_height = measured[0]
+  let line_box_height = measured[1]
+  let fragments : Array[(Double, Double, Double, Double)] = []
+  let mut index = 2
+  while index + 3 < measured.length() {
+    let left = measured[index]
+    let raw_top = measured[index + 1]
+    let width = measured[index + 2].max(0.0)
+    let raw_height = measured[index + 3]
+    let (top, height) = if line_height > 0.0 {
+      let row_index = ((raw_top + raw_height / 2.0) / line_height)
+        .floor()
+        .to_int()
+        .max(0)
+      let top = (row_index.to_double() * line_height).min(line_box_height)
+      (top, line_height.min(line_box_height - top).max(0.0))
+    } else {
+      (raw_top.max(0.0), raw_height.max(0.0))
+    }
+    if height > 0.0 {
+      fragments.push((left, top, width, height))
+    }
+    index += 4
+  }
+  if fragments.length() == 0 {
+    return []
+  }
+  fragments.sort_by((left, right) => {
+    if left.1 < right.1 {
+      -1
+    } else if left.1 > right.1 {
+      1
+    } else if left.0 < right.0 {
+      -1
+    } else if left.0 > right.0 {
+      1
+    } else {
+      0
+    }
+  })
+  let result : Array[Double] = []
+  let mut previous_left = fragments[0].0
+  let mut previous_top = fragments[0].1
+  let mut previous_width = fragments[0].2
+  let mut previous_height = fragments[0].3
+  for fragment_index in 1..<fragments.length() {
+    let (left, top, width, height) = fragments[fragment_index]
+    if (previous_top - top).abs() < 0.5 &&
+      (previous_height - height).abs() < 0.5 &&
+      left <= previous_left + previous_width + 0.9 {
+      previous_width = previous_width.max(left + width - previous_left)
+    } else {
+      result.push(previous_left)
+      result.push(previous_top)
+      result.push(previous_width)
+      result.push(previous_height)
+      previous_left = left
+      previous_top = top
+      previous_width = width
+      previous_height = height
+    }
+  }
+  result.push(previous_left)
+  result.push(previous_top)
+  result.push(previous_width)
+  result.push(previous_height)
+  result
+}
+
+///|
+fn markdown_projected_span(
   line : @markdown_document.MarkdownSemanticCodeLineDom,
   displayed_range : @base_common.OffsetRange,
   class_name : String,
@@ -985,14 +1102,7 @@ fn MarkdownDocumentHoverBridge::append_projected_span(
   message? : String,
   severity? : String,
   z_index? : Int,
-  destination : Array[@rdom.Element],
-) -> Unit {
-  let geometry = markdown_measure_text_range(
-    line.element,
-    displayed_range.start,
-    displayed_range.end_exclusive,
-  )
-  guard geometry.length() >= 2 else { return }
+) -> @rdom.Element {
   let span = @rdom.document().create_element("span")
   span.set_attribute("class", class_name)
   span.set_attribute("aria-hidden", "true")
@@ -1029,10 +1139,76 @@ fn MarkdownDocumentHoverBridge::append_projected_span(
     }
     None => ()
   }
+  span
+}
+
+///|
+fn MarkdownDocumentHoverBridge::append_projected_span(
+  _self : MarkdownDocumentHoverBridge,
+  line : @markdown_document.MarkdownSemanticCodeLineDom,
+  displayed_range : @base_common.OffsetRange,
+  class_name : String,
+  source_range : @base_common.OffsetRange,
+  message? : String,
+  severity? : String,
+  z_index? : Int,
+  destination : Array[@rdom.Element],
+) -> Unit {
+  let geometry = markdown_measure_text_range_union(
+    line.element,
+    displayed_range.start,
+    displayed_range.end_exclusive,
+  )
+  guard geometry.length() >= 2 else { return }
+  let span = markdown_projected_span(
+    line,
+    displayed_range,
+    class_name,
+    source_range,
+    message?,
+    severity?,
+    z_index?,
+  )
   @base_browser.set_style_property(span, "left", "\{geometry[0]}px")
   @base_browser.set_style_property(span, "width", "\{geometry[1]}px")
   line.element.append_child(span.as_node())
   destination.push(span)
+}
+
+///|
+/// Behavior port of VS Code
+/// `RenderedContentHoverParts::_createEditorDecorations` plus
+/// `DecorationsOverlay::_renderNormalDecoration` at pinned revision
+/// `b18492a288de038fbc7643aae6de8247029d11bd`. Markdown has no ViewModel rows,
+/// so browser range fragments are the local row-clipping representation.
+fn MarkdownDocumentHoverBridge::append_projected_hover_range(
+  _self : MarkdownDocumentHoverBridge,
+  line : @markdown_document.MarkdownSemanticCodeLineDom,
+  displayed_range : @base_common.OffsetRange,
+  source_range : @base_common.OffsetRange,
+  destination : Array[@rdom.Element],
+) -> Unit {
+  let geometry = markdown_hover_fragment_geometry(
+    markdown_measure_text_range_client_rects(
+      line.element,
+      displayed_range.start,
+      displayed_range.end_exclusive,
+    ),
+  )
+  let mut index = 0
+  while index + 3 < geometry.length() {
+    let span = markdown_projected_span(
+      line, displayed_range, "moonbit-viewer-markdown-hover-range hoverHighlight",
+      source_range,
+    )
+    @base_browser.set_style_property(span, "left", "\{geometry[index]}px")
+    @base_browser.set_style_property(span, "top", "\{geometry[index + 1]}px")
+    @base_browser.set_style_property(span, "width", "\{geometry[index + 2]}px")
+    @base_browser.set_style_property(span, "height", "\{geometry[index + 3]}px")
+    line.element.append_child(span.as_node())
+    destination.push(span)
+    index += 4
+  }
 }
 
 ///|
@@ -1101,10 +1277,9 @@ fn MarkdownDocumentHoverBridge::refresh_hover_range(
     for item in block.project_source_range(source_range) {
       for line in lines {
         if line.block_index == block_index && line.line_index == item.line_index {
-          self.append_projected_span(
+          self.append_projected_hover_range(
             line,
             item.displayed_range,
-            "moonbit-viewer-markdown-hover-range hoverHighlight",
             source_range,
             self.hover_range_elements,
           )

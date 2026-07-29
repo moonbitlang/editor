@@ -470,6 +470,18 @@ test('renders and refreshes the editor-owned readonly Markdown presentation', as
     // The second semantic target is nested through a quote and list. Its
     // rendered line begins with two non-source padding cells, while the real
     // Range-derived target follows an astral character on the same source line.
+    // Narrowing the host forces that one logical line across visual rows.
+    // VS Code b18492a's DecorationsOverlay paints one hoverHighlight fragment
+    // per wrapped view row; the Markdown DOM projection must preserve the same
+    // no-bleed behavior.
+    await page.evaluate(() =>
+      globalThis.__markdownDocumentControls.resizeHost(360),
+    );
+    await expect
+      .poll(() =>
+        page.locator(root).evaluate((node) => node.getBoundingClientRect().width),
+      )
+      .toBe(360);
     callCount = (await hoverCalls(page)).length;
     await moveToSourceText(page, article, 'nested_answer', 6);
     const nestedCall = await waitForNewHoverCall(page, callCount);
@@ -507,6 +519,103 @@ test('renders and refreshes the editor-owned readonly Markdown presentation', as
       'data-markdown-hover-wire-offset',
       String(expectedNestedOffset),
     );
+    const wrappedHoverGeometry = await nestedSemanticLine.evaluate(
+      (line, { text, utf16Delta }) => {
+        const walker = document.createTreeWalker(
+          line,
+          NodeFilter.SHOW_TEXT,
+        );
+        let node;
+        while ((node = walker.nextNode())) {
+          const index = String(node.textContent || '').indexOf(text);
+          if (index < 0) continue;
+          const range = document.createRange();
+          range.setStart(node, index + utf16Delta);
+          range.setEnd(node, index + utf16Delta + 1);
+          const lineRect = line.getBoundingClientRect();
+          const lineHeight = Number.parseFloat(
+            getComputedStyle(line).lineHeight,
+          );
+          const target = Array.from(
+            range.getClientRects(),
+            (rect) => ({
+              left: rect.left,
+              top: rect.top,
+              right: rect.right,
+              bottom: rect.bottom,
+              width: rect.width,
+              height: rect.height,
+            }),
+          );
+          const actual = Array.from(
+            line.querySelectorAll(
+              '.moonbit-viewer-markdown-hover-range',
+            ),
+            (element) => {
+              const rect = element.getBoundingClientRect();
+              return {
+                left: rect.left,
+                top: rect.top,
+                right: rect.right,
+                bottom: rect.bottom,
+                width: rect.width,
+                height: rect.height,
+              };
+            },
+          );
+          return {
+            lineHeight,
+            logicalLineHeight: lineRect.height,
+            logicalLineTop: lineRect.top,
+            logicalLineBottom: lineRect.bottom,
+            target,
+            actual,
+          };
+        }
+        throw new Error(`text node not found: ${text}`);
+      },
+      { text: 'nested_answer', utf16Delta: 6 },
+    );
+    expect(wrappedHoverGeometry.logicalLineHeight).toBeGreaterThan(
+      wrappedHoverGeometry.lineHeight + 1,
+    );
+    expect(wrappedHoverGeometry.target).toHaveLength(1);
+    expect(wrappedHoverGeometry.actual).toHaveLength(1);
+    const targetRect = wrappedHoverGeometry.target[0];
+    const actualRect = wrappedHoverGeometry.actual[0];
+    expect(Math.abs(actualRect.left - targetRect.left)).toBeLessThanOrEqual(1);
+    expect(Math.abs(actualRect.right - targetRect.right)).toBeLessThanOrEqual(
+      1,
+    );
+    expect(actualRect.height).toBeLessThanOrEqual(
+      wrappedHoverGeometry.lineHeight + 1,
+    );
+    expect(actualRect.height).toBeGreaterThanOrEqual(
+      wrappedHoverGeometry.lineHeight - 1,
+    );
+    expect(actualRect.top).toBeLessThanOrEqual(targetRect.top + 1);
+    expect(actualRect.bottom).toBeGreaterThanOrEqual(targetRect.bottom - 1);
+    expect(actualRect.top).toBeGreaterThanOrEqual(
+      wrappedHoverGeometry.logicalLineTop - 1,
+    );
+    expect(actualRect.bottom).toBeLessThanOrEqual(
+      wrappedHoverGeometry.logicalLineBottom + 1,
+    );
+    await page.evaluate(() =>
+      globalThis.__markdownDocumentControls.resizeHost(640),
+    );
+    await expect
+      .poll(() =>
+        page.locator(root).evaluate((node) => node.getBoundingClientRect().width),
+      )
+      .toBe(640);
+    await expect(page.locator(hoverWidget)).toHaveAttribute(
+      'data-markdown-hover-visible',
+      'false',
+    );
+    await expect(
+      page.locator(`${article} .moonbit-viewer-markdown-hover-range`),
+    ).toHaveCount(0);
 
     // Resolved marker options keep Code's z/class/range paint order.
     // The observable unnecessary underline follows the live root gate;
