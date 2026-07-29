@@ -10,7 +10,7 @@ struct DevServerConfig {
 ///|
 async fn main {
   let config = parse_args(@env.args()[1:])
-  @server_host_native.run_native_editor_server(
+  @host.run_native_editor_server(
     config.root,
     host=config.host,
     port=config.port,

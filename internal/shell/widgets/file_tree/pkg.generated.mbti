@@ -6,7 +6,7 @@ import {
   "moonbit-community/rabbita/cmd",
   "moonbit-community/rabbita/html",
   "moonbitlang/editor/base/common",
-  "moonbitlang/editor/internal/shell/workspace",
+  "moonbitlang/editor/shell/workspace",
 }
 
 // Values

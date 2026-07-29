@@ -10,7 +10,7 @@ import {
   "moonbitlang/editor/viewer/common/quick_diff_api",
   "moonbitlang/editor/syntax/lang_moonbit",
   "moonbitlang/editor/internal/shell/widgets/file_tree",
-  "moonbitlang/editor/internal/shell/workspace",
+  "moonbitlang/editor/shell/workspace",
   "moonbit-community/rabbita",
   "moonbit-community/rabbita/dom" @rdom,
   "moonbit-community/rabbita/cmd",

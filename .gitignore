@@ -11,3 +11,4 @@ web/generated/editor.mjs.map
 web/generated/moonbit.d.ts
 web/generated/web.d.ts
 web/dist/
+.claude/

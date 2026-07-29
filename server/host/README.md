@@ -1,4 +1,4 @@
-# internal/shell/server_host_native
+# server/host
 
 Native effect adapter and executable backend for the reference shell.
 
@@ -41,6 +41,6 @@ source files. Use the default Just launcher only on a trusted LAN.
 This package is native-only and is not part of the reusable viewer API. It owns
 concrete host/provider behavior, but not protocol packet routing or browser UI.
 
-Run `moon test internal/shell/server_host_native --target native`, `just build`,
+Run `moon -C server test host`, `just build`,
 or launch it with `just dev ROOT=. PORT=5173`. Use `HOST=127.0.0.1` when the
 workspace must remain local to the development machine.

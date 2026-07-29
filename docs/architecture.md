@@ -306,14 +306,21 @@ internal/shell/web
   -> internal/shell/workbench
      -> viewer
      -> internal/shell/widgets/file_tree
-     -> internal/shell/remote_protocol
+     -> shell/remote_protocol
 
-internal/shell/server_host_native/main
-  -> internal/shell/server_host_native
-  -> internal/shell/server
-  -> internal/shell/{remote_protocol,workspace}
+server/host/main            (module moonbitlang/editor-server)
+  -> server/host
+  -> server/server
+  -> shell/{remote_protocol,workspace}
   -> language + viewer/common/model
 ```
+
+The native server is its own `moon.work` member with
+`preferred_target = "native"`, so `moon -C server build|run|test` needs no
+target flags. `shell/workspace` and `shell/remote_protocol` are the shared
+host-shell contracts both the browser workbench and the server module import;
+they live outside `internal/` because workspace members cannot import another
+module's internal packages, and they stay excluded from the published package.
 
 - `workspace` defines host-side source paths, document snapshots, filesystem,
   and tree-provider contracts. Its `DocumentSnapshot` is not the editor model.

@@ -14,7 +14,7 @@ async test "native host reads root-relative text files" {
       "pub fn main {}\n",
       create_mode=CreateOrTruncate,
     )
-    let host = @server_host_native.native_server_host()
+    let host = @host.native_server_host()
     match host.read_text_file(root, expect_path("src/main.mbt")) {
       ServerHostReadOk(content) => {
         assert_eq(content.text, "pub fn main {}\n")
@@ -56,7 +56,7 @@ async test "native host resolves one directory level with minted uris" {
       create_mode=CreateOrTruncate,
     )
 
-    let host = @server_host_native.native_server_host()
+    let host = @host.native_server_host()
     match host.read_directory(root, "") {
       ServerHostResolveOk(children) => {
         // One level only, with generated trees filtered out and every
@@ -128,7 +128,7 @@ async test "native host polling watch emits changed and deleted" {
     )
 
     let events : Array[@workspace.FileChangeType] = []
-    let host : &@server.ServerHost = @server_host_native.NativeServerHost::with_poll_interval(
+    let host : &@server.ServerHost = @host.NativeServerHost::with_poll_interval(
       20,
     )
     let watch = host.watch_text_file(
@@ -171,7 +171,7 @@ async fn wait_for_events(
 test "parses moon ide hover json output" {
   let raw =
     #|{"range":"20:15-20:33","contents":["```moonbit\nenum DiagnosticSeverity {}\n```","\n Doc text."]}
-  match @server_host_native.parse_moon_hover_output(raw, Position(3, 7)) {
+  match @host.parse_moon_hover_output(raw, Position(3, 7)) {
     Some(hover) => {
       assert_true(hover.range == Range(20, 15, 20, 33))
       match hover.contents {
@@ -189,23 +189,19 @@ test "parses moon ide hover json output" {
   // position.
   let rangeless =
     #|{"contents":["plain"]}
-  match @server_host_native.parse_moon_hover_output(rangeless, Position(3, 7)) {
+  match @host.parse_moon_hover_output(rangeless, Position(3, 7)) {
     Some(hover) => assert_true(hover.range == Range(3, 7, 3, 8))
     None => fail("expected rangeless hover")
   }
   assert_true(
-    @server_host_native.parse_moon_hover_output(
+    @host.parse_moon_hover_output(
       "No hover information found at src/main.mbt:1:1",
       Position(1, 1),
     )
     is None,
   )
   assert_true(
-    @server_host_native.parse_moon_hover_output(
-      "{\"contents\":[]}",
-      Position(1, 1),
-    )
-    is None,
+    @host.parse_moon_hover_output("{\"contents\":[]}", Position(1, 1)) is None,
   )
 }
 
@@ -217,9 +213,7 @@ test "parses moon check json diagnostics grouped by workspace uri" {
     #|{"$message_type":"diagnostic","level":"error","error_code":1,"path":"/elsewhere/other.mbt","loc":"1:1-1:2","message":"outside the workspace root"}
     #|Finished. moon: no work to do
     #|
-  let grouped = @server_host_native.parse_moon_check_diagnostics(
-    "/workspace/demo", raw,
-  )
+  let grouped = @host.parse_moon_check_diagnostics("/workspace/demo", raw)
   assert_eq(grouped.length(), 1)
   match grouped.get("readonly-remote://workspace/src/bad.mbt") {
     Some(diagnostics) => {

@@ -1,9 +1,9 @@
 import {
   "moonbitlang/editor/base/common" @base_common,
   "moonbitlang/editor/language",
-  "moonbitlang/editor/internal/shell/remote_protocol",
+  "moonbitlang/editor/shell/remote_protocol",
   "moonbitlang/editor/viewer/common/model",
-  "moonbitlang/editor/internal/shell/workspace",
+  "moonbitlang/editor/shell/workspace",
 }
 
 supported_targets = "native"

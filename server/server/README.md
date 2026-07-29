@@ -1,4 +1,4 @@
-# internal/shell/server
+# server/server
 
 Native-only policy and state for the reference remote workspace server. Native
 effects are supplied through `ServerHost`.
@@ -33,4 +33,4 @@ Server owns URI policy, cache/watch lifecycle, protocol dispatch, and provider
 routing. It must not import browser/workbench/web packages; filesystem, process,
 timer, socket, and concrete tool behavior stay in a host adapter.
 
-Run `moon test internal/shell/server --target native` and `just check`.
+Run `moon -C server test server` and `just check`.
