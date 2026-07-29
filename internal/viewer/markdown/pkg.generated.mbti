@@ -7,6 +7,10 @@ import {
 }
 
 // Values
+pub fn markdown_section_at_source_offset(Array[MarkdownSection], Int) -> MarkdownSection?
+
+pub fn markdown_sections(MarkdownDocumentProjection) -> Array[MarkdownSection]
+
 pub fn render_markdown(String, language_id? : String, code_block_renderer? : (MarkdownCodeBlock, String?) -> String) -> MarkdownRenderFact
 
 pub fn render_tokenized_code_block(MarkdownCodeBlock, String?) -> String
@@ -18,6 +22,7 @@ pub(all) struct MarkdownBlockAnchor {
   index : Int
   source_range : @common.OffsetRange
   rendered_element_index : Int?
+  heading_level : Int?
 } derive(Eq, @debug.Debug)
 
 pub(all) struct MarkdownCodeBlock {
@@ -62,6 +67,16 @@ pub(all) enum MarkdownResourceKind {
   OrdinaryMarkdown
   MoonBitMarkdown
 } derive(Eq, @debug.Debug)
+
+pub(all) struct MarkdownSection {
+  heading_anchor_index : Int
+  level : Int
+  body_anchor_indexes : Array[Int]
+  source_range : @common.OffsetRange
+  body_source_range : @common.OffsetRange?
+} derive(Eq, @debug.Debug)
+pub fn MarkdownSection::body_rendered_element_indexes(Self, MarkdownDocumentProjection) -> Array[Int]
+pub fn MarkdownSection::is_foldable(Self) -> Bool
 
 // Type aliases
 
