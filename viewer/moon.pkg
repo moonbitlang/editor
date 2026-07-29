@@ -24,6 +24,7 @@ import {
   "moonbitlang/editor/internal/viewer/contrib/markdown_comments/browser" @markdown_comments_browser,
   "moonbitlang/editor/internal/viewer/markdown" @markdown_core,
   "moonbitlang/editor/internal/viewer/browser/markdown" @browser_markdown,
+  "moonbitlang/editor/internal/viewer/browser/markdown_document",
   "moonbitlang/editor/internal/viewer/contrib/quick_diff/common" @quick_diff,
   "moonbitlang/editor/internal/viewer/contrib/quick_diff/browser" @quick_diff_browser,
   "moonbitlang/editor/viewer/common/languages",

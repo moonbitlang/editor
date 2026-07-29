@@ -8,6 +8,8 @@ import {
 }
 
 // Values
+pub fn open_external_link(String) -> Unit
+
 pub fn render_markdown(String, options? : MarkdownRenderOptions, target? : @dom.Element) -> RenderedMarkdown
 
 // Errors
@@ -34,6 +36,7 @@ pub struct RenderedMarkdown {
   element : @dom.Element
   dispose : @common.Disposable
   has_code_block : Bool
+  projection : @moonbitlang/editor/internal/viewer/markdown.MarkdownDocumentProjection
   // private fields
 }
 pub fn RenderedMarkdown::rerender_mermaid(Self, MermaidTheme) -> Unit

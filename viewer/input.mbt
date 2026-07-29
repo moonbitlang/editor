@@ -234,7 +234,7 @@ fn Viewer::measure(self : Viewer) -> Unit {
     None => ()
   }
   self.layout_active_presentation(
-    measured_configuration.content_width,
+    measured_configuration.width,
     measured_configuration.height,
   )
   if self.configuration.recompute_soft_wrap_column() {

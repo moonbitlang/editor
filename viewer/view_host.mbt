@@ -100,6 +100,10 @@ fn Viewer::flush_render(self : Viewer) -> Unit {
   guard model_data.browser is Some(presentation) else { return }
   let browser = match presentation {
     Code(code) => code
+    Markdown(markdown) => {
+      self.flush_markdown_document_render(model_data, markdown)
+      return
+    }
   }
   let view = browser.view
   let view_model = model_data.view_model
@@ -185,6 +189,66 @@ fn Viewer::flush_render(self : Viewer) -> Unit {
     }
     self.last_scroll_event = Some(event)
     self.did_scroll.fire(event)
+  }
+}
+
+///|
+/// Markdown HTML is replaced synchronously at the model/theme boundary. The
+/// scheduled flush publishes that installed generation and coalesces native
+/// scroll/extent changes through the same public event as Code.
+fn Viewer::flush_markdown_document_render(
+  self : Viewer,
+  model_data : ModelData,
+  markdown : @markdown_document.MarkdownDocumentView,
+) -> Unit {
+  let started = @base_browser.monotonic_now_ms()
+  let scroll_top = markdown.scroll_top()
+  let scroll_left = markdown.scroll_left()
+  self.emit_scroll_frame_phase(RenderStarted, scroll_top, scroll_left)
+  self.emit_scroll_frame_phase(RenderFinished, scroll_top, scroll_left)
+  match self.pending_rendered {
+    Some(pending) => {
+      self.pending_rendered = None
+      self.emit_model_rendered({
+        model: pending.model,
+        line_count: model_data.model.snapshot.line_count(),
+        rendered_lines: markdown.projection().block_anchors.length(),
+        patch_ms: @base_browser.monotonic_now_ms() - started,
+        fresh: pending.fresh,
+      })
+    }
+    None => ()
+  }
+  if self.scroll_dirty {
+    self.scroll_dirty = false
+    let event : @editor_api.ScrollEvent = {
+      scroll_top,
+      scroll_left,
+      scroll_width: markdown.scroll_width(),
+      scroll_height: markdown.scroll_height(),
+      scroll_top_changed: true,
+      scroll_left_changed: true,
+      scroll_width_changed: true,
+      scroll_height_changed: true,
+    }
+    let event = match self.last_scroll_event {
+      Some(previous) =>
+        {
+          ..event,
+          scroll_top_changed: event.scroll_top != previous.scroll_top,
+          scroll_left_changed: event.scroll_left != previous.scroll_left,
+          scroll_width_changed: event.scroll_width != previous.scroll_width,
+          scroll_height_changed: event.scroll_height != previous.scroll_height,
+        }
+      None => event
+    }
+    if event.scroll_top_changed ||
+      event.scroll_left_changed ||
+      event.scroll_width_changed ||
+      event.scroll_height_changed {
+      self.last_scroll_event = Some(event)
+      self.did_scroll.fire(event)
+    }
   }
 }
 

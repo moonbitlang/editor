@@ -11,6 +11,13 @@ sanitized before insertion. Action-handler links never retain native
 navigation; native links are limited to HTTP, HTTPS, and mailto. Images are
 removed by default and, when enabled, are limited to HTTP(S).
 
+`RenderedMarkdown.projection` is the exact DOM-free
+`MarkdownDocumentProjection` produced by the same cmark parse and configuration
+as its installed HTML. Browser consumers must retain this value instead of
+parsing source again. `open_external_link` is the shared action-handler
+capability for already-sanitized links; it opens with
+`noopener,noreferrer` and clears the returned window's opener.
+
 Scrollable diagram wrappers retain native wheel scrolling while they can
 consume the current delta. When neither axis can consume it, the event is
 allowed to reach the owning hover, widget, or editor scroller.

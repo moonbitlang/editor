@@ -233,6 +233,24 @@ fn Viewer::send_reveal_range(
   minimal_reveal? : Bool = false,
   scroll_type? : CursorRevealScrollType = Immediate,
 ) -> Unit {
+  match (self.current_markdown_document(), self.get_model()) {
+    (Some(markdown), Some(model)) => {
+      let range = model.validate_range(model_range)
+      let source_offset = model.snapshot.get_offset_at(
+        range.start_line_number,
+        range.start_column,
+      )
+      let alignment = match vertical_type {
+        Center => "center"
+        CenterIfOutsideViewport | NearTopIfOutsideViewport => "nearest"
+        Bottom => "end"
+        Simple | NearTop | Top => "start"
+      }
+      markdown.reveal_source_offset(source_offset, alignment)
+      return
+    }
+    _ => ()
+  }
   guard self.is_code_presentation() else { return }
   self.send_code_reveal_range(
     model_range,

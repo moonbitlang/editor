@@ -2,6 +2,8 @@
 fn main {
   if initial_size_requested() {
     run_initial_size_test()
+  } else if markdown_document_requested() {
+    run_markdown_document_test()
   } else if markdown_comments_requested() {
     run_markdown_comments_test()
   } else if view_zones_requested() {
@@ -20,6 +22,10 @@ fn main {
     run_viewer_api_test()
   }
 }
+
+///|
+extern "js" fn markdown_document_requested() -> Bool =
+  #| () => new URLSearchParams(location.search).has('markdownDocument')
 
 ///|
 extern "js" fn initial_size_requested() -> Bool =
