@@ -4,7 +4,7 @@ fn markdown_document_test_model(
   language_id : String,
   text : String,
 ) -> @model.TextModel raise {
-  @model.TextModel(
+  TextModel(
     @base_common.Uri::parse("inmemory://workbench/\{name}"),
     name,
     language_id,
