@@ -10,6 +10,28 @@ contains the reusable viewer; the reference shell is repository-only:
   against a real workspace. It demonstrates one host composition and must use
   the viewer through public APIs; it is not an external import surface.
 
+```d2
+direction: down
+
+embedder: your MoonBit app
+
+repo: this repository {
+  viewer: viewer — published package {
+    facade: Viewer facade
+    common: viewer/common — DOM-free
+    browser: browser runtime + contributions
+  }
+  shell: internal/shell — reference only {
+    workbench: browser workbench
+    server: native backend
+  }
+}
+
+embedder -> repo.viewer.facade: moon add moonbitlang/editor
+repo.shell.workbench -> repo.viewer.facade: embeds via public API
+repo.shell.workbench <-> repo.shell.server: readonly remote protocol
+```
+
 Monaco/VS Code is the primary design reference. CodeMirror is a secondary
 reference when its simpler state/view split is useful. Both submodules are
 reference-only.

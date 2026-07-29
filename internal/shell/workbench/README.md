@@ -43,6 +43,30 @@ reusable `viewer`, file tree, remote transport, and browser-test observability.
 - Agent-feedback state is enabled per opened resource and persisted in
   `localStorage`; this reference host has no agent execution loop.
 
+Opening a document flows one way from the tree through the protocol into a
+fresh readonly model:
+
+```mermaid
+sequenceDiagram
+  participant Tree as File tree
+  participant WB as Workbench
+  participant PC as Protocol client
+  participant SRV as Native server
+  participant V as Viewer
+
+  Tree->>WB: open path
+  WB->>PC: document read + watch
+  PC->>SRV: correlated WebSocket request
+  SRV-->>PC: snapshot + diagnostics push
+  PC-->>WB: response for active URI
+  WB->>V: set_model with new TextModel
+  WB->>V: fold_top_level for .mbt policy
+  WB->>V: handle_initialized
+  SRV-->>PC: watched-file change push
+  PC-->>WB: fresh snapshot
+  WB->>V: replace model, restore scroll
+```
+
 Opened `.md` documents render as one whole-file Markdown block through the
 same provider seam and rendering pipeline as API documentation — tokenized
 code fences, Mermaid, and Diago included. The view projection cannot hide

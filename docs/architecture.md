@@ -21,14 +21,18 @@ imports them and public names remain MoonBit-owned.
 
 ## Runtime Shape
 
-```text
-host document
-  -> viewer/common/model.TextModel
-  -> viewer/common/view_model.ViewModel
-  -> viewer/common/view_layout.ViewLayout
-  -> internal/viewer/browser/view.View
-  -> DOM
+```mermaid
+flowchart LR
+  A[host document] --> B[TextModel<br>common/model]
+  B --> C[ViewModel<br>common/view_model]
+  C --> D[ViewLayout<br>common/view_layout]
+  D --> E[View<br>browser/view]
+  E --> F[DOM]
 ```
+
+The four stages after the host document live in `viewer/common/model`,
+`viewer/common/view_model`, `viewer/common/view_layout`, and
+`internal/viewer/browser/view`.
 
 `Viewer` keeps cross-domain ordering at the root and delegates private state to
 five concrete owners: `EditorConfigurationState`, `ViewerModelSlot`,
@@ -58,6 +62,44 @@ error presentation. The viewer owns readonly rendering, selection, scrolling,
 widgets, language-feature presentation, and editor events.
 
 ## Package Tiers
+
+Dependencies point strictly downward through the tiers; no lower tier imports
+an upper one:
+
+```d2
+direction: right
+
+shell: internal/shell {
+  grid-columns: 1
+  workbench: browser workbench
+  backend: native server
+}
+facade: viewer facade
+inner: internal/viewer {
+  grid-columns: 1
+  view: browser/view
+  contrib: contrib/*
+  markdown: markdown
+}
+common: viewer/common {
+  grid-columns: 1
+  model: model
+  view_model: view_model
+  view_layout: view_layout
+}
+foundations: shared foundations {
+  grid-columns: 1
+  base: base/*
+  language: language
+  syntax: syntax
+  log: platform/log
+}
+
+shell -> facade
+facade -> inner
+inner -> common
+common -> foundations
+```
 
 ### Shared foundations
 

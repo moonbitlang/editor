@@ -18,6 +18,16 @@ matching provider result is authoritative, including an empty result. Only an
 absent provider falls back to the model language's configured comment rules;
 both paths pass through the same normalizer.
 
+```mermaid
+flowchart LR
+  A[Root-facing resolver] --> B{Provider<br>registered?}
+  B -->|yes| C[First provider result<br>is authoritative]
+  B -->|no| D[Detect via language<br>CommentRule]
+  C --> E[Normalize: validate ranges,<br>order, reject overlaps]
+  D --> E
+  E --> F[Whole-line blocks<br>+ foldability]
+```
+
 `resolve_markdown_comment_blocks_with_presentation` also returns the explicit
 foldability captured from the selected provider registration. Configuration
 detection is always non-foldable, so a leading Markdown thematic break is never

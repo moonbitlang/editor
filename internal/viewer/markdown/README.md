@@ -16,6 +16,26 @@ fall through to that caller override, or to cmark's ordinary `<pre><code>`
 output when no override exists. Unknown, differently cased, unlabelled, and
 indented code blocks are never diagrams.
 
+```d2
+direction: right
+
+fence: fenced code block
+lang: exact d2 or diago?
+compile: Diago compile
+svg: wrapped inline SVG
+override: caller override?
+tokens: tokenized editor HTML
+cmark: cmark pre code fallback
+
+fence -> lang
+lang -> compile: yes
+lang -> override: no
+compile -> svg: success
+compile -> override: failure
+override -> tokens: yes
+override -> cmark: no
+```
+
 `render_tokenized_code_block` is the shared editor override: it selects a fenced
 or active model language, threads tokenizer state across lines, and emits the
 existing `monaco-tokenized-source`/`mtk*` classes. Hover and whole-line Markdown
