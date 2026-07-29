@@ -18,6 +18,27 @@ test "Markdown hover geometry uses pointer x line rect and viewport clamps" {
 }
 
 ///|
+test "Markdown hover geometry coalesces client rects within visual rows" {
+  assert_eq(
+    markdown_hover_fragment_geometry([
+      // Computed line height and the logical line's two-row box height.
+      20.0, 40.0,
+      // Raw client rects are deliberately out of visual order.
+       2.0, 23.0, 8.0, 14.0, 15.0, 3.0, 7.0, 14.0, 10.0, 3.0, 5.0, 14.0,
+      // A same-row bidi-style gap remains a separate fragment.
+       40.0, 3.0, 4.0, 14.0,
+    ]),
+    [10.0, 0.0, 12.0, 20.0, 40.0, 0.0, 4.0, 20.0, 2.0, 20.0, 8.0, 20.0],
+  )
+  // Monaco's non-showIfCollapsed hover decoration does not widen an empty
+  // range merely to make it visible.
+  assert_eq(
+    markdown_hover_fragment_geometry([20.0, 20.0, 5.0, 3.0, 0.0, 14.0]),
+    [5.0, 0.0, 0.0, 20.0],
+  )
+}
+
+///|
 test "caret FFI exposes one text node while MoonBit owns UTF-16 tree mapping" {
   install_markdown_caret_test_document()
   defer restore_markdown_caret_test_document()

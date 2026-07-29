@@ -302,7 +302,6 @@
 }
 
 .moonbit-viewer-markdown-hover-range {
-  inset-block: 0;
   background: var(
     --vscode-editor-hoverHighlightBackground,
     rgba(173, 214, 255, 0.15)
