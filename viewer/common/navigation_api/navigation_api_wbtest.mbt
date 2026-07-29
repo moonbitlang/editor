@@ -1,5 +1,5 @@
 ///|
-fn navigation_test_model(resource : @base_common.Uri) -> TextModel {
+fn navigation_test_model(resource : @base_common.Uri) -> @model.TextModel {
   TextModel(resource, "target.mbt", "moonbit", 1, "rev-1", "let target = 1")
 }
 

@@ -6,16 +6,16 @@ pub(all) struct DefinitionTargetFingerprint {
   model_identity : Int
   model_generation : Int
   model_version_id : Int
-  position : Position
-  word_range : Range
+  position : @base_common.Position
+  word_range : @base_common.Range
   word : String
 } derive(Eq, Debug)
 
 ///|
 pub fn DefinitionTargetFingerprint::from_model(
-  model : TextModel,
+  model : @model.TextModel,
   model_generation : Int,
-  position : Position,
+  position : @base_common.Position,
   word : @model.WordAtPosition,
 ) -> DefinitionTargetFingerprint {
   {
@@ -39,7 +39,7 @@ pub fn DefinitionTargetFingerprint::from_model(
 /// down/up identity matters.
 pub fn DefinitionTargetFingerprint::is_current(
   self : DefinitionTargetFingerprint,
-  model : TextModel,
+  model : @model.TextModel,
   model_generation : Int,
 ) -> Bool {
   self.model_identity == model.identity() &&

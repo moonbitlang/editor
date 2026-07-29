@@ -21,6 +21,16 @@ fn Viewer::before_definition_mouse_down_selection(
   let target = self.definition_target_from_mouse_target(
     self.convert_mouse_target(target),
   )
+  self.before_definition_target_mouse_down(target)
+}
+
+///|
+fn Viewer::before_definition_target_mouse_down(
+  self : Viewer,
+  target : @definition.DefinitionTargetFingerprint?,
+) -> Bool {
+  guard self.definition_contribution() is Some(state) else { return false }
+  guard state.link_modifier_down else { return false }
   match state.link_state {
     LinkArmed(stamp, locations) if target == Some(stamp.target) &&
       self.definition_link_target_is_current(stamp.target) => {

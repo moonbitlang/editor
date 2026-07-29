@@ -4,7 +4,7 @@ priv struct DefinitionPeekRequestStamp {
   model_identity : Int
   model_generation : Int
   model_version_id : Int
-  position : Position
+  position : @base_common.Position
 }
 
 ///|
@@ -18,8 +18,9 @@ priv struct DefinitionPeekState {
   mut selected_index : Int
   mut widget : @definition_browser.DefinitionPeekWidget?
   mut zone_id : String?
+  mut markdown_projection_generation : Int?
   mut preview_viewer : Viewer?
-  mut preview_reference : TextModelReference?
+  mut preview_reference : @navigation_api.TextModelReference?
   mut preview_layout_frame : @base_common.Disposable?
   mut preview_resize_observer : @base_common.Disposable?
 }
@@ -36,6 +37,7 @@ fn DefinitionPeekState::DefinitionPeekState() -> DefinitionPeekState {
     selected_index: -1,
     widget: None,
     zone_id: None,
+    markdown_projection_generation: None,
     preview_viewer: None,
     preview_reference: None,
     preview_layout_frame: None,
@@ -77,7 +79,10 @@ fn DefinitionPeekState::retire_preview_source(
 fn Viewer::definition_peek_available(self : Viewer) -> Bool {
   self.role == OuterViewer &&
   self.definition_action_available() &&
-  self.current_code_browser_data() is Some(_)
+  (
+    self.current_code_browser_data() is Some(_) ||
+    self.current_markdown_document() is Some(_)
+  )
 }
 
 ///|
@@ -85,11 +90,18 @@ fn Viewer::start_peek_definition(self : Viewer) -> Unit {
   guard self.definition_peek_available() else { return }
   guard self.definition_contribution() is Some(state) else { return }
   guard self.get_model() is Some(model) else { return }
-  guard self.get_position() is Some(position) else { return }
+  guard self.definition_command_position() is Some(position) else { return }
   self.close_definition_peek(restore_focus=false)
   self.clear_definition_message()
   state.cancel_action()
-  state.reset_link_gesture()
+  if self.current_markdown_document() is Some(_) {
+    // The pointer-derived source position is the Markdown equivalent of the
+    // Code cursor anchor and must survive focus transfer into the Peek shell.
+    state.link_modifier_down = false
+    state.cancel_link()
+  } else {
+    state.reset_link_gesture()
+  }
   state.peek.generation += 1
   let generation = state.peek.generation
   guard self.open_definition_peek_shell(position, generation) else {
@@ -147,11 +159,10 @@ fn Viewer::start_peek_definition(self : Viewer) -> Unit {
 ///|
 fn Viewer::open_definition_peek_shell(
   self : Viewer,
-  position : Position,
+  position : @base_common.Position,
   generation : Int,
 ) -> Bool {
   guard self.definition_contribution() is Some(state) else { return false }
-  guard self.current_code_browser_data() is Some(_) else { return false }
   let widget = @definition_browser.DefinitionPeekWidget({
     on_close: () => self.close_definition_peek(restore_focus=true),
     on_select: index => self.select_definition_peek_result(index),
@@ -159,20 +170,42 @@ fn Viewer::open_definition_peek_shell(
     on_next: () => self.move_definition_peek_result(1),
     on_previous: () => self.move_definition_peek_result(-1),
   })
-  let zone = @editor_browser.ViewZone(
-    position.line_number,
-    widget.get_dom_node(),
-    suppress_mouse_down=true,
-    height_in_lines=@definition_browser.definition_peek_height_in_lines.to_double(),
-  )
-  let added_id = Ref("")
-  self.change_view_zones(accessor => added_id.val = accessor.add_zone(zone))
-  if added_id.val == "" {
-    widget.dispose()
-    return false
+  match self.current_code_browser_data() {
+    Some(_) => {
+      let zone = @editor_browser.ViewZone(
+        position.line_number,
+        widget.get_dom_node(),
+        suppress_mouse_down=true,
+        height_in_lines=@definition_browser.definition_peek_height_in_lines.to_double(),
+      )
+      let added_id = Ref("")
+      self.change_view_zones(accessor => added_id.val = accessor.add_zone(zone))
+      if added_id.val == "" {
+        widget.dispose()
+        return false
+      }
+      state.peek.zone_id = Some(added_id.val)
+    }
+    None =>
+      match self.current_markdown_document() {
+        Some(markdown) => {
+          widget
+          .get_dom_node()
+          .set_attribute(
+            "class", "moonbit-viewer-definition-peek moonbit-viewer-definition-peek-overlay",
+          )
+          markdown.overlay_mount().append_child(widget.get_dom_node().as_node())
+          state.peek.markdown_projection_generation = Some(
+            markdown.projection_generation(),
+          )
+        }
+        None => {
+          widget.dispose()
+          return false
+        }
+      }
   }
   state.peek.widget = Some(widget)
-  state.peek.zone_id = Some(added_id.val)
   @base_browser.queue_microtask(() => {
     if self.definition_peek_session_is_current(generation) {
       widget.focus()
@@ -200,7 +233,7 @@ fn Viewer::definition_peek_request_is_current(
   model.identity() == stamp.model_identity &&
   self.model_slot.generation == stamp.model_generation &&
   model.get_version_id() == stamp.model_version_id &&
-  self.get_position() == Some(stamp.position)
+  self.definition_command_position() == Some(stamp.position)
 }
 
 ///|
@@ -210,9 +243,19 @@ fn Viewer::definition_peek_session_is_current(
 ) -> Bool {
   guard !self.disposed else { return false }
   guard self.definition_contribution() is Some(state) else { return false }
-  state.peek.generation == generation &&
-  state.peek.widget is Some(_) &&
-  state.peek.zone_id is Some(_)
+  guard state.peek.generation == generation && state.peek.widget is Some(_) else {
+    return false
+  }
+  match (state.peek.zone_id, state.peek.markdown_projection_generation) {
+    (Some(_), None) => self.current_code_browser_data() is Some(_)
+    (None, Some(projection_generation)) =>
+      match self.current_markdown_document() {
+        Some(markdown) =>
+          markdown.projection_generation() == projection_generation
+        None => false
+      }
+    _ => false
+  }
 }
 
 ///|
@@ -359,8 +402,8 @@ fn Viewer::schedule_definition_peek_preview(
   generation : Int,
   preview_generation : Int,
   location : @language.Location,
-  model : TextModel,
-  reference? : TextModelReference,
+  model : @model.TextModel,
+  reference? : @navigation_api.TextModelReference,
 ) -> Unit {
   guard self.definition_contribution() is Some(state) else {
     match reference {
@@ -424,7 +467,7 @@ fn Viewer::definition_peek_preview_is_current(
   self : Viewer,
   generation : Int,
   preview_generation : Int,
-  model : TextModel,
+  model : @model.TextModel,
 ) -> Bool {
   guard self.definition_peek_session_is_current(generation) else {
     return false
@@ -514,7 +557,8 @@ fn Viewer::close_definition_peek(self : Viewer, restore_focus~ : Bool) -> Unit {
     None => ()
   }
   peek.definition_source = None
-  match peek.widget {
+  let widget = peek.widget
+  match widget {
     Some(widget) => widget.dispose()
     None => ()
   }
@@ -522,6 +566,8 @@ fn Viewer::close_definition_peek(self : Viewer, restore_focus~ : Bool) -> Unit {
   peek.widget = None
   let zone_id = peek.zone_id
   peek.zone_id = None
+  let markdown_projection_generation = peek.markdown_projection_generation
+  peek.markdown_projection_generation = None
   peek.locations = []
   peek.selected_index = -1
   match zone_id {
@@ -542,6 +588,14 @@ fn Viewer::close_definition_peek(self : Viewer, restore_focus~ : Bool) -> Unit {
         // zone's layout gap; focus restoration must not be that render's
         // accidental trigger.
         self.change_view_zones(accessor => accessor.remove_zone(zone_id))
+      }
+    None => ()
+  }
+  match markdown_projection_generation {
+    Some(_) =>
+      match widget {
+        Some(widget) => @base_browser.remove_element(widget.get_dom_node())
+        None => ()
       }
     None => ()
   }

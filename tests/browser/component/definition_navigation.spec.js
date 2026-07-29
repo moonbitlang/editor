@@ -11,6 +11,16 @@ const peek = `${outerEditor} .moonbit-viewer-definition-peek`;
 const preview =
   `${peek} .moonbit-viewer-definition-peek-preview > ` +
   '.monaco-editor.readonly-editor';
+const markdownEditor =
+  '.definition-markdown-host > .moonbit-viewer-markdown-document';
+const markdownDefinitionLink =
+  `${markdownEditor} .moonbit-viewer-markdown-definition-link`;
+const markdownPeek =
+  `${markdownEditor} > .moonbit-viewer-markdown-document-overlays > ` +
+  '.moonbit-viewer-definition-peek-overlay';
+const markdownPreview =
+  `${markdownPeek} .moonbit-viewer-definition-peek-preview > ` +
+  '.moonbit-viewer-markdown-document';
 const platformModifier = process.platform === 'darwin' ? 'Meta' : 'Control';
 
 async function settle(page) {
@@ -38,6 +48,12 @@ async function mountDefinitionFixture(page, testInfo) {
 
 async function state(page) {
   return page.evaluate(() => globalThis.__definitionControls.state());
+}
+
+async function markdownState(page) {
+  return page.evaluate(
+    () => globalThis.__definitionControls.markdown_state(),
+  );
 }
 
 async function resetScroll(page) {
@@ -82,6 +98,59 @@ async function textRange(page, rootSelector, line, needle) {
 
 async function referencePoint(page) {
   return textRange(page, outerEditor, 2, 'definition_alpha');
+}
+
+async function markdownTextRange(page, needle, semantic, occurrence = 0) {
+  const result = await page.locator(markdownEditor).evaluate(
+    (root, request) => {
+      const candidates = request.semantic
+        ? root.querySelectorAll('.moonbit-viewer-markdown-code-line')
+        : root.querySelectorAll(
+            '.moonbit-viewer-markdown-code-block:not([data-markdown-semantic])',
+          );
+      let seen = 0;
+      for (const candidate of candidates) {
+        const walker = document.createTreeWalker(
+          candidate,
+          NodeFilter.SHOW_TEXT,
+        );
+        const nodes = [];
+        let text = '';
+        for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+          nodes.push({ node, start: text.length });
+          text += node.textContent;
+        }
+        for (
+          let index = text.indexOf(request.needle);
+          index >= 0;
+          index = text.indexOf(request.needle, index + 1)
+        ) {
+          if (seen++ !== request.occurrence) continue;
+          const start = nodes.findLast((entry) => entry.start <= index);
+          const endOffset = index + request.needle.length;
+          const end = nodes.findLast(
+            (entry) => entry.start <= endOffset,
+          );
+          const range = document.createRange();
+          range.setStart(start.node, index - start.start);
+          range.setEnd(end.node, endOffset - end.start);
+          const rect = range.getBoundingClientRect();
+          return {
+            x: rect.x + rect.width / 2,
+            y: rect.y + rect.height / 2,
+            left: rect.left,
+            top: rect.top,
+            width: rect.width,
+            height: rect.height,
+          };
+        }
+      }
+      return null;
+    },
+    { needle, semantic, occurrence },
+  );
+  expect(result).not.toBeNull();
+  return result;
 }
 
 async function armDefinitionLink(page) {
@@ -262,6 +331,156 @@ test('Alt+F12 mounts one measured Peek preview, blocks recursive Peek, and Escap
       )
       .toBe(true);
     expect((await state(page)).hasTextFocus).toBe(true);
+  } finally {
+    reporter.dispose();
+  }
+});
+
+test('semantic Markdown projects an exact definition link while ordinary fences and replacement stay inert', async ({
+  page,
+}, testInfo) => {
+  const reporter = await mountDefinitionFixture(page, testInfo);
+  try {
+    const point = await markdownTextRange(
+      page,
+      'definition_alpha',
+      true,
+      0,
+    );
+    await page.mouse.move(2, 2);
+    await page.keyboard.down(platformModifier);
+    await page.mouse.move(point.x, point.y);
+    await expect(page.locator(markdownDefinitionLink)).toHaveCount(1);
+    const linkBox = await page
+      .locator(markdownDefinitionLink)
+      .boundingBox();
+    expect(linkBox).not.toBeNull();
+    expect(Math.abs(linkBox.x - point.left)).toBeLessThan(2);
+    expect(Math.abs(linkBox.width - point.width)).toBeLessThan(2);
+    const sourceRange = await page
+      .locator(markdownDefinitionLink)
+      .evaluate((node) => ({
+        start: Number(node.dataset.markdownSourceStart),
+        end: Number(node.dataset.markdownSourceEnd),
+      }));
+    expect(sourceRange.end - sourceRange.start).toBe(
+      'definition_alpha'.length,
+    );
+
+    const callsAfterSemantic = (await markdownState(page)).providerCalls;
+    const ordinary = await markdownTextRange(
+      page,
+      'definition_alpha',
+      false,
+      0,
+    );
+    await page.mouse.move(ordinary.x, ordinary.y);
+    await settle(page);
+    await expect(page.locator(markdownDefinitionLink)).toHaveCount(0);
+    expect((await markdownState(page)).providerCalls).toBe(
+      callsAfterSemantic,
+    );
+
+    await page.mouse.move(point.x, point.y);
+    await expect(page.locator(markdownDefinitionLink)).toHaveCount(1);
+    await page.evaluate(
+      () => globalThis.__definitionControls.replace_markdown_source(),
+    );
+    await expect(page.locator(markdownDefinitionLink)).toHaveCount(0);
+    await page.keyboard.up(platformModifier);
+
+    const freshPoint = await markdownTextRange(
+      page,
+      'definition_alpha',
+      true,
+      0,
+    );
+    await page.keyboard.down(platformModifier);
+    await page.mouse.move(freshPoint.x, freshPoint.y);
+    await expect(page.locator(markdownDefinitionLink)).toHaveCount(1);
+    await page.mouse.down();
+    await page.mouse.up();
+    await expect
+      .poll(async () => (await markdownState(page)).scrollTop)
+      .toBeGreaterThan(0);
+    await page.keyboard.up(platformModifier);
+  } finally {
+    await page.keyboard.up(platformModifier).catch(() => {});
+    reporter.dispose();
+  }
+});
+
+test('Alt+F12 from semantic Markdown mounts a projection-scoped Peek overlay and restores focus', async ({
+  page,
+}, testInfo) => {
+  const reporter = await mountDefinitionFixture(page, testInfo);
+  try {
+    const point = await markdownTextRange(
+      page,
+      'definition_alpha',
+      true,
+      0,
+    );
+    await page.mouse.click(point.x, point.y);
+    await page.keyboard.press('Alt+F12');
+    await expect(page.locator(markdownPeek)).toHaveCount(1);
+    await expect(page.locator(markdownPreview)).toHaveCount(1);
+
+    await page.locator('.definition-markdown-host').evaluate((host) => {
+      host.style.width = '640px';
+    });
+    await settle(page);
+    const geometry = await page.locator(markdownPeek).evaluate((root) => {
+      const editor = root.closest(
+        '.moonbit-viewer-markdown-document',
+      );
+      const rootRect = root.getBoundingClientRect();
+      const editorRect = editor.getBoundingClientRect();
+      return {
+        width: rootRect.width,
+        height: rootRect.height,
+        left: rootRect.left,
+        right: rootRect.right,
+        top: rootRect.top,
+        bottom: rootRect.bottom,
+        editorLeft: editorRect.left,
+        editorRight: editorRect.right,
+        editorTop: editorRect.top,
+        editorBottom: editorRect.bottom,
+      };
+    });
+    expect(geometry.width).toBeGreaterThan(300);
+    expect(geometry.height).toBeGreaterThan(200);
+    expect(geometry.left).toBeGreaterThanOrEqual(geometry.editorLeft);
+    expect(geometry.right).toBeLessThanOrEqual(geometry.editorRight);
+    expect(geometry.top).toBeGreaterThanOrEqual(geometry.editorTop);
+    expect(geometry.bottom).toBeLessThanOrEqual(geometry.editorBottom);
+
+    await page.keyboard.press('Escape');
+    await expect(page.locator(markdownPeek)).toHaveCount(0);
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            document.activeElement ===
+            globalThis.__definitionControls.markdownRoot,
+        ),
+      )
+      .toBe(true);
+
+    const freshPoint = await markdownTextRange(
+      page,
+      'definition_alpha',
+      true,
+      0,
+    );
+    await page.mouse.click(freshPoint.x, freshPoint.y);
+    await page.keyboard.press('Alt+F12');
+    await expect(page.locator(markdownPeek)).toHaveCount(1);
+    await page.evaluate(
+      () => globalThis.__definitionControls.replace_markdown_source(),
+    );
+    await expect(page.locator(markdownPeek)).toHaveCount(0);
   } finally {
     reporter.dispose();
   }

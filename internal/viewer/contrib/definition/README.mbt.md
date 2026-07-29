@@ -12,9 +12,9 @@ captures model identity, attachment generation, content version, position, and
 word range; `DefinitionLinkState` records resolving, armed, and pressed
 transitions plus a gesture-scoped resolved-empty cache without owning browser
 resources. `DefinitionPeekPhase` records definition and preview generations
-while root `viewer` owns and tears down their cancellation sources,
-decorations, ViewZone, nested Viewer, scheduled layout, and optional
-model-reference lease.
+while root `viewer` owns and tears down their cancellation sources, Code
+decorations or projected Markdown link spans, Code ViewZone or Markdown
+overlay, nested Viewer, scheduled layout, and optional model-reference lease.
 
 Provider order is stable. Normalization removes only exact URI/range
 duplicates, so ordinary goto and confirmed Peek select the first surviving

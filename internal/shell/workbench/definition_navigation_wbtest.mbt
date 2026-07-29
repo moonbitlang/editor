@@ -13,7 +13,7 @@ extend RemoteLanguageClient with @language.DefinitionProvider::{
 ///|
 test "preview references share one host model and retire it after the final lease" {
   let uri = definition_navigation_test_uri("lease-target")
-  let model = TextModel(
+  let model = @model.TextModel(
     uri, "lease-target.mbt", "moonbit", 1, "rev-lease", "let target = 1",
   )
   let state : PreviewResourceState = {
@@ -51,14 +51,14 @@ async test "remote definition provider preserves ordered locations and cancellat
   let source_uri = definition_navigation_test_uri("definition-source")
   let first_uri = definition_navigation_test_uri("definition-first")
   let second_uri = definition_navigation_test_uri("definition-second")
-  let source_model = TextModel(
+  let source_model = @model.TextModel(
     source_uri, "definition-source.mbt", "moonbit", 2, "rev-source", "let answer = target",
   )
   let markers = @markers.MarkerService()
   let freshness = RemoteLanguageFreshness(markers)
   freshness.note_document(source_model)
   let client = RemoteLanguageClient::{
-    log_service: LogService(logger=NullLogger()),
+    log_service: LogService(logger=@log.NullLogger()),
     freshness,
   }
   let observed_uri = Ref("")

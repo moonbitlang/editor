@@ -19,7 +19,7 @@ test "definition locations preserve provider order and remove exact duplicates" 
 
 ///|
 test "definition target freshness includes model identity version and generation" {
-  let model = TextModel(
+  let model = @model.TextModel(
     try! @base_common.Uri::parse("file:///source.mbt"),
     "source.mbt",
     "moonbit",
@@ -27,7 +27,7 @@ test "definition target freshness includes model identity version and generation
     "revision-1",
     "let answer = value",
   )
-  let position = Position(1, 6)
+  let position = @base_common.Position(1, 6)
   let word = model.get_word_at_position(position).unwrap()
   let target = DefinitionTargetFingerprint::from_model(model, 7, position, word)
   assert_true(target.is_current(model, 7))

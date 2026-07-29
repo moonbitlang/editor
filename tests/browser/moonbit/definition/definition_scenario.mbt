@@ -7,6 +7,7 @@
 priv struct BrowserDefinitionProvider {
   calls : Ref[Int]
   location : @language.Location
+  reference_line : Int
 }
 
 ///|
@@ -18,7 +19,7 @@ impl @language.DefinitionProvider for BrowserDefinitionProvider with fn provide_
 ) {
   self.calls.val += 1
   if model.uri.to_string() == self.location.uri.to_string() &&
-    position.line_number == 2 &&
+    position.line_number == self.reference_line &&
     position.column >= definition_reference_start_column() &&
     position.column <= definition_reference_end_column() {
     [self.location]
@@ -46,6 +47,24 @@ fn definition_source() -> String {
     lines.push("filler_line_\{index}")
   }
   lines.join("\n")
+}
+
+///|
+fn markdown_definition_source() -> String {
+  let lines = [
+    "```mbt check", "let use = definition_alpha", "```", "", "```mbt", "let ordinary = definition_alpha",
+    "```", "",
+  ]
+  for index in 1..<=40 {
+    lines.push("Markdown projection filler \{index}.")
+  }
+  lines.append(["", "```mbt check", "let definition_alpha = 1", "```"])
+  lines.join("\n")
+}
+
+///|
+fn markdown_definition_line() -> Int {
+  51
 }
 
 ///|
@@ -100,7 +119,13 @@ fn run_definition_browser_test() -> Unit {
   let host = document.create_element("div")
   host.set_attribute("class", "viewer-host definition-host")
   host.set_attribute("style", "height:360px;width:760px;")
+  let markdown_host = document.create_element("div")
+  markdown_host.set_attribute("class", "viewer-host definition-markdown-host")
+  markdown_host.set_attribute(
+    "style", "height:360px;width:760px;margin-top:16px;",
+  )
   shell.append_child(host.as_node())
+  shell.append_child(markdown_host.as_node())
   app.append_child(shell.as_node())
 
   let uri = try! @base_common.Uri::from(
@@ -108,7 +133,7 @@ fn run_definition_browser_test() -> Unit {
     authority="model",
     path="/definition-fixture.mbt",
   )
-  let model = TextModel(
+  let model = @model.TextModel(
     uri,
     "definition-fixture.mbt",
     "moonbit",
@@ -120,14 +145,44 @@ fn run_definition_browser_test() -> Unit {
   let provider = BrowserDefinitionProvider::{
     calls: provider_calls,
     location: { uri, range: Range(1, 5, 1, 21) },
+    reference_line: 2,
+  }
+  let markdown_uri = try! @base_common.Uri::from(
+    scheme="inmemory",
+    authority="model",
+    path="/definition-fixture.mbt.md",
+  )
+  let markdown_model = @model.TextModel(
+    markdown_uri,
+    "definition-fixture.mbt.md",
+    "moonbit",
+    1,
+    "definition-markdown-rev-1",
+    markdown_definition_source(),
+  )
+  let markdown_provider_calls = Ref(0)
+  let markdown_provider = BrowserDefinitionProvider::{
+    calls: markdown_provider_calls,
+    location: {
+      uri: markdown_uri,
+      range: Range(
+        markdown_definition_line(),
+        5,
+        markdown_definition_line(),
+        21,
+      ),
+    },
+    reference_line: 2,
   }
   let languages = @languages.Languages()
+  languages.register_definition_provider(LanguageId("moonbit"), provider)
+  |> ignore
   languages.register_definition_provider(
-    LanguageSelector::LanguageId("moonbit"),
-    provider,
+    LanguageId("moonbit"),
+    markdown_provider,
   )
   |> ignore
-  let log_service = LogService()
+  let log_service = @log.LogService()
   let log_handle = log_service.log_handle()
   let services = @viewer.ViewerServices(
     languages=languages.language_handle(log_handle),
@@ -145,16 +200,40 @@ fn run_definition_browser_test() -> Unit {
   viewer.set_model(Some(model))
   viewer.set_position(Position(1, 1))
   viewer.handle_initialized()
+  let markdown_viewer = @viewer.Viewer::create(
+    markdown_host,
+    services~,
+    options=ViewerOptions(
+      soft_wrap=false,
+      smooth_scrolling=false,
+      folding=false,
+    ),
+  )
+  markdown_viewer.set_model(Some(markdown_model))
+  markdown_viewer.handle_initialized()
   guard viewer.get_dom_node() is Some(root) else {
     ctx.fail("mounted Viewer did not expose its root")
     ctx.finish()
     return
   }
+  guard markdown_viewer.get_dom_node() is Some(markdown_root) else {
+    ctx.fail("mounted Markdown Viewer did not expose its root")
+    ctx.finish()
+    return
+  }
   install_definition_controls(
     root,
+    markdown_root,
     () => definition_state_json(viewer, provider_calls),
+    () => definition_state_json(markdown_viewer, markdown_provider_calls),
     () => viewer.set_scroll_top(0.0),
     () => viewer.focus(),
+    () => markdown_viewer.focus(),
+    () => {
+      markdown_model.set_value(
+        markdown_definition_source() + "\n\nProjection generation changed.",
+      )
+    },
   )
   wait_for_definition_fixture(ctx, 100)
 }
@@ -164,7 +243,10 @@ fn wait_for_definition_fixture(
   ctx : @support.BrowserTestContext,
   remaining : Int,
 ) -> Unit {
-  if @support.query_text(".definition-host").contains("definition_alpha") {
+  if @support.query_text(".definition-host").contains("definition_alpha") &&
+    @support.query_text(".definition-markdown-host").contains(
+      "definition_alpha",
+    ) {
     ctx.assert_true(
       @support.query_count(".definition-host > .monaco-editor.readonly-editor") ==
       1,
@@ -187,15 +269,32 @@ fn wait_for_definition_fixture(
 ///|
 extern "js" fn install_definition_controls(
   outer_root : @rdom.Element,
+  markdown_root : @rdom.Element,
   state_json : () -> String,
+  markdown_state_json : () -> String,
   reset_scroll : () -> Unit,
   focus_outer : () -> Unit,
+  focus_markdown : () -> Unit,
+  replace_markdown_source : () -> Unit,
 ) -> Unit =
-  #| (outerRoot, stateJson, resetScroll, focusOuter) => {
+  #| (
+  #|   outerRoot,
+  #|   markdownRoot,
+  #|   stateJson,
+  #|   markdownStateJson,
+  #|   resetScroll,
+  #|   focusOuter,
+  #|   focusMarkdown,
+  #|   replaceMarkdownSource,
+  #| ) => {
   #|   globalThis.__definitionControls = {
   #|     outerRoot,
+  #|     markdownRoot,
   #|     state: () => JSON.parse(stateJson()),
+  #|     markdown_state: () => JSON.parse(markdownStateJson()),
   #|     reset_scroll: resetScroll,
   #|     focus_outer: focusOuter,
+  #|     focus_markdown: focusMarkdown,
+  #|     replace_markdown_source: replaceMarkdownSource,
   #|   };
   #| }

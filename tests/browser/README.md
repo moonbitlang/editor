@@ -85,6 +85,10 @@ for performance investigation and perf-harness changes.
   model/source/wire/range facts in `data-markdown-hover-*` attributes.
 - Definition navigation: a dedicated public-Viewer fixture drives plain clicks,
   Ctrl/Cmd definition links, goto, and Alt+F12 Peek with trusted browser input.
+  Its semantic `.mbt.md` cases assert exact projected link spans, ordinary-fence
+  exclusion, source-replacement cancellation, same-model reveal, a
+  projection-scoped Peek overlay inside a constrained host, nested preview,
+  Escape focus restoration, and replacement teardown.
 - Product observability: `__readonlyEditorEvent`, `__readonlyEditorModel`,
   `__readonlyEditorDocument`, `__readonlyEditorSource`,
   `__readonlyEditorCopiedText`, and `__readonlyEditorCopiedHtml`.

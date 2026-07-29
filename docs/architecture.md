@@ -28,7 +28,7 @@ flowchart LR
   C --> D[ViewLayout<br>common/view_layout]
   D --> E[BrowserPresentation<br>closed family]
   E --> F[Code: View<br>browser/view]
-  E --> G[Markdown: document view<br>+ hover bridge]
+  E --> G[Markdown: document view<br>+ hover and definition bridges]
   F --> H[DOM]
   G --> H
 ```
@@ -38,8 +38,7 @@ The stages after the host document live in `viewer/common/model`,
 closed `BrowserPresentation` family then selects
 `internal/viewer/browser/view.View` for Code or
 `internal/viewer/browser/markdown_document.MarkdownDocumentView` plus the
-`internal/viewer/contrib/hover/browser.MarkdownDocumentHoverBridge` for
-Markdown.
+presentation-local hover and definition bridges for Markdown.
 
 `Viewer` keeps cross-domain ordering at the root and delegates private state to
 five concrete owners: `EditorConfigurationState`, `ViewerModelSlot`,
@@ -50,8 +49,9 @@ five concrete owners: `EditorConfigurationState`, `ViewerModelSlot`,
 theme, layout, scroll, reveal, and lifecycle dispatch exhaustively over that
 family instead of assuming a hidden Code `View`. The Code payload pairs a real
 `View` with its retained mouse handler and view-scoped render/reveal facts. The
-Markdown payload pairs a contribution-free document view with a
-presentation-local bridge over the original model. Public construction seeds
+Markdown payload pairs a contribution-free document view with
+presentation-local hover and definition bridges over the original model.
+Public construction seeds
 `EditorConfigurationState` synchronously from the host client box before model
 attachment. Each `ModelData` then carries one generation-scoped initialization
 boundary: the host invokes `Viewer::handle_initialized` after model, view-state,
@@ -203,8 +203,9 @@ js-only. Concrete browser runtime packages live below the module-private
   same-parse source projection. Only compiler-recognized fenced rows receive
   semantic source boundaries; cross-line tokenization state is preserved, and
   decoded-text or row-cardinality mismatches fail closed. The package owns no
-  model, provider, marker store, or request policy. Root and the hover browser
-  package own those higher-level contracts.
+  model, provider, marker store, or request policy. It also owns semantic DOM
+  caret-to-source mapping and exact projected-range span construction; root and
+  the hover browser package own the higher-level feature contracts.
 - `internal/viewer/markdown` is the multi-target safe-cmark boundary. It owns
   plaintext fallback, a cmark-independent code-block value, conversion facts,
   the shared editor-token HTML override, and the private synchronous adapter
@@ -275,8 +276,11 @@ editor common/browser layers; editor common never depends on them.
   token fingerprints, and the Ctrl/Cmd-link and Peek generation states.
   `internal/viewer/contrib/definition/browser` owns only the Peek and
   non-destructive-message DOM shells. Root `viewer` owns provider requests,
-  cancellation, decorations, ViewZones, nested Viewer composition, opener
-  dispatch, and target-model reference release. The emitted stylesheet remains
+  cancellation, Code decorations or projected Markdown link spans, Code
+  ViewZones or the projection-scoped Markdown overlay, nested Viewer
+  composition, opener dispatch, and target-model reference release. The
+  Markdown adapter resolves native pointer geometry through the document-owned
+  source map and never creates a virtual model. The emitted stylesheet remains
   at `viewer/contrib/definition/browser/definition.css`.
 - `internal/viewer/contrib/agent_feedback` owns concrete feedback
   storage/service projection; host DTOs and the callback handle live in

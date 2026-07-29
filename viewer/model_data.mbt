@@ -95,12 +95,14 @@ priv enum BrowserPresentation {
 priv struct MarkdownBrowserData {
   view : @markdown_document.MarkdownDocumentView
   hover_bridge : @hover_browser.MarkdownDocumentHoverBridge
+  definition_bridge : MarkdownDocumentDefinitionBridge
   fold : MarkdownFoldState
 }
 
 ///|
 fn MarkdownBrowserData::activate(self : MarkdownBrowserData) -> Unit {
   self.hover_bridge.activate()
+  self.definition_bridge.activate()
 }
 
 ///|
@@ -109,6 +111,7 @@ fn MarkdownBrowserData::replace_source(
   source : String,
   source_model_version : Int,
 ) -> Unit {
+  self.definition_bridge.before_projection_replaced()
   self.hover_bridge.before_projection_replaced()
   self.view.replace_source(source, source_model_version)
   // Fold reconciliation must land inside the replacement bracket: the
@@ -116,6 +119,7 @@ fn MarkdownBrowserData::replace_source(
   // may only refresh diagnostics once final visibility is installed.
   self.reconcile_markdown_folding(source)
   self.hover_bridge.after_projection_replaced()
+  self.definition_bridge.after_projection_replaced()
 }
 
 ///|
@@ -123,6 +127,7 @@ fn MarkdownBrowserData::apply_theme(
   self : MarkdownBrowserData,
   theme : String,
 ) -> Unit {
+  self.definition_bridge.before_projection_replaced()
   self.hover_bridge.before_projection_replaced()
   self.view.apply_theme(theme)
   // The source is unchanged, so reconciliation preserves fold state exactly;
@@ -130,6 +135,7 @@ fn MarkdownBrowserData::apply_theme(
   // article just lost.
   self.reconcile_markdown_folding(self.fold.source)
   self.hover_bridge.after_projection_replaced()
+  self.definition_bridge.after_projection_replaced()
 }
 
 ///|
@@ -140,10 +146,12 @@ fn MarkdownBrowserData::layout(
 ) -> Unit {
   self.view.layout(width, height)
   self.hover_bridge.layout_changed()
+  self.definition_bridge.layout_changed()
 }
 
 ///|
 fn MarkdownBrowserData::dispose(self : MarkdownBrowserData) -> Unit {
+  self.definition_bridge.dispose()
   self.hover_bridge.dispose()
   self.view.dispose()
 }

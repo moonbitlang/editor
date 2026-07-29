@@ -10,6 +10,23 @@
   text-underline-offset: 2px;
 }
 
+.moonbit-viewer-markdown-definition-link {
+  position: absolute;
+  bottom: 0;
+  height: 100%;
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--vscode-textLink-foreground, currentColor);
+  color: var(--vscode-textLink-foreground, inherit);
+  cursor: pointer;
+  pointer-events: none;
+}
+
+.moonbit-viewer-markdown-code-line:has(
+    > .moonbit-viewer-markdown-definition-link
+  ) {
+  cursor: pointer;
+}
+
 .moonbit-viewer-definition-message {
   position: absolute;
   top: 12px;
@@ -41,6 +58,14 @@
   border: 1px solid var(--vscode-peekView-border, #007acc);
   box-shadow: 0 2px 8px var(--vscode-widget-shadow, rgba(0, 0, 0, 0.35));
   pointer-events: auto;
+}
+
+.moonbit-viewer-definition-peek-overlay {
+  position: absolute;
+  inset: clamp(12px, 4vw, 32px);
+  width: auto;
+  height: auto;
+  min-height: 220px;
 }
 
 .moonbit-viewer-definition-peek-header {

@@ -8,8 +8,9 @@ The package deliberately does not import or construct that Viewer.
 `DefinitionPeekWidget` owns every DOM listener it installs. Replacing the
 location list releases the old row listeners before removing those rows, and
 `dispose` releases both row and persistent listeners exactly once. The caller
-owns the ViewZone, the nested Viewer, and any target-model reference; it must
-dispose and detach those resources before disposing the shell.
+owns the Code ViewZone or Markdown overlay mount, the nested Viewer, and any
+target-model reference; it must dispose and detach those resources before
+disposing the shell.
 
 Keyboard events from the result list or nested preview stop at the shell.
 Escape closes, Enter confirms the selected result, F4 selects the next result,

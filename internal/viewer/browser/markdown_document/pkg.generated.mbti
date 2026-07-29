@@ -17,6 +17,7 @@ pub struct MarkdownDocumentView {
   // private fields
 }
 pub fn MarkdownDocumentView::MarkdownDocumentView(String, Int, String, @common.Uri, @markdown.MarkdownResourceKind, String, () -> Unit, (Bool) -> Unit, () -> Unit, show_unused? : Bool) -> Self
+pub fn MarkdownDocumentView::append_projected_range_spans(Self, @common.OffsetRange, String) -> Array[@dom.Element]
 pub fn MarkdownDocumentView::apply_marker_unused_visibility(Self, Bool) -> Unit
 pub fn MarkdownDocumentView::apply_theme(Self, String) -> Unit
 pub fn MarkdownDocumentView::article(Self) -> @dom.Element
@@ -41,6 +42,7 @@ pub fn MarkdownDocumentView::scroll_left(Self) -> Double
 pub fn MarkdownDocumentView::scroll_top(Self) -> Double
 pub fn MarkdownDocumentView::scroll_width(Self) -> Double
 pub fn MarkdownDocumentView::semantic_code_lines(Self) -> Array[MarkdownSemanticCodeLineDom]
+pub fn MarkdownDocumentView::semantic_pointer_hit(Self, Double, Double) -> MarkdownSemanticPointerHit?
 pub fn MarkdownDocumentView::set_hidden_root_elements(Self, Array[Int]) -> Unit
 pub fn MarkdownDocumentView::set_scroll_position(Self, scroll_top? : Double, scroll_left? : Double) -> Unit
 pub fn MarkdownDocumentView::set_section_fold_toggle_handler(Self, (Int) -> Unit) -> Unit
@@ -64,6 +66,12 @@ pub(all) struct MarkdownSemanticCodeLineDom {
   element : @dom.Element
 }
 
+pub(all) struct MarkdownSemanticPointerHit {
+  line : MarkdownSemanticCodeLineDom
+  source_offset : Int
+  pointer_x : Double
+}
+
 pub(all) struct MarkdownTocBarEntry {
   depth : Int
   text : String
@@ -73,4 +81,3 @@ pub(all) struct MarkdownTocBarEntry {
 // Type aliases
 
 // Traits
-

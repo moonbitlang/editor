@@ -7,7 +7,7 @@ priv struct DefinitionActionStamp {
   model_identity : Int
   model_generation : Int
   model_version_id : Int
-  position : Position
+  position : @base_common.Position
 }
 
 ///|
@@ -26,6 +26,7 @@ priv struct DefinitionContributionState {
   mut message_hide : @base_common.Disposable?
   peek : DefinitionPeekState
   link_decorations : EditorDecorationsCollection
+  mut markdown_link_elements : Array[@rdom.Element]
   mut launch_async_task : (async () -> Unit noraise) -> Unit
 }
 
@@ -48,6 +49,7 @@ fn DefinitionContributionState::DefinitionContributionState(
     message_hide: None,
     peek: DefinitionPeekState(),
     link_decorations: viewer.create_decorations_collection(),
+    markdown_link_elements: [],
     launch_async_task,
   }
 }
@@ -94,6 +96,10 @@ fn DefinitionContributionState::cancel_link(
   self.link_source = None
   self.link_state = LinkIdle
   self.link_decorations.clear()
+  for element in self.markdown_link_elements {
+    @base_browser.remove_element(element)
+  }
+  self.markdown_link_elements.clear()
 }
 
 ///|
@@ -187,6 +193,26 @@ fn Viewer::definition_action_available(self : Viewer) -> Bool {
 }
 
 ///|
+fn Viewer::handle_markdown_definition_key_down(
+  self : Viewer,
+  key : String,
+  alt : Bool,
+  ctrl_cmd : Bool,
+  shift : Bool,
+) -> Bool {
+  guard key == "F12" && !shift else { return false }
+  if alt && !ctrl_cmd && self.definition_peek_available() {
+    self.start_peek_definition()
+    return true
+  }
+  if !alt && self.definition_action_available() {
+    self.start_goto_definition()
+    return true
+  }
+  false
+}
+
+///|
 fn Viewer::hook_definition_contribution(
   self : Viewer,
 ) -> Array[@base_common.Disposable] {
@@ -221,7 +247,10 @@ fn Viewer::on_definition_cursor_selection_changed(self : Viewer) -> Unit {
 ///|
 fn Viewer::cancel_definition_link(self : Viewer) -> Unit {
   match self.definition_contribution() {
-    Some(state) => state.cancel_link()
+    Some(state) => {
+      state.link_modifier_down = false
+      state.cancel_link()
+    }
     None => ()
   }
 }
@@ -233,7 +262,7 @@ fn Viewer::reset_definition_requests(self : Viewer) -> Unit {
       state.cancel_action()
       state.reset_link_gesture()
       self.close_definition_peek(restore_focus=false)
-      self.clear_definition_message()
+      self.dispose_definition_message()
     }
     None => ()
   }
@@ -251,7 +280,7 @@ fn Viewer::reset_definition_link(self : Viewer) -> Unit {
 fn Viewer::start_goto_definition(self : Viewer) -> Unit {
   guard self.definition_contribution() is Some(state) else { return }
   guard self.get_model() is Some(model) else { return }
-  guard self.get_position() is Some(position) else { return }
+  guard self.definition_command_position() is Some(position) else { return }
   state.cancel_action()
   self.clear_definition_message()
   state.action_generation += 1
@@ -332,12 +361,55 @@ fn Viewer::definition_target_from_mouse_target(
 }
 
 ///|
+fn Viewer::definition_target_from_source_offset(
+  self : Viewer,
+  source_offset : Int,
+) -> @definition.DefinitionTargetFingerprint? {
+  guard self.get_model() is Some(model) && !model.is_disposed() else {
+    return None
+  }
+  let position = model.get_position_at(source_offset)
+  guard model.get_word_at_position(position) is Some(word) else { return None }
+  Some(
+    @definition.DefinitionTargetFingerprint::from_model(
+      model,
+      self.model_slot.generation,
+      position,
+      word,
+    ),
+  )
+}
+
+///|
+fn Viewer::definition_command_position(self : Viewer) -> @base_common.Position? {
+  if self.current_markdown_document() is None {
+    return self.get_position()
+  }
+  guard self.current_markdown_document() is Some(_) &&
+    self.definition_contribution() is Some(state) &&
+    state.last_pointer_target is Some(target) &&
+    self.definition_link_target_is_current(target) else {
+    return None
+  }
+  Some(target.position)
+}
+
+///|
 fn Viewer::definition_link_target_is_current(
   self : Viewer,
   target : @definition.DefinitionTargetFingerprint,
 ) -> Bool {
   match self.get_model() {
-    Some(model) => target.is_current(model, self.model_slot.generation)
+    Some(model) => {
+      guard target.is_current(model, self.model_slot.generation) else {
+        return false
+      }
+      match self.current_markdown_document() {
+        Some(markdown) =>
+          markdown.source_model_version() == model.get_version_id()
+        None => true
+      }
+    }
     None => false
   }
 }
@@ -389,17 +461,26 @@ fn Viewer::start_definition_link_request(
       return
     }
     state.link_state = LinkArmed(stamp, locations)
-    state.link_decorations.set([
-      {
-        range: target.word_range,
-        options: ModelDecorationOptions(
-          "",
-          inline_class_name="moonbit-viewer-definition-link",
-          description="definition-link",
-        ),
-      },
-    ])
-    |> ignore
+    match self.current_markdown_document() {
+      Some(markdown) => {
+        let source_range = model.snapshot.offset_range_of(target.word_range)
+        state.markdown_link_elements = markdown.append_projected_range_spans(
+          source_range, "moonbit-viewer-markdown-definition-link",
+        )
+      }
+      None =>
+        state.link_decorations.set([
+          {
+            range: target.word_range,
+            options: ModelDecorationOptions(
+              "",
+              inline_class_name="moonbit-viewer-definition-link",
+              description="definition-link",
+            ),
+          },
+        ])
+        |> ignore
+    }
   })
 }
 
@@ -430,16 +511,31 @@ fn Viewer::on_definition_mouse_move(
   self : Viewer,
   event : @editor_browser.EditorMouseEvent,
 ) -> Unit {
-  guard self.definition_contribution() is Some(state) else { return }
   let target = self.definition_target_from_mouse_target(event.target)
-  state.last_pointer_target = target
-  let active = definition_link_modifier_is_active(
+  self.handle_definition_pointer_move(
+    target,
     event.event.ctrl_key,
     event.event.meta_key,
     event.event.alt_key,
     event.event.shift_key,
+    event.event.buttons,
   )
-  if !active || event.event.buttons != 0 {
+}
+
+///|
+fn Viewer::handle_definition_pointer_move(
+  self : Viewer,
+  target : @definition.DefinitionTargetFingerprint?,
+  ctrl : Bool,
+  meta : Bool,
+  alt : Bool,
+  shift : Bool,
+  buttons : Int,
+) -> Unit {
+  guard self.definition_contribution() is Some(state) else { return }
+  state.last_pointer_target = target
+  let active = definition_link_modifier_is_active(ctrl, meta, alt, shift)
+  if !active || buttons != 0 {
     state.link_modifier_down = false
     state.cancel_link()
     return
@@ -482,13 +578,29 @@ fn Viewer::on_definition_mouse_up(
   self : Viewer,
   event : @editor_browser.EditorMouseEvent,
 ) -> Unit {
-  guard self.definition_contribution() is Some(state) else { return }
   let target = self.definition_target_from_mouse_target(event.target)
-  let modifier_active = definition_link_modifier_is_active(
+  self.handle_definition_pointer_up(
+    target,
     event.event.ctrl_key,
     event.event.meta_key,
     event.event.alt_key,
     event.event.shift_key,
+  )
+  |> ignore
+}
+
+///|
+fn Viewer::handle_definition_pointer_up(
+  self : Viewer,
+  target : @definition.DefinitionTargetFingerprint?,
+  ctrl : Bool,
+  meta : Bool,
+  alt : Bool,
+  shift : Bool,
+) -> Bool {
+  guard self.definition_contribution() is Some(state) else { return false }
+  let modifier_active = definition_link_modifier_is_active(
+    ctrl, meta, alt, shift,
   )
   match state.link_state {
     LinkPressed(stamp, locations) if modifier_active &&
@@ -501,10 +613,12 @@ fn Viewer::on_definition_mouse_up(
       task(async fn() noraise {
         self.open_definition_location(location, Current) |> ignore
       })
+      return true
     }
     LinkPressed(_, _) => state.cancel_link()
     _ => ()
   }
+  false
 }
 
 ///|
@@ -522,7 +636,7 @@ fn Viewer::definition_action_is_current(
   model.identity() == stamp.model_identity &&
   self.model_slot.generation == stamp.model_generation &&
   model.get_version_id() == stamp.model_version_id &&
-  self.get_position() == Some(stamp.position)
+  self.definition_command_position() == Some(stamp.position)
 }
 
 ///|
@@ -564,19 +678,37 @@ fn Viewer::show_definition_message(self : Viewer, message : String) -> Unit {
         None => ()
       }
       state.message_hide = None
-      guard self.current_code_browser_data() is Some(_) else { return }
+      guard self.current_markdown_document() is Some(_) ||
+        self.current_code_browser_data() is Some(_) else {
+        return
+      }
       let widget = match state.message_widget {
         Some(widget) => widget
         None => {
           let widget = @definition_browser.DefinitionMessageWidget()
-          let overlay = overlay_widget(
-            "editor.contrib.definition.message",
-            widget.get_dom_node(),
-          )
           state.message_widget = Some(widget)
-          state.message_overlay = Some(overlay)
-          self.add_overlay_widget(overlay)
           widget
+        }
+      }
+      match self.current_markdown_document() {
+        Some(markdown) => {
+          match state.message_overlay {
+            Some(overlay) => self.remove_overlay_widget(overlay)
+            None => ()
+          }
+          state.message_overlay = None
+          markdown.overlay_mount().append_child(widget.get_dom_node().as_node())
+        }
+        None => {
+          guard self.current_code_browser_data() is Some(_) else { return }
+          if state.message_overlay is None {
+            let overlay = overlay_widget(
+              "editor.contrib.definition.message",
+              widget.get_dom_node(),
+            )
+            state.message_overlay = Some(overlay)
+            self.add_overlay_widget(overlay)
+          }
         }
       }
       widget.set_message(message)
@@ -631,7 +763,10 @@ fn Viewer::dispose_definition_message(self : Viewer) -> Unit {
       }
       state.message_overlay = None
       match state.message_widget {
-        Some(widget) => widget.dispose()
+        Some(widget) => {
+          @base_browser.remove_element(widget.get_dom_node())
+          widget.dispose()
+        }
         None => ()
       }
       state.message_widget = None

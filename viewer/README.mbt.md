@@ -127,9 +127,9 @@ viewer.slot.data -> model: borrows readonly
   mouse handler and render/reveal facts; the `View` remains the handler's sole
   disposal owner. The Markdown payload owns a focusable root, native viewport,
   replaceable article, persistent overlay mount, same-parse source projection,
-  and monotonic projection generation. Model swaps reset scroll and feature
-  model state; use `save_view_state`/`restore_view_state` when the host wants
-  persistence.
+  monotonic projection generation, and presentation-local hover and definition
+  bridges. Model swaps reset scroll and feature model state; use
+  `save_view_state`/`restore_view_state` when the host wants persistence.
 - Contributions are created once per `Viewer` and disposed with it.
   `Viewer.contributions` is the `EditorContributions` owner, and its `instances`
   map is the only per-Viewer instance store. Each central entry owns one
@@ -177,14 +177,15 @@ there, a full fence info string whose first two nonempty ASCII-space-separated
 tokens are exact lowercase `mbt check` or `moonbit check` is semantic.
 Repeated spaces and trailing tokens are accepted; ordinary Markdown,
 nonmatching fences, case changes, and tab-separated forms remain static. The
-Markdown payload also owns one presentation-local language bridge. A real DOM
-caret in a semantic row is converted through the retained `MarkdownCodeLine`
-boundary map to the original model's 1-based position; synthetic indentation
-never becomes a provider position. Hover providers run against that original
-model/URI/revision, with no virtual model or URI. Live original-model marker
-decorations are projected into those same rows without a block-local marker
-store or synthetic-model decoration, and their marker hover parts are merged
-with language hover rows.
+Markdown document exposes one projection-owned semantic pointer mapping. A real
+DOM caret in a semantic row is converted through the retained
+`MarkdownCodeLine` boundary map to the original model's 1-based position;
+synthetic indentation never becomes a provider position. The
+presentation-local hover and definition bridges consume that mapping and query
+providers against the original model/URI/revision, with no virtual model or
+URI. Live original-model marker decorations are projected into those same rows
+without a block-local marker store or synthetic-model decoration, and their
+marker hover parts are merged with language hover rows.
 
 Every pending Markdown hover commit is stamped with request generation, model
 identity and versions, URI/revision, attach generation, projection generation
@@ -205,9 +206,10 @@ anchor. Visible ranges convert intersecting rendered anchors back through the
 same snapshot; a document with no renderable anchor falls back to its full
 model range. Cursor, selection, ViewZones, editor mouse events, folding, quick
 diff, feedback widgets, Markdown comments, and Code-view overlays remain
-dormant on the Markdown variant. The Markdown bridge's native pointer listener,
-diagnostic spans, and DOM-anchored hover widget are presentation-owned rather
-than Code contributions.
+dormant on the Markdown variant. Its presentation-owned bridges use native root
+listeners for hover and definition navigation; diagnostic and definition-link
+spans plus the DOM-anchored hover and Peek widgets stay in the Markdown
+projection rather than entering Code contributions.
 
 ## Public surface
 
@@ -306,14 +308,15 @@ padding. Smooth requests of at most one line downgrade to immediate, and the
 
 ## Definition navigation
 
-Definition UI is a behavior port of Monaco standalone. F12 and the web
-Ctrl/Cmd+F12 fallback request definitions at the current cursor, preserve
-provider order after exact URI/range de-duplication, and use the first result.
-A same-resource result is applied locally with `set_position`, reveal, and
-focus. A cross-resource result is sent to the optional host-owned
-`LocationOpenerHandle`; rejection or absence produces non-destructive
-feedback. Neither Viewer nor the request value owns files, tabs, workspace,
-groups, navigation history, or transport.
+Definition UI is a behavior port of Monaco standalone. In Code, F12 and the web
+Ctrl/Cmd+F12 fallback request definitions at the current cursor. In semantic
+`.mbt.md` fences, F12 uses the most recent valid projected pointer position.
+Both paths preserve provider order after exact URI/range de-duplication and use
+the first result. A same-resource result is applied locally with reveal and
+focus; Code also updates its cursor. A cross-resource result is sent to the
+optional host-owned `LocationOpenerHandle`; rejection or absence produces
+non-destructive feedback. Neither Viewer nor the request value owns files,
+tabs, workspace, groups, navigation history, or transport.
 
 Ctrl/Command+Click uses an algorithm-fidelity gesture state rather than a
 second ordinary-click path. Only exact platform Ctrl or Command over real
@@ -325,10 +328,15 @@ repeated semantic checks on every mousemove. Selection suppression occurs only
 when a single left mousedown matches that armed token and the modifier was
 already held; mouseup must still match before opening the cached first result.
 Modifier release, scroll, drag, leave, selection, model/content change, and
-disposal cancel the request and clear the decoration.
+disposal cancel the request and clear the link. Code paints that link as a model
+decoration. Semantic Markdown asks the document projection to paint the exact
+source range as caller-owned spans; ordinary fences and synthetic padding stay
+inert, and projection replacement removes those spans before their DOM retires.
 
-Alt+F12 opens a Viewer-owned Peek ViewZone only in an outer mounted Viewer.
-The shell presents all normalized results and hosts one nested readonly Viewer.
+Alt+F12 opens Peek only in an outer mounted Viewer. Code mounts the Viewer-owned
+shell in a ViewZone; semantic Markdown mounts it in the persistent projection
+overlay and stamps the session with the current projection generation. The
+shell presents all normalized results and hosts one nested readonly Viewer.
 Same-resource preview reuses the caller-owned model; cross-resource preview
 uses the optional host-owned `TextModelResolverHandle` and retains its
 `TextModelReference` only for the preview lifetime. Missing, rejected, stale,
@@ -337,7 +345,8 @@ and release any returned reference. F4/Shift+F4 switch results, Enter confirms
 through the normal opener path, and Escape closes and restores focus. A nested
 preview borrows services but cannot recursively open another Peek. Teardown
 cancels both generations before disposing listeners, layout work, nested
-Viewer, model reference, ViewZone, and finally restoring outer focus.
+Viewer, model reference, the active ViewZone or Markdown overlay, and finally
+restoring outer focus.
 
 `ViewerServices` is an opaque capability aggregate. Its constructor accepts a
 `LanguageHandle`, one closed marker source (`MarkerStore` or `Decorations`), an

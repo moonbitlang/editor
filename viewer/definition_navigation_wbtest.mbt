@@ -41,7 +41,7 @@ async fn ManualDefinitionTasks::run_next(
 }
 
 ///|
-fn definition_navigation_test_model(resource : String) -> TextModel {
+fn definition_navigation_test_model(resource : String) -> @model.TextModel {
   TextModel(
     try! @base_common.Uri::parse(resource),
     "source.mbt",
@@ -55,17 +55,14 @@ fn definition_navigation_test_model(resource : String) -> TextModel {
 ///|
 fn definition_navigation_services(
   locations : Array[@language.Location],
-  opener? : LocationOpenerHandle,
-  resolver? : TextModelResolverHandle,
+  opener? : @navigation_api.LocationOpenerHandle,
+  resolver? : @navigation_api.TextModelResolverHandle,
 ) -> ViewerServices {
   let languages = @languages.Languages()
   let provider = DefinitionNavigationTestProvider::{ locations, }
-  languages.register_definition_provider(
-    LanguageSelector::LanguageId("moonbit"),
-    provider,
-  )
+  languages.register_definition_provider(LanguageId("moonbit"), provider)
   |> ignore
-  let log_service = LogService()
+  let log_service = @log.LogService()
   ViewerServices(
     languages=languages.language_handle(log_service.log_handle()),
     location_opener?=opener,
@@ -91,7 +88,7 @@ async test "F12 reveals a same-resource definition without calling the opener" {
     range: Range(1, 14, 1, 20),
   }
   let opener_calls = Ref(0)
-  let opener = LocationOpenerHandle(open=_request => {
+  let opener = @navigation_api.LocationOpenerHandle(open=_request => {
     opener_calls.val += 1
     true
   })
@@ -122,7 +119,7 @@ async test "F12 sends a cross-resource request and preserves rejection feedback"
   let target = try! @base_common.Uri::parse("file:///target.mbt")
   let location : @language.Location = { uri: target, range: Range(4, 2, 4, 8) }
   let requests : Array[@navigation_api.OpenLocationRequest] = []
-  let opener = LocationOpenerHandle(open=request => {
+  let opener = @navigation_api.LocationOpenerHandle(open=request => {
     requests.push(request)
     false
   })
@@ -157,7 +154,7 @@ async test "empty and stale definition actions cannot navigate" {
   let target = try! @base_common.Uri::parse("file:///target.mbt")
   let location : @language.Location = { uri: target, range: Range(1, 1, 1, 2) }
   let opener_calls = Ref(0)
-  let opener = LocationOpenerHandle(open=_request => {
+  let opener = @navigation_api.LocationOpenerHandle(open=_request => {
     opener_calls.val += 1
     true
   })
@@ -215,7 +212,7 @@ async test "empty definition-link result is cached for one gesture and reports o
   let tasks = ManualDefinitionTasks()
   viewer.set_definition_host_for_test(task => tasks.schedule(task))
   viewer.set_model(Some(model))
-  let position = Position(1, 14)
+  let position = @base_common.Position(1, 14)
   let word = model.get_word_at_position(position).unwrap()
   let target = @definition.DefinitionTargetFingerprint::from_model(
     model,
@@ -294,7 +291,7 @@ async test "definition-link arms only a fresh token and stale content clears it"
   let tasks = ManualDefinitionTasks()
   viewer.set_definition_host_for_test(task => tasks.schedule(task))
   viewer.set_model(Some(model))
-  let position = Position(1, 14)
+  let position = @base_common.Position(1, 14)
   let word = model.get_word_at_position(position).unwrap()
   let target = @definition.DefinitionTargetFingerprint::from_model(
     model,
@@ -415,10 +412,10 @@ async fn run_cross_resource_definition_peek_test() -> Unit {
   let source = definition_navigation_test_model("file:///source.mbt")
   let first_uri = try! @base_common.Uri::parse("file:///first.mbt")
   let second_uri = try! @base_common.Uri::parse("file:///second.mbt")
-  let first_model = TextModel(
+  let first_model = @model.TextModel(
     first_uri, "first.mbt", "moonbit", 1, "rev-first", "let first = 1\n",
   )
-  let second_model = TextModel(
+  let second_model = @model.TextModel(
     second_uri, "second.mbt", "moonbit", 1, "rev-second", "let second = 2\n",
   )
   let locations : Array[@language.Location] = [
@@ -427,7 +424,10 @@ async fn run_cross_resource_definition_peek_test() -> Unit {
   ]
   let first_releases = Ref(0)
   let second_releases = Ref(0)
-  let resolver = TextModelResolverHandle(resolve=(resource, _token) => {
+  let resolver = @navigation_api.TextModelResolverHandle(resolve=(
+    resource,
+    _token,
+  ) => {
     if resource.to_string() == first_uri.to_string() {
       Some(
         TextModelReference(first_model, release=() => first_releases.val += 1),
@@ -490,13 +490,14 @@ async fn run_stale_definition_peek_reference_test() -> Unit {
   let source = definition_navigation_test_model("file:///source.mbt")
   let target_uri = try! @base_common.Uri::parse("file:///target.mbt")
   let wrong_uri = try! @base_common.Uri::parse("file:///wrong.mbt")
-  let wrong_model = TextModel(
+  let wrong_model = @model.TextModel(
     wrong_uri, "wrong.mbt", "moonbit", 1, "wrong-rev", "let wrong = 1",
   )
   let releases = Ref(0)
-  let resolver = TextModelResolverHandle(resolve=(_resource, _token) => {
-    Some(TextModelReference(wrong_model, release=() => releases.val += 1))
-  })
+  let resolver = @navigation_api.TextModelResolverHandle(resolve=(
+    _resource,
+    _token,
+  ) => Some(TextModelReference(wrong_model, release=() => releases.val += 1)))
   let services = definition_navigation_services(
     [{ uri: target_uri, range: Range(1, 1, 1, 2) }],
     resolver~,

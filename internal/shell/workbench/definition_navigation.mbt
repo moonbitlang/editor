@@ -4,7 +4,7 @@
 /// the one model created from the returned snapshot.
 priv struct PreviewResourceState {
   uri : @base_common.Uri
-  mut model : TextModel?
+  mut model : @model.TextModel?
   mut in_flight : Int
   mut leases : Int
   mut disposed : Bool
@@ -19,7 +19,7 @@ fn is_workbench_resource(uri : @base_common.Uri) -> Bool {
 }
 
 ///|
-fn workbench_location_opener() -> LocationOpenerHandle {
+fn workbench_location_opener() -> @navigation_api.LocationOpenerHandle {
   LocationOpenerHandle(open=request => {
     match request.mode {
       Side => false
@@ -36,7 +36,7 @@ fn workbench_location_opener() -> LocationOpenerHandle {
 }
 
 ///|
-fn workbench_text_model_resolver() -> TextModelResolverHandle {
+fn workbench_text_model_resolver() -> @navigation_api.TextModelResolverHandle {
   TextModelResolverHandle(resolve=(resource, token) => {
     resolve_preview_model(resource, token)
   })
@@ -46,7 +46,7 @@ fn workbench_text_model_resolver() -> TextModelResolverHandle {
 async fn resolve_preview_model(
   resource : @base_common.Uri,
   token : @language.CancellationToken,
-) -> TextModelReference? noraise {
+) -> @navigation_api.TextModelReference? noraise {
   if token.is_cancellation_requested() ||
     !is_workbench_resource(resource) ||
     protocol_send.val is None {
@@ -123,8 +123,8 @@ async fn resolve_preview_model(
 ///|
 fn acquire_preview_reference(
   state : PreviewResourceState,
-  model : TextModel,
-) -> TextModelReference {
+  model : @model.TextModel,
+) -> @navigation_api.TextModelReference {
   state.leases = state.leases + 1
   TextModelReference(model, release=() => {
     if state.leases > 0 {
