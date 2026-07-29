@@ -316,3 +316,123 @@ test "section lookup by source offset returns the innermost match" {
     ),
   )
 }
+
+///|
+/// Renders `source` and pairs each section with its reconciliation key.
+fn describe_keys(source : String) -> Array[String] {
+  let projection = @markdown.render_markdown(source).projection
+  let sections = @markdown.markdown_sections(projection)
+  @markdown.markdown_section_keys(sections, projection, source).map(key => {
+    key.replace_all(old="\u{1f}", new="|")
+  })
+}
+
+///|
+test "the key is level, normalized heading text, and occurrence" {
+  debug_inspect(
+    describe_keys(
+      (
+        #|# Title
+        #|
+        #|body
+        #|
+        #|##   Spaced   Heading   ##
+        #|
+        #|body
+        #|
+      ),
+    ),
+    content=(
+      #|["1|Title|0", "2|Spaced Heading|0"]
+    ),
+  )
+}
+
+///|
+test "repeated headings differ only by occurrence" {
+  debug_inspect(
+    describe_keys(
+      (
+        #|## Example
+        #|
+        #|first
+        #|
+        #|## Example
+        #|
+        #|second
+        #|
+        #|## Example
+        #|
+        #|third
+        #|
+      ),
+    ),
+    content=(
+      #|["2|Example|0", "2|Example|1", "2|Example|2"]
+    ),
+  )
+}
+
+///|
+test "a setext heading keys identically to its ATX equivalent" {
+  debug_inspect(
+    (
+      describe_keys(
+        (
+          #|Title
+          #|=====
+          #|
+          #|body
+          #|
+        ),
+      ),
+      describe_keys(
+        (
+          #|# Title
+          #|
+          #|body
+          #|
+        ),
+      ),
+    ),
+    content=(
+      #|(["1|Title|0"], ["1|Title|0"])
+    ),
+  )
+}
+
+///|
+test "editing a later section does not change an earlier section's key" {
+  let before = describe_keys(
+    (
+      #|# Stable
+      #|
+      #|body
+      #|
+      #|# Other
+      #|
+      #|original text
+      #|
+    ),
+  )
+  let after = describe_keys(
+    (
+      #|# Stable
+      #|
+      #|body
+      #|
+      #|# Other
+      #|
+      #|rewritten, longer body text that shifts every later offset
+      #|
+      #|and gains a whole extra paragraph
+      #|
+    ),
+  )
+  debug_inspect(
+    (before, after, before[0] == after[0]),
+    content=(
+      #|(["1|Stable|0", "1|Other|0"], ["1|Stable|0", "1|Other|0"], true)
+    ),
+  )
+}

@@ -105,6 +105,40 @@ Recorded so they can be overruled deliberately rather than rediscovered:
 - **Keyboard-driven fold/unfold-all commands.** The central command and
   keybinding tables are Code-path today.
 
+## Status
+
+**Landed: the model half.** `internal/viewer/markdown` retains
+`MarkdownBlockAnchor::heading_level` from the existing parse and derives the
+section tree (`markdown_sections`), the hideable run
+(`MarkdownSection::body_rendered_element_indexes`), and the reconciliation keys
+(`markdown_section_keys`). All of it is DOM-free, runs on js and native, and is
+covered by focused tests plus `mbt check` blocks in the package README.
+
+**Landed but unproven: the view-level collapse operation.**
+`MarkdownDocumentView::set_hidden_root_elements` / `hidden_root_elements` apply
+and read back `display:none` over retained root elements. It compiles and
+carries no caller yet, so **no browser test exercises it**. It must not be
+considered done until gate 3 below passes.
+
+**Not started:** the root Viewer fold state, the toggle affordance and its
+accessibility pair, scroll anchoring, and the component scenario.
+
+### Next executor: start here
+
+1. Add the fold state to `MarkdownBrowserData` (`viewer/model_data.mbt`) as a
+   `Set[String]` of collapsed keys from `markdown_section_keys`.
+2. Re-apply it at the two reprojection points that already exist —
+   `MarkdownBrowserData::replace_source` and `::apply_theme`, both of which
+   already bracket their work with
+   `hover_bridge.before_projection_replaced()` / `after_projection_replaced()`.
+   The fold re-application belongs inside that bracket, after the view has
+   re-rendered.
+3. Expose a public toggle on `Viewer` keyed by heading source offset
+   (`markdown_section_at_source_offset` resolves it), plus a read-back for
+   tests.
+4. Only then add the toggle DOM and the accessible button, following the
+   Markdown-comment entry's chevron/in-content-button pair.
+
 ## Gates
 
 1. `moon check --target all` and `moon fmt --check` clean; `moon test` green on
