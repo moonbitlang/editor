@@ -152,6 +152,7 @@ pub(all) struct PointerHandlerHelper {
   get_font_info : () -> @config.FontInfo
   get_current_selection : () -> @core.Selection?
   dispatch_mouse : (MouseDispatchData) -> Unit
+  before_mouse_down_selection : (@browser.EditorDomMouseEvent, @browser.MouseTarget) -> Bool
   emit_mouse_down : (@browser.EditorDomMouseEvent, @browser.MouseTarget) -> Unit
   emit_mouse_up : (@browser.EditorDomMouseEvent, @browser.MouseTarget) -> Unit
   emit_mouse_move : (@browser.EditorDomMouseEvent, @browser.MouseTarget) -> Unit

@@ -83,6 +83,8 @@ for performance investigation and perf-harness changes.
   Diagnostics use `.moonbit-viewer-markdown-diagnostic`; the retained widget
   uses `.moonbit-viewer-markdown-hover-widget` and records accepted original
   model/source/wire/range facts in `data-markdown-hover-*` attributes.
+- Definition navigation: a dedicated public-Viewer fixture drives plain clicks,
+  Ctrl/Cmd definition links, goto, and Alt+F12 Peek with trusted browser input.
 - Product observability: `__readonlyEditorEvent`, `__readonlyEditorModel`,
   `__readonlyEditorDocument`, `__readonlyEditorSource`,
   `__readonlyEditorCopiedText`, and `__readonlyEditorCopiedHtml`.

@@ -8,6 +8,7 @@ import {
   "moonbitlang/editor/internal/viewer/browser/testing" @viewer_testing,
   "moonbitlang/editor/viewer/common/editor_api",
   "moonbitlang/editor/viewer/common/agent_feedback_api",
+  "moonbitlang/editor/viewer/common/navigation_api",
   "moonbitlang/editor/viewer/common/languages",
   "moonbitlang/editor/viewer/common/markers",
   "moonbitlang/editor/viewer/common/model",
@@ -29,3 +30,7 @@ import {
 }
 
 supported_targets = "js"
+
+import {
+  "moonbitlang/async",
+} for "wbtest"

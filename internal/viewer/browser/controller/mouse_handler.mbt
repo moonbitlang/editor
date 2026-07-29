@@ -104,6 +104,13 @@ pub(all) struct PointerHandlerHelper {
   get_current_selection : () -> @core.Selection?
   // --- ViewController substitutes (deviation, see header) ---
   dispatch_mouse : (MouseDispatchData) -> Unit
+  /// Runs after hit testing but before `MouseDownOperation.start`. Returning
+  /// true suppresses the ordinary selection dispatch for a resolved
+  /// definition-link press while preserving focus and the public mouse event.
+  before_mouse_down_selection : (
+    @editor_browser.EditorDomMouseEvent,
+    @editor_browser.MouseTarget,
+  ) -> Bool
   emit_mouse_down : (
     @editor_browser.EditorDomMouseEvent,
     @editor_browser.MouseTarget,
@@ -383,6 +390,32 @@ fn MouseHandler::on_mouse_up(
 }
 
 ///|
+/// Runs the content-target part of `_onMouseDown` through narrow callbacks so
+/// the definition-link pre-selection seam can be tested independently from DOM
+/// hit testing. The public mouse-down event is deliberately emitted after both
+/// the suppressed and ordinary selection paths.
+fn run_mouse_down_selection_contract(
+  should_handle : Bool,
+  target_is_content : Bool,
+  before_mouse_down_selection : () -> Bool,
+  focus : () -> Unit,
+  start_selection : () -> Unit,
+  handle_non_content_target : () -> Unit,
+  emit_mouse_down : () -> Unit,
+) -> Unit {
+  if should_handle && target_is_content {
+    let suppress_selection = before_mouse_down_selection()
+    focus()
+    if !suppress_selection {
+      start_selection()
+    }
+  } else {
+    handle_non_content_target()
+  }
+  emit_mouse_down()
+}
+
+///|
 /// `_onMouseDown` (mouseHandler.ts:310-353). `selectOnLineNumbers` reads as
 /// the Monaco default `true`; the pointer id travels with `EditorDomMouseEvent`
 /// into `MouseDownOperation.start`.
@@ -410,28 +443,36 @@ fn MouseHandler::on_mouse_down(
     e.prevent_default()
     (self.view_helper.focus_text_area)()
   }
-  if should_handle &&
-    (target_is_content || (target_is_line_numbers && select_on_line_numbers)) {
-    focus()
-    self.mouse_down_operation.start(target_type, e, pointer_id)
-  } else if target_is_gutter {
-    // Do not steal focus
-    e.prevent_default()
-  } else if target_is_view_zone {
-    match t {
-      MouseTargetViewZone(detail~, ..) =>
-        if should_handle &&
-          (self.view_helper.should_suppress_mouse_down_on_view_zone)(
-            detail.view_zone_id,
-          ) {
-          focus()
-          self.mouse_down_operation.start(target_type, e, pointer_id)
-          e.prevent_default()
+  run_mouse_down_selection_contract(
+    should_handle,
+    target_is_content,
+    () => (self.view_helper.before_mouse_down_selection)(e, t),
+    focus,
+    () => self.mouse_down_operation.start(target_type, e, pointer_id),
+    () => {
+      if should_handle && target_is_line_numbers && select_on_line_numbers {
+        focus()
+        self.mouse_down_operation.start(target_type, e, pointer_id)
+      } else if target_is_gutter {
+        // Do not steal focus
+        e.prevent_default()
+      } else if target_is_view_zone {
+        match t {
+          MouseTargetViewZone(detail~, ..) =>
+            if should_handle &&
+              (self.view_helper.should_suppress_mouse_down_on_view_zone)(
+                detail.view_zone_id,
+              ) {
+              focus()
+              self.mouse_down_operation.start(target_type, e, pointer_id)
+              e.prevent_default()
+            }
+          _ => ()
         }
-      _ => ()
-    }
-  }
-  (self.view_helper.emit_mouse_down)(e, t)
+      }
+    },
+    () => (self.view_helper.emit_mouse_down)(e, t),
+  )
 }
 
 ///|

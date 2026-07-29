@@ -150,8 +150,10 @@ common -> foundations
 - `editor_api`: the single owner of public cursor/model/scroll event values and
   editor-option enums shared by root, cursor, layout, view-model, and browser
   consumers.
-- `agent_feedback_api` and `quick_diff_api`: host-facing DTO/callback handles;
-  concrete feature implementations remain contributions below their callers.
+- `agent_feedback_api`, `navigation_api`, and `quick_diff_api`: host-facing
+  DTO/callback handles. Navigation exposes only location-opening intent and
+  caller-owned target-model leases; concrete feature implementations remain
+  contributions below their callers.
 - `languages` and `markers`: runtime provider registration and
   diagnostics-to-decoration flow. Their opaque `LanguageHandle`,
   `MarkerServiceHandle`, and `MarkerDecorationsHandle` expose only the reviewed
@@ -269,6 +271,13 @@ editor common/browser layers; editor common never depends on them.
   because they mutate source glyphs; the overlay does not approximate them.
   The emitted hover stylesheet remains at
   `viewer/contrib/hover/hover.css`.
+- `internal/viewer/contrib/definition` owns DOM-free result normalization,
+  token fingerprints, and the Ctrl/Cmd-link and Peek generation states.
+  `internal/viewer/contrib/definition/browser` owns only the Peek and
+  non-destructive-message DOM shells. Root `viewer` owns provider requests,
+  cancellation, decorations, ViewZones, nested Viewer composition, opener
+  dispatch, and target-model reference release. The emitted stylesheet remains
+  at `viewer/contrib/definition/browser/definition.css`.
 - `internal/viewer/contrib/agent_feedback` owns concrete feedback
   storage/service projection; host DTOs and the callback handle live in
   `viewer/common/agent_feedback_api`, while
@@ -317,7 +326,7 @@ The root editor registry has two distinct ownership layers. Its process-wide
 contribution-description table contains constructors only; the adjacent command
 and keybinding tables likewise contain no per-Viewer state.
 `Viewer.contributions` is an `EditorContributions` owner whose `instances` map
-is the sole lookup table for that Viewer's six concrete contribution entries;
+is the sole lookup table for that Viewer's seven concrete contribution entries;
 feature packages do not keep second maps keyed by editor id. Root `Viewer::`
 helpers recover typed controllers by matching both the fixed id and central
 entry variant, mirroring Monaco's typed view over

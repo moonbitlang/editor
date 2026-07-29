@@ -1,0 +1,51 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitlang/editor/viewer/common/navigation_api"
+
+import {
+  "moonbitlang/core/debug",
+  "moonbitlang/editor/base/common",
+  "moonbitlang/editor/language",
+  "moonbitlang/editor/viewer/common/model",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+pub struct LocationOpenerHandle {
+  // private fields
+}
+#alias(new, deprecated)
+pub fn LocationOpenerHandle::LocationOpenerHandle(open~ : async (OpenLocationRequest) -> Bool noraise) -> Self
+pub async fn LocationOpenerHandle::open(Self, OpenLocationRequest) -> Bool noraise
+
+pub(all) enum OpenLocationMode {
+  Current
+  Side
+} derive(Eq, @debug.Debug)
+
+pub(all) struct OpenLocationRequest {
+  source_viewer_id : String
+  location : @language.Location
+  mode : OpenLocationMode
+} derive(@debug.Debug)
+
+pub struct TextModelReference {
+  // private fields
+}
+#alias(new, deprecated)
+pub fn TextModelReference::TextModelReference(@model.TextModel, release~ : () -> Unit) -> Self
+pub fn TextModelReference::dispose(Self) -> Unit
+pub fn TextModelReference::model(Self) -> @model.TextModel
+
+pub struct TextModelResolverHandle {
+  // private fields
+}
+#alias(new, deprecated)
+pub fn TextModelResolverHandle::TextModelResolverHandle(resolve~ : async (@common.Uri, @language.CancellationToken) -> TextModelReference? noraise) -> Self
+pub async fn TextModelResolverHandle::resolve(Self, @common.Uri, @language.CancellationToken) -> TextModelReference? noraise
+
+// Type aliases
+
+// Traits

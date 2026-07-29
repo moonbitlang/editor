@@ -704,6 +704,14 @@ fn static_route(path : String) -> (String, String)? {
       Some(
         ("browser-tests/set_value.mjs.map", "application/json; charset=utf-8"),
       )
+    "/browser-tests/definition.html" =>
+      Some(("browser-tests/definition.html", "text/html; charset=utf-8"))
+    "/browser-tests/definition.mjs" =>
+      Some(("browser-tests/definition.mjs", "text/javascript; charset=utf-8"))
+    "/browser-tests/definition.mjs.map" =>
+      Some(
+        ("browser-tests/definition.mjs.map", "application/json; charset=utf-8"),
+      )
     "/browser-tests/folding_nested.mjs.map" =>
       Some(
         (

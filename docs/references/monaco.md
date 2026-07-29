@@ -108,6 +108,73 @@ upstream/local ledgers, representation proof, lifetime trace, and seam-based
 deviation remain in Git history; the completed outcome is summarized in
 `docs/exec-plans/HISTORY.md`.
 
+## Definition navigation
+
+Goto Definition is a behavior port audited against pinned VS Code revision
+`b18492a288de038fbc7643aae6de8247029d11bd`. The Ctrl/Command link gesture and
+Peek request/resource lifetime use algorithm-fidelity ports for the selected
+observable invariants below.
+
+- `src/vs/editor/contrib/gotoSymbol/browser/goToCommands.ts:105-167,177-248`
+  owns request cancellation, no-result feedback, ordinary first-result opening
+  through `ICodeEditorService.openCodeEditor`, and Peek delegation through
+  `ReferencesController`. `DefinitionAction` and the F12/Web CtrlCmd+F12 and
+  Alt+F12 registrations are at `:253-312,343-374`.
+- `src/vs/editor/contrib/gotoSymbol/browser/link/goToDefinitionAtPosition.ts:
+  47-79,111-224,266-315` resolves only eligible content-text targets, cancels
+  prior work, validates position/value/selection/scroll freshness, decorates
+  only a non-empty result, clears on cancel, and reuses the definition action
+  on execution. The down-before-modifier and mouseup execution state belongs to
+  `link/clickLinkGesture.ts:122-235`.
+- `src/vs/editor/contrib/gotoSymbol/browser/peek/referencesController.ts:
+  77-187,201-304,330-405` owns the per-editor Peek request, stale-result
+  disposal, model/widget teardown, focus restoration, result switching,
+  confirmation, and F4/Shift+F4/Escape/Enter routing.
+- `src/vs/editor/contrib/gotoSymbol/browser/peek/referencesWidget.ts:
+  243-299,338-468,470-537,558-608` supplies the editor-owned zone shell,
+  embedded preview editor, result UI, layout, and model-reference replacement:
+  a late reference is released, the previous preview reference is released
+  before replacement, and unavailable preview uses a fallback model.
+- `src/vs/editor/standalone/browser/standaloneCodeEditorService.ts:25-41,
+  63-103` handles same-current-model navigation locally and declines other
+  resource URIs. `standaloneEditor.ts:456-497` exposes consumer-owned
+  `registerEditorOpener`; local `LocationOpenerHandle` is the single
+  host-neutral equivalent and adds source Viewer identity plus Current/Side
+  intent without workspace or editor-group types.
+- `src/vs/editor/common/services/resolverService.ts:14-34,44-90` defines the
+  disposable target-model reference contract. Monaco standalone resolves only
+  models already registered in its process-wide model service
+  (`standaloneServices.ts:157-183`, registered at `:1192`, with model creation
+  at `standaloneEditor.ts:225-235`). The local editor deliberately has no global
+  model registry: same-resource Peek reuses the attached caller-owned model;
+  cross-resource Peek uses an optional caller-supplied resolver and an
+  exactly-once model lease.
+
+Intentional local differences and exclusions:
+
+- The browser-only Viewer uses Alt+F12 on all platforms and CtrlCmd+F12 as a web
+  binding; VS Code overrides Peek to CtrlCmd+Shift+F10 on Linux.
+- The local link trigger is exact platform Ctrl/Command. VS Code can remap it
+  from `multiCursorModifier` and also supports side/middle-click variants.
+  Local down/up identity is stricter: model identity, attachment generation,
+  content version, position, word range, and exact target must all match;
+  upstream records the mouse-down line and rechecks eligibility on mouseup.
+- Link hover source previews, `originSelectionRange`/`targetSelectionRange`,
+  middle-click, definition-link-opens-in-Peek, and link open-to-side are N-A.
+- Workbench navigation history, alternative commands, `gotoAndPeek`, stable
+  Peek, editor-group migration, grouped resource tree, drag-and-drop, sash and
+  persisted Peek layout, and preview reference decorations are N-A.
+- The local Peek uses a fixed ViewZone and nested readonly Viewer instead of
+  `PeekViewWidget` plus `EmbeddedCodeEditorWidget`. The selected fidelity
+  contract is request generation/cancellation, stale-reference release,
+  preview replacement, child teardown, close/focus ordering, and recursive
+  Peek suppression; Monaco's default 18-line/split-layout presentation is not
+  part of that contract.
+- `IModelService`, `ITextModelContentProvider`, filesystem/network loading, tab
+  policy, and HTTP window fallback are N-A. The host resolver owns all loading
+  and model lifetime policy. Opener rejection and unavailable preview produce
+  local non-destructive feedback.
+
 ## Public editor API ownership
 
 The scoped public clusters from upstream `common/config/editorOptions.ts`,

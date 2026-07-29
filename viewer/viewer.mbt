@@ -12,6 +12,9 @@
 /// into the element passed to `attach`.
 pub struct Viewer {
   priv services : ViewerServices
+  /// Private embedding role. A Peek preview borrows the same public services
+  /// but cannot recursively create another Peek widget.
+  priv role : ViewerRole
   /// Services created by an omitted constructor argument belong to this
   /// Viewer. An explicitly supplied bundle remains caller-owned and may be
   /// shared by other Viewers.
@@ -92,6 +95,12 @@ pub struct Viewer {
 }
 
 ///|
+priv enum ViewerRole {
+  OuterViewer
+  PeekPreviewViewer
+} derive(Eq)
+
+///|
 priv struct PendingRendered {
   model : @model.TextModel
   fresh : Bool
@@ -133,6 +142,7 @@ fn Viewer::Viewer(
   services? : ViewerServices,
   options? : ViewerOptions = ViewerOptions::default(),
   initial_container? : @rdom.Element,
+  role? : ViewerRole = OuterViewer,
 ) -> Viewer {
   let (services, owns_services) = match services {
     Some(services) => (services, false)
@@ -147,6 +157,7 @@ fn Viewer::Viewer(
   }
   let viewer : Viewer = {
     services,
+    role,
     owns_services,
     disposed: false,
     testing_registration: None,
@@ -594,9 +605,12 @@ pub fn Viewer::handle_initialized(self : Viewer) -> Unit {
 /// the container (restoring the no-model placeholder), drop `data-mode-id`,
 /// and hand back the outgoing model for the owner-id decoration sweep.
 fn Viewer::detach_model(self : Viewer) -> @model.TextModel? {
+  guard self.model_slot.current is Some(_) else { return None }
+  self.close_definition_peek(restore_focus=false)
   guard self.model_slot.invalidate_current_for_detach() is Some(model_data) else {
     return None
   }
+  self.reset_definition_requests()
   self.cancel_render_frame()
   self.cursor_delivery.reset_model_scope()
   let model = model_data.model
@@ -916,6 +930,9 @@ fn Viewer::apply_scroll_change(
 ) -> Unit {
   match change {
     Some(scroll_change) => {
+      if scroll_change.scroll_top_changed || scroll_change.scroll_left_changed {
+        self.reset_definition_link()
+      }
       self.emit_view_scroll_changed(scroll_change)
       if scroll_change.scroll_top_changed || scroll_change.scroll_left_changed {
         self.emit_scroll_frame_phase(

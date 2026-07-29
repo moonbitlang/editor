@@ -36,7 +36,22 @@ impl @workspace.DocumentProvider for RemoteDocumentProvider with fn read(
   _self,
   uri,
 ) {
-  let response = protocol_request("open", id => OpenDocument({ id, uri }))
+  read_remote_document(uri)
+}
+
+///|
+/// Token-aware form used by Peek model resolution. The public workspace
+/// provider contract remains token-free because the active-document source has
+/// its own URI/generation freshness guard.
+async fn read_remote_document(
+  uri : @base_common.Uri,
+  token? : @language.CancellationToken = @language.CancellationToken::none(),
+) -> @workspace.DocumentReadResult {
+  let response = protocol_request(
+    "open",
+    id => OpenDocument({ id, uri }),
+    token~,
+  )
   match response {
     DocumentLoaded(payload) => DocumentLoaded(payload.document)
     RemoteError(error) =>
@@ -127,10 +142,21 @@ fn close_active_document_source() -> Unit {
   }
   active_document_watch.val = None
   match active_document_uri.val {
-    Some(uri) => document_provider.close(uri)
+    Some(uri) =>
+      if !preview_resource_retains_remote_document(uri) {
+        document_provider.close(uri)
+      }
     None => ()
   }
   active_document_uri.val = None
+}
+
+///|
+fn is_active_document_resource(uri : @base_common.Uri) -> Bool {
+  match active_document_uri.val {
+    Some(current) => current.to_string() == uri.to_string()
+    None => false
+  }
 }
 
 ///|

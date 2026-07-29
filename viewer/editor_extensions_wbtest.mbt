@@ -12,6 +12,7 @@ test "contributions instantiate centrally in the reviewed order and expose every
     markdown_comment_contribution_id,
     "editor.contrib.contentHover",
     "quickDiff.decorator",
+    definition_contribution_id,
   ]
   let actual : Array[String] = []
   for id, entry in viewer.contributions.instances {
@@ -23,6 +24,7 @@ test "contributions instantiate centrally in the reviewed order and expose every
       ("editor.contrib.markdownComments", MarkdownComments(_)) => ()
       ("editor.contrib.contentHover", ContentHover(_)) => ()
       ("quickDiff.decorator", QuickDiff(_)) => ()
+      ("editor.contrib.definition", Definition(_)) => ()
       _ => fail("contribution id and concrete variant diverged: " + id)
     }
   }
@@ -39,6 +41,7 @@ test "contributions instantiate centrally in the reviewed order and expose every
   assert_true(viewer.markdown_comment_contribution() is Some(_))
   assert_true(viewer.content_hover_controller() is Some(_))
   assert_true(viewer.quick_diff_contribution() is Some(_))
+  assert_true(viewer.definition_contribution() is Some(_))
 
   // Every typed accessor validates both its fixed id and the enum variant.
   // Temporarily put a valid but mismatched payload under quick diff's id.
@@ -150,7 +153,7 @@ test "direct entry disposal retires typed lookup without removing the row early"
 }
 
 ///|
-test "viewer disposes all six real rows once in order while the map stays installed" {
+test "viewer disposes all seven real rows once in order while the map stays installed" {
   let viewer = Viewer::Viewer()
   let expected_ids = [
     "agentFeedback.editorInputContribution",
@@ -159,6 +162,7 @@ test "viewer disposes all six real rows once in order while the map stays instal
     "editor.contrib.markdownComments",
     "editor.contrib.contentHover",
     "quickDiff.decorator",
+    definition_contribution_id,
   ]
   let order : Array[String] = []
   let map_stayed_installed = Ref(true)
@@ -185,6 +189,7 @@ test "viewer disposes all six real rows once in order while the map stays instal
         "markdown" => viewer.markdown_comment_contribution() is Some(_)
         "hover" => viewer.content_hover_controller() is Some(_)
         "quickDiff" => viewer.quick_diff_contribution() is Some(_)
+        "definition" => viewer.definition_contribution() is Some(_)
         _ => false
       }
       if !available {
@@ -206,10 +211,13 @@ test "viewer disposes all six real rows once in order while the map stays instal
   )
   viewer.content_hover_controller().unwrap().install_react_timer(track("hover"))
   viewer.quick_diff_contribution().unwrap().listeners.push(track("quickDiff"))
+  viewer.contributions.instances[definition_contribution_id].listeners.push(
+    track("definition"),
+  )
   viewer.dispose()
   viewer.dispose()
   assert_eq(order, [
-    "input", "widget", "folding", "markdown", "hover", "quickDiff",
+    "input", "widget", "folding", "markdown", "hover", "quickDiff", "definition",
   ])
   assert_true(map_stayed_installed.val)
   assert_true(typed_row_stayed_available.val)
@@ -224,7 +232,7 @@ test "contribution wrapper retires lookup between behavior and retained-resource
   let hover_state = viewer.content_hover_contribution().unwrap()
   viewer.contributions.dispose_behavior(viewer)
   assert_true(viewer.contributions.lifecycle == ContributionsDisposing)
-  assert_eq(viewer.contributions.instances.length(), 6)
+  assert_eq(viewer.contributions.instances.length(), 7)
   assert_true(viewer.content_hover_contribution() is None)
   assert_true(
     viewer.contributions.lookup("editor.contrib.contentHover") is None,
@@ -261,12 +269,15 @@ test "two viewers isolate mutable contribution state and disposal owners" {
   let second_hover = second.content_hover_controller().unwrap()
   let first_quick_diff = first.quick_diff_contribution().unwrap()
   let second_quick_diff = second.quick_diff_contribution().unwrap()
+  let first_definition = first.definition_contribution().unwrap()
+  let second_definition = second.definition_contribution().unwrap()
   assert_false(physical_equal(first_input, second_input))
   assert_false(physical_equal(first_widgets, second_widgets))
   assert_false(physical_equal(first_folding, second_folding))
   assert_false(physical_equal(first_markdown, second_markdown))
   assert_false(physical_equal(first_hover, second_hover))
   assert_false(physical_equal(first_quick_diff, second_quick_diff))
+  assert_false(physical_equal(first_definition, second_definition))
 
   // Give every concrete controller/state a Viewer-specific mutable witness.
   // These values deliberately differ so an accidental shared carrier or
@@ -324,6 +335,12 @@ test "two viewers isolate mutable contribution state and disposal owners" {
   second_quick_diff.listeners.push(
     @base_common.Disposable::from(() => second_disposals.push("quickDiff")),
   )
+  first.contributions.instances[definition_contribution_id].listeners.push(
+    @base_common.Disposable::from(() => first_disposals.push("definition")),
+  )
+  second.contributions.instances[definition_contribution_id].listeners.push(
+    @base_common.Disposable::from(() => second_disposals.push("definition")),
+  )
   let second_folding_listener_count = second_folding.local_to_dispose.length()
   let second_markdown_listener_count = second_markdown.listeners.length()
   let second_quick_diff_listener_count = second_quick_diff.listeners.length()
@@ -346,7 +363,7 @@ test "two viewers isolate mutable contribution state and disposal owners" {
   // First's cleanup drains only First-owned stores. Second keeps the exact
   // same typed instances, mutable sentinels, and pending disposal handles.
   assert_eq(first_disposals, [
-    "input", "widget", "folding", "markdown", "hover", "quickDiff",
+    "input", "widget", "folding", "markdown", "hover", "quickDiff", "definition",
   ])
   assert_eq(second_disposals, [])
   // Markdown teardown advances only First's stale-callback generation.
@@ -357,6 +374,7 @@ test "two viewers isolate mutable contribution state and disposal owners" {
   assert_true(first.markdown_comment_contribution() is None)
   assert_true(first.content_hover_controller() is None)
   assert_true(first.quick_diff_contribution() is None)
+  assert_true(first.definition_contribution() is None)
   assert_true(
     physical_equal(
       second_input,
@@ -383,6 +401,9 @@ test "two viewers isolate mutable contribution state and disposal owners" {
   )
   assert_true(
     physical_equal(second_quick_diff, second.quick_diff_contribution().unwrap()),
+  )
+  assert_true(
+    physical_equal(second_definition, second.definition_contribution().unwrap()),
   )
   assert_false(second_input.visible)
   assert_eq(second_input.hover_line_number, 22)
@@ -415,10 +436,10 @@ test "two viewers isolate mutable contribution state and disposal owners" {
 
   second.dispose()
   assert_eq(second_disposals, [
-    "input", "widget", "folding", "markdown", "hover", "quickDiff",
+    "input", "widget", "folding", "markdown", "hover", "quickDiff", "definition",
   ])
   assert_eq(first_disposals, [
-    "input", "widget", "folding", "markdown", "hover", "quickDiff",
+    "input", "widget", "folding", "markdown", "hover", "quickDiff", "definition",
   ])
 }
 
@@ -431,6 +452,7 @@ test "model removal and reattach preserve central contribution identities" {
   let markdown = viewer.markdown_comment_contribution().unwrap()
   let hover = viewer.content_hover_controller().unwrap()
   let quick_diff = viewer.quick_diff_contribution().unwrap()
+  let definition = viewer.definition_contribution().unwrap()
   let markdown_listener_disposed = Ref(false)
   markdown.listeners.push(
     @base_common.Disposable::from(() => markdown_listener_disposed.val = true),
@@ -459,6 +481,9 @@ test "model removal and reattach preserve central contribution identities" {
   assert_true(physical_equal(hover, viewer.content_hover_controller().unwrap()))
   assert_true(
     physical_equal(quick_diff, viewer.quick_diff_contribution().unwrap()),
+  )
+  assert_true(
+    physical_equal(definition, viewer.definition_contribution().unwrap()),
   )
   viewer.dispose()
   assert_true(markdown_listener_disposed.val)

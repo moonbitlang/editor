@@ -31,6 +31,7 @@ priv struct WorkbenchModel {
 priv enum DocumentViewState {
   PreserveScroll
   ResetScroll
+  RevealDefinition(@language.Location)
 }
 
 ///|
@@ -39,6 +40,7 @@ priv enum WorkbenchMsg {
   ProtocolEvent(@websocket.Event)
   ProtocolSendFailed(String)
   SelectWorkspace(@base_common.Uri)
+  OpenDefinitionLocation(@language.Location)
   AutoOpenResolved(@base_common.Uri?)
   ActiveDocumentRead(@workspace.DocumentReadResult, DocumentViewState)
   ActiveDocumentChanged(@workspace.DocumentChange)
@@ -117,10 +119,14 @@ fn workbench_services() -> WorkbenchServices {
       )
       let remote_language = RemoteLanguageFreshness(markers)
       let agent_feedback = @agent_feedback.AgentFeedbackService()
+      let location_opener = workbench_location_opener()
+      let text_model_resolver = workbench_text_model_resolver()
       let viewer = @viewer.ViewerServices(
         languages=languages.language_handle(log_service.log_handle()),
         markers=MarkerStore(markers.marker_service_handle()),
         agent_feedback=agent_feedback.agent_feedback_handle(),
+        location_opener~,
+        text_model_resolver~,
         log_service=log_service.log_handle(),
       )
       let services : WorkbenchServices = {
@@ -334,12 +340,19 @@ fn workbench_update(
         { ..model, status: "loading", status_message: "" },
       )
     ProtocolEvent(event) => protocol_event_update(emit, model, event)
-    ProtocolSendFailed(message) =>
+    ProtocolSendFailed(message) => {
+      // A failed send is not guaranteed to be followed by a Closed event.
+      // Resume every suspended provider/resolver now so F12 and Peek cannot
+      // remain in a permanent loading state.
+      fail_pending_requests(message)
       (
         dom_mounted_status_cmd("error"),
         { ..model, status: "error", status_message: message },
       )
+    }
     SelectWorkspace(uri) => select_workspace_update(model, uri)
+    OpenDefinitionLocation(location) =>
+      open_definition_location_update(model, location)
     AutoOpenResolved(found) =>
       match found {
         Some(uri) =>
@@ -385,6 +398,17 @@ fn select_workspace_update(
 }
 
 ///|
+fn open_definition_location_update(
+  model : WorkbenchModel,
+  location : @language.Location,
+) -> (@rabbita.Cmd, WorkbenchModel) {
+  (
+    open_active_document_cmd(location.uri, RevealDefinition(location)),
+    { ..model, status: "loading", status_message: "", viewer_has_frame: false },
+  )
+}
+
+///|
 /// Installs a model, wrapping `set_model` with the Monaco host pattern for
 /// scroll continuity: `set_model` always resets the viewport, so a reload
 /// saves and restores the view state around it.
@@ -402,6 +426,7 @@ fn set_workbench_model(
       viewer.restore_view_state(state)
     }
     ResetScroll => viewer.set_model(Some(text_model))
+    RevealDefinition(_) => viewer.set_model(Some(text_model))
   }
   // The reference workbench presents `.mbt` sources as a top-level outline.
   // Keep this a host policy instead of changing the reusable Viewer's default:
@@ -414,6 +439,21 @@ fn set_workbench_model(
   // Matches TextFileEditor.setInput: model, restored state/options, then the
   // separate ICodeEditor.handleInitialized boundary.
   viewer.handle_initialized()
+  match view_state {
+    RevealDefinition(location) =>
+      if location.uri.to_string() == text_model.uri.to_string() {
+        let target = text_model.validate_position(
+          @base_common.Position(
+            location.range.start_line_number,
+            location.range.start_column,
+          ),
+        )
+        viewer.set_position(target, source="gotoDefinition")
+        viewer.reveal_position_in_center_if_outside_viewport(target)
+        viewer.focus()
+      }
+    PreserveScroll | ResetScroll => ()
+  }
 }
 
 ///|
@@ -584,7 +624,10 @@ fn viewer_event_update(
       emit_scroll_event(event.scroll_top, event.scroll_left)
       (@rabbita.none, model)
     }
-    DidDispose => (@rabbita.none, { ..model, viewer_has_frame: false })
+    DidDispose => {
+      dispose_preview_resources()
+      (@rabbita.none, { ..model, viewer_has_frame: false })
+    }
   }
 }
 

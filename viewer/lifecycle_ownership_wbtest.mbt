@@ -292,6 +292,66 @@ test "Decorations leaves every caller handle live after bundle disposal" {
 }
 
 ///|
+async test "navigation handles stay optional and borrowed after bundle disposal" {
+  let target = try! @base_common.Uri::parse("memory://workspace/definition.mbt")
+  let model = @model.TextModel(
+    target, "definition.mbt", "moonbit", 1, "definition-rev", "let definition = 1",
+  )
+  let open_calls = Ref(0)
+  let resolve_calls = Ref(0)
+  let release_calls = Ref(0)
+  let opener = @navigation_api.LocationOpenerHandle(open=request => {
+    open_calls.val += 1
+    request.location.uri.to_string() == target.to_string()
+  })
+  let resolver = @navigation_api.TextModelResolverHandle(resolve=(
+    resource,
+    _token,
+  ) => {
+    resolve_calls.val += 1
+    if resource.to_string() == target.to_string() {
+      Some(
+        @navigation_api.TextModelReference(model, release=() => {
+          release_calls.val += 1
+        }),
+      )
+    } else {
+      None
+    }
+  })
+  let services = ViewerServices(
+    location_opener=opener,
+    text_model_resolver=resolver,
+  )
+  assert_true(services.location_opener is Some(_))
+  assert_true(services.text_model_resolver is Some(_))
+  services.dispose()
+  services.dispose()
+  let request : @navigation_api.OpenLocationRequest = {
+    source_viewer_id: "viewer-navigation-owner",
+    location: { uri: target, range: @base_common.Range(1, 5, 1, 15) },
+    mode: @navigation_api.Current,
+  }
+  assert_true(opener.open(request))
+  guard resolver.resolve(target, @language.CancellationToken::none())
+    is Some(reference) else {
+    fail("borrowed resolver stopped after ViewerServices disposal")
+  }
+  assert_true(reference.model().same(model))
+  reference.dispose()
+  assert_eq(open_calls.val, 1)
+  assert_eq(resolve_calls.val, 1)
+  assert_eq(release_calls.val, 1)
+  assert_false(model.is_disposed())
+  model.dispose()
+
+  let defaults = ViewerServices()
+  assert_true(defaults.location_opener is None)
+  assert_true(defaults.text_model_resolver is None)
+  defaults.dispose()
+}
+
+///|
 test "omitted services are owned and Viewer disposal is idempotent" {
   let viewer = Viewer::Viewer()
   let services = viewer.services

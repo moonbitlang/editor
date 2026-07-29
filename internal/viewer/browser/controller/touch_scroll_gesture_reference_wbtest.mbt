@@ -244,6 +244,7 @@ fn touch_input_test_handler(
     get_font_info: () => abort("unused touch test helper"),
     get_current_selection: () => None,
     dispatch_mouse: _ => (),
+    before_mouse_down_selection: (_event, _target) => false,
     emit_mouse_down: (_event, _target) => (),
     emit_mouse_up: (_event, _target) => (),
     emit_mouse_move: (_event, _target) => (),

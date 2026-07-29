@@ -52,6 +52,7 @@ priv enum EditorContributionInstance {
   )
   QuickDiff(QuickDiffContributionState)
   MarkdownComments(MarkdownCommentContributionState)
+  Definition(DefinitionContributionState)
 }
 
 ///|
@@ -195,6 +196,13 @@ fn EditorContributionEntry::dispose(
       state.listeners.clear()
     }
     MarkdownComments(state) => state.dispose(viewer)
+    Definition(state) => {
+      state.dispose(viewer)
+      for listener in self.listeners {
+        listener.dispose()
+      }
+      self.listeners.clear()
+    }
   }
   self.lifecycle = ContributionDisposed
 }
@@ -634,6 +642,7 @@ fn editor_registry() -> EditorContributionRegistry {
       register_markdown_comment_contribution(registry)
       register_hover_contribution(registry)
       register_quick_diff_contribution(registry)
+      register_definition_contribution(registry)
       register_cursor_navigation_commands(registry)
       editor_registry_holder.registry = Some(registry)
       registry

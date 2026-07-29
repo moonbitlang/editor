@@ -224,6 +224,7 @@ fn register_remote_language_providers(services : WorkbenchServices) -> Unit {
     LanguageFilter(scheme="readonly-remote"),
   )
   services.languages.register_hover_provider(selector, client) |> ignore
+  services.languages.register_definition_provider(selector, client) |> ignore
   services.languages.register_document_symbol_provider(selector, client)
   |> ignore
 }
@@ -259,18 +260,63 @@ impl @language.HoverProvider for RemoteLanguageClient with fn provide_hover(
   self,
   model,
   position,
-  _token,
+  token,
 ) {
   guard self.freshness.capture_model(model) is Some(stamp) else { return None }
+  if token.is_cancellation_requested() {
+    return None
+  }
   let offset = model.get_offset_at(position)
-  let response = protocol_request("hover", id => {
-    Hover({ id, uri: model.uri, document_revision: model.revision, offset })
-  })
+  let response = protocol_request(
+    "hover",
+    id => {
+      Hover({ id, uri: model.uri, document_revision: model.revision, offset })
+    },
+    token~,
+  )
+  if token.is_cancellation_requested() {
+    return None
+  }
   match response {
     HoverResult(payload) => self.freshness.accept_hover(stamp, payload)
     packet => {
       self.emit_remote_error("hover", model, packet)
       None
+    }
+  }
+}
+
+///|
+impl @language.DefinitionProvider for RemoteLanguageClient with fn provide_definition(
+  self,
+  model,
+  position,
+  token,
+) {
+  if token.is_cancellation_requested() {
+    return []
+  }
+  let offset = model.get_offset_at(position)
+  let response = protocol_request(
+    "definition",
+    id => {
+      Definition({
+        id,
+        uri: model.uri,
+        document_revision: model.revision,
+        offset,
+      })
+    },
+    token~,
+  )
+  if token.is_cancellation_requested() {
+    return []
+  }
+  match response {
+    DefinitionResult(payload) => payload.locations
+    packet => {
+      self.emit_remote_error("definition", model, packet)
+      []
     }
   }
 }
@@ -294,11 +340,21 @@ fn apply_remote_diagnostics_cmd(
 impl @language.DocumentSymbolProvider for RemoteLanguageClient with fn provide_document_symbols(
   self,
   model,
-  _token,
+  token,
 ) {
-  let response = protocol_request("symbols", id => {
-    DocumentSymbols({ id, uri: model.uri, document_revision: model.revision })
-  })
+  if token.is_cancellation_requested() {
+    return []
+  }
+  let response = protocol_request(
+    "symbols",
+    id => {
+      DocumentSymbols({ id, uri: model.uri, document_revision: model.revision })
+    },
+    token~,
+  )
+  if token.is_cancellation_requested() {
+    return []
+  }
   match response {
     DocumentSymbolsResult(payload) => payload.symbols
     packet => {

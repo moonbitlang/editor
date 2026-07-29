@@ -14,6 +14,7 @@ import {
   "moonbitlang/editor/viewer/common/languages",
   "moonbitlang/editor/viewer/common/markers",
   "moonbitlang/editor/viewer/common/model",
+  "moonbitlang/editor/viewer/common/navigation_api",
   "moonbitlang/editor/viewer/common/quick_diff_api",
 }
 
@@ -148,7 +149,7 @@ pub struct ViewerServices {
   // private fields
 }
 #alias(new, deprecated)
-pub fn ViewerServices::ViewerServices(languages? : @languages.LanguageHandle, markers? : @markers.MarkerDecorationsSource, agent_feedback? : @agent_feedback_api.AgentFeedbackHandle, quick_diff? : @quick_diff_api.QuickDiffHandle, log_service? : @log.LogHandle) -> Self
+pub fn ViewerServices::ViewerServices(languages? : @languages.LanguageHandle, markers? : @markers.MarkerDecorationsSource, agent_feedback? : @agent_feedback_api.AgentFeedbackHandle, location_opener? : @navigation_api.LocationOpenerHandle, text_model_resolver? : @navigation_api.TextModelResolverHandle, quick_diff? : @quick_diff_api.QuickDiffHandle, log_service? : @log.LogHandle) -> Self
 pub fn ViewerServices::dispose(Self) -> Unit
 
 pub struct ViewerViewState {

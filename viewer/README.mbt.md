@@ -106,7 +106,8 @@ viewer.slot.data -> model: borrows readonly
 - Omitting `services` makes the Viewer create and own an internal bundle.
   Passing `services` explicitly always borrows that bundle, including a bundle
   returned by `ViewerServices(...)`; this is the form for sharing languages,
-  diagnostics, feedback, and quick-diff state between Viewers.
+  diagnostics, feedback, navigation capabilities, and quick-diff state between
+  Viewers.
 - `set_model(TextModel?)` installs a caller-owned readonly model in the one
   `ViewerModelSlot.current` bundle. The same object is a no-op; replacement or
   clearing invalidates the generation before cleanup. Code and headless retain
@@ -133,8 +134,9 @@ viewer.slot.data -> model: borrows readonly
   `Viewer.contributions` is the `EditorContributions` owner, and its `instances`
   map is the only per-Viewer instance store. Each central entry owns one
   concrete hover, folding, feedback-input, feedback-widget, quick-diff, or
-  Markdown-comment state value plus its root listeners; feature packages keep
-  no editor-id-keyed instance table. The content-hover payload additionally
+  Markdown-comment state value, or the definition request/link/Peek state, plus
+  its root listeners; feature packages keep no editor-id-keyed instance table.
+  The content-hover payload additionally
   owns its controller, lazy widget and logical widget view, and timeout/async
   launch policy across model swaps. The Markdown-comment payload owns its
   model/content subscriptions and the current model's stable-key rendered-zone
@@ -302,17 +304,58 @@ target already at the viewport edge gains no extra vertical or horizontal
 padding. Smooth requests of at most one line downgrade to immediate, and the
 `smooth_scrolling=false` default also commits them immediately.
 
+## Definition navigation
+
+Definition UI is a behavior port of Monaco standalone. F12 and the web
+Ctrl/Cmd+F12 fallback request definitions at the current cursor, preserve
+provider order after exact URI/range de-duplication, and use the first result.
+A same-resource result is applied locally with `set_position`, reveal, and
+focus. A cross-resource result is sent to the optional host-owned
+`LocationOpenerHandle`; rejection or absence produces non-destructive
+feedback. Neither Viewer nor the request value owns files, tabs, workspace,
+groups, navigation history, or transport.
+
+Ctrl/Command+Click uses an algorithm-fidelity gesture state rather than a
+second ordinary-click path. Only exact platform Ctrl or Command over real
+content text starts resolution; injected text, foreign elements, margins,
+widgets, and non-word positions are excluded. The token becomes a link only
+after a non-empty result. An empty result is cached for the rest of that exact
+modifier gesture and reported once as non-destructive feedback, avoiding
+repeated semantic checks on every mousemove. Selection suppression occurs only
+when a single left mousedown matches that armed token and the modifier was
+already held; mouseup must still match before opening the cached first result.
+Modifier release, scroll, drag, leave, selection, model/content change, and
+disposal cancel the request and clear the decoration.
+
+Alt+F12 opens a Viewer-owned Peek ViewZone only in an outer mounted Viewer.
+The shell presents all normalized results and hosts one nested readonly Viewer.
+Same-resource preview reuses the caller-owned model; cross-resource preview
+uses the optional host-owned `TextModelResolverHandle` and retains its
+`TextModelReference` only for the preview lifetime. Missing, rejected, stale,
+cancelled, disposed, or wrong-URI results cannot replace the current preview
+and release any returned reference. F4/Shift+F4 switch results, Enter confirms
+through the normal opener path, and Escape closes and restores focus. A nested
+preview borrows services but cannot recursively open another Peek. Teardown
+cancels both generations before disposing listeners, layout work, nested
+Viewer, model reference, ViewZone, and finally restoring outer focus.
+
 `ViewerServices` is an opaque capability aggregate. Its constructor accepts a
 `LanguageHandle`, one closed marker source (`MarkerStore` or `Decorations`), an
-`AgentFeedbackHandle`, a `QuickDiffHandle`, and a `LogHandle`; concrete service
-fields cannot be recovered through the facade. Hosts retain concrete language,
-marker, feedback, quick-diff, and logging backings when they need to register
-providers, publish diagnostics, mutate feature state, or inspect telemetry.
-Omitted capabilities create bundle-owned defaults. `ViewerServices::dispose`
-is idempotent and releases only those defaults, in marker-decoration,
+`AgentFeedbackHandle`, optional `LocationOpenerHandle` and
+`TextModelResolverHandle` navigation capabilities, a `QuickDiffHandle`, and a
+`LogHandle`; concrete service fields cannot be recovered through the facade.
+Hosts retain concrete language, marker, feedback, navigation, quick-diff, and
+logging backings when they need to register providers, publish diagnostics,
+mutate feature state, open a resolved location, resolve a Peek model, or inspect
+telemetry. Omitted marker, feedback, quick-diff, language, and logging
+capabilities create bundle-owned defaults. Navigation capabilities have no
+default: same-resource navigation needs no host capability, while unavailable
+cross-resource opening or preview remains explicit. `ViewerServices::dispose`
+is idempotent and releases only bundle-created defaults, in marker-decoration,
 marker-store, then feedback order; supplied handles and captured backings remain
-caller-owned. A Viewer disposes only a bundle it created implicitly. There is
-no current viewer UI for definition or references.
+caller-owned. A Viewer disposes only a bundle it created implicitly. The
+navigation capabilities are consumed only by definition opening and
+cross-resource Peek preview; same-resource navigation remains Viewer-local.
 
 ## Runtime pipeline
 
@@ -336,8 +379,9 @@ is private composition and leaves `viewer/pkg.generated.mbti` unchanged; it is
 not Monaco's cross-editor phased `EditorRenderingCoordinator` port.
 
 The root package owns every `Viewer::` method and the cross-package glue for
-input, reveal, widgets, folding, hover, Markdown comments, quick diff,
-feedback, and decorations. Public values remain in `viewer/common/**` and
+input, reveal, widgets, folding, hover, definition navigation and Peek,
+Markdown comments, quick diff, feedback, and decorations. Public values remain
+in `viewer/common/**` and
 `viewer/browser`;
 concrete browser and contribution mechanisms live in
 `internal/viewer/browser/**` and `internal/viewer/contrib/**`. Those

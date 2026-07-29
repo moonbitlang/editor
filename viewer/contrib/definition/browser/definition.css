@@ -1,0 +1,175 @@
+/* Definition-link and Peek Definition presentation. The gesture state and
+   lifecycle live in the definition contribution; these classes only expose
+   its resolved browser state. */
+
+.moonbit-viewer-definition-link {
+  color: var(--vscode-textLink-foreground, inherit);
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-thickness: from-font;
+  text-underline-offset: 2px;
+}
+
+.moonbit-viewer-definition-message {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  max-width: min(420px, calc(100% - 24px));
+  box-sizing: border-box;
+  padding: 6px 10px;
+  border: 1px solid var(--vscode-widget-border, rgba(128, 128, 128, 0.45));
+  border-radius: 3px;
+  color: var(--vscode-notifications-foreground, inherit);
+  background: var(--vscode-notifications-background, #252526);
+  box-shadow: 0 2px 8px var(--vscode-widget-shadow, rgba(0, 0, 0, 0.35));
+  pointer-events: none;
+}
+
+.moonbit-viewer-definition-message[hidden] {
+  display: none;
+}
+
+.moonbit-viewer-definition-peek {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  color: var(--vscode-editor-foreground, inherit);
+  background: var(--vscode-peekViewEditor-background, var(--vscode-editor-background));
+  border: 1px solid var(--vscode-peekView-border, #007acc);
+  box-shadow: 0 2px 8px var(--vscode-widget-shadow, rgba(0, 0, 0, 0.35));
+  pointer-events: auto;
+}
+
+.moonbit-viewer-definition-peek-header {
+  display: flex;
+  align-items: center;
+  min-height: 28px;
+  box-sizing: border-box;
+  padding: 0 6px 0 10px;
+  color: var(--vscode-peekViewTitleLabel-foreground, inherit);
+  background: var(--vscode-peekViewTitle-background, rgba(128, 128, 128, 0.12));
+}
+
+.moonbit-viewer-definition-peek-title {
+  flex: 1;
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.moonbit-viewer-definition-peek-close {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  font-size: 20px;
+  line-height: 20px;
+  cursor: pointer;
+}
+
+.moonbit-viewer-definition-peek-close:hover,
+.moonbit-viewer-definition-peek-close:focus-visible {
+  background: var(--vscode-toolbar-hoverBackground, rgba(128, 128, 128, 0.25));
+  outline: 1px solid var(--vscode-focusBorder, #007acc);
+  outline-offset: -1px;
+}
+
+.moonbit-viewer-definition-peek-body {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(150px, 28%) minmax(0, 1fr);
+  flex: 1;
+  min-height: 0;
+}
+
+.moonbit-viewer-definition-peek-list {
+  min-width: 0;
+  overflow: auto;
+  border-right: 1px solid var(--vscode-peekViewResult-background, rgba(128, 128, 128, 0.25));
+  background: var(--vscode-peekViewResult-background, var(--vscode-editor-background));
+}
+
+.moonbit-viewer-definition-peek-list[hidden] {
+  display: none;
+}
+
+.moonbit-viewer-definition-peek-item {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  padding: 5px 8px;
+  border: 0;
+  color: var(--vscode-peekViewResult-fileForeground, inherit);
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.moonbit-viewer-definition-peek-item:hover {
+  background: var(--vscode-list-hoverBackground, rgba(128, 128, 128, 0.16));
+}
+
+.moonbit-viewer-definition-peek-item.selected {
+  color: var(--vscode-list-activeSelectionForeground, inherit);
+  background: var(--vscode-list-activeSelectionBackground, rgba(0, 122, 204, 0.35));
+}
+
+.moonbit-viewer-definition-peek-preview {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--vscode-peekViewEditor-background, var(--vscode-editor-background));
+}
+
+.moonbit-viewer-definition-peek-preview > * {
+  width: 100%;
+  height: 100%;
+}
+
+.moonbit-viewer-definition-peek-status {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  box-sizing: border-box;
+  color: var(--vscode-descriptionForeground, rgba(180, 180, 180, 0.9));
+  background: var(--vscode-peekViewEditor-background, var(--vscode-editor-background));
+  font-size: 12px;
+  text-align: center;
+}
+
+.moonbit-viewer-definition-peek-status[hidden] {
+  display: none;
+}
+
+.moonbit-viewer-definition-peek-list:not([hidden]) ~
+  .moonbit-viewer-definition-peek-status {
+  left: 28%;
+}
+
+@media (max-width: 520px) {
+  .moonbit-viewer-definition-peek-body {
+    grid-template-columns: minmax(110px, 38%) minmax(0, 1fr);
+  }
+
+  .moonbit-viewer-definition-peek-list:not([hidden]) ~
+    .moonbit-viewer-definition-peek-status {
+    left: 38%;
+  }
+}

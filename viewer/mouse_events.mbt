@@ -123,7 +123,7 @@ fn Viewer::emit_mouse_drag(
   _event : @editor_browser.EditorDomMouseEvent,
   _target : @editor_browser.MouseTarget,
 ) -> Unit {
-  ignore(self)
+  self.reset_definition_link()
 }
 
 ///|

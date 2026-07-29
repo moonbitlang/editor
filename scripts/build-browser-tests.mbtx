@@ -58,6 +58,11 @@ fn smoke_bundles() -> Array[BrowserBundle] {
       name: "set_value",
       title: "MoonBit Viewer Set Value Test",
     },
+    BrowserBundle::{
+      package_path: "tests/browser/moonbit/definition",
+      name: "definition",
+      title: "MoonBit Viewer Definition Navigation Test",
+    },
   ]
 }
 

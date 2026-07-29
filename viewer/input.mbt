@@ -30,6 +30,7 @@ fn Viewer::hook_view_input(
     }
   })
   add_view_event_listener(view, view.root, "blur", _ => {
+    self.reset_definition_link()
     match self.mount {
       Headless => ()
       Mounted(mounted) =>
@@ -54,7 +55,13 @@ fn Viewer::hook_view_input(
     // focusable descendants retain their native keyboard semantics.
     guard @base_browser.event_target_is(event, view.root) else { return }
     match event.to_keyboard_event() {
-      Some(keyboard) =>
+      Some(keyboard) => {
+        self.handle_definition_modifier_change(
+          keyboard.ctrl_key(),
+          keyboard.meta_key(),
+          keyboard.alt_key(),
+          keyboard.shift_key(),
+        )
         if self.handle_editor_key_down(
             keyboard.key(),
             alt=keyboard.alt_key(),
@@ -64,6 +71,20 @@ fn Viewer::hook_view_input(
           event.prevent_default()
           event.stop_propagation()
         }
+      }
+      None => ()
+    }
+  })
+  add_view_event_listener(view, view.root, "keyup", event => {
+    guard @base_browser.event_target_is(event, view.root) else { return }
+    match event.to_keyboard_event() {
+      Some(keyboard) =>
+        self.handle_definition_modifier_change(
+          keyboard.ctrl_key(),
+          keyboard.meta_key(),
+          keyboard.alt_key(),
+          keyboard.shift_key(),
+        )
       None => ()
     }
   })
