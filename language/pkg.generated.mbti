@@ -97,7 +97,7 @@ pub(all) struct MarkdownCommentBlock {
 
 // Traits
 pub(open) trait DefinitionProvider {
-  async fn provide_definition(Self, @model.TextModel, @common.Position, CancellationToken) -> Location?
+  async fn provide_definition(Self, @model.TextModel, @common.Position, CancellationToken) -> Array[Location]
 }
 
 pub(open) trait DocumentSymbolProvider {

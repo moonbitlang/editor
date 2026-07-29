@@ -40,15 +40,16 @@ lang -> mk: Diagnostic is a shared shape only
 - Async provider traits: `HoverProvider`, `DefinitionProvider`,
   `ReferencesProvider`, and `DocumentSymbolProvider`.
   Providers receive a readonly `TextModel` and a cooperative
-  `CancellationToken`.
+  `CancellationToken`. Definition and reference providers return ordered
+  location arrays; consumers preserve provider order.
 - `MarkdownCommentProvider` is the synchronous open registration contract for
   whole-line Markdown comment blocks. Detection and result normalization remain
   viewer-contribution responsibilities.
 
 `Diagnostic` is only a shared data shape; diagnostics enter the viewer through
 `viewer/common/markers`. There is currently no diagnostic-provider or
-semantic-token contract. Definition and reference traits exist for host/protocol
-use, but `viewer/common/languages` does not currently register them.
+semantic-token contract. Definition providers are registered and queried by
+`viewer/common/languages`; references remain a host/protocol-only contract.
 
 Severity and tag values carry their own stable labels, so a host does not invent
 a second naming scheme when it renders or serializes them.

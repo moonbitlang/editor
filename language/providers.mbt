@@ -88,7 +88,7 @@ pub(open) trait DefinitionProvider {
     @model.TextModel,
     @base_common.Position,
     CancellationToken,
-  ) -> Location?
+  ) -> Array[Location]
 }
 
 ///|

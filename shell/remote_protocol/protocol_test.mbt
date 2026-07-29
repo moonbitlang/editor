@@ -6,7 +6,7 @@ test "encodes and decodes document client packets" {
   let packet = @remote_protocol.OpenDocument({ id: "open-1", uri })
   let encoded = packet.to_json().stringify()
   assert_true(encoded.contains("\"type\":\"OpenDocument\""))
-  assert_true(encoded.contains("\"version\":4"))
+  assert_true(encoded.contains("\"version\":5"))
 
   match @remote_protocol.decode_client_packet(encoded) {
     DecodedClientPacket(OpenDocument(request)) => {
@@ -207,6 +207,50 @@ test "encodes and decodes server document and language packets" {
     ServerPacketDecodeError(error) => fail(error.message)
   }
 
+  let definitions = @remote_protocol.DefinitionResult({
+    id: "def-1",
+    uri,
+    revision: "rev-2",
+    locations: [
+      { uri, range: Range(1, 8, 1, 12) },
+      {
+        uri: expect_uri("readonly-remote://workspace/src/lib.mbt"),
+        range: Range(4, 2, 4, 7),
+      },
+    ],
+  })
+  let encoded_definitions = definitions.to_json().stringify()
+  assert_true(encoded_definitions.contains("\"locations\":["))
+  assert_true(!encoded_definitions.contains("\"location\":"))
+  match @remote_protocol.decode_server_packet(encoded_definitions) {
+    DecodedServerPacket(DefinitionResult(payload)) => {
+      assert_eq(payload.id, "def-1")
+      assert_eq(payload.revision, "rev-2")
+      assert_eq(payload.locations.length(), 2)
+      assert_true(payload.locations[0].range == Range(1, 8, 1, 12))
+      assert_eq(
+        payload.locations[1].uri.to_string(),
+        "readonly-remote://workspace/src/lib.mbt",
+      )
+    }
+    DecodedServerPacket(_) => fail("unexpected definition result packet")
+    ServerPacketDecodeError(error) => fail(error.message)
+  }
+
+  let no_definitions = @remote_protocol.DefinitionResult({
+    id: "def-2",
+    uri,
+    revision: "rev-3",
+    locations: [],
+  })
+  match
+    @remote_protocol.decode_server_packet(no_definitions.to_json().stringify()) {
+    DecodedServerPacket(DefinitionResult(payload)) =>
+      assert_eq(payload.locations.length(), 0)
+    DecodedServerPacket(_) => fail("unexpected empty definition result packet")
+    ServerPacketDecodeError(error) => fail(error.message)
+  }
+
   let references_result = @remote_protocol.ReferencesResult({
     id: "refs-1",
     uri,
@@ -364,7 +408,7 @@ test "reports protocol decode errors" {
 
   match
     @remote_protocol.decode_client_packet(
-      "{\"version\":4,\"type\":\"OpenDocument\",\"id\":\"x\",\"uri\":\"bad\"}",
+      "{\"version\":5,\"type\":\"OpenDocument\",\"id\":\"x\",\"uri\":\"bad\"}",
     ) {
     ClientPacketDecodeError(error) =>
       assert_true(error.code == ProtocolInvalidUri)
@@ -374,12 +418,12 @@ test "reports protocol decode errors" {
 
 ///|
 test "negotiates protocol versions" {
-  match @remote_protocol.negotiate_protocol_version(4) {
-    ProtocolAccepted(version) => assert_eq(version, 4)
+  match @remote_protocol.negotiate_protocol_version(5) {
+    ProtocolAccepted(version) => assert_eq(version, 5)
     ProtocolRejected(error) => fail(error.message)
   }
 
-  match @remote_protocol.negotiate_protocol_version(3) {
+  match @remote_protocol.negotiate_protocol_version(4) {
     ProtocolRejected(error) =>
       assert_true(error.code == ProtocolUnsupportedVersion)
     ProtocolAccepted(_) => fail("expected rejected protocol")

@@ -140,10 +140,12 @@ test "diagnostics are grouped by remote URI and clipped to the root" {
   another's watches and concurrent watch/diagnostic pushes cannot interleave
   frames.
 - `MoonWorkspaceLanguageProvider` implements hover with ordinary
-  `moon ide hover --output-json`. It requires normalized disk text and the
-  provider signature to match the request model before the command and to stay
-  unchanged after it. Definition, references, and document symbols currently
-  return no result.
+  `moon ide hover --output-json` and ordered definitions with exactly
+  `moon ide peek-def --loc <path:line:column> --json`. It requires normalized
+  disk text and the provider signature to match the request model before each
+  command and to stay unchanged after it. Definition paths are normalized back
+  to contained remote-workspace URIs; malformed or out-of-root entries are
+  dropped. References and document symbols currently return no result.
 - `MoonCheckDiagnostics` coalesces document syncs into single-flight
   `moon check --output-json` runs. Each run captures synced document revisions,
   normalized text, and disk signatures; raced output is discarded and causes
@@ -154,9 +156,10 @@ test "diagnostics are grouped by remote URI and clipped to the root" {
 - URI/root validation, file watching, process execution, static serving, and
   Moon CLI output parsing are owned here; protocol policy remains in `server`.
 
-Public entry points also include `native_server_host`, hover/check parsers, and
-the configurable constructors. The `main` package accepts `--root`, `--host`,
-`--port`, `--asset-dir`, and `--moon-command`.
+Public entry points also include `native_server_host`,
+hover/definition/check parsers, and the configurable constructors. The `main`
+package accepts `--root`, `--host`, `--port`, `--asset-dir`, and
+`--moon-command`.
 
 The reusable API, direct CLI, and lower-level `just serve` recipe remain
 loopback-only by default. The developer launcher instead defaults to

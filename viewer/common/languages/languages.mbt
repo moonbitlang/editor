@@ -80,6 +80,9 @@ pub(all) struct MarkdownCommentProviderResult {
 /// through `ViewerServices(languages~)`.
 pub struct Languages {
   priv hover_provider : LanguageFeatureRegistry[&@language.HoverProvider]
+  priv definition_provider : LanguageFeatureRegistry[
+    &@language.DefinitionProvider,
+  ]
   priv document_symbol_provider : LanguageFeatureRegistry[
     &@language.DocumentSymbolProvider,
   ]
@@ -103,6 +106,12 @@ pub struct LanguageHandle {
     Int,
     @language.CancellationToken,
   ) -> @language.Hover? noraise
+  priv definition_at_callback : async (
+    @model.TextModel,
+    Int,
+    @language.CancellationToken,
+  ) -> Array[@language.Location] noraise
+  priv has_definition_provider_callback : (@model.TextModel) -> Bool
 }
 
 ///|
@@ -111,6 +120,7 @@ pub struct LanguageHandle {
 pub fn Languages::Languages() -> Languages {
   {
     hover_provider: LanguageFeatureRegistry::new(),
+    definition_provider: LanguageFeatureRegistry::new(),
     document_symbol_provider: LanguageFeatureRegistry::new(),
     markdown_comment_provider: LanguageFeatureRegistry::new(),
     language_configurations: Map([]),
@@ -134,6 +144,12 @@ pub fn Languages::language_handle(
     },
     hover_at_callback: (model, offset, token) => {
       self.hover_at_with_log_handle(model, offset, log_service, token~)
+    },
+    definition_at_callback: (model, offset, token) => {
+      self.definition_at_with_log_handle(model, offset, log_service, token~)
+    },
+    has_definition_provider_callback: model => {
+      self.has_definition_provider(model)
     },
   }
 }
@@ -181,6 +197,28 @@ pub async fn LanguageHandle::hover_at(
 }
 
 ///|
+/// Resolves definitions through the first matching provider that returns a
+/// non-empty ordered result.
+pub async fn LanguageHandle::definition_at(
+  self : LanguageHandle,
+  model : @model.TextModel,
+  offset : Int,
+  token? : @language.CancellationToken = @language.CancellationToken::none(),
+) -> Array[@language.Location] noraise {
+  (self.definition_at_callback)(model, offset, token)
+}
+
+///|
+/// Reports whether the model currently has a matching live definition
+/// provider registration.
+pub fn LanguageHandle::has_definition_provider(
+  self : LanguageHandle,
+  model : @model.TextModel,
+) -> Bool {
+  (self.has_definition_provider_callback)(model)
+}
+
+///|
 /// Default process-wide language registry used by `ViewerServices()`.
 pub let languages : Languages = Languages()
 
@@ -212,6 +250,16 @@ pub fn Languages::register_hover_provider(
   provider : &@language.HoverProvider,
 ) -> @base_common.Disposable {
   self.hover_provider.register(selector, provider)
+}
+
+///|
+/// Registers an ordered definition provider.
+pub fn Languages::register_definition_provider(
+  self : Languages,
+  selector : @language.LanguageSelector,
+  provider : &@language.DefinitionProvider,
+) -> @base_common.Disposable {
+  self.definition_provider.register(selector, provider)
 }
 
 ///|
@@ -332,6 +380,76 @@ async fn Languages::hover_at_with_log_handle(
     }
   }
   None
+}
+
+///|
+/// Returns the first non-empty definition answer in provider order.
+pub async fn Languages::definition_at(
+  self : Languages,
+  model : @model.TextModel,
+  offset : Int,
+  log_service : @log.LogService,
+  token? : @language.CancellationToken = @language.CancellationToken::none(),
+) -> Array[@language.Location] noraise {
+  self.definition_at_with_log_handle(
+    model,
+    offset,
+    log_service.log_handle(),
+    token~,
+  )
+}
+
+///|
+async fn Languages::definition_at_with_log_handle(
+  self : Languages,
+  model : @model.TextModel,
+  offset : Int,
+  log_service : @log.LogHandle,
+  token? : @language.CancellationToken = @language.CancellationToken::none(),
+) -> Array[@language.Location] noraise {
+  if token.is_cancellation_requested() {
+    return []
+  }
+  let position = model.get_position_at(offset)
+  let providers = self.definition_provider.snapshot_matching(model)
+  for captured in providers {
+    if token.is_cancellation_requested() {
+      return []
+    }
+    let entry = captured.entry
+    if !entry.active.val {
+      continue
+    }
+    let locations = entry.provider.provide_definition(model, position, token) catch {
+      _ => {
+        if !token.is_cancellation_requested() {
+          log_provider_failure(
+            log_service,
+            "language.definition",
+            model,
+            captured.provider_index,
+          )
+        }
+        []
+      }
+    }
+    if token.is_cancellation_requested() {
+      return []
+    } else if entry.active.val && !locations.is_empty() {
+      return locations
+    }
+  }
+  []
+}
+
+///|
+/// Reports whether the model currently has a matching live definition
+/// provider registration.
+pub fn Languages::has_definition_provider(
+  self : Languages,
+  model : @model.TextModel,
+) -> Bool {
+  !self.definition_provider.snapshot_matching(model).is_empty()
 }
 
 ///|

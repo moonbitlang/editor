@@ -19,8 +19,16 @@ flowchart TB
 
 ## Registered features
 
-Ordered, disposable registries exist for hover, document symbols, and
-whole-line Markdown comments.
+Ordered, disposable registries exist for hover, definitions, document symbols,
+and whole-line Markdown comments. Hover and definition requests snapshot
+matching registrations before their first await, forward the caller's exact
+cancellation token, reject a result from a registration disposed during the
+await, and keep cancellation silent; ordinary provider failures are logged and
+contained. `hover_at` and `definition_at` return the first non-empty live
+result. Definition location order is preserved.
+
+Definition-provider presence can be queried without launching a provider, both
+from `Languages` and the borrowed `LanguageHandle`.
 
 ```mbt check
 ///|
@@ -394,9 +402,9 @@ test "a tokenized line renders to inline-styled spans" {
 
 ## Boundaries and checks
 
-There are currently no diagnostics, semantic-token, definition, or references
-registries. Diagnostics use `viewer/common/markers`; definition/reference traits
-remain host/protocol contracts in `language`.
+There are currently no diagnostics, semantic-token, or references registries.
+Diagnostics use `viewer/common/markers`; references remain a host/protocol
+contract in `language`.
 
 `languages` is the process-wide instance used by default Viewer services;
 `default_languages()` returns that same instance. The package has no viewer-root,
@@ -404,11 +412,11 @@ contribution, DOM, or host dependency.
 
 `Languages::language_handle(log_handle)` returns the opaque capability consumed
 by `ViewerServices`. It exposes configuration lookup, raw Markdown-comment
-provider selection (including its registration-level presentation result), and
-contained hover resolution; registrations, tokenizer
-mutation, document-symbol queries, and the concrete registry lifecycle stay on
-the caller-retained `Languages` value. The handle borrows its backing and never
-disposes it.
+provider selection (including its registration-level presentation result),
+contained hover/definition resolution, and definition-provider presence;
+registrations, tokenizer mutation, document-symbol queries, and the concrete
+registry lifecycle stay on the caller-retained `Languages` value. The handle
+borrows its backing and never disposes it.
 
 See `pkg.generated.mbti` for the complete surface.
 
