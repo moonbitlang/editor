@@ -241,7 +241,7 @@ test "hover widget mouseleave hides when the editor DOM is missing" {
   hc.hover = shown_hover_controller()
   viewer.sync_content_hover_widget()
   assert_true(viewer.content_hover_visible())
-  assert_true(viewer.get_view() is None)
+  assert_true(viewer.current_code_view() is None)
 
   viewer.on_content_hover_widget_mouse_leave(0.0, 0.0)
 

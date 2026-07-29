@@ -69,8 +69,8 @@ pub(all) struct DocumentSymbol {
 } derive(Debug)
 
 ///|
-/// Asynchronous hover provider for a readonly text model and
-/// zero-based UTF-16 position.
+/// Asynchronous hover provider for a readonly text model and the repository's
+/// one-based UTF-16 `Position`.
 pub(open) trait HoverProvider {
   async fn provide_hover(
     Self,

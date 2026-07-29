@@ -26,20 +26,22 @@ flowchart LR
   A[host document] --> B[TextModel<br>common/model]
   B --> C[ViewModel<br>common/view_model]
   C --> D[ViewLayout<br>common/view_layout]
-  D --> E[View<br>browser/view]
-  E --> F[DOM]
+  D --> E[BrowserPresentation<br>closed family]
+  E --> F[Code: View<br>browser/view]
+  F --> G[DOM]
 ```
 
-The four stages after the host document live in `viewer/common/model`,
-`viewer/common/view_model`, `viewer/common/view_layout`, and
-`internal/viewer/browser/view`.
+The stages after the host document live in `viewer/common/model`,
+`viewer/common/view_model`, `viewer/common/view_layout`, and — behind the
+Viewer-owned closed `BrowserPresentation` family — `internal/viewer/browser/view`.
 
 `Viewer` keeps cross-domain ordering at the root and delegates private state to
 five concrete owners: `EditorConfigurationState`, `ViewerModelSlot`,
 `ViewerMount`, `EditorContributions`, and `CursorEventDelivery`.
-`ViewerModelSlot.current` is the one nullable `ModelData`; its optional
-`ModelBrowserData` pairs a real `View` with its retained mouse handler and
-view-scoped render/reveal facts. Public construction seeds
+`ViewerModelSlot.current` is the one nullable `ModelData`; its optional closed
+`BrowserPresentation` makes active-root dispatch explicit. The current
+`Code(CodeBrowserData)` payload pairs a real `View` with its retained mouse
+handler and view-scoped render/reveal facts. Public construction seeds
 `EditorConfigurationState` synchronously from the host client box before model
 attachment. Each `ModelData` then carries one generation-scoped initialization
 boundary: the host invokes `Viewer::handle_initialized` after model, view-state,
@@ -51,11 +53,12 @@ Headless means `ViewerMount::Headless`: there is no caller host, placeholder,
 browser `View`, DOM focus state, or root animation frame. A headless Viewer may
 still have a model and `ViewModel`, represented only by
 `ModelData.browser=None`; on supported construction paths, a mounted model
-always has `Some(ModelBrowserData)`. This is distinct from a mounted Viewer with
-no model, which owns and paints one complete placeholder pair. Mounting is
-one-way; disposal removes Viewer-owned DOM and clears mounted
-placeholder/frame/focus state, but retains the caller's host for container
-lookup.
+always has `Some(BrowserPresentation)`. `ViewerMount` installs and removes the
+active presentation root without knowing its concrete payload. This is
+distinct from a mounted Viewer with no model, which owns and paints one
+complete placeholder pair. Mounting is one-way; disposal removes Viewer-owned
+DOM and clears mounted placeholder/frame/focus state, but retains the caller's
+host for container lookup.
 
 The host owns files, transport, persistence, reload policy, shell chrome, and
 error presentation. The viewer owns readonly rendering, selection, scrolling,

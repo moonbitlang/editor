@@ -64,7 +64,7 @@ test "omitted move command reveal type follows undefined non-None gate" {
   with_mounted_test_viewer(long_document(40), viewer => {
     viewer.test_set_viewport(width=800.0, height=180.0)
     let view_model = viewer.test_view_model()
-    let browser = viewer.current_browser_data().unwrap()
+    let browser = viewer.current_code_browser_data().unwrap()
 
     assert_true(
       viewer.run_move_to_core_command(

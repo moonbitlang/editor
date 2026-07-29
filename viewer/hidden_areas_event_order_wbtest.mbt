@@ -5,9 +5,10 @@ test "hidden areas collect recovery scroll before mapping delivery" {
     guard viewer.model_slot.current is Some(model_data) else {
       fail("mounted model data missing")
     }
-    guard model_data.browser is Some(browser) else {
+    guard model_data.browser is Some(presentation) else {
       fail("mounted model data missing browser bundle")
     }
+    let browser = presentation.code().unwrap()
     let view = browser.view
     let layout = model_data.view_model.view_layout
     layout.set_viewport_size(width=400.0, height=18.0) |> ignore

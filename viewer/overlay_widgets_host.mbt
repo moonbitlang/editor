@@ -26,7 +26,7 @@ pub fn Viewer::add_overlay_widget(
 ) -> Unit {
   let widget_id = widget.get_id()
   self.overlay_widgets[widget_id] = widget
-  match self.get_view() {
+  match self.current_code_view() {
     Some(view) => view.overlay_widgets.add_widget(widget)
     None => ()
   }
@@ -43,7 +43,7 @@ pub fn Viewer::remove_overlay_widget(
 ) -> Unit {
   let widget_id = widget.get_id()
   self.overlay_widgets.remove(widget_id)
-  match self.get_view() {
+  match self.current_code_view() {
     Some(view) => view.overlay_widgets.remove_widget(widget_id)
     None => ()
   }

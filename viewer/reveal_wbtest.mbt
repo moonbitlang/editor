@@ -1,6 +1,6 @@
 // Phase 2 behavior tests for the `Viewer::reveal*` surface, on the headless
 // `with_test_viewer` harness (no DOM): an unattached viewer owns a full model +
-// ViewModel but no `ModelBrowserData`, so reveals drive model→view conversion
+// ViewModel but no `CodeBrowserData`, so reveals drive model→view conversion
 // and vertical scroll math without retaining browser-only requests. Pure
 // request construction/cancellation is pinned here; real arm/flush behavior
 // lives in the browser suite (Phase 3).
@@ -158,7 +158,7 @@ test "stationary multi-line reveal retains a pending browser request" {
   with_mounted_test_viewer(long_document(200), viewer => {
     viewer.test_set_viewport(width=800.0, height=180.0)
     viewer.test_view_model().view_layout.set_content_width(2000.0) |> ignore
-    let browser = viewer.current_browser_data().unwrap()
+    let browser = viewer.current_code_browser_data().unwrap()
     let single = @base_common.Range::Range(5, 3, 5, 8)
     viewer.reveal_range(single)
     assert_true(browser.horizontal_reveal_request is Some(_))

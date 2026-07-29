@@ -59,7 +59,7 @@ fn Viewer::set_hidden_areas(
   // ViewZone that ignores exactly one source can still become hidden/visible.
   // Recompute retained zone whitespace from the raw source map in that case;
   // the changed-only whitespace transaction keeps exact repeated inputs inert.
-  let zone_visibility_changed = match self.current_browser_data() {
+  let zone_visibility_changed = match self.current_code_browser_data() {
     Some(browser) =>
       browser.view.view_zones.refresh_hidden_area_source_visibility()
     None => false

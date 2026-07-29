@@ -18,6 +18,10 @@ fn Viewer::quick_diff_update(
   self : Viewer,
   collection : EditorDecorationsCollection,
 ) -> Unit {
+  if !self.is_code_presentation() {
+    collection.set([]) |> ignore
+    return
+  }
   match self.get_model() {
     Some(model) =>
       match self.services.quick_diff.get_original_content(model.uri) {

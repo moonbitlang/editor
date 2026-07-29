@@ -39,6 +39,7 @@ fn Viewer::folding_controller(
 /// delimiter visible. The call does nothing when folding is disabled or no
 /// folding model is attached.
 pub fn Viewer::fold_top_level(self : Viewer) -> Unit {
+  guard self.is_code_presentation() else { return }
   guard self.get_options().folding else { return }
   guard self.folding_controller() is Some(controller) else { return }
   guard controller.folding_model is Some(folding_model) else { return }
@@ -61,6 +62,7 @@ pub fn Viewer::fold_top_level(self : Viewer) -> Unit {
 fn Viewer::folding_on_model_changed(self : Viewer) -> Unit {
   guard self.folding_controller() is Some(controller) else { return }
   controller.clear_local()
+  guard self.is_code_presentation() else { return }
   let options = self.get_options()
   guard options.folding && self.get_model() is Some(model) else { return }
   let decoration_provider = @folding_browser.FoldingDecorationProvider(

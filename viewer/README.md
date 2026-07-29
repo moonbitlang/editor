@@ -40,17 +40,18 @@ viewer.slot.data -> model: borrows readonly
   is seeded synchronously before it becomes observable or publishes stable
   visible-token demand. Later `layout()` calls use the same client-box
   semantics, including while the no-model placeholder is showing. Headless
-  means no host, placeholder, browser `View`, DOM focus state, measurement, or
-  root animation frame, although a model and `ViewModel` may still be installed
-  with `ModelData.browser=None`; a model installed through the public mounted
-  path always has `Some(ModelBrowserData)`.
+  means no host, placeholder, browser presentation, DOM focus state,
+  measurement, or root animation frame, although a model and `ViewModel` may
+  still be installed with `ModelData.browser=None`; a model installed through
+  the public mounted path always has `Some(BrowserPresentation)`.
 - Mounting is a one-way private transition. A mounted Viewer with no model owns
-  one atomic placeholder root/text pair; attaching a model replaces that DOM
-  with its `View`, and ordinary detach restores the same pair. Disposal removes
-  Viewer-owned DOM and clears placeholder/frame/focus state without returning
-  to headless or releasing the caller's host. `get_container_dom_node` returns
-  that original host before and after disposal, while `get_dom_node` is nullable
-  when no model/browser View exists.
+  one atomic placeholder root/text pair; attaching a model installs the active
+  presentation root through `ViewerMount`, and ordinary detach restores the
+  same pair. Disposal removes Viewer-owned DOM and clears
+  placeholder/frame/focus state without returning to headless or releasing the
+  caller's host. `get_container_dom_node` returns that original host before and
+  after disposal, while `get_dom_node` is nullable when no mounted presentation
+  exists.
 - Omitting `services` makes the Viewer create and own an internal bundle.
   Passing `services` explicitly always borrows that bundle, including a bundle
   returned by `ViewerServices(...)`; this is the form for sharing languages,
@@ -58,13 +59,14 @@ viewer.slot.data -> model: borrows readonly
 - `set_model(TextModel?)` installs a caller-owned readonly model in the one
   `ViewerModelSlot.current` bundle. The same object is a no-op; replacement or
   clearing invalidates the generation before cleanup, then disposes the old
-  model-scoped listeners, exact model-owned attached-view handle, optional DOM
-  `View`, and `ViewModel` in order. Attachment acquires the handle before
-  `ViewModel` construction and, when mounted, creates one `ModelBrowserData`
-  that cannot hold a `View` without its retained mouse handler and render/reveal
-  facts. The `View` remains the handler's sole disposal owner. Model swaps reset
-  scroll and feature model state; use `save_view_state`/`restore_view_state`
-  when the host wants persistence.
+  model-scoped listeners, exact model-owned attached-view handle, optional
+  `BrowserPresentation`, and `ViewModel` in order. Attachment acquires the
+  handle before `ViewModel` construction and, when mounted, currently creates
+  the closed `Code(CodeBrowserData)` variant. That payload cannot hold a `View`
+  without its retained mouse handler and render/reveal facts; the `View`
+  remains the handler's sole disposal owner. Model swaps reset scroll and
+  feature model state; use `save_view_state`/`restore_view_state` when the host
+  wants persistence.
 - Contributions are created once per `Viewer` and disposed with it.
   `Viewer.contributions` is the `EditorContributions` owner, and its `instances`
   map is the only per-Viewer instance store. Each central entry owns one
@@ -94,8 +96,9 @@ viewer.slot.data -> model: borrows readonly
   acquiring again. Model-scoped listeners dispose before model detachment, the
   View disposes next, and the ViewModel disposes last.
 - Overlay-widget registrations belong to the Viewer and are re-added to each
-  per-model View. Content widgets are an internal view-part seam; hover owns
-  the current implementation.
+  Code presentation. With another presentation active, add/remove still update
+  the Viewer-lifetime registration map but perform no DOM work. Content widgets
+  are an internal code-view-part seam; hover owns the current implementation.
 
 ## Public surface
 

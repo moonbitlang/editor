@@ -97,7 +97,10 @@ fn Viewer::flush_render(self : Viewer) -> Unit {
     self.render_placeholder()
     return
   }
-  guard model_data.browser is Some(browser) else { return }
+  guard model_data.browser is Some(presentation) else { return }
+  let browser = match presentation {
+    Code(code) => code
+  }
   let view = browser.view
   let view_model = model_data.view_model
   // Write phase.

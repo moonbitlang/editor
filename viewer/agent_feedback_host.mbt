@@ -151,6 +151,7 @@ fn Viewer::agent_feedback_input_visible(self : Viewer) -> Bool {
 /// Whether the current model's resource has the feedback affordances on —
 /// the `_getSessionForFile` stand-in.
 fn Viewer::agent_feedback_enabled(self : Viewer) -> Bool {
+  guard self.is_code_presentation() else { return false }
   match self.get_model() {
     Some(model) => self.services.agent_feedback.is_feedback_enabled(model.uri)
     None => false

@@ -432,21 +432,16 @@ pub fn Viewer::update_options(self : Viewer, options : ViewerOptions) -> Unit {
 }
 
 ///|
-/// Mirrors the theme option onto the view root as a `data-theme` attribute
-/// (colors cascade from the host's CSS theme variables) and recomputes the
-/// squiggle stylesheet from the newly cascaded colors; the view keeps its DOM
-/// and scroll position.
+/// Mirrors the theme option onto the active presentation without replacing its
+/// root or scroll state.
 fn Viewer::apply_theme(self : Viewer) -> Unit {
   let theme = self.configuration.snapshot().options.theme
   match self.mount {
     Headless => ()
     Mounted(mounted) => mounted.apply_placeholder_theme(theme)
   }
-  match self.get_view() {
-    Some(view) => {
-      view.root.set_attribute("data-theme", theme)
-      view.apply_squiggly_theme()
-    }
+  match self.current_browser_presentation() {
+    Some(presentation) => presentation.apply_theme(theme)
     None => ()
   }
 }
@@ -634,11 +629,11 @@ fn Viewer::detach_model(self : Viewer) -> @model.TextModel? {
     Mounted(mounted) => {
       mounted.container.remove_attribute("data-mode-id")
       match model_data.browser {
-        Some(browser) =>
+        Some(presentation) =>
           // The no-model placeholder returns on an ordinary detach. Viewer
           // disposal removes it instead and never re-appends owned DOM.
-          mounted.remove_view(
-            browser.view.root,
+          mounted.remove_presentation_root(
+            presentation.root(),
             restore_placeholder=!self.disposed,
           )
         None => ()
@@ -677,8 +672,8 @@ fn Viewer::get_view_model(self : Viewer) -> @view_model.ViewModel? {
 ///|
 /// The attached bundle's view — `None` with no model, and `None` headless
 /// (the `hasRealView = false` analog).
-fn Viewer::get_view(self : Viewer) -> @view.View? {
-  match self.current_browser_data() {
+fn Viewer::current_code_view(self : Viewer) -> @view.View? {
+  match self.current_code_browser_data() {
     Some(browser) => Some(browser.view)
     None => None
   }
@@ -710,10 +705,7 @@ pub fn Viewer::get_id(self : Viewer) -> String {
 /// The editor's own root element — `getDomNode` (`cew:1489-1494`): the
 /// view's node only while a model is attached with a real view.
 pub fn Viewer::get_dom_node(self : Viewer) -> @rdom.Element? {
-  match self.get_view() {
-    Some(view) => Some(view.root)
-    None => None
-  }
+  self.active_presentation_root()
 }
 
 ///|
@@ -732,8 +724,8 @@ pub fn Viewer::get_container_dom_node(self : Viewer) -> @rdom.Element {
 /// hidden textarea / edit context; the viewer's focusable surface is the view
 /// root itself.
 pub fn Viewer::focus(self : Viewer) -> Unit {
-  match self.get_view() {
-    Some(view) => @base_browser.focus_prevent_scroll(view.root)
+  match self.current_browser_presentation() {
+    Some(presentation) => presentation.focus()
     None => ()
   }
 }
@@ -751,10 +743,9 @@ pub fn Viewer::has_text_focus(self : Viewer) -> Bool {
 /// Whether focus is anywhere inside the editor widget, including hover
 /// widgets — `hasWidgetFocus()`.
 pub fn Viewer::has_widget_focus(self : Viewer) -> Bool {
-  match self.get_view() {
-    Some(view) =>
-      self.has_text_focus() ||
-      @base_browser.element_contains_active_element(view.root)
+  match self.current_browser_presentation() {
+    Some(presentation) =>
+      self.has_text_focus() || presentation.contains_active_element()
     None => false
   }
 }
@@ -763,8 +754,7 @@ pub fn Viewer::has_widget_focus(self : Viewer) -> Bool {
 /// Returns the current scroll state in host-restorable form — Monaco's
 /// `saveViewState` (`cew:1038-1041`). No model → `None`.
 pub fn Viewer::save_view_state(self : Viewer) -> ViewerViewState? {
-  guard self.get_view_model() is Some(view_model) else { return None }
-  let position = view_model.view_layout.position()
+  guard self.active_scroll_position() is Some(position) else { return None }
   Some({ scroll_top: position.scroll_top, scroll_left: position.scroll_left })
 }
 
@@ -775,17 +765,16 @@ pub fn Viewer::restore_view_state(
   self : Viewer,
   state : ViewerViewState?,
 ) -> Unit {
-  guard self.get_view_model() is Some(view_model) else { return }
   match state {
     Some(state) => {
-      view_model.view_layout.scroll_to(
+      self.set_active_scroll_position(
         scroll_top=state.scroll_top,
         scroll_left=state.scroll_left,
       )
-      |> ignore
-      // `View.restoreState` publishes stable priority only after both scroll
-      // axes have synchronously delivered their ordinary unstable update.
-      view_model.visible_lines_stabilized()
+      // Code `View.restoreState` publishes stable priority only after both
+      // scroll axes have synchronously delivered their ordinary unstable
+      // update.
+      self.stabilize_active_scroll()
     }
     None => ()
   }
@@ -871,20 +860,14 @@ pub fn Viewer::layout(self : Viewer) -> Unit {
 /// (`cew:1014-1017`, no model → no-op). Wheel and scrollbar input arrive
 /// through the view's own listeners.
 pub fn Viewer::set_scroll_top(self : Viewer, new_scroll_top : Double) -> Unit {
-  guard self.get_view_model() is Some(view_model) else { return }
-  view_model.view_layout.scroll_to(scroll_top=new_scroll_top) |> ignore
+  self.set_active_scroll_position(scroll_top=new_scroll_top)
 }
 
 ///|
 /// Sets the horizontal synthetic scroll position — `setScrollLeft`
 /// (`cew:1003-1006`, no model → no-op).
 pub fn Viewer::set_scroll_left(self : Viewer, new_scroll_left : Double) -> Unit {
-  guard self.get_view_model() is Some(view_model) else { return }
-  view_model.view_layout.scroll_to(
-    scroll_top=view_model.view_layout.position().scroll_top,
-    scroll_left=new_scroll_left,
-  )
-  |> ignore
+  self.set_active_scroll_position(scroll_left=new_scroll_left)
 }
 
 ///|
@@ -896,17 +879,7 @@ pub fn Viewer::set_scroll_position(
   scroll_top? : Double,
   scroll_left? : Double,
 ) -> Unit {
-  guard self.get_view_model() is Some(view_model) else { return }
-  let position = view_model.view_layout.position()
-  let scroll_top = match scroll_top {
-    Some(value) => value
-    None => position.scroll_top
-  }
-  let scroll_left = match scroll_left {
-    Some(value) => value
-    None => position.scroll_left
-  }
-  view_model.view_layout.scroll_to(scroll_top~, scroll_left~) |> ignore
+  self.set_active_scroll_position(scroll_top?, scroll_left?)
 }
 
 ///|
@@ -924,13 +897,13 @@ fn Viewer::apply_scroll_change(
           scroll_change.scroll_left,
         )
       }
-      match self.current_browser_data() {
+      match self.current_code_browser_data() {
         Some(browser) =>
           browser.cancel_horizontal_reveal_on_scroll(scroll_change)
         None => ()
       }
       self.on_editor_scroll_changed(scroll_change)
-      match self.get_view() {
+      match self.current_code_view() {
         Some(view) => view.editor_scrollbar.scrollable().reveal_for_scroll()
         None => ()
       }

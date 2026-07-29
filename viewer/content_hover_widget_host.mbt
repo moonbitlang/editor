@@ -60,7 +60,7 @@ fn Viewer::on_content_hover_widget_mouse_leave(
   posx : Double,
   posy : Double,
 ) -> Unit {
-  guard self.get_view() is Some(view) else {
+  guard self.current_code_view() is Some(view) else {
     self.hide_content_hover()
     return
   }
@@ -125,7 +125,8 @@ fn Viewer::rendered_content_hover(
 /// Lazily constructs the widget and mounts it — Monaco's
 /// `ContentHoverWidget` constructor calling `_editor.addContentWidget(this)`.
 /// The widget itself is created once per `Viewer`; each per-model `View`
-/// re-adds it through `create_view`'s widget re-add loop (`cew:1893-1899`).
+/// re-adds it through the code presentation's widget re-add loop
+/// (`cew:1893-1899`).
 /// `None` before a view exists.
 fn Viewer::ensure_content_hover_widget(
   self : Viewer,
@@ -138,7 +139,7 @@ fn Viewer::ensure_content_hover_widget(
         Headless => return None
         Mounted(mounted) => mounted
       }
-      guard self.get_view() is Some(view) else { return None }
+      guard self.current_code_view() is Some(view) else { return None }
       let widget = @hover_browser.ContentHoverWidget({
         // Monaco's `ContentHoverWidget` retains the editor and measures its
         // stable `_domElement`; a per-model View root is disposed on every
@@ -162,7 +163,7 @@ fn Viewer::ensure_content_hover_widget(
           self.handle_hover_keydown(event, keyboard)
         },
         hook_scrollable_scrollbar_input: (scrollable, owner) => {
-          match self.current_browser_data() {
+          match self.current_code_browser_data() {
             Some(browser) =>
               browser.mouse_handler.hook_scrollable_scrollbar_input(
                 scrollable, owner,
@@ -182,7 +183,7 @@ fn Viewer::ensure_content_hover_widget(
 /// Monaco `ICodeEditor.layoutContentWidget(widget)`: re-read the widget's
 /// `get_position()` into the content-widgets part and repaint.
 fn Viewer::layout_content_hover_widget(self : Viewer) -> Unit {
-  guard self.get_view() is Some(view) else { return }
+  guard self.current_code_view() is Some(view) else { return }
   guard self.content_hover_contribution() is Some(state) else { return }
   guard state.widget is Some(widget) else { return }
   view.content_widgets.set_widget_position(widget.content_widget_handle())

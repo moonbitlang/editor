@@ -6,6 +6,7 @@
 /// through raw document offsets. Columns are one-based and local to each view
 /// line (the convention `measure_line_selection` consumes).
 fn Viewer::selection_view_range(self : Viewer) -> @base_common.Range? {
+  guard self.is_code_presentation() else { return None }
   guard self.get_view_model() is Some(view_model) else { return None }
   let selection = view_model.cursor.get_view_selection()
   if selection.is_empty() {
@@ -21,6 +22,7 @@ fn Viewer::selection_view_range(self : Viewer) -> @base_common.Range? {
 /// `set_position` still renders. `None` only without a model — the view
 /// model's cursor always exists, collapsed at (1,1) like Monaco's.
 fn Viewer::view_selection(self : Viewer) -> @core.Selection? {
+  guard self.is_code_presentation() else { return None }
   match self.get_view_model() {
     Some(view_model) => Some(view_model.cursor.get_view_selection())
     None => None
@@ -71,6 +73,7 @@ fn Viewer::apply_selection(
   source : String,
   reason : @editor_api.CursorChangeReason,
 ) -> Unit {
+  guard self.is_code_presentation() else { return }
   guard self.get_view_model() is Some(view_model) else { return }
   view_model.set_cursor_state(
     Some(@cursor.CursorState::from_model_selection(selection)),
@@ -94,6 +97,7 @@ pub fn Viewer::set_selections(
   reason? : @editor_api.CursorChangeReason = NotSet,
 ) -> Unit {
   guard selections.length() > 0 else { return }
+  guard self.is_code_presentation() else { return }
   guard self.get_view_model() is Some(view_model) else { return }
   let states = @cursor.CursorState::from_model_selections(selections)
   // The source converts every selection in order before `setStates`; this
