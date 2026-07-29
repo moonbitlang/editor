@@ -4,6 +4,28 @@ Minimal JS embedding proof for the reusable `viewer`. It uses in-memory files
 and an in-memory `WorkspaceTreeProvider`; no workbench, remote protocol, server,
 or WebSocket participates.
 
+> The code blocks on this page are `mbt nocheck`. This package is js-only and
+> its values need a live DOM, which `moon test` (Node, no DOM) cannot provide.
+> Its executable coverage is the Playwright suites under `tests/browser/`; see
+> `docs/harness.md` for how to choose a test layer.
+
+```mermaid
+flowchart LR
+  E["embedded_viewer example"] --> V["viewer"]
+  E --> CM["viewer/common/{model,languages,editor_api,capability APIs}"]
+  E -.->|"deliberately never"| S["internal/shell/**"]
+```
+
+This example exists to keep the *external* embedder surface compiling: it
+imports only what a third-party host is allowed to import, so a change that
+forces embedders through a private package breaks the build here first.
+
+```mbt nocheck
+// The whole embedding surface an external host needs.
+let viewer = @viewer.Viewer::create(host)
+viewer.set_model(Some(@model.TextModel(uri, name, "moonbit", 1, "rev-1", text)))
+```
+
 ## Flow
 
 - Startup registers the MoonBit tokenizer in the default `Languages` registry.
