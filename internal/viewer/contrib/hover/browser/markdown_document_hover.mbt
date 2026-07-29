@@ -273,8 +273,7 @@ pub fn MarkdownDocumentHoverWidget::hide(
 }
 
 ///|
-extern "js" fn clear_markdown_hover_contents(contents : @rdom.Element) -> Unit =
-  #| (contents) => { contents.textContent = ""; }
+extern "js" fn clear_markdown_hover_contents(contents : @rdom.Element) -> Unit = "(contents) => { contents.textContent = ''; }"
 
 ///|
 pub fn MarkdownDocumentHoverWidget::dispose(
@@ -303,47 +302,31 @@ extern "js" fn markdown_native_caret_hit(
   article : @rdom.Element,
   client_x : Double,
   client_y : Double,
-) -> MarkdownNativeCaretHit =
-  #| (article, x, y) => {
-  #|   const document = article.ownerDocument;
-  #|   let node = null;
-  #|   let offset = 0;
-  #|   if (typeof document.caretPositionFromPoint === "function") {
-  #|     const position = document.caretPositionFromPoint(x, y);
-  #|     node = position?.offsetNode || null;
-  #|     offset = position?.offset || 0;
-  #|   } else if (typeof document.caretRangeFromPoint === "function") {
-  #|     const range = document.caretRangeFromPoint(x, y);
-  #|     node = range?.startContainer || null;
-  #|     offset = range?.startOffset || 0;
-  #|   }
-  #|   if (!node || node.nodeType !== 3) {
-  #|     return { ok: 0, node: null, offset: 0 };
-  #|   }
-  #|   return { ok: 1, node, offset: offset | 0 };
-  #| }
+) -> MarkdownNativeCaretHit = "(article, x, y) => typeof article.ownerDocument.caretPositionFromPoint === 'function' ? article.ownerDocument.caretPositionFromPoint(x, y) : article.ownerDocument.caretRangeFromPoint?.(x, y) ?? null"
 
 ///|
-extern "js" fn markdown_native_caret_hit_ok(
+extern "js" fn markdown_native_caret_hit_has_node(
   hit : MarkdownNativeCaretHit,
-) -> Bool =
-  #| (hit) => hit.ok === 1
+) -> Bool = "(hit) => Boolean(hit?.offsetNode ?? hit?.startContainer)"
 
 ///|
 extern "js" fn markdown_native_caret_hit_node(
   hit : MarkdownNativeCaretHit,
-) -> @rdom.Node =
-  #| (hit) => hit.node
+) -> @rdom.Node = "(hit) => hit.offsetNode ?? hit.startContainer"
 
 ///|
 extern "js" fn markdown_native_caret_hit_offset(
   hit : MarkdownNativeCaretHit,
-) -> Int =
-  #| (hit) => hit.offset | 0
+) -> Int = "(hit) => Number(hit.offset ?? hit.startOffset ?? 0) | 0"
 
 ///|
-extern "js" fn markdown_node_text_length(node : @rdom.Node) -> Int =
-  #| (node) => String(node.textContent || "").length
+fn markdown_native_caret_hit_ok(hit : MarkdownNativeCaretHit) -> Bool {
+  markdown_native_caret_hit_has_node(hit) &&
+  markdown_native_caret_hit_node(hit).get_node_type() == 3
+}
+
+///|
+extern "js" fn markdown_node_text_length(node : @rdom.Node) -> Int = "(node) => String(node.textContent || '').length"
 
 ///|
 fn markdown_node_is_descendant_of(
@@ -577,11 +560,7 @@ pub fn MarkdownDocumentHoverBridge::activate(
 extern "js" fn markdown_mouseleave_enters_element(
   event : @rdom.Event,
   element : @rdom.Element,
-) -> Bool =
-  #| (event, element) => {
-  #|   const related = event?.relatedTarget;
-  #|   return Boolean(related && element?.contains?.(related));
-  #| }
+) -> Bool = "(event, element) => Boolean(event?.relatedTarget && element?.contains?.(event.relatedTarget))"
 
 ///|
 fn MarkdownDocumentHoverBridge::bind_semantic_dom(
@@ -936,69 +915,119 @@ fn markdown_marker_severity_name(marker : @markers.Marker) -> String {
 }
 
 ///|
-/// Measures one displayed UTF-16 range against its source-bearing line. Source
-/// to displayed-boundary selection and visual-row policy stay in MoonBit. The
-/// browser primitive returns either the union `[left, width]`, or
-/// `[line height, line box height]` followed by raw line-relative
-/// `[left, top, width, height]` client rects.
-extern "js" fn markdown_measure_text_range_raw(
+/// One DOM text-node boundary. Offsets are UTF-16 units, matching browser
+/// Range and TextModel offsets.
+priv struct MarkdownTextBoundary {
+  node : @rdom.Node
+  offset : Int
+}
+
+///|
+/// Finds the first text-node boundary at `wanted`, preserving TreeWalker's
+/// boundary bias: an offset exactly at the end of one text node belongs to
+/// that node instead of the following node.
+fn markdown_text_boundary_at_from(
+  root : @rdom.Node,
+  wanted : Int,
+  consumed_before : Int,
+) -> (MarkdownTextBoundary?, Int) {
+  if root.get_node_type() == 3 {
+    let length = markdown_node_text_length(root)
+    let consumed_after = consumed_before + length
+    if wanted <= consumed_after {
+      return (
+        Some({
+          node: root,
+          offset: (wanted - consumed_before).max(0).min(length),
+        }),
+        consumed_after,
+      )
+    }
+    return (None, consumed_after)
+  }
+  let mut consumed = consumed_before
+  for child_index = 0
+      child_index < root.get_child_count()
+      child_index = child_index + 1 {
+    let (boundary, consumed_after) = markdown_text_boundary_at_from(
+      root.get_child(child_index),
+      wanted,
+      consumed,
+    )
+    if boundary is Some(_) {
+      return (boundary, consumed_after)
+    }
+    consumed = consumed_after
+  }
+  (None, consumed)
+}
+
+///|
+fn markdown_text_boundary_at(
+  root : @rdom.Node,
+  wanted : Int,
+) -> MarkdownTextBoundary? {
+  markdown_text_boundary_at_from(root, wanted, 0).0
+}
+
+///|
+/// Native Range is a browser layout primitive. MoonBit owns text traversal,
+/// offset clamping, endpoint selection, and geometry interpretation.
+#external
+priv type MarkdownNativeRange
+
+///|
+extern "js" fn markdown_native_range_create(
+  root : @rdom.Node,
+) -> MarkdownNativeRange = "(root) => root.ownerDocument.createRange()"
+
+///|
+extern "js" fn markdown_native_range_set_start(
+  range : MarkdownNativeRange,
+  node : @rdom.Node,
+  offset : Int,
+) -> Unit = "(range, node, offset) => range.setStart(node, offset)"
+
+///|
+extern "js" fn markdown_native_range_set_end(
+  range : MarkdownNativeRange,
+  node : @rdom.Node,
+  offset : Int,
+) -> Unit = "(range, node, offset) => range.setEnd(node, offset)"
+
+///|
+extern "js" fn markdown_native_range_bounding_rect(
+  range : MarkdownNativeRange,
+) -> @rdom.DOMRect = "(range) => range.getBoundingClientRect()"
+
+///|
+extern "js" fn markdown_native_range_client_rects(
+  range : MarkdownNativeRange,
+) -> Array[@rdom.DOMRect] = "(range) => Array.from(range.getClientRects())"
+
+///|
+extern "js" fn markdown_native_computed_line_height(
+  line : @rdom.Element,
+) -> Double = "(line) => Number.parseFloat(line.ownerDocument.defaultView?.getComputedStyle(line).lineHeight || '')"
+
+///|
+extern "js" fn markdown_native_number_is_finite(value : Double) -> Bool = "(value) => Number.isFinite(value)"
+
+///|
+fn markdown_native_text_range(
   line : @rdom.Element,
   start : Int,
   end_exclusive : Int,
-  include_client_rects : Bool,
-) -> Array[Double] =
-  #| (line, start, end, includeClientRects) => {
-  #|   const document = line.ownerDocument;
-  #|   const walker = document.createTreeWalker(
-  #|     line,
-  #|     globalThis.NodeFilter?.SHOW_TEXT ?? 4,
-  #|   );
-  #|   const locate = (wanted) => {
-  #|     let consumed = 0;
-  #|     let node;
-  #|     while ((node = walker.nextNode())) {
-  #|       const length = String(node.textContent || "").length;
-  #|       if (wanted <= consumed + length) {
-  #|         return [node, Math.max(0, Math.min(length, wanted - consumed))];
-  #|       }
-  #|       consumed += length;
-  #|     }
-  #|     return null;
-  #|   };
-  #|   walker.currentNode = line;
-  #|   const first = locate(start);
-  #|   walker.currentNode = line;
-  #|   const last = locate(end);
-  #|   if (!first || !last) return includeClientRects ? [0, 0] : [0, 1];
-  #|   const range = document.createRange();
-  #|   range.setStart(first[0], first[1]);
-  #|   range.setEnd(last[0], last[1]);
-  #|   const lineRect = line.getBoundingClientRect();
-  #|   if (!includeClientRects) {
-  #|     const boundingRect = range.getBoundingClientRect();
-  #|     return [
-  #|       boundingRect.left - lineRect.left,
-  #|       Math.max(boundingRect.width, 1),
-  #|     ];
-  #|   }
-  #|   const computedLineHeight = Number.parseFloat(
-  #|     line.ownerDocument.defaultView?.getComputedStyle(line).lineHeight || "",
-  #|   );
-  #|   const lineHeight =
-  #|     Number.isFinite(computedLineHeight) && computedLineHeight > 0
-  #|       ? computedLineHeight
-  #|       : 0;
-  #|   const geometry = [lineHeight, lineRect.height];
-  #|   for (const rect of range.getClientRects()) {
-  #|     geometry.push(
-  #|       rect.left - lineRect.left,
-  #|       rect.top - lineRect.top,
-  #|       rect.width,
-  #|       rect.height,
-  #|     );
-  #|   }
-  #|   return geometry;
-  #| }
+) -> MarkdownNativeRange? {
+  guard markdown_text_boundary_at(line.as_node(), start) is Some(first) &&
+    markdown_text_boundary_at(line.as_node(), end_exclusive) is Some(last) else {
+    return None
+  }
+  let range = markdown_native_range_create(line.as_node())
+  markdown_native_range_set_start(range, first.node, first.offset)
+  markdown_native_range_set_end(range, last.node, last.offset)
+  Some(range)
+}
 
 ///|
 fn markdown_measure_text_range_union(
@@ -1006,7 +1035,15 @@ fn markdown_measure_text_range_union(
   start : Int,
   end_exclusive : Int,
 ) -> Array[Double] {
-  markdown_measure_text_range_raw(line, start, end_exclusive, false)
+  guard markdown_native_text_range(line, start, end_exclusive) is Some(range) else {
+    return [0.0, 1.0]
+  }
+  let line_rect = line.get_bounding_client_rect()
+  let bounding_rect = markdown_native_range_bounding_rect(range)
+  [
+    bounding_rect.get_left() - line_rect.get_left(),
+    bounding_rect.get_width().max(1.0),
+  ]
 }
 
 ///|
@@ -1015,7 +1052,25 @@ fn markdown_measure_text_range_client_rects(
   start : Int,
   end_exclusive : Int,
 ) -> Array[Double] {
-  markdown_measure_text_range_raw(line, start, end_exclusive, true)
+  guard markdown_native_text_range(line, start, end_exclusive) is Some(range) else {
+    return [0.0, 0.0]
+  }
+  let line_rect = line.get_bounding_client_rect()
+  let computed_line_height = markdown_native_computed_line_height(line)
+  let line_height = if markdown_native_number_is_finite(computed_line_height) &&
+    computed_line_height > 0.0 {
+    computed_line_height
+  } else {
+    0.0
+  }
+  let geometry = [line_height, line_rect.get_height()]
+  for rect in markdown_native_range_client_rects(range) {
+    geometry.push(rect.get_left() - line_rect.get_left())
+    geometry.push(rect.get_top() - line_rect.get_top())
+    geometry.push(rect.get_width())
+    geometry.push(rect.get_height())
+  }
+  geometry
 }
 
 ///|
