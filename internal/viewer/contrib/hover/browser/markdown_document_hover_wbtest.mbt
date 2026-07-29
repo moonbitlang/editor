@@ -67,8 +67,34 @@ test "caret FFI exposes one text node while MoonBit owns UTF-16 tree mapping" {
   // "ab" = 2 UTF-16 units, the astral symbol = 2 more.
   assert_eq(displayed_boundary, 4)
 
-  // Element-container hits are rejected at the FFI boundary; no MoonBit block
-  // lookup or source request can be invented from them.
+  // Range endpoint lookup is also MoonBit-owned. Preserve the old TreeWalker
+  // bias at adjacent text-node boundaries and count astral text in UTF-16
+  // units.
+  guard markdown_text_boundary_at(line.as_node(), 2) is Some(prefix_end) else {
+    fail("expected prefix boundary")
+  }
+  assert_true(prefix_end.node.is_same_node(prefix.get_child(0)))
+  assert_eq(prefix_end.offset, 2)
+  guard markdown_text_boundary_at(line.as_node(), 4) is Some(target_boundary) else {
+    fail("expected nested text boundary")
+  }
+  assert_true(target_boundary.node.is_same_node(target.as_node()))
+  assert_eq(target_boundary.offset, 2)
+  assert_true(markdown_text_boundary_at(line.as_node(), 6) is None)
+
+  // WebKit's legacy Range-shaped caret answer passes through the same
+  // primitive accessors and MoonBit text-node validation.
+  markdown_caret_test_use_range_api()
+  markdown_caret_test_set_hit(target.as_node(), 1)
+  let range_hit = markdown_native_caret_hit(line, 10.0, 20.0)
+  assert_true(markdown_native_caret_hit_ok(range_hit))
+  assert_true(
+    markdown_native_caret_hit_node(range_hit).is_same_node(target.as_node()),
+  )
+  assert_eq(markdown_native_caret_hit_offset(range_hit), 1)
+
+  // Element-container hits are rejected before block lookup, so no source
+  // request can be invented from them.
   markdown_caret_test_set_hit(line.as_node(), 0)
   assert_false(
     markdown_native_caret_hit_ok(markdown_native_caret_hit(line, 10.0, 20.0)),
@@ -127,6 +153,17 @@ extern "js" fn markdown_caret_test_set_hit(
   #| (node, offset) => {
   #|   globalThis.document.__hitNode = node;
   #|   globalThis.document.__hitOffset = offset;
+  #| }
+
+///|
+extern "js" fn markdown_caret_test_use_range_api() -> Unit =
+  #| () => {
+  #|   const document = globalThis.document;
+  #|   document.caretPositionFromPoint = undefined;
+  #|   document.caretRangeFromPoint = () => ({
+  #|     startContainer: document.__hitNode,
+  #|     startOffset: document.__hitOffset,
+  #|   });
   #| }
 
 ///|
