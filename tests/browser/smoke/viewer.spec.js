@@ -195,6 +195,41 @@ test('renders MoonBit documentation comments through the real workbench', async 
   );
 });
 
+test('renders Markdown files as a whole-document reading surface', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await openWorkspaceFile(page, 'README.md');
+
+  const markdown = page.locator(
+    '.moonbit-viewer-markdown-comment[data-markdown-document="true"]',
+  );
+  await expect(markdown).toBeVisible();
+  await expect(markdown.locator('h1')).toHaveText('Fixture Workspace');
+  await expect(markdown.locator('strong')).toHaveText('whole document');
+  // Diago renders synchronously without network access; the Mermaid fence
+  // keeps its queued wrapper even when the pinned CDN is unreachable.
+  await expect(
+    markdown.locator('[data-diagram-language="diago"] svg').first(),
+  ).toBeVisible();
+  await expect(
+    markdown.locator('[data-diagram-language="mermaid"]'),
+  ).toHaveCount(1);
+  await expect(
+    markdown.locator('.monaco-tokenized-source', { hasText: 'readme_snippet' }),
+  ).toBeVisible();
+  // A whole document reads at a bounded measure and exposes no fold control.
+  await expect(markdown).toHaveAttribute('data-documentation-foldable', 'false');
+  await expect(
+    markdown.locator('.moonbit-viewer-markdown-comment-toggle'),
+  ).toBeHidden();
+  // The replaced source stays hidden while the model remains truthful.
+  await expect(page.locator('.view-lines')).not.toContainText('# Fixture Workspace');
+  expect(await page.evaluate(() => globalThis.__readonlyEditorSource)).toContain(
+    '# Fixture Workspace',
+  );
+});
+
 test('renders undocumented MoonBit item anchors as horizontal separators', async ({
   page,
 }) => {

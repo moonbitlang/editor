@@ -43,6 +43,13 @@ reusable `viewer`, file tree, remote transport, and browser-test observability.
 - Agent-feedback state is enabled per opened resource and persisted in
   `localStorage`; this reference host has no agent execution loop.
 
+Opened `.md` documents render as one whole-file Markdown block through the
+same provider seam and rendering pipeline as API documentation — tokenized
+code fences, Mermaid, and Diago included. The view projection cannot hide
+every model line, so the block spans `[1, line_count)`: a newline-terminated
+file leaves only its empty last line as source. One-line and blank documents
+keep their plain source view, and `.mbt.md` stays with the MoonBit provider.
+
 The MoonBit Markdown provider registration explicitly opts its API-document
 results into presentation folding. Multi-line documentation initially shows
 only its first source line; the adjacent accessible control expands or
