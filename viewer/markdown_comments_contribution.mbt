@@ -230,7 +230,7 @@ fn render_markdown_comment_body(
     options=MarkdownRenderOptions(
       language_id=model.get_language_id(),
       base_uri=model.uri,
-      action_handler=open_markdown_comment_link,
+      action_handler=@browser_markdown.open_external_link,
       code_block_renderer=render_markdown_comment_code_block,
       on_size_changed~,
       allow_remote_images=true,
@@ -345,13 +345,6 @@ fn render_markdown_comment_presentations(
     rendered_markdown, preview_rendered_markdown, fold_lifetime, diagram_viewports,
   )
 }
-
-///|
-extern "js" fn open_markdown_comment_link(uri : String) -> Unit =
-  #| uri => {
-  #|   const opened = globalThis.open?.(uri, "_blank", "noopener,noreferrer");
-  #|   if (opened) opened.opener = null;
-  #| }
 
 ///|
 /// Reconciles the current model's normalized Markdown blocks with the

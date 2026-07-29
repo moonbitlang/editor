@@ -50,6 +50,10 @@ pub struct RenderedMarkdown {
   element : @rdom.Element
   dispose : @base_common.Disposable
   has_code_block : Bool
+  /// The exact DOM-free projection produced by the same cmark parse that
+  /// generated this target's HTML. Document presentations retain this value
+  /// so later source-aware browser features never parse a second time.
+  projection : @markdown_core.MarkdownDocumentProjection
   priv dom_lifetime : MarkdownDomLifetime
 }
 
@@ -118,6 +122,7 @@ fn render_markdown_with_mermaid_loader(
     element,
     dispose: @base_common.Disposable::from(() => lifetime.dispose()),
     has_code_block: converted.has_code_block,
+    projection: converted.projection,
     dom_lifetime: lifetime,
   }
 }

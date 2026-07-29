@@ -127,6 +127,7 @@ fn css_sources() -> Array[String] {
     "viewer/contrib/quick_diff/browser/quick_diff.css",
     "viewer/contrib/agent_feedback/browser/agent_feedback.css",
     "viewer/contrib/markdown_comments/browser/markdown_comments.css",
+    "internal/viewer/browser/markdown_document/markdown_document.css",
   ]
 }
 

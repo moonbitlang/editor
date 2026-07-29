@@ -24,6 +24,7 @@
 /// disposed by `ModelData` teardown before a replacement can observe them.
 fn Viewer::attach_model(self : Viewer, model : @model.TextModel) -> Unit {
   let model_data_generation = self.model_slot.begin_attach_generation()
+  let presentation_kind = document_presentation_kind(model)
   let listeners_to_remove : Array[@base_common.Disposable] = []
   // `data-mode-id` on the container (`cew:1758`), removed at detach.
   match self.mount {
@@ -127,6 +128,11 @@ fn Viewer::attach_model(self : Viewer, model : @model.TextModel) -> Unit {
         }
         None => ()
       }
+      match self.current_markdown_document() {
+        Some(markdown) =>
+          markdown.replace_source(model.get_value(), model.get_version_id())
+        None => ()
+      }
       self.schedule_render()
       self.did_change_model_content.fire(event)
       self.complete_model_content_delivery(model, event.version_id)
@@ -206,14 +212,20 @@ fn Viewer::attach_model(self : Viewer, model : @model.TextModel) -> Unit {
       self.apply_scroll_change(Some(change))
     }),
   )
-  let browser = self.create_browser_presentation(model, view_model)
+  let browser = self.create_browser_presentation(
+    model, view_model, presentation_kind,
+  )
   self.model_slot.install_current({
     model,
     view_model,
+    presentation_kind,
     browser,
     attached_view,
     listeners_to_remove,
   })
+  if browser is Some(Markdown(_)) {
+    self.scroll_dirty = true
+  }
   self.emit_view_event(ViewFlushed)
   self.apply_view_model_layout(view_model)
   let build_finished = @base_browser.monotonic_now_ms()
@@ -239,19 +251,37 @@ fn Viewer::is_current_model_data_generation(
 }
 
 ///|
-/// Monaco's `_createView` + the widget re-add loop (`cew:1889-1912`): build
-/// the browser `View` inside the container, hook its per-view input, re-add
-/// every registered content/overlay widget, and stamp `data-uri`. The returned
-/// browser bundle pairs the View with its retained MouseHandler reference and
-/// empty render/reveal facts. `None` while unattached (the headless harness).
+/// Build the selected browser presentation inside the shared container.
+/// Markdown owns one document root and native scroll viewport. Code follows
+/// Monaco's `_createView` + widget re-add loop (`cew:1889-1912`), retaining its
+/// MouseHandler and empty render/reveal facts. `None` while headless.
 fn Viewer::create_browser_presentation(
   self : Viewer,
   model : @model.TextModel,
   view_model : @view_model.ViewModel,
+  presentation_kind : DocumentPresentationKind,
 ) -> BrowserPresentation? {
   let mounted = match self.mount {
     Headless => return None
     Mounted(mounted) => mounted
+  }
+  match presentation_kind {
+    MarkdownDocument(resource_kind) => {
+      let markdown = @markdown_document.MarkdownDocumentView(
+        model.get_value(),
+        model.get_version_id(),
+        model.get_language_id(),
+        model.uri,
+        resource_kind,
+        self.configuration.snapshot().options.theme,
+        () => self.on_markdown_document_scroll(),
+        focused => self.on_markdown_document_focus_changed(focused),
+        () => self.on_markdown_document_size_changed(),
+      )
+      mounted.install_presentation_root(markdown.root())
+      return Some(Markdown(markdown))
+    }
+    CodeDocument => ()
   }
   let read_view_zones_configuration = () => {
     self.configuration

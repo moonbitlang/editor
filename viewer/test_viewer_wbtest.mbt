@@ -60,6 +60,34 @@ fn with_test_viewer(
 /// fake DOM is still live and restores every global synchronously.
 extern "js" fn install_mounted_test_browser() -> Unit =
   #| () => {
+  #|   const voidTags = new Set([
+  #|     "AREA", "BASE", "BR", "COL", "EMBED", "HR", "IMG", "INPUT",
+  #|     "LINK", "META", "PARAM", "SOURCE", "TRACK", "WBR",
+  #|   ]);
+  #|   const decode = (value) => value
+  #|     .replaceAll("&quot;", "\"")
+  #|     .replaceAll("&#39;", "'")
+  #|     .replaceAll("&lt;", "<")
+  #|     .replaceAll("&gt;", ">")
+  #|     .replaceAll("&amp;", "&");
+  #|   const selectorMatches = (element, selector) => {
+  #|     const value = selector.trim();
+  #|     if (value.startsWith("[") && value.endsWith("]")) {
+  #|       const body = value.slice(1, -1);
+  #|       const equals = body.indexOf("=");
+  #|       if (equals >= 0) {
+  #|         const name = body.slice(0, equals);
+  #|         const expected = body.slice(equals + 1).replace(/^"|"$/g, "");
+  #|         return element.getAttribute(name) === expected;
+  #|       }
+  #|       return element.getAttribute(body) !== null;
+  #|     }
+  #|     if (value.startsWith(".")) {
+  #|       return (element.getAttribute("class") || "")
+  #|         .split(" ").filter(Boolean).includes(value.slice(1));
+  #|     }
+  #|     return value === "*" || element.nodeName === value.toUpperCase();
+  #|   };
   #|   class MountedTestElement extends EventTarget {
   #|     constructor(tag = "div", ownerDocument = null) {
   #|       super();
@@ -67,7 +95,6 @@ extern "js" fn install_mounted_test_browser() -> Unit =
   #|       this.nodeName = tag.toUpperCase();
   #|       this.attributes = new Map();
   #|       this.childNodes = [];
-  #|       this.children = this.childNodes;
   #|       this.parentNode = null;
   #|       this.ownerDocument = ownerDocument;
   #|       this.style = {
@@ -79,9 +106,16 @@ extern "js" fn install_mounted_test_browser() -> Unit =
   #|       this.scrollHeight = 1000;
   #|       this.clientWidth = 100;
   #|       this.clientHeight = 100;
+  #|       this.__scrollIntoView = null;
+  #|       if (this.nodeName === "TEMPLATE") {
+  #|         this.content = new MountedTestFragment(ownerDocument);
+  #|       }
+  #|     }
+  #|     get children() {
+  #|       return this.childNodes.filter((node) => node.nodeType === 1);
   #|     }
   #|     setAttribute(name, value) { this.attributes.set(name, String(value)); }
-  #|     getAttribute(name) { return this.attributes.get(name) ?? ""; }
+  #|     getAttribute(name) { return this.attributes.get(name) ?? null; }
   #|     removeAttribute(name) { this.attributes.delete(name); }
   #|     appendChild(child) {
   #|       if (child.parentNode) child.parentNode.removeChild(child);
@@ -91,9 +125,40 @@ extern "js" fn install_mounted_test_browser() -> Unit =
   #|     }
   #|     removeChild(child) {
   #|       this.childNodes = this.childNodes.filter((item) => item !== child);
-  #|       this.children = this.childNodes;
   #|       child.parentNode = null;
   #|       return child;
+  #|     }
+  #|     replaceChildren(...children) {
+  #|       for (const child of this.childNodes) child.parentNode = null;
+  #|       this.childNodes = [];
+  #|       for (const child of children) {
+  #|         if (child?.nodeType === 11) {
+  #|           for (const nested of Array.from(child.childNodes)) {
+  #|             this.appendChild(nested);
+  #|           }
+  #|           child.childNodes = [];
+  #|         } else {
+  #|           this.appendChild(child);
+  #|         }
+  #|       }
+  #|     }
+  #|     querySelectorAll(selector) {
+  #|       const selectors = selector.split(",");
+  #|       const result = [];
+  #|       const visit = (node) => {
+  #|         for (const child of node.childNodes || []) {
+  #|           if (
+  #|             child.nodeType === 1 &&
+  #|             selectors.some((value) => selectorMatches(child, value))
+  #|           ) result.push(child);
+  #|           visit(child);
+  #|         }
+  #|       };
+  #|       visit(this);
+  #|       return result;
+  #|     }
+  #|     querySelector(selector) {
+  #|       return this.querySelectorAll(selector)[0] || null;
   #|     }
   #|     contains(child) {
   #|       if (child === this) return true;
@@ -103,8 +168,27 @@ extern "js" fn install_mounted_test_browser() -> Unit =
   #|     remove() {
   #|       if (this.parentNode) this.parentNode.removeChild(this);
   #|     }
-  #|     focus() { this.dispatchEvent(new Event("focus")); }
-  #|     blur() { this.dispatchEvent(new Event("blur")); }
+  #|     focus() {
+  #|       if (this.ownerDocument) this.ownerDocument.activeElement = this;
+  #|       this.dispatchEvent(new Event("focus"));
+  #|     }
+  #|     blur() {
+  #|       if (this.ownerDocument?.activeElement === this) {
+  #|         this.ownerDocument.activeElement = null;
+  #|       }
+  #|       this.dispatchEvent(new Event("blur"));
+  #|     }
+  #|     scrollIntoView(options) { this.__scrollIntoView = options || true; }
+  #|     set innerHTML(value) {
+  #|       parseInto(
+  #|         this.nodeName === "TEMPLATE" ? this.content : this,
+  #|         value,
+  #|         this.ownerDocument,
+  #|       );
+  #|     }
+  #|     get textContent() {
+  #|       return this.childNodes.map((child) => child.textContent || "").join("");
+  #|     }
   #|     getBoundingClientRect() {
   #|       return {
   #|         x: 0, y: 0, left: 0, top: 0,
@@ -112,6 +196,81 @@ extern "js" fn install_mounted_test_browser() -> Unit =
   #|       };
   #|     }
   #|   }
+  #|   class MountedTestFragment {
+  #|     constructor(ownerDocument) {
+  #|       this.nodeType = 11;
+  #|       this.nodeName = "#document-fragment";
+  #|       this.ownerDocument = ownerDocument;
+  #|       this.parentNode = null;
+  #|       this.childNodes = [];
+  #|     }
+  #|     appendChild(child) {
+  #|       child.parentNode?.removeChild?.(child);
+  #|       this.childNodes.push(child);
+  #|       child.parentNode = this;
+  #|       return child;
+  #|     }
+  #|     removeChild(child) {
+  #|       this.childNodes = this.childNodes.filter((item) => item !== child);
+  #|       child.parentNode = null;
+  #|       return child;
+  #|     }
+  #|     replaceChildren() {
+  #|       for (const child of this.childNodes) child.parentNode = null;
+  #|       this.childNodes = [];
+  #|     }
+  #|     querySelectorAll(selector) {
+  #|       const holder = new MountedTestElement("div", this.ownerDocument);
+  #|       holder.childNodes = this.childNodes;
+  #|       return holder.querySelectorAll(selector);
+  #|     }
+  #|   }
+  #|   class MountedTestText {
+  #|     constructor(ownerDocument, value) {
+  #|       this.nodeType = 3;
+  #|       this.nodeName = "#text";
+  #|       this.nodeValue = String(value);
+  #|       this.parentNode = null;
+  #|       this.ownerDocument = ownerDocument;
+  #|     }
+  #|     get textContent() { return this.nodeValue; }
+  #|   }
+  #|   const parseInto = (root, html, ownerDocument) => {
+  #|     root.replaceChildren();
+  #|     const stack = [root];
+  #|     const tokens =
+  #|       html.match(/<!--[\s\S]*?-->|<\/?[A-Za-z][^>]*>|[^<]+/g) || [];
+  #|     for (const token of tokens) {
+  #|       if (token.startsWith("<!--")) continue;
+  #|       if (!token.startsWith("<")) {
+  #|         stack.at(-1).appendChild(
+  #|           new MountedTestText(ownerDocument, decode(token)),
+  #|         );
+  #|         continue;
+  #|       }
+  #|       if (token.startsWith("</")) {
+  #|         if (stack.length > 1) stack.pop();
+  #|         continue;
+  #|       }
+  #|       const open =
+  #|         token.match(/^<([A-Za-z][A-Za-z0-9-]*)([\s\S]*?)\/?\s*>$/);
+  #|       if (!open) continue;
+  #|       const element = ownerDocument.createElement(open[1]);
+  #|       const pattern =
+  #|         /([^\s=/>]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
+  #|       let match;
+  #|       while ((match = pattern.exec(open[2]))) {
+  #|         element.setAttribute(
+  #|           match[1],
+  #|           decode(match[2] ?? match[3] ?? match[4] ?? ""),
+  #|         );
+  #|       }
+  #|       stack.at(-1).appendChild(element);
+  #|       if (!voidTags.has(element.nodeName) && !token.endsWith("/>")) {
+  #|         stack.push(element);
+  #|       }
+  #|     }
+  #|   };
   #|   globalThis.__mountedTestOriginalDocument = globalThis.document;
   #|   globalThis.__mountedTestOriginalElement = globalThis.Element;
   #|   globalThis.__mountedTestOriginalRequestAnimationFrame =
@@ -129,16 +288,12 @@ extern "js" fn install_mounted_test_browser() -> Unit =
   #|   const ownerDocument = new EventTarget();
   #|   ownerDocument.nodeType = 9;
   #|   ownerDocument.defaultView = globalThis;
+  #|   ownerDocument.activeElement = null;
   #|   ownerDocument.body = new MountedTestElement("body", ownerDocument);
   #|   ownerDocument.createElement = (tag) =>
   #|     new MountedTestElement(tag, ownerDocument);
-  #|   ownerDocument.createTextNode = (value) => ({
-  #|     nodeType: 3,
-  #|     nodeName: "#text",
-  #|     nodeValue: String(value),
-  #|     parentNode: null,
-  #|     ownerDocument,
-  #|   });
+  #|   ownerDocument.createTextNode = (value) =>
+  #|     new MountedTestText(ownerDocument, value);
   #|   globalThis.document = ownerDocument;
   #|   globalThis.Element = MountedTestElement;
   #|   globalThis.requestAnimationFrame = (callback) => {

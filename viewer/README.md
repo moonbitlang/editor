@@ -61,12 +61,19 @@ viewer.slot.data -> model: borrows readonly
   clearing invalidates the generation before cleanup, then disposes the old
   model-scoped listeners, exact model-owned attached-view handle, optional
   `BrowserPresentation`, and `ViewModel` in order. Attachment acquires the
-  handle before `ViewModel` construction and, when mounted, currently creates
-  the closed `Code(CodeBrowserData)` variant. That payload cannot hold a `View`
-  without its retained mouse handler and render/reveal facts; the `View`
-  remains the handler's sole disposal owner. Model swaps reset scroll and
-  feature model state; use `save_view_state`/`restore_view_state` when the host
-  wants persistence.
+  handle before `ViewModel` construction and selects one private closed
+  presentation kind. An exact lowercase URI-path `.md` suffix (including
+  `.mbt.md`) or the exact `markdown` language id selects
+  `Markdown(MarkdownDocumentView)`; every other model selects
+  `Code(CodeBrowserData)`. URI matching does not include query/fragment text
+  and is case-sensitive. Headless attachments retain the same kind without
+  constructing DOM. The Code payload cannot hold a `View` without its retained
+  mouse handler and render/reveal facts; the `View` remains the handler's sole
+  disposal owner. The Markdown payload owns a focusable root, native viewport,
+  replaceable article, persistent overlay mount, same-parse source projection,
+  and monotonic projection generation. Model swaps reset scroll and feature
+  model state; use `save_view_state`/`restore_view_state` when the host wants
+  persistence.
 - Contributions are created once per `Viewer` and disposed with it.
   `Viewer.contributions` is the `EditorContributions` owner, and its `instances`
   map is the only per-Viewer instance store. Each central entry owns one
@@ -99,6 +106,20 @@ viewer.slot.data -> model: borrows readonly
   Code presentation. With another presentation active, add/remove still update
   the Viewer-lifetime registration map but perform no DOM work. Content widgets
   are an internal code-view-part seam; hover owns the current implementation.
+
+The active presentation owns DOM lookup, focus, layout, theme, scroll
+position/extents, reveal, visible ranges, render publication, and root
+lifecycle. Markdown content is always rendered from the original `TextModel`
+snapshot and URI; `set_value` replaces only the article contents while
+retaining the root, viewport, and overlay mount. Theme changes perform another
+same-source projection replacement so tokenized fences and Mermaid use the
+current theme. Markdown reveal converts the validated model range to an
+absolute source offset through `TextSnapshot` and selects the containing or
+nearest preceding source anchor. Visible ranges convert intersecting rendered
+anchors back through the same snapshot; a document with no renderable anchor
+falls back to its full model range. Cursor, selection, ViewZones, mouse events,
+folding, quick diff, feedback widgets, Markdown comments, and code overlays
+remain dormant on the Markdown variant.
 
 ## Public surface
 

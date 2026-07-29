@@ -958,3 +958,18 @@ checks do not replace the focused evidence above.
   pairs and total UTF-16 length; locations therefore continue to index the
   original snapshot. JS and native focused suites each passed 26 tests, and
   the browser Markdown consumer suite passed 12 tests.
+- 2026-07-29, Milestone 3: `Viewer` now privately selects an editor-owned
+  Markdown document presentation by exact URI path/language rules while
+  retaining the original `TextModel` as source truth. The lower JS-only view
+  owns an independent focusable root, native viewport, replaceable article,
+  persistent overlay mount, same-parse projection, full-host layout, and
+  source-anchor routing. Model/theme refreshes retain DOM capabilities and
+  advance the projection generation; Code-only contributions stay dormant.
+  Two mounted Viewers over one model proved independent DOM, scroll, and
+  disposal lifetimes. The public Viewer interface retained SHA-256
+  `0b1ef32ddc28847e96dc826455ac7bb7f26b22942279d6e616e3fa4f1cea7595`.
+  Focused JS suites passed 247 Viewer tests, 2 Markdown-document tests, and 12
+  browser-Markdown tests. The full component suite passed 76 tests with the
+  existing opt-in live-network case skipped, including real Chromium
+  rendering, tokenization, source/theme replacement, full-width resize, swap,
+  and disposal coverage.

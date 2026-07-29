@@ -577,8 +577,8 @@ pub fn Viewer::handle_initialized(self : Viewer) -> Unit {
   if self.disposed {
     return
   }
-  guard self.model_slot.current is Some(model_data) else { return }
-  model_data.view_model.visible_lines_stabilized()
+  guard self.model_slot.current is Some(_) else { return }
+  self.stabilize_active_scroll()
 }
 
 ///|

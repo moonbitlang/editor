@@ -62,17 +62,28 @@ fn ViewerModelSlot::is_current_generation(
 priv struct ModelData {
   model : @model.TextModel
   view_model : @view_model.ViewModel
+  presentation_kind : DocumentPresentationKind
   browser : BrowserPresentation?
   attached_view : @model.AttachedViewImpl
   listeners_to_remove : Array[@base_common.Disposable]
 }
 
 ///|
-/// The private closed family of mounted document presentations. Milestone 1
-/// makes the existing code surface explicit; later variants must join these
-/// exhaustive root helpers instead of leaking a hidden code `View`.
+/// Private automatic document-presentation selection. URI matching is exact
+/// and case-sensitive; an in-memory/untitled `markdown` model also selects the
+/// document view without inventing a file suffix.
+priv enum DocumentPresentationKind {
+  CodeDocument
+  MarkdownDocument(@markdown_core.MarkdownResourceKind)
+}
+
+///|
+/// The private closed family of mounted document presentations. Every root,
+/// focus, theme, and lifecycle operation routes exhaustively through this
+/// family instead of assuming a hidden code `View`.
 priv enum BrowserPresentation {
   Code(CodeBrowserData)
+  Markdown(@markdown_document.MarkdownDocumentView)
 }
 
 ///|
@@ -124,6 +135,7 @@ fn CodeBrowserData::sync_rendered_window(
 fn BrowserPresentation::root(self : BrowserPresentation) -> @rdom.Element {
   match self {
     Code(code) => code.view.root
+    Markdown(markdown) => markdown.root()
   }
 }
 
@@ -137,6 +149,7 @@ fn BrowserPresentation::apply_theme(
       code.view.root.set_attribute("data-theme", theme)
       code.view.apply_squiggly_theme()
     }
+    Markdown(markdown) => markdown.apply_theme(theme)
   }
 }
 
@@ -156,6 +169,17 @@ fn BrowserPresentation::contains_active_element(
 fn BrowserPresentation::code(self : BrowserPresentation) -> CodeBrowserData? {
   match self {
     Code(code) => Some(code)
+    Markdown(_) => None
+  }
+}
+
+///|
+fn BrowserPresentation::markdown(
+  self : BrowserPresentation,
+) -> @markdown_document.MarkdownDocumentView? {
+  match self {
+    Code(_) => None
+    Markdown(markdown) => Some(markdown)
   }
 }
 
@@ -163,6 +187,7 @@ fn BrowserPresentation::code(self : BrowserPresentation) -> CodeBrowserData? {
 fn BrowserPresentation::dispose(self : BrowserPresentation) -> Unit {
   match self {
     Code(code) => code.view.dispose()
+    Markdown(markdown) => markdown.dispose()
   }
 }
 
@@ -186,6 +211,16 @@ fn Viewer::active_presentation_root(self : Viewer) -> @rdom.Element? {
 fn Viewer::current_code_browser_data(self : Viewer) -> CodeBrowserData? {
   match self.current_browser_presentation() {
     Some(presentation) => presentation.code()
+    None => None
+  }
+}
+
+///|
+fn Viewer::current_markdown_document(
+  self : Viewer,
+) -> @markdown_document.MarkdownDocumentView? {
+  match self.current_browser_presentation() {
+    Some(presentation) => presentation.markdown()
     None => None
   }
 }

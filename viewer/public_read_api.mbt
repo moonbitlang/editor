@@ -42,10 +42,21 @@ pub fn Viewer::get_visible_ranges(self : Viewer) -> Array[@base_common.Range] {
 fn Viewer::active_presentation_visible_ranges(
   self : Viewer,
 ) -> Array[@base_common.Range] {
-  if self.is_code_presentation() {
-    self.code_visible_ranges()
-  } else {
-    []
+  match (self.current_markdown_document(), self.get_model()) {
+    (Some(markdown), Some(model)) => {
+      let source_ranges = markdown.visible_source_ranges()
+      if source_ranges.is_empty() && !markdown.has_rendered_source_anchors() {
+        [model.get_full_model_range()]
+      } else {
+        source_ranges.map(source_range => model.snapshot.range_of(source_range))
+      }
+    }
+    _ =>
+      if self.is_code_presentation() {
+        self.code_visible_ranges()
+      } else {
+        []
+      }
   }
 }
 
