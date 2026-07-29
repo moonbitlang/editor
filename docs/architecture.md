@@ -316,8 +316,9 @@ server/host/main            (module moonbitlang/editor-server)
 ```
 
 The native server is its own `moon.work` member with
-`preferred_target = "native"`, so `moon -C server build|run|test` needs no
-target flags. `shell/workspace` and `shell/remote_protocol` are the shared
+`preferred_target = "native"`, so the workspace-root `moon build`,
+`moon run server/host/main`, and `moon test server/...` need no target
+flags. `shell/workspace` and `shell/remote_protocol` are the shared
 host-shell contracts both the browser workbench and the server module import;
 they live outside `internal/` because workspace members cannot import another
 module's internal packages, and they stay excluded from the published package.
