@@ -2,12 +2,47 @@
 
 Multi-target safe Markdown-to-HTML conversion shared by browser features.
 
-The package owns the cmark boundary. `MarkdownCodeBlock` is a MoonBit value,
-so callers can synchronously replace fenced-code rendering without importing
-cmark types. Every conversion uses the safe HTML renderer; a conversion error
-falls back to one escaped plaintext paragraph. `MarkdownRenderFact` reports
-whether the input contained a code block independently of whether a caller
-overrode its HTML.
+The package owns the cmark boundary. One parse with `layout=true` and
+`locs=true` supplies both safe HTML and a `MarkdownDocumentProjection`, so the
+rendered document and its source facts cannot describe different parses.
+Callers must pass the exact LF-normalized `TextSnapshot::get_value`; this
+package does not create a second coordinate space by normalizing input itself.
+The current cmark inline cleaner cannot safely consume an isolated low
+surrogate, so the parser boundary replaces each isolated surrogate unit with
+one U+FFFD while preserving valid pairs and total UTF-16 length. Locations
+still index the original snapshot exactly, and HTML/projection use that same
+sanitized parse.
+
+`MarkdownCodeBlock`, `MarkdownCodeLine`, and `MarkdownBlockAnchor` are
+cmark-independent MoonBit values. Their ranges and boundary offsets are
+zero-based, half-open UTF-16 coordinates over that exact input. Each code line
+maps every displayed boundary back to the source. Leading spaces synthesized
+by cmark for partially consumed indentation are retained for static rendering
+but have `None` boundary entries. An unrepresentable displayed/source
+relationship likewise remains visible with an entirely non-semantic map
+instead of guessing a provider position.
+
+Top-level blocks that the current safe renderer produces as one root HTML
+element receive an explicit `rendered_element_index`. Nested anchors and
+source blocks that produce comments, text, or no in-place element receive
+`None`; blank lines, link definitions, and omitted raw HTML therefore never
+shift a root-element ordinal. Code-block identity and per-line projection are
+independent of that DOM association. For a code block, the ordinal is valid
+for the default renderer and the current one-root code-override contract; the
+package-owned Diago, tokenized-code, and Mermaid paths all satisfy that
+contract. A caller that returns zero or multiple root elements must not use the
+ordinal for DOM association.
+
+`MarkdownResourceKind` keeps outer resource policy typed. A block opts into
+MoonBit Markdown semantics only for a `MoonBitMarkdown` resource and a full
+info string whose first two nonempty ASCII-space-separated tokens are exactly
+`mbt check` or `moonbit check`. Repeated spaces and trailing tokens are
+accepted; case changes and tabs are not.
+
+Every conversion uses the safe HTML renderer. A conversion error falls back to
+one escaped plaintext paragraph, reports no code block, and returns an empty
+projection. `MarkdownRenderFact` otherwise reports whether rendering visited a
+code block independently of whether a caller overrode its HTML.
 
 The exact lowercase `d2` and `diago` fences are built-in synchronous aliases
 for the same diagram adapter. They compile source directly to wrapped SVG
@@ -47,6 +82,6 @@ in `internal/viewer/browser/markdown`.
 Run the focused suite on both supported targets:
 
 ```sh
-moon test internal/viewer/markdown --target js
-moon test internal/viewer/markdown --target native
+MOON_WORK=off moon test --target js internal/viewer/markdown
+MOON_WORK=off moon test --target native internal/viewer/markdown
 ```
