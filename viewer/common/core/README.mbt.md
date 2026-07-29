@@ -184,7 +184,7 @@ test "an empty selection is a caret" {
   debug_inspect(
     (
       @core.Selection(at, at).is_empty(),
-      @core.Selection(at, @base_common.Position(3, 8)).is_empty(),
+      @core.Selection(at, Position(3, 8)).is_empty(),
     ),
     content=(
       #|(true, false)
@@ -199,10 +199,7 @@ order and return a new value; they never mutate the receiver.
 ```mbt check
 ///|
 test "endpoint updates are copies in document order" {
-  let original = @core.Selection(
-    @base_common.Position(2, 1),
-    @base_common.Position(4, 3),
-  )
+  let original = @core.Selection(Position(2, 1), Position(4, 3))
   let moved = original.set_end_position(9, 1)
   debug_inspect(
     (original, moved),

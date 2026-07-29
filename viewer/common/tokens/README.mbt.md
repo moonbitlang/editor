@@ -163,7 +163,7 @@ test "slicing produces a view over the same underlying tokens" {
     [("hello", 1U), (" ", 0U), ("world", 2U)],
     codec,
   )
-  let sliced = line.slice_zero_copy(@base_common.OffsetRange(6, 11))
+  let sliced = line.slice_zero_copy(OffsetRange(6, 11))
   debug_inspect(
     (
       sliced.get_count(),
@@ -188,7 +188,7 @@ test "injected text splices new tokens into a copy" {
     [("value", 1U)],
     codec,
   )
-  let with_hint = line.with_inserted([@tokens.InsertedToken(5, " : Int", 3U)])
+  let with_hint = line.with_inserted([InsertedToken(5, " : Int", 3U)])
   debug_inspect(
     (
       line.get_line_content(),
@@ -232,7 +232,7 @@ tokenizer's critical path.
 ```mbt check
 ///|
 test "an untokenized line reads back as one default token" {
-  let store = @tokens.ContiguousTokensStore(@services.LanguageIdCodec())
+  let store = @tokens.ContiguousTokensStore(LanguageIdCodec())
   let missing = store.get_tokens("moonbit", 0, "let x = 1")
   debug_inspect(
     (
@@ -254,7 +254,7 @@ asks for the equality check — the unchecked lane always reports `false`.
 ```mbt check
 ///|
 test "set_tokens reports change only when equality is checked" {
-  let store = @tokens.ContiguousTokensStore(@services.LanguageIdCodec())
+  let store = @tokens.ContiguousTokensStore(LanguageIdCodec())
   let words = [3U, 1U, 4U, 0U]
   debug_inspect(
     (
@@ -278,7 +278,7 @@ does.
 ```mbt check
 ///|
 test "flush returns the store to its untokenized state" {
-  let store = @tokens.ContiguousTokensStore(@services.LanguageIdCodec())
+  let store = @tokens.ContiguousTokensStore(LanguageIdCodec())
   store.set_tokens("moonbit", 0, 4, Some([4U, 1U]), true) |> ignore
   let before = store.get_tokens("moonbit", 0, "abcd").get_metadata(0)
   store.flush()
@@ -334,7 +334,7 @@ test "a slice may split a surrogate pair, matching Monaco strings" {
     codec,
   )
   // The emoji is two UTF-16 units, so offset 1 is inside it.
-  let split = line.slice_zero_copy(@base_common.OffsetRange(1, 3))
+  let split = line.slice_zero_copy(OffsetRange(1, 3))
   debug_inspect(
     (line.get_text_length(), split.get_line_content().length()),
     content=(
