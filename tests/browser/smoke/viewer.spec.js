@@ -31,6 +31,60 @@ async function unfoldMainBody(page) {
   await collapsed.click({ force: true });
 }
 
+async function moveFromMarkdownProseToTextRange(
+  page,
+  articleSelector,
+  text,
+  utf16Delta,
+) {
+  const article = page.locator(articleSelector);
+  const prosePoint = await article.evaluate((article) => {
+    const prose = article.querySelector('h1');
+    if (!prose) throw new Error('Markdown prose heading not found');
+    prose.scrollIntoView({ block: 'center', inline: 'nearest' });
+    const rect = prose.getBoundingClientRect();
+    return {
+      x: rect.left + Math.max(Math.min(rect.width / 2, 8), 1),
+      y: rect.top + Math.max(rect.height / 2, 1),
+    };
+  });
+  await page.mouse.move(prosePoint.x, prosePoint.y);
+  await page.waitForTimeout(25);
+  const targetPoint = await article.evaluate(
+    (article, { text, utf16Delta }) => {
+      const walker = document.createTreeWalker(
+        article,
+        NodeFilter.SHOW_TEXT,
+      );
+      let node;
+      while ((node = walker.nextNode())) {
+        const index = String(node.textContent || '').indexOf(text);
+        if (index < 0) continue;
+        node.parentElement?.scrollIntoView({
+          block: 'center',
+          inline: 'nearest',
+        });
+        const boundary = Math.min(
+          String(node.textContent || '').length,
+          index + utf16Delta,
+        );
+        const range = document.createRange();
+        range.setStart(node, boundary);
+        range.setEnd(node, Math.min(boundary + 1, node.textContent.length));
+        const rect = range.getBoundingClientRect();
+        return {
+          x: rect.left + Math.max(rect.width / 2, 1),
+          y: rect.top + Math.max(rect.height / 2, 1),
+        };
+      }
+      throw new Error(`Markdown text node not found: ${text}`);
+    },
+    { text, utf16Delta },
+  );
+  await page.waitForTimeout(25);
+  await page.mouse.move(targetPoint.x, targetPoint.y);
+}
+
 test('starts from native-served static assets', async ({ page }) => {
   const requestedPaths = [];
   page.on('request', (request) => {
@@ -195,41 +249,6 @@ test('renders MoonBit documentation comments through the real workbench', async 
   );
 });
 
-test('renders Markdown files as a whole-document reading surface', async ({
-  page,
-}) => {
-  await page.goto('/');
-  await openWorkspaceFile(page, 'README.md');
-
-  const markdown = page.locator(
-    '.moonbit-viewer-markdown-comment[data-markdown-document="true"]',
-  );
-  await expect(markdown).toBeVisible();
-  await expect(markdown.locator('h1')).toHaveText('Fixture Workspace');
-  await expect(markdown.locator('strong')).toHaveText('whole document');
-  // Diago renders synchronously without network access; the Mermaid fence
-  // keeps its queued wrapper even when the pinned CDN is unreachable.
-  await expect(
-    markdown.locator('[data-diagram-language="diago"] svg').first(),
-  ).toBeVisible();
-  await expect(
-    markdown.locator('[data-diagram-language="mermaid"]'),
-  ).toHaveCount(1);
-  await expect(
-    markdown.locator('.monaco-tokenized-source', { hasText: 'readme_snippet' }),
-  ).toBeVisible();
-  // A whole document reads at full width and exposes no fold control.
-  await expect(markdown).toHaveAttribute('data-documentation-foldable', 'false');
-  await expect(
-    markdown.locator('.moonbit-viewer-markdown-comment-toggle'),
-  ).toBeHidden();
-  // The replaced source stays hidden while the model remains truthful.
-  await expect(page.locator('.view-lines')).not.toContainText('# Fixture Workspace');
-  expect(await page.evaluate(() => globalThis.__readonlyEditorSource)).toContain(
-    '# Fixture Workspace',
-  );
-});
-
 test('renders undocumented MoonBit item anchors as horizontal separators', async ({
   page,
 }) => {
@@ -262,6 +281,90 @@ test('renders undocumented MoonBit item anchors as horizontal separators', async
   await expect(page.locator('.view-lines')).not.toContainText('///|');
   expect(await page.evaluate(() => globalThis.__readonlyEditorSource)).toContain(
     '///|\npub struct StartupEvent',
+  );
+});
+
+test('opens Markdown documents through the native protocol and hovers literate MoonBit', async ({
+  page,
+}) => {
+  test.slow();
+  await page.goto('/');
+  await openMainFixture(page);
+
+  // The workbench supplies the untouched URI-backed model. Public Viewer
+  // routing alone replaces the code surface with the Markdown presentation.
+  await openWorkspaceFile(page, 'README.md');
+  await expect(page.locator('.editor-shell')).toHaveAttribute(
+    'data-source-uri',
+    'readonly-remote://workspace/README.md',
+  );
+  expect(
+    await page.evaluate(() => globalThis.__readonlyEditorModel),
+  ).toMatchObject({
+    uri: 'readonly-remote://workspace/README.md',
+    displayName: 'README.md',
+    languageId: 'markdown',
+  });
+  expect(await page.evaluate(() => globalThis.__readonlyEditorSource)).toContain(
+    '# Fixture workspace',
+  );
+  const markdown = page.locator(
+    '.viewer-host > .moonbit-viewer-markdown-document',
+  );
+  await expect(markdown).toBeVisible();
+  await expect(markdown).toHaveAttribute(
+    'data-source-uri',
+    'readonly-remote://workspace/README.md',
+  );
+  await expect(markdown.locator('h1')).toHaveText('Fixture workspace');
+  await expect(markdown).toContainText('reusable public Viewer');
+  await expect(page.locator('.viewer-host > .monaco-editor')).toHaveCount(0);
+
+  // `.mbt.md` keeps the original MoonBit model identity. A real pointer over
+  // the compiler-recognized fence symbol reaches the native `moon ide hover`
+  // adapter and returns the compiler's original source range.
+  await openWorkspaceFile(page, 'src/literate.mbt.md');
+  await expect(page.locator('.editor-shell')).toHaveAttribute(
+    'data-source-uri',
+    'readonly-remote://workspace/src/literate.mbt.md',
+  );
+  const literateModel = await page.evaluate(
+    () => globalThis.__readonlyEditorModel,
+  );
+  expect(literateModel).toMatchObject({
+    uri: 'readonly-remote://workspace/src/literate.mbt.md',
+    displayName: 'src/literate.mbt.md',
+    languageId: 'moonbit',
+  });
+  await expect(markdown).toHaveAttribute(
+    'data-source-uri',
+    'readonly-remote://workspace/src/literate.mbt.md',
+  );
+  await expect(
+    markdown.locator('[data-markdown-code-block="0"]'),
+  ).toHaveAttribute('data-markdown-semantic', 'moonbit-check');
+  const symbol = markdown
+    .locator('[data-markdown-code-line]', { hasText: 'literate_answer' })
+    .locator('span', { hasText: 'literate_answer' })
+    .first();
+  await expect(symbol).toBeVisible();
+  const hover = page.locator(
+    '.moonbit-viewer-markdown-hover-widget[data-markdown-hover-visible="true"]',
+  );
+  await moveFromMarkdownProseToTextRange(
+    page,
+    '.viewer-host > .moonbit-viewer-markdown-document ' +
+      '.moonbit-viewer-markdown-document-article',
+    'literate_answer',
+    6,
+  );
+  await expect(hover).toBeVisible({ timeout: 60_000 });
+  await expect(hover).toContainText('fn literate_answer() -> Int', {
+    timeout: 60_000,
+  });
+  await expect(hover).toHaveAttribute(
+    'data-markdown-hover-returned-range',
+    '4:4-4:19',
   );
 });
 

@@ -35,6 +35,27 @@ test('runs the viewer and tree from in-memory providers without a server', async
     'true',
   );
 
+  // The same public Viewer instance selects its Markdown presentation from an
+  // ordinary URI-backed in-memory model. No workbench or host-side Markdown
+  // parsing/presentation branch participates.
+  await page.locator(workspaceItem('README.md')).click();
+  await expect(page.locator('.editor-shell')).toHaveAttribute('data-status', 'ready');
+  await expect(page.locator(workspaceItem('README.md'))).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  const markdown = page.locator(
+    '.viewer-host > .moonbit-viewer-markdown-document',
+  );
+  await expect(markdown).toBeVisible();
+  await expect(markdown).toHaveAttribute(
+    'data-source-uri',
+    'memory://workspace/README.md',
+  );
+  await expect(markdown.locator('h1')).toHaveText('Embedded Markdown document');
+  await expect(markdown.locator('strong')).toHaveText('Viewer');
+  await expect(page.locator('.viewer-host > .monaco-editor')).toHaveCount(0);
+
   expect(websockets).toEqual([]);
 });
 

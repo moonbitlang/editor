@@ -31,6 +31,12 @@ reusable `viewer`, file tree, remote transport, and browser-test observability.
   external Viewer embedders remain expanded by default.
   Watched-file replacements install a fresh model and therefore reapply the
   policy; subsequent folding interactions on that model remain user-controlled.
+- The workbench is presentation-agnostic. `document_to_text_model` preserves
+  the snapshot URI, language id, revision, and text, and
+  `set_workbench_model` always uses the same `Viewer::set_model` path. The
+  Viewer alone selects Code or Markdown, so `.md` and `.mbt.md` add no shell
+  parser, projection, or presentation branch. Remote language providers and
+  markers continue to target that original model.
 - The protocol client correlates in-flight requests by ID and resolves all
   pending requests on connection loss. Watch results and diagnostics are push
   paths. Remote hover and diagnostics are accepted only for the exact

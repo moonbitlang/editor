@@ -33,6 +33,23 @@ for performance investigation and perf-harness changes.
   also mounts test-only normal and overflowing `ContentWidgets` in a real
   same-origin iframe whose scroll and viewport deliberately differ from the
   top window, covering owner-window width/scroll and exact 15px/22px edges.
+- `component.html?markdownDocument=1` mounts two public Viewers over shared
+  services and an ordinary `.mbt.md` model. The suite uses real
+  Range-derived `page.mouse` positions over semantic nested fence text; it
+  never bypasses presentation routing or caret mapping through a test control.
+  `__markdownDocumentControls` performs model replacement through public
+  `Viewer::set_model`, releases deterministic async provider gates, mutates
+  fixture inputs, and exposes readback. Assertions cover
+  original model identity/URI/revision, 1-based provider positions, 0-based
+  wire offsets, returned ranges, diagnostic projection, unsafe pointer zones,
+  independent Viewer owners, and stale completion rejection across
+  pointer/content/theme/model/disposal boundaries.
+- `smoke/viewer.spec.js` opens `README.md` and `src/literate.mbt.md` from the
+  deterministic workspace fixture through the sidebar and native protocol.
+  The host supplies unchanged URI-backed models; the Viewer alone selects
+  Markdown, and the `.mbt.md` pointer reaches native `moon ide hover`.
+  `smoke/embed.spec.js` proves the same selection through the in-memory
+  standalone embed with no workbench, remote protocol, or WebSocket.
 - Perf tests may enforce deterministic correctness contracts while attaching
   structured timing evidence. `scroll_frame_parity.spec.js` wraps rAF before
   either implementation loads, preserves raw state/render/mutation records,
@@ -56,6 +73,16 @@ for performance investigation and perf-harness changes.
 - Tree rows: `.workspace-sidebar [data-workspace-id]` with
   `data-workspace-kind`, `aria-expanded`, and `aria-selected`.
 - Viewer: `.monaco-editor.readonly-editor` and `.view-line[data-line]`.
+- Markdown presentation:
+  `.moonbit-viewer-markdown-document`,
+  `.moonbit-viewer-markdown-document-viewport`,
+  `.moonbit-viewer-markdown-document-article`, and
+  `.moonbit-viewer-markdown-document-overlays`. Source-bearing semantic rows
+  use `[data-markdown-code-line]` under a
+  `[data-markdown-code-block][data-markdown-semantic="moonbit-check"]`.
+  Diagnostics use `.moonbit-viewer-markdown-diagnostic`; the retained widget
+  uses `.moonbit-viewer-markdown-hover-widget` and records accepted original
+  model/source/wire/range facts in `data-markdown-hover-*` attributes.
 - Product observability: `__readonlyEditorEvent`, `__readonlyEditorModel`,
   `__readonlyEditorDocument`, `__readonlyEditorSource`,
   `__readonlyEditorCopiedText`, and `__readonlyEditorCopiedHtml`.
@@ -68,6 +95,12 @@ MoonBit scenarios are built by `scripts/build-browser-tests.mbtx` into
 Only the perf build requires the pinned VS Code checkout at
 `vscode/src/vs/editor/editor.main.ts`; the routine browser-correctness build
 does not build the Monaco oracle.
+
+Markdown diagnostic overlays assert the live resolved class/range/z-index
+policy and `showUnused` underline. They intentionally do not claim Code's
+`squiggly-inline-unnecessary` opacity or
+`squiggly-inline-deprecated` strike-through: those effects mutate source
+glyphs and are explicitly deferred for the readonly Markdown projection.
 
 `support/test.js` captures runner logs, console/page/request/HTTP failures,
 traces, and failure screenshots. Set `READONLY_EDITOR_TEST_VERBOSE=1` or

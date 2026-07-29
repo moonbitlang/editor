@@ -9,7 +9,10 @@ or WebSocket participates.
 - Startup registers the MoonBit tokenizer in the default `Languages` registry.
 - `FileTree.on_open` asks the in-memory host for a new
   `viewer/common/model.TextModel`, calls `Viewer::set_model`, then invokes the
-  separate `Viewer::handle_initialized` boundary after synchronous model setup.
+  separate `Viewer::handle_initialized` boundary after synchronous model
+  setup. That same path accepts Code, `.md`, and `.mbt.md` models; the Viewer
+  owns automatic presentation selection, so the embed has no Markdown parser
+  or presentation adapter.
 - `Viewer::on_did_change_model` captures the attached URI and schedules one
   native animation frame after the Viewer has queued its own DOM flush. The
   callback rechecks the current model URI, drops stale swaps, then drives
@@ -26,5 +29,6 @@ and container/view DOM contracts compiling without importing browser internals.
 ## Validation
 
 `just build-moon-web` emits `web/dist/embed.{html,mjs}`. The native server serves
-`/embed.html`; `tests/browser/smoke/embed.spec.js` covers render, lazy expansion,
-navigation, stale ready callbacks, and the absence of a WebSocket.
+`/embed.html`; `tests/browser/smoke/embed.spec.js` covers Code and in-memory
+Markdown rendering, lazy expansion, navigation, stale ready callbacks, and the
+absence of a WebSocket.

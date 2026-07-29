@@ -64,9 +64,10 @@ viewer.slot.data -> model: borrows readonly
   disposes semantic/render lifetimes while the root is mounted, removes that
   inert root, then releases listeners, the attached-view handle, and the
   ViewModel. Attachment acquires the handle before `ViewModel` construction and
-  selects one private closed presentation kind. An exact lowercase URI-path
-  `.md` suffix (including
-  `.mbt.md`) or the exact `markdown` language id selects
+  selects one private closed presentation kind. Shells and embedders always
+  use this same ordinary-model path; they neither parse Markdown nor select a
+  presentation. An exact lowercase URI-path `.md` suffix (including `.mbt.md`)
+  or the exact `markdown` language id selects
   `Markdown(MarkdownBrowserData)`; every other model selects
   `Code(CodeBrowserData)`. URI matching does not include query/fragment text
   and is case-sensitive. Headless attachments retain the same kind without
@@ -118,14 +119,32 @@ lifecycle. Markdown content is always rendered from the original `TextModel`
 snapshot and URI; `set_value` replaces only the article contents while
 retaining the root, viewport, and overlay mount. Theme changes perform another
 same-source projection replacement so tokenized fences and Mermaid use the
-current theme. The Markdown payload also owns one presentation-local language
-bridge. Only compiler-recognized `mbt check` fence rows participate: a real DOM
-caret is converted through the retained `MarkdownCodeLine` boundary map to the
-original model's 1-based position, and hover providers run against that
-original model/URI/revision. Live original-model marker decorations are
-projected into those same rows and their marker hover parts are merged with
-language hover rows. Content/theme/layout/marker/model changes and disposal
-invalidate pending requests and projected DOM before replacement.
+current theme. Only `.mbt.md` selects the `MoonBitMarkdown` resource policy;
+there, a full fence info string whose first two nonempty ASCII-space-separated
+tokens are exact lowercase `mbt check` or `moonbit check` is semantic.
+Repeated spaces and trailing tokens are accepted; ordinary Markdown,
+nonmatching fences, case changes, and tab-separated forms remain static. The
+Markdown payload also owns one presentation-local language bridge. A real DOM
+caret in a semantic row is converted through the retained `MarkdownCodeLine`
+boundary map to the original model's 1-based position; synthetic indentation
+never becomes a provider position. Hover providers run against that original
+model/URI/revision, with no virtual model or URI. Live original-model marker
+decorations are projected into those same rows without a block-local marker
+store or synthetic-model decoration, and their marker hover parts are merged
+with language hover rows.
+
+Every pending Markdown hover commit is stamped with request generation, model
+identity and versions, URI/revision, attach generation, projection generation
+and source version, block identity, source offset, and cancellation token.
+Content, theme, and model replacement retire the relevant state before
+presentation DOM replacement. Layout may update geometry synchronously first;
+layout, marker, pointer, and disposal transitions still invalidate freshness
+before any pending async hover may commit. Projected diagnostics reuse the
+resolved Code class, range, z-index, severity squiggle, and `showUnused`
+underline policy. The `squiggly-inline-unnecessary` opacity and
+`squiggly-inline-deprecated` strike-through effects are explicitly deferred
+because they require mutating source glyphs; the readonly overlay does not
+approximate them.
 
 Markdown reveal converts the validated model range to an absolute source offset
 through `TextSnapshot` and selects the containing or nearest preceding source

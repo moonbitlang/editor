@@ -1,9 +1,10 @@
-# Fixture Workspace
+# Fixture workspace
 
-This README renders as a **whole document** in the readonly workbench.
+This Markdown document is opened through the native workspace protocol and
+rendered by the reusable public Viewer.
 
-- the explorer and watcher stay source-truthful
-- selection and copy keep model coordinates
+- The host supplies the original URI-backed model.
+- The Viewer chooses the readonly Markdown presentation.
 
 ## Flow
 
@@ -11,11 +12,11 @@ This README renders as a **whole document** in the readonly workbench.
 direction: right
 
 open: open README.md
-provider: markdown document provider
-zone: rendered document zone
+viewer: public Viewer routing
+surface: readonly Markdown document
 
-open -> provider
-provider -> zone: one whole-file block
+open -> viewer
+viewer -> surface: one presentation root
 ```
 
 ```mermaid

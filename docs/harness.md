@@ -126,6 +126,35 @@ renders every `///|` item separator, including the separators above anchored
 documentation, while the underlying model retains the raw `///|` and `///`
 source.
 
+The readonly Markdown document proof is the direct public-Viewer component
+scenario
+`tests/browser/moonbit/component/markdown_document_scenario.mbt`, loaded by
+`component.html?markdownDocument=1` and asserted by
+`tests/browser/component/markdown_document.spec.js`. It proves the closed
+Code/Markdown root selection without a shell branch, retained same-parse
+semantic rows for compiler-recognized `mbt check` fences, and a real caret
+pointer translated back to the original model identity, URI, revision,
+1-based provider position, and 0-based wire offset. The suite merges language
+and marker hover rows, projects resolved diagnostic class/range/z-index and
+the `showUnused` underline, rejects prose, ordinary fences, synthetic padding,
+and trailing row space, and exercises two-Viewer isolation. Pending results
+are rejected across pointer exit, content and theme reprojection, same-URI
+model replacement, and disposal. `squiggly-inline-unnecessary` opacity and
+`squiggly-inline-deprecated` strike-through remain an explicit deferral because
+they require source-glyph mutation; this suite does not claim those Code-only
+effects.
+
+The shell-independent selection and native integration layer uses
+`tests/fixtures/workspace/README.md` and
+`tests/fixtures/workspace/src/literate.mbt.md` from
+`tests/browser/smoke/viewer.spec.js`. The workbench supplies ordinary
+URI-backed models through the remote protocol; the Viewer selects the
+presentation, and a real pointer in the `.mbt.md` semantic fence reaches the
+native `moon ide hover` adapter with the original source range. The embedded
+smoke in `tests/browser/smoke/embed.spec.js` separately opens an in-memory
+`README.md` through the same public `Viewer::set_model` path, proving that
+neither the workbench nor the remote protocol owns selection.
+
 The folding-versus-own-hidden-source branch stays in the focused mounted
 Viewer/ViewZones matrices: it is a source-membership and whitespace-visibility
 contract, not a browser-geometry dependency.
@@ -141,6 +170,10 @@ change; undocumented separators remain control-free.
   the active file is application state, not a URL query/hash.
 - Prefer real gestures and visible outcomes. Use deterministic test globals only
   when no user path exists.
+- Markdown semantic hover tests derive a point from the rendered text range and
+  move `page.mouse` there. Test globals may hold an async provider completion
+  or expose readback, but must not bypass caret hit testing, coordinate
+  conversion, or presentation routing.
 - Use Playwright for caret-API hit testing, measured selection/widget geometry,
   browser event wiring, server/file-watch integration, and screenshots/traces.
 - Monaco parity comes from an explicit behavior mapping plus focused

@@ -12,9 +12,79 @@ Current behavior and ownership live in `docs/architecture.md`, `docs/harness.md`
 `docs/quality.md`, package READMEs, generated interfaces, source, and tests.
 Historical plans are evidence of how a change landed, not current contracts.
 
-As of 2026-07-27 there are no active checked-in execution plans.
+As of 2026-07-29 there are no active checked-in execution plans.
 
 ## Completed Work
+
+### Readonly Markdown document presentation
+
+The public Viewer now owns a closed `Code`/`Markdown` presentation family.
+An exact lowercase URI-path `.md` suffix, including `.mbt.md`, or the exact
+`markdown` language id selects a retained readonly Markdown root; every other
+model keeps the Code presentation. Both variants retain the caller's original
+`TextModel`, URI, revision, and `ViewModel` as source truth. Workbench and
+embedded hosts still pass ordinary models through `Viewer::set_model`; they do
+not parse Markdown, select a presentation, or depend on the document-view
+implementation.
+
+One safe cmark parse now produces both installed HTML and a source projection.
+Compiler-compatible `.mbt.md` fences whose first two nonempty ASCII-space
+tokens are exact lowercase `mbt check` or `moonbit check` retain tokenized,
+source-bearing DOM rows and UTF-16 boundary maps; ordinary fences, prose,
+synthetic indentation, and mismatched projections fail closed. A
+presentation-local bridge converts a real DOM caret back to the original
+one-based model position and zero-based wire offset, runs the existing hover
+computer against that model, merges language and marker rows, and projects
+live resolved marker ranges/classes/z-index into semantic rows. Request,
+model/content, URI/revision, attach, projection, block, offset, and
+cancellation stamps reject every reviewed stale completion before an async DOM
+commit.
+
+The remote boundary was tightened at the same time: hover and diagnostics now
+require exact current model identity, versions, URI, revision, normalized
+text, and disk snapshot. Native hover uses ordinary `moon ide hover` across
+coherent pre/post disk guards, while `MoonCheckDiagnostics` records producing
+state, reruns dirty single-flight work, and replays or clears only compatible
+sets. Markdown detach retires the bridge and renderer while their root remains
+mounted, removes the inert root, and then releases listeners, the attached-view
+handle, and the `ViewModel`. Code-only contributions remain dormant on the
+Markdown variant, and two Viewers over one model keep independent
+presentation/request lifetimes.
+
+Gate A pinned the `vscode` gitlink at
+`b18492a288de038fbc7643aae6de8247029d11bd`. Selection, ownership, shell
+independence, and user-visible behavior used a behavior port; coordinate,
+projection, freshness, and lifetime state machines used
+algorithm-fidelity review. No notebook, editing surface, virtual fenced model,
+shell Markdown adapter, definition/reference bridge, or quick-diff gutter was
+introduced. Incremental DOM patching, persistent synchronized LSP transport,
+and prose editing remain deferred. Monaco's
+`squiggly-inline-unnecessary` source-glyph opacity and
+`squiggly-inline-deprecated` source-glyph strike-through also remain explicit
+deferrals; Markdown reuses the resolved severity squiggle and `showUnused`
+underline without faking text-mutating effects.
+
+Consumer evidence opens real `README.md` and `src/literate.mbt.md` fixtures
+through the sidebar/native protocol and obtains
+`fn literate_answer() -> Int` at original range `4:4-4:19` from one
+Range-derived pointer entry. A separate in-memory `memory://` README proves the
+same public Viewer selection without workbench, remote protocol, or WebSocket.
+The final browser gate also made the existing async model-ownership scenario
+wait for painted `set_value` content before pointer input; this is a harness
+ordering repair, not a product behavior change.
+
+Final validation passed 1,600 JS and 1,081 native MoonBit tests (the wasm and
+wasm-gc targets currently have no test entry), all 26 smoke tests, and 76 of 77
+component browser tests with the existing opt-in live-network Mermaid case
+skipped. The native Markdown hover passed three consecutive focused runs, and
+the repaired async ownership scenario passed ten consecutive focused runs.
+`moon info --target all`, `just check`, `just test`, `just build`,
+`just test-browser-smoke`, and `git diff --check` passed. Every generated
+interface and changed `moon.pkg` edge was reviewed; the public Viewer interface
+remained byte-identical at SHA-256
+`0b1ef32ddc28847e96dc826455ac7bb7f26b22942279d6e616e3fa4f1cea7595`.
+
+Former artifact: `readonly-markdown-document-presentation.md`.
 
 ### Markdown-comment Diago viewport controls
 

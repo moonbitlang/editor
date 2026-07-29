@@ -179,6 +179,9 @@ test('rejects stale async hover results across model ownership changes', async (
     (value) => globalThis.__asyncFeatureControls.set_value(value),
     source('model-dispose-pending'),
   );
+  await expect(page.locator(editorSelector)).toContainText(
+    'model-dispose-pending',
+  );
   await hoverTarget(page);
   const modelDisposeHover = await waitForNewHover(page, lastCall);
   lastCall = modelDisposeHover.id;
