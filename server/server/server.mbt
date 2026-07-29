@@ -638,7 +638,7 @@ fn same_document_snapshot(
 ) -> Bool {
   left.uri.to_string() == right.uri.to_string() &&
   left.revision == right.revision &&
-  @model.TextSnapshot(left.text).equals(@model.TextSnapshot(right.text))
+  @model.TextSnapshot(left.text).equals(TextSnapshot(right.text))
 }
 
 ///|

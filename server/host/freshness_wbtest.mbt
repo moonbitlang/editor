@@ -314,8 +314,8 @@ async test "moon check replays only an exact producing document state" {
     )
     let control : ControlledCheck = {
       calls: Ref(0),
-      started: @aqueue.Queue(kind=Unbounded),
-      release_gate: @aqueue.Queue(kind=Unbounded),
+      started: Queue(kind=Unbounded),
+      release_gate: Queue(kind=Unbounded),
     }
     let events : Array[CheckPublishEvent] = []
     let diagnostics = controlled_diagnostics(root, control, events)
@@ -369,8 +369,8 @@ async test "document sync during moon check discards output and reruns once" {
     )
     let control : ControlledCheck = {
       calls: Ref(0),
-      started: @aqueue.Queue(kind=Unbounded),
-      release_gate: @aqueue.Queue(kind=Unbounded),
+      started: Queue(kind=Unbounded),
+      release_gate: Queue(kind=Unbounded),
     }
     let events : Array[CheckPublishEvent] = []
     let diagnostics = controlled_diagnostics(root, control, events)
@@ -412,8 +412,8 @@ async test "disk-only change during moon check reruns and publishes nothing" {
     let document = freshness_test_document(root, "main.mbt", "pub fn old {}\n")
     let control : ControlledCheck = {
       calls: Ref(0),
-      started: @aqueue.Queue(kind=Unbounded),
-      release_gate: @aqueue.Queue(kind=Unbounded),
+      started: Queue(kind=Unbounded),
+      release_gate: Queue(kind=Unbounded),
     }
     let events : Array[CheckPublishEvent] = []
     let diagnostics = controlled_diagnostics(root, control, events)
@@ -449,8 +449,8 @@ async test "stable incompatible rerun preserves a prior published set silently" 
     let document = freshness_test_document(root, "main.mbt", "pub fn old {}\n")
     let control : ControlledCheck = {
       calls: Ref(0),
-      started: @aqueue.Queue(kind=Unbounded),
-      release_gate: @aqueue.Queue(kind=Unbounded),
+      started: Queue(kind=Unbounded),
+      release_gate: Queue(kind=Unbounded),
     }
     let events : Array[CheckPublishEvent] = []
     let diagnostics = controlled_diagnostics(root, control, events)
@@ -510,8 +510,8 @@ async test "historical incompatible document does not suppress active diagnostic
     )
     let control : ControlledCheck = {
       calls: Ref(0),
-      started: @aqueue.Queue(kind=Unbounded),
-      release_gate: @aqueue.Queue(kind=Unbounded),
+      started: Queue(kind=Unbounded),
+      release_gate: Queue(kind=Unbounded),
     }
     let events : Array[CheckPublishEvent] = []
     let diagnostics = controlled_diagnostics(root, control, events)
