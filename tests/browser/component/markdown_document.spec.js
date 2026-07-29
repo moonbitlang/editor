@@ -73,6 +73,61 @@ async function moveToSourceText(page, articleSelector, text, utf16Delta = 0) {
   return point;
 }
 
+async function sourceTextPoints(
+  page,
+  articleSelector,
+  text,
+  utf16Deltas,
+) {
+  const articleLocator = page.locator(articleSelector);
+  await articleLocator.evaluate((articleNode, text) => {
+    const walker = document.createTreeWalker(
+      articleNode,
+      NodeFilter.SHOW_TEXT,
+    );
+    let node;
+    while ((node = walker.nextNode())) {
+      if (!String(node.textContent || '').includes(text)) continue;
+      node.parentElement?.scrollIntoView({
+        block: 'center',
+        inline: 'nearest',
+      });
+      return;
+    }
+    throw new Error(`text node not found: ${text}`);
+  }, text);
+  await page.waitForTimeout(50);
+  return articleLocator.evaluate(
+    (articleNode, { text, utf16Deltas }) => {
+      const walker = document.createTreeWalker(
+        articleNode,
+        NodeFilter.SHOW_TEXT,
+      );
+      let node;
+      while ((node = walker.nextNode())) {
+        const index = String(node.textContent || '').indexOf(text);
+        if (index < 0) continue;
+        return utf16Deltas.map((utf16Delta) => {
+          const range = document.createRange();
+          const boundary = Math.min(
+            String(node.textContent || '').length,
+            index + utf16Delta,
+          );
+          range.setStart(node, boundary);
+          range.setEnd(node, Math.min(boundary + 1, node.textContent.length));
+          const rect = range.getBoundingClientRect();
+          return {
+            x: rect.left + Math.max(rect.width / 2, 1),
+            y: rect.top + Math.max(rect.height / 2, 1),
+          };
+        });
+      }
+      throw new Error(`text node not found: ${text}`);
+    },
+    { text, utf16Deltas },
+  );
+}
+
 async function moveToSyntheticPadding(page, articleSelector, lineText) {
   const point = await page.locator(articleSelector).evaluate(
     (articleNode, lineText) => {
@@ -271,16 +326,29 @@ test('renders and refreshes the editor-owned readonly Markdown presentation', as
       ),
     ).not.toBe('none');
 
-    // A real Range-derived pointer enters a source-bearing line. The provider
-    // observes the original model identity/URI/revision and one-based model
-    // position; the widget records the same zero-based wire offset.
+    // A real Range-derived pointer sweeps across source boundaries faster than
+    // the hover delay. Only its final stable boundary reaches the provider;
+    // while that call remains unresolved, the standard loading row makes the
+    // pending state visible.
     let callCount = (await hoverCalls(page)).length;
-    const initialPoint = await moveToSourceText(
+    const sweepPoints = await sourceTextPoints(
       page,
       article,
       'markdown_answer',
-      4,
+      [1, 2, 4],
     );
+    const viewportSize = page.viewportSize();
+    await page.mouse.move(
+      Math.max((viewportSize?.width ?? 800) - 1, 0),
+      Math.max((viewportSize?.height ?? 600) - 1, 0),
+    );
+    for (const point of sweepPoints) {
+      await page.mouse.move(point.x, point.y);
+      await page.waitForTimeout(25);
+    }
+    await page.waitForTimeout(50);
+    expect((await hoverCalls(page)).length).toBe(callCount);
+    const initialPoint = sweepPoints.at(-1);
     const initialCall = await waitForNewHoverCall(page, callCount);
     const expectedInitialOffset =
       initialSource.indexOf('markdown_answer') + 4;
@@ -298,11 +366,15 @@ test('renders and refreshes the editor-owned readonly Markdown presentation', as
       cancelled: false,
     });
     expect(initialCall.modelIdentity).toBeGreaterThan(0);
+    await expect(page.locator(hoverWidget)).toContainText('Loading...', {
+      timeout: 2_000,
+    });
+    expect(await hoverCalls(page)).toHaveLength(callCount + 1);
     await page.evaluate(
       ({ id }) =>
         globalThis.__markdownDocumentControls.releaseHover(
           id,
-          'wide:initial language hover',
+          'wide:initial language hover with enough descriptive words to exercise readable natural width measurement',
         ),
       initialCall,
     );
@@ -313,6 +385,7 @@ test('renders and refreshes the editor-owned readonly Markdown presentation', as
     await expect(page.locator(hoverWidget)).toContainText(
       'wide:initial language hover',
     );
+    await expect(page.locator(hoverWidget)).not.toContainText('Loading...');
     await expect(page.locator(hoverWidget)).toContainText(
       'initial markdown diagnostic',
     );
@@ -367,6 +440,7 @@ test('renders and refreshes the editor-owned readonly Markdown presentation', as
           .getBoundingClientRect();
         return {
           pointerX: initialPoint.x,
+          widgetWidth: widgetRect.width,
           widgetLeft: widgetRect.left,
           widgetRight: widgetRect.right,
           widgetTop: widgetRect.top,
@@ -379,6 +453,7 @@ test('renders and refreshes the editor-owned readonly Markdown presentation', as
       },
       { widgetSelector: hoverWidget, viewportSelector: viewport, initialPoint },
     );
+    expect(clamped.widgetWidth).toBeGreaterThanOrEqual(300);
     expect(clamped.widgetLeft).toBeGreaterThanOrEqual(clamped.viewportLeft);
     expect(clamped.widgetRight).toBeLessThanOrEqual(clamped.viewportRight + 1);
     expect(clamped.widgetTop).toBeGreaterThanOrEqual(clamped.viewportTop);
