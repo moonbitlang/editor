@@ -139,6 +139,41 @@ accessibility pair, scroll anchoring, and the component scenario.
 4. Only then add the toggle DOM and the accessible button, following the
    Markdown-comment entry's chevron/in-content-button pair.
 
+## Known limitations found in review
+
+A `codex` review of the landed increments raised seven findings. Four are fixed;
+these three are recorded because they constrain the remaining work.
+
+- **K1. Occurrence ordinals are only stable while preceding duplicates are.**
+  `markdown_section_keys` numbers equal `(level, text)` headings in current
+  document order, so inserting or deleting a *duplicate* heading earlier in the
+  document migrates fold state between sections. Editing body text, or editing
+  any non-duplicate heading, is safe. A stronger key would have to come from the
+  parsed heading inline tree plus a container path rather than from normalized
+  source text. Accepted for now: the failure mode is a section collapsing that
+  the reader did not collapse, not a correctness or freshness bug.
+
+- **K2. Heading text is normalized from source, not from the inline tree.**
+  `# *Title*` and `# Title` therefore key differently despite rendering the same
+  words, and a multi-line setext heading keys on its first line only. Deriving
+  the text from the parsed inlines would fix both and subsume part of K1.
+
+- **K3. Collapse must invalidate the hover bridge, and does not yet.**
+  `set_hidden_root_elements` changes visibility without telling
+  `MarkdownDocumentHoverBridge`. Visibility is absent from `stamp_is_current`,
+  so a request started over a fence could still reach `widget.show` after its
+  root became `display:none`, and an already-visible hover would sit at stale
+  geometry. This cannot happen today because nothing calls the API. **Every
+  collapse and expand must route through the bridge's existing
+  `layout_changed` invalidation path**, and gate 3 must include collapsing
+  while a hover request is in flight.
+
+- **K4. The view operation owns the whole `style` and `aria-hidden`
+  attributes.** It replaces and clears them outright, which is safe for the
+  current renderer output but would destroy renderer-owned inline styling. A
+  dedicated class or data attribute is the better mechanism before this API
+  gains a caller.
+
 ## Gates
 
 1. `moon check --target all` and `moon fmt --check` clean; `moon test` green on
@@ -146,7 +181,8 @@ accessibility pair, scroll anchoring, and the component scenario.
 2. `pkg.generated.mbti` reviewed for `internal/viewer/markdown` — adding a field
    to the `pub(all)` `MarkdownBlockAnchor` is a public API change.
 3. A component scenario under `tests/browser/` proving, through the public
-   Viewer surface:
+   Viewer surface (and including a collapse while a hover request is pending,
+   per K3):
    - collapsing a section hides exactly its body run;
    - a fence in a *sibling visible* section still resolves to the correct source
      offset while another section is collapsed;
