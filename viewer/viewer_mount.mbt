@@ -9,7 +9,7 @@ priv enum ViewerMount {
 
 ///|
 /// Viewer-lifetime state that exists only after a host has been attached.
-/// Per-model browser state remains owned by `ModelBrowserData`.
+/// Per-model browser state remains owned by `BrowserPresentation`.
 priv struct MountedViewer {
   container : @rdom.Element
   mut placeholder : PlaceholderDom?
@@ -161,7 +161,18 @@ fn MountedViewer::restore_placeholder(self : MountedViewer) -> Unit {
 }
 
 ///|
-fn MountedViewer::remove_view(
+fn MountedViewer::install_presentation_root(
+  self : MountedViewer,
+  root : @rdom.Element,
+) -> Unit {
+  self.hide_placeholder()
+  if !@base_browser.element_contains(self.container, root) {
+    self.container.append_child(root.as_node())
+  }
+}
+
+///|
+fn MountedViewer::remove_presentation_root(
   self : MountedViewer,
   root : @rdom.Element,
   restore_placeholder~ : Bool,

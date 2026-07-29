@@ -223,11 +223,7 @@ fn Viewer::reveal_position_with(
 }
 
 ///|
-/// The shared reveal pipeline, Monaco's `CodeEditorWidget._sendRevealRange`
-/// (`codeEditorWidget.ts:685`) folded together with
-/// `ViewLines.onRevealRangeRequest` (`viewLines.ts:269`). Converts the model
-/// range to a view range, computes the minimal vertical scroll, applies the
-/// horizontal rule, and commits the scroll (clamping is free via `Scrollable`).
+/// Presentation-routing entry for every public model-coordinate reveal.
 fn Viewer::send_reveal_range(
   self : Viewer,
   model_range : @base_common.Range,
@@ -237,6 +233,31 @@ fn Viewer::send_reveal_range(
   minimal_reveal? : Bool = false,
   scroll_type? : CursorRevealScrollType = Immediate,
 ) -> Unit {
+  guard self.is_code_presentation() else { return }
+  self.send_code_reveal_range(
+    model_range,
+    vertical_type,
+    reveal_horizontal~,
+    source~,
+    minimal_reveal~,
+    scroll_type~,
+  )
+}
+
+///|
+/// The Code reveal pipeline, Monaco's `CodeEditorWidget._sendRevealRange`
+/// (`codeEditorWidget.ts:685`) folded together with
+/// `ViewLines.onRevealRangeRequest` (`viewLines.ts:269`).
+fn Viewer::send_code_reveal_range(
+  self : Viewer,
+  model_range : @base_common.Range,
+  vertical_type : @view_layout.VerticalRevealType,
+  reveal_horizontal~ : Bool,
+  source? : String = "",
+  minimal_reveal? : Bool = false,
+  scroll_type? : CursorRevealScrollType = Immediate,
+) -> Unit {
+  guard self.is_code_presentation() else { return }
   guard self.get_view_model() is Some(view_model) else { return }
   // (1) Model range → view range: the wrapping-aware step (with word-wrap on,
   // model line ≠ view line). The conversion belongs at this boundary, never in
@@ -266,6 +287,7 @@ fn Viewer::reveal_view_cursor(
   minimal_reveal? : Bool = false,
   scroll_type? : CursorRevealScrollType = Immediate,
 ) -> Unit {
+  guard self.is_code_presentation() else { return }
   guard self.get_view_model() is Some(view_model) else { return }
   let position = view_model.cursor.view_state().position
   self.send_reveal_view_range(
@@ -345,15 +367,15 @@ fn horizontal_reveal_request_for_range(
 }
 
 ///|
-fn ModelBrowserData::arm_horizontal_reveal(
-  self : ModelBrowserData,
+fn CodeBrowserData::arm_horizontal_reveal(
+  self : CodeBrowserData,
   request : HorizontalRevealRangeRequest,
 ) -> Unit {
   self.horizontal_reveal_request = Some(request)
 }
 
 ///|
-fn ModelBrowserData::clear_horizontal_reveal(self : ModelBrowserData) -> Unit {
+fn CodeBrowserData::clear_horizontal_reveal(self : CodeBrowserData) -> Unit {
   self.horizontal_reveal_request = None
 }
 
@@ -406,7 +428,7 @@ fn Viewer::send_reveal_view_range(
         scroll_type,
       ) {
       Some(request) =>
-        match self.current_browser_data() {
+        match self.current_code_browser_data() {
           Some(browser) => {
             browser.arm_horizontal_reveal(request)
             self.schedule_render()
@@ -416,7 +438,7 @@ fn Viewer::send_reveal_view_range(
       None => ()
     }
   } else {
-    match self.current_browser_data() {
+    match self.current_code_browser_data() {
       Some(browser) => browser.clear_horizontal_reveal()
       None => ()
     }
@@ -443,8 +465,8 @@ fn Viewer::send_reveal_view_range(
 /// Monaco `ViewLines.renderText` horizontal step (`viewLines.ts:623`–`:648`).
 /// Called from `flush_render` after the lines are in the DOM. Keeps the request
 /// pending if the line is not yet rendered, so a later frame can flush it.
-fn ModelBrowserData::flush_horizontal_reveal(
-  self : ModelBrowserData,
+fn CodeBrowserData::flush_horizontal_reveal(
+  self : CodeBrowserData,
   view_model : @view_model.ViewModel,
 ) -> Unit {
   guard self.horizontal_reveal_request is Some(request) else { return }
@@ -516,8 +538,8 @@ fn HorizontalRevealRangeRequest::should_cancel_on_scroll(
 /// `[start_scroll_top, stop_scroll_top]` band. The reveal's own vertical scroll
 /// lands inside that band and does not change `scroll_left`, so it never
 /// cancels itself.
-fn ModelBrowserData::cancel_horizontal_reveal_on_scroll(
-  self : ModelBrowserData,
+fn CodeBrowserData::cancel_horizontal_reveal_on_scroll(
+  self : CodeBrowserData,
   change : @view_layout.ScrollChange,
 ) -> Unit {
   guard self.horizontal_reveal_request is Some(request) else { return }

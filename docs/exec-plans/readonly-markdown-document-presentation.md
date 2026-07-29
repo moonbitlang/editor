@@ -300,10 +300,48 @@ The public surface is then partitioned as follows:
 | cursor/selection getters, setters, and commands | Code-presentation-only; use the existing no-model sentinel/no-op required by each signature and never expose hidden `ViewModel` cursor state |
 | source line width/column and code-View-only pixel queries | Retain their `ViewModel`-based source answer where possible; return the existing empty/zero fallback when a real code `View` is required |
 | mouse events, ViewZones, overlay widgets, folding, quick-diff gutter, feedback widgets, Markdown comments | Code-presentation-only in this plan; no synthetic code-editor event is emitted from prose |
+| lifecycle and metadata (`create`, `dispose`, container/id/type/options/init/dispose event) | Preserve current behavior; root removal dispatches the active presentation and `get_editor_type` remains `vs.editor.ICodeEditor` |
 
 Gate A must enumerate every `Viewer` public method from
 `viewer/pkg.generated.mbti` under one of these rows and record any mismatch in
 this plan before implementation. No public signature is expected to change.
+
+Gate A inventory (83 methods):
+
+- **Model/value/events/decorations (11):**
+  `create_decorations_collection`, `delta_decorations`,
+  `get_decorations_in_range`, `get_line_decorations`, `get_model`,
+  `get_value`, `on_did_change_model`, `on_did_change_model_content`,
+  `remove_decorations`, `set_model`, `set_value`.
+- **Active root/focus/layout (5):** `focus`, `get_dom_node`,
+  `has_text_focus`, `has_widget_focus`, `layout`.
+- **Active scroll/state/extents (12):** `get_content_height`,
+  `get_content_width`, `get_scroll_height`, `get_scroll_left`,
+  `get_scroll_top`, `get_scroll_width`, `on_did_scroll_change`,
+  `restore_view_state`, `save_view_state`, `set_scroll_left`,
+  `set_scroll_position`, `set_scroll_top`.
+- **Theme refresh (1):** `update_options`.
+- **Reveal (18):** every `reveal_line*`, `reveal_lines*`,
+  `reveal_position*`, and `reveal_range*` method in the generated interface.
+- **Visible source ranges (1):** `get_visible_ranges`.
+- **Code-only cursor (8):** `get_position`, `get_selection`,
+  `get_selections`, `on_did_change_cursor_position`,
+  `on_did_change_cursor_selection`, `set_position`, `set_selection`,
+  `set_selections`.
+- **Source/code geometry (9):** `get_bottom_for_line_number`,
+  `get_layout_info`, `get_line_height_for_position`,
+  `get_offset_for_column`, `get_scrolled_visible_position`,
+  `get_top_for_line_number`, `get_top_for_position`,
+  `get_visible_column_from_position`, `get_width_of_line`.
+- **Code-only features/events (10):** `add_overlay_widget`,
+  `change_view_zones`, `fold_top_level`, `on_did_change_hidden_areas`,
+  `on_did_change_view_zones`, all four `on_mouse_*` methods, and
+  `remove_overlay_widget`. Overlay add/remove always updates the
+  Viewer-lifetime registration map; only mounting/unmounting is a no-op
+  without Code.
+- **Lifecycle/metadata (8):** `create`, `dispose`,
+  `get_container_dom_node`, `get_editor_type`, `get_id`, `get_options`,
+  `handle_initialized`, `on_did_dispose`.
 
 ## Source Projection and Coordinate Contract
 
@@ -862,3 +900,51 @@ checks do not replace the focused evidence above.
 - 2026-07-28: self-review replaced the global "1-based" claim with a boundary
   ledger, aligned semantic fences with the compiler's token-prefix grammar, and
   made the current hover/diagnostics revision gaps a blocking milestone.
+- 2026-07-29, Gate A reviewed: the `vscode` gitlink, submodule HEAD, and
+  inspected Experimental Markdown Editor sources are clean at
+  `b18492a288de038fbc7643aae6de8247029d11bd`. The selected behavior and
+  algorithm-fidelity modes, independent-presentation representation, and
+  exclusions remain valid.
+- 2026-07-29, Gate A compiler/toolchain: compiler commit
+  `4ca4d3ef1213bcf038d88edadb79ae3a7ae8c23a` and
+  `lib/xml/parsing/md_test_extraction.ml` were re-read from the local object
+  database; the live parser file is identical (the compiler worktree has an
+  unrelated dirty `core` submodule). Active tools are
+  `moon 0.1.20260724 (5f1406a)` and
+  `moonc v0.10.5+5e7afb0c0`. A temporary package-local `.mbt.md` probe proved
+  `mbt check`, repeated ASCII spaces plus trailing tokens, and
+  `moonbit check` with `moon ide hover --output-json`; the three symbols
+  resolved at their original source ranges. The same file compiled while
+  invalid differently-cased, tab-separated, plain, and `nocheck` bodies were
+  ignored. `mbt test` was confirmed compiler-visible but remains intentionally
+  outside this plan's semantic fence slice.
+- 2026-07-29, Gate A fixture/coordinates: a temporary form of the planned
+  `literate.mbt.md` fixture passed `moon check`; hover on
+  `literate_answer` returned range `4:4-4:19` and
+  `fn literate_answer() -> Int`. Every current conversion matches the ledger:
+  local `Position`/`Range` is one-based, `OffsetRange` and the request wire
+  offset are zero-based, and `TextSnapshot` owns conversion. The stale
+  `HoverProvider` comment was corrected to the one-based contract.
+- 2026-07-29, Gate A routing/dependencies: all 83 public `Viewer` methods are
+  accounted for above. The root generated interface is expected to remain
+  byte-for-byte unchanged. M1 defines only `Code(CodeBrowserData)`; M3 adds the
+  real Markdown variant rather than a placeholder payload. DOM-free projection
+  remains in `internal/viewer/markdown`, browser ownership remains under
+  `internal/viewer/browser/**`, root `viewer` imports the implementation, and
+  no reusable package imports `internal/shell`.
+- 2026-07-29, Gate A backend refinement: the audited hover and diagnostics
+  freshness gaps remain blocking M4 work. The native hover command will drop
+  `--no-check`: pre/post disk guards alone cannot prove that cached compiler
+  artifacts belong to the supplied snapshot, while ordinary
+  `moon ide hover` checks the current disk document before answering. This
+  preserves the selected readonly CLI strategy without adding synchronized
+  virtual documents or shared shell presentation logic.
+- 2026-07-29, Milestone 1: the Code-only presentation seam now owns the active
+  root, focus, theme, layout, scroll, render/reveal state, and disposal
+  dispatch. Code-only contributions use an explicit Code payload; overlay
+  registrations still update Viewer-lifetime state while DOM work is gated on
+  an active Code presentation. The generated Viewer interface retained SHA-256
+  `0b1ef32ddc28847e96dc826455ac7bb7f26b22942279d6e616e3fa4f1cea7595`.
+  `moon test --target js viewer` passed 244 tests and
+  `just test-browser-component` passed 75 tests with one opt-in live-network
+  case skipped.

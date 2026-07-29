@@ -484,6 +484,7 @@ fn CoreEditorCommand::run_editor_command(
   viewer : Viewer,
   args? : CursorCoreCommandArgs,
 ) -> Bool {
+  guard viewer.is_code_presentation() else { return false }
   match self.precondition {
     Some(precondition) if !precondition(viewer) => return false
     _ => ()
@@ -510,6 +511,7 @@ fn EditorContributionRegistry::run_core_editor_command(
   id : String,
   args? : CursorCoreCommandArgs,
 ) -> Bool {
+  guard viewer.is_code_presentation() else { return false }
   match self.commands.get(id) {
     Some(RegisteredCore(command)) => {
       match command.precondition {
@@ -538,6 +540,7 @@ fn EditorContributionRegistry::run_editor_command(
   id : String,
   args? : CursorCoreCommandArgs,
 ) -> Bool {
+  guard viewer.is_code_presentation() else { return false }
   match self.commands.get(id) {
     Some(RegisteredEditor(command)) =>
       if (command.precondition)(viewer) {
@@ -579,6 +582,7 @@ fn EditorContributionRegistry::dispatch_keybinding(
   ctrl_cmd~ : Bool,
   shift~ : Bool,
 ) -> Bool {
+  guard viewer.is_code_presentation() else { return false }
   for rule in self.keybindings {
     if rule.key == key &&
       rule.alt == alt &&

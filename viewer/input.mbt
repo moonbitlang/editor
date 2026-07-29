@@ -12,7 +12,7 @@ fn Viewer::hook_view_input(
   view : @view.View,
 ) -> @controller.MouseHandler {
   let handler = @controller.MouseHandler(self.pointer_handler_helper(view))
-  // View is the sole disposable owner. ModelBrowserData only retains this
+  // View is the sole disposable owner. CodeBrowserData only retains this
   // reference so lifecycle commands can reach the live per-View handler.
   view.add_disposable(@base_common.Disposable::from(() => handler.dispose()))
   // Monaco tracks focus on the hidden textarea / edit context and fans it out
@@ -143,7 +143,7 @@ fn Viewer::refresh_font_info(self : Viewer) -> Unit {
   let bare = self.configuration.snapshot().options.bare_font_info(
     pixel_ratio=@base_browser.device_pixel_ratio(),
   )
-  let font_info = match self.get_view() {
+  let font_info = match self.current_code_view() {
     Some(_) => @browser_config.font_measurements().read_font_info(bare)
     None => @config.FontInfo::estimated(bare)
   }
@@ -155,7 +155,7 @@ fn Viewer::refresh_font_info(self : Viewer) -> Unit {
       view_model.view_layout.set_line_height(font_info.line_height) |> ignore
     None => ()
   }
-  match self.get_view() {
+  match self.current_code_view() {
     Some(view) => self.apply_font_info_to_view(view)
     None => ()
   }
@@ -233,6 +233,10 @@ fn Viewer::measure(self : Viewer) -> Unit {
       |> ignore
     None => ()
   }
+  self.layout_active_presentation(
+    measured_configuration.content_width,
+    measured_configuration.height,
+  )
   if self.configuration.recompute_soft_wrap_column() {
     self.on_configuration_changed()
   } else {

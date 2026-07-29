@@ -154,7 +154,8 @@ fn Viewer::attach_model(self : Viewer, model : @model.TextModel) -> Unit {
   // adds the public content barrier and position-before-selection relay.
   listeners_to_remove.push(
     view_model.on_cursor_state_changed(event => {
-      if self.is_current_model_data_generation(model_data_generation) {
+      if self.is_current_model_data_generation(model_data_generation) &&
+        self.is_code_presentation() {
         // A real content flush waits behind the public content barrier so
         // `ViewFlushed` remains before the cursor event. Ordinary cursor
         // transitions notify ViewParts before the public outgoing pair.
@@ -170,7 +171,8 @@ fn Viewer::attach_model(self : Viewer, model : @model.TextModel) -> Unit {
   // this public alias.
   listeners_to_remove.push(
     view_model.on_view_zones_changed(_event => {
-      if self.is_current_model_data_generation(model_data_generation) {
+      if self.is_current_model_data_generation(model_data_generation) &&
+        self.is_code_presentation() {
         self.did_change_view_zones.fire(())
       }
     }),
@@ -180,7 +182,8 @@ fn Viewer::attach_model(self : Viewer, model : @model.TextModel) -> Unit {
   // viewport recovery, and the root ViewEvent batch have completed.
   listeners_to_remove.push(
     view_model.on_hidden_areas_changed(_event => {
-      if self.is_current_model_data_generation(model_data_generation) {
+      if self.is_current_model_data_generation(model_data_generation) &&
+        self.is_code_presentation() {
         self.did_change_hidden_areas.fire(())
       }
     }),
@@ -203,7 +206,7 @@ fn Viewer::attach_model(self : Viewer, model : @model.TextModel) -> Unit {
       self.apply_scroll_change(Some(change))
     }),
   )
-  let browser = self.create_view(model, view_model)
+  let browser = self.create_browser_presentation(model, view_model)
   self.model_slot.install_current({
     model,
     view_model,
@@ -241,11 +244,11 @@ fn Viewer::is_current_model_data_generation(
 /// every registered content/overlay widget, and stamp `data-uri`. The returned
 /// browser bundle pairs the View with its retained MouseHandler reference and
 /// empty render/reveal facts. `None` while unattached (the headless harness).
-fn Viewer::create_view(
+fn Viewer::create_browser_presentation(
   self : Viewer,
   model : @model.TextModel,
   view_model : @view_model.ViewModel,
-) -> ModelBrowserData? {
+) -> BrowserPresentation? {
   let mounted = match self.mount {
     Headless => return None
     Mounted(mounted) => mounted
@@ -319,7 +322,7 @@ fn Viewer::create_view(
     "data-theme",
     self.configuration.snapshot().options.theme,
   )
-  mounted.container.append_child(view.root.as_node())
+  mounted.install_presentation_root(view.root)
   view.apply_squiggly_theme()
   // The editor root carries the configured font — Monaco's
   // `applyFontInfo(this.domNode, fontInfo)` in `view.ts`.
@@ -351,9 +354,7 @@ fn Viewer::create_view(
   }
   // `data-uri` (`cew:1912`).
   view.root.set_attribute("data-uri", model.uri.to_string())
-  // The no-model placeholder yields to the per-model view.
-  mounted.hide_placeholder()
-  Some(ModelBrowserData(view, mouse_handler))
+  Some(Code(CodeBrowserData(view, mouse_handler)))
 }
 
 ///|
@@ -500,7 +501,7 @@ fn Viewer::on_line_mapping_changed(
   } else {
     self.apply_view_model_layout(view_model)
   }
-  match self.current_browser_data() {
+  match self.current_code_browser_data() {
     Some(browser) => browser.invalidate_rendered_window()
     None => ()
   }

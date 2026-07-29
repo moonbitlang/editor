@@ -31,7 +31,7 @@ fn Viewer::sync_content_box_for_model_line_count(
   // A real View rechecks the DOM box in the next read phase. This does not
   // delay the configuration fact above; it catches an independent host resize
   // and lets wrapping react before the same frame writes.
-  if self.get_view() is Some(_) {
+  if self.current_code_view() is Some(_) {
     self.configuration.request_measure()
   }
   true

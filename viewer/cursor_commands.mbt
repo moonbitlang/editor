@@ -910,7 +910,9 @@ fn register_cursor_key_command(
   key : String,
   shift~ : Bool,
 ) -> Unit {
-  let keybinding_when = (viewer : Viewer) => viewer.get_view_model() is Some(_)
+  let keybinding_when = (viewer : Viewer) => {
+    viewer.is_code_presentation() && viewer.get_view_model() is Some(_)
+  }
   if shift {
     registry.register_core_editor_command(command, keybinding_when, [], shift_keybindings=[
       (key, false, false),

@@ -406,7 +406,7 @@ fn Viewer::refresh_markdown_comments(
   guard self.markdown_comment_contribution() is Some(state) else { return }
   guard self.get_model() is Some(model) else { return }
   // A headless Viewer has no replacement DOM and must keep source visible.
-  guard self.current_browser_data() is Some(browser) else { return }
+  guard self.current_code_browser_data() is Some(browser) else { return }
   let mermaid_theme = markdown_comment_mermaid_theme(
     self.configuration.snapshot().options.theme,
   )
@@ -647,7 +647,7 @@ fn Viewer::clear_markdown_comment_model_state(self : Viewer) -> Unit {
   for entry in entries {
     entry.dispose_render_resources()
   }
-  match self.current_browser_data() {
+  match self.current_code_browser_data() {
     Some(browser) =>
       browser.view.change_view_zones(accessor => {
         for entry in entries {

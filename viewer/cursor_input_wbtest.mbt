@@ -56,7 +56,7 @@ fn assert_last_cursor_transition(
 ///|
 fn reset_cursor_mouse_reveal(viewer : Viewer) -> Unit {
   viewer.set_scroll_position(scroll_top=0.0, scroll_left=0.0)
-  match viewer.current_browser_data() {
+  match viewer.current_code_browser_data() {
     Some(browser) => browser.clear_horizontal_reveal()
     None => ()
   }
@@ -444,7 +444,7 @@ test "mouse navigation reveal types preserve command-specific gates" {
 test "mounted mouse navigation retains exact horizontal reveal requests" {
   with_mounted_test_viewer(long_document(40), viewer => {
     viewer.test_set_viewport(width=800.0, height=180.0)
-    let browser = viewer.current_browser_data().unwrap()
+    let browser = viewer.current_code_browser_data().unwrap()
 
     viewer.dispatch_mouse(
       mouse_dispatch_data(Position(10, 1), reveal_type=Regular),
@@ -694,7 +694,8 @@ test "mouse reveal uses wrapped injected-text view cursor without round trip" {
       }
       viewer.dispatch_mouse(mouse_dispatch_data(supplied, reveal_type=Minimal))
       assert_position(viewer.test_cursor().view_state().position, authoritative)
-      match viewer.current_browser_data().unwrap().horizontal_reveal_request {
+      match
+        viewer.current_code_browser_data().unwrap().horizontal_reveal_request {
         Some(request) => {
           assert_true(request.minimal_reveal)
           assert_true(request.scroll_type == Smooth)

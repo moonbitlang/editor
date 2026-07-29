@@ -121,7 +121,7 @@ fn Viewer::clear_agent_feedback_widgets_from(
 fn Viewer::rebuild_agent_feedback_widgets(self : Viewer) -> Unit {
   guard self.agent_feedback_widget_contribution() is Some(wc) else { return }
   let focused_reply = self.clear_agent_feedback_widgets()
-  guard self.get_view() is Some(_) && self.get_model() is Some(model) else {
+  guard self.current_code_view() is Some(_) && self.get_model() is Some(model) else {
     return
   }
   let comments = @agent_feedback.get_session_editor_comments(
@@ -258,7 +258,7 @@ fn Viewer::relayout_agent_feedback_widgets(self : Viewer) -> Unit {
 /// `_handleNavigation`: expand the widget containing the anchored comment,
 /// collapse the rest, focus the item, and reveal its range.
 fn Viewer::handle_agent_feedback_navigation(self : Viewer) -> Unit {
-  guard self.get_view() is Some(_) && self.get_model() is Some(model) else {
+  guard self.current_code_view() is Some(_) && self.get_model() is Some(model) else {
     return
   }
   let comments = @agent_feedback.get_session_editor_comments(

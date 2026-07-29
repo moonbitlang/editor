@@ -3,7 +3,7 @@
 /// no browser View (and therefore no ViewPart consumer), so it deliberately
 /// performs only the same ViewModel/cache mutations in that mode.
 fn Viewer::emit_view_event(self : Viewer, event : @view.ViewEvent) -> Unit {
-  match self.get_view() {
+  match self.current_code_view() {
     Some(view) => view.emit_view_event(event)
     None => ()
   }
@@ -14,7 +14,7 @@ fn Viewer::emit_view_event(self : Viewer, event : @view.ViewEvent) -> Unit {
 /// returned View is the exact dispatcher whose matching `end` must run even
 /// if Viewer state changes before the batch completes.
 fn Viewer::begin_view_event_batch(self : Viewer) -> @view.View? {
-  match self.get_view() {
+  match self.current_code_view() {
     Some(view) => {
       view.begin_view_event_batch() |> ignore
       Some(view)

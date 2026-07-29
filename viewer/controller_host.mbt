@@ -78,7 +78,7 @@ fn Viewer::pointer_handler_helper(
 /// Cancels an in-progress mouse selection on viewer lifecycle resets (model
 /// change/clear). No-op before the view (and its controller) exist.
 fn Viewer::cancel_mouse_selection(self : Viewer) -> Unit {
-  match self.current_browser_data() {
+  match self.current_code_browser_data() {
     Some(browser) => browser.cancel_mouse_selection()
     None => ()
   }

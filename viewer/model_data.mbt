@@ -58,21 +58,29 @@ fn ViewerModelSlot::is_current_generation(
 ///|
 /// Monaco's `ModelData` (`codeEditorWidget.ts:2123-2143`): everything whose
 /// lifetime is one model attach. `browser` is `None` only for the private
-/// headless harness; a real browser View is always paired with its retained
-/// MouseHandler reference and View-scoped render/reveal facts.
+/// headless harness; every mounted model owns one closed browser presentation.
 priv struct ModelData {
   model : @model.TextModel
   view_model : @view_model.ViewModel
-  browser : ModelBrowserData?
+  browser : BrowserPresentation?
   attached_view : @model.AttachedViewImpl
   listeners_to_remove : Array[@base_common.Disposable]
 }
 
 ///|
-/// The complete browser-only state for one attached model. `mouse_handler` is
-/// retained for lifecycle commands, but `view` remains its sole disposable
-/// owner through the disposable registered by `hook_view_input`.
-priv struct ModelBrowserData {
+/// The private closed family of mounted document presentations. Milestone 1
+/// makes the existing code surface explicit; later variants must join these
+/// exhaustive root helpers instead of leaking a hidden code `View`.
+priv enum BrowserPresentation {
+  Code(CodeBrowserData)
+}
+
+///|
+/// The complete code-presentation state for one attached model.
+/// `mouse_handler` is retained for lifecycle commands, but `view` remains its
+/// sole disposable owner through the disposable registered by
+/// `hook_view_input`.
+priv struct CodeBrowserData {
   view : @view.View
   mouse_handler : @controller.MouseHandler
   mut rendered_window : @view_layout.LineWindow?
@@ -80,10 +88,10 @@ priv struct ModelBrowserData {
 }
 
 ///|
-fn ModelBrowserData::ModelBrowserData(
+fn CodeBrowserData::CodeBrowserData(
   view : @view.View,
   mouse_handler : @controller.MouseHandler,
-) -> ModelBrowserData {
+) -> CodeBrowserData {
   {
     view,
     mouse_handler,
@@ -93,20 +101,18 @@ fn ModelBrowserData::ModelBrowserData(
 }
 
 ///|
-fn ModelBrowserData::cancel_mouse_selection(self : ModelBrowserData) -> Unit {
+fn CodeBrowserData::cancel_mouse_selection(self : CodeBrowserData) -> Unit {
   self.mouse_handler.cancel_selection()
 }
 
 ///|
-fn ModelBrowserData::invalidate_rendered_window(
-  self : ModelBrowserData,
-) -> Unit {
+fn CodeBrowserData::invalidate_rendered_window(self : CodeBrowserData) -> Unit {
   self.rendered_window = None
 }
 
 ///|
-fn ModelBrowserData::sync_rendered_window(
-  self : ModelBrowserData,
+fn CodeBrowserData::sync_rendered_window(
+  self : CodeBrowserData,
   view_model : @view_model.ViewModel,
 ) -> @view_layout.LineWindow {
   let window = view_model.clamp_window(view_model.view_layout.visible_window())
@@ -115,7 +121,53 @@ fn ModelBrowserData::sync_rendered_window(
 }
 
 ///|
-fn Viewer::current_browser_data(self : Viewer) -> ModelBrowserData? {
+fn BrowserPresentation::root(self : BrowserPresentation) -> @rdom.Element {
+  match self {
+    Code(code) => code.view.root
+  }
+}
+
+///|
+fn BrowserPresentation::apply_theme(
+  self : BrowserPresentation,
+  theme : String,
+) -> Unit {
+  match self {
+    Code(code) => {
+      code.view.root.set_attribute("data-theme", theme)
+      code.view.apply_squiggly_theme()
+    }
+  }
+}
+
+///|
+fn BrowserPresentation::focus(self : BrowserPresentation) -> Unit {
+  @base_browser.focus_prevent_scroll(self.root())
+}
+
+///|
+fn BrowserPresentation::contains_active_element(
+  self : BrowserPresentation,
+) -> Bool {
+  @base_browser.element_contains_active_element(self.root())
+}
+
+///|
+fn BrowserPresentation::code(self : BrowserPresentation) -> CodeBrowserData? {
+  match self {
+    Code(code) => Some(code)
+  }
+}
+
+///|
+fn BrowserPresentation::dispose(self : BrowserPresentation) -> Unit {
+  match self {
+    Code(code) => code.view.dispose()
+  }
+}
+
+///|
+fn Viewer::current_browser_presentation(self : Viewer) -> BrowserPresentation? {
   match self.model_slot.current {
     Some(model_data) => model_data.browser
     None => None
@@ -123,16 +175,32 @@ fn Viewer::current_browser_data(self : Viewer) -> ModelBrowserData? {
 }
 
 ///|
+fn Viewer::active_presentation_root(self : Viewer) -> @rdom.Element? {
+  match self.current_browser_presentation() {
+    Some(presentation) => Some(presentation.root())
+    None => None
+  }
+}
+
+///|
+fn Viewer::current_code_browser_data(self : Viewer) -> CodeBrowserData? {
+  match self.current_browser_presentation() {
+    Some(presentation) => presentation.code()
+    None => None
+  }
+}
+
+///|
 /// `ModelData.dispose` (`cew:2133-2141`): remove the swap-scoped listeners,
-/// release the attached-view handle, dispose the View (which disposes its
-/// MouseHandler exactly once), then unregister the ViewModel from the model.
+/// release the attached-view handle, dispose the active presentation, then
+/// unregister the ViewModel from the model.
 fn ModelData::dispose(self : ModelData) -> Unit {
   for listener in self.listeners_to_remove {
     listener.dispose()
   }
   self.model.on_before_detached(self.attached_view)
   match self.browser {
-    Some(browser) => browser.view.dispose()
+    Some(browser) => browser.dispose()
     None => ()
   }
   self.view_model.dispose()

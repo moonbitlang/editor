@@ -4,12 +4,12 @@ test "ViewerMount represents all headless and mounted model shapes" {
   let headless_model = test_model("headless")
   assert_true(headless.mount is Headless)
   assert_true(headless.get_model() is None)
-  assert_true(headless.get_view() is None)
+  assert_true(headless.current_code_view() is None)
   assert_false(headless.mount.has_pending_render())
   headless.set_model(Some(headless_model))
   assert_true(headless.mount is Headless)
   assert_true(headless.get_model() is Some(_))
-  assert_true(headless.current_browser_data() is None)
+  assert_true(headless.current_code_browser_data() is None)
   assert_false(headless.mount.has_pending_render())
   headless.dispose()
   headless_model.dispose()
@@ -24,7 +24,7 @@ test "ViewerMount represents all headless and mounted model shapes" {
   mounted.attach(host)
   assert_true(mounted.mount is Mounted(_))
   assert_true(mounted.get_model() is None)
-  assert_true(mounted.get_view() is None)
+  assert_true(mounted.current_code_view() is None)
   guard mounted.mount is Mounted(mounted_state) else {
     fail("attached Viewer did not publish Mounted state")
   }
@@ -37,7 +37,22 @@ test "ViewerMount represents all headless and mounted model shapes" {
   mounted.set_model(Some(mounted_model))
   assert_true(mounted.mount is Mounted(_))
   assert_true(mounted.get_model() is Some(_))
-  assert_true(mounted.current_browser_data() is Some(_))
+  assert_true(mounted.current_code_browser_data() is Some(_))
+  guard mounted.current_browser_presentation() is Some(Code(code_presentation)) else {
+    fail("mounted model did not publish the Code presentation")
+  }
+  assert_true(
+    same_mounted_test_element(
+      mounted.active_presentation_root().unwrap(),
+      code_presentation.view.root,
+    ),
+  )
+  assert_true(
+    same_mounted_test_element(
+      mounted.get_dom_node().unwrap(),
+      code_presentation.view.root,
+    ),
+  )
   assert_false(
     @base_browser.element_contains(mounted_state.container, placeholder.root),
   )

@@ -71,6 +71,7 @@ fn register_folding_contribution(registry : EditorContributionRegistry) -> Unit 
 ///|
 /// `CONTEXT_FOLDING_ENABLED` (`folding.ts:46`) as a live predicate.
 fn Viewer::folding_enabled(self : Viewer) -> Bool {
+  self.is_code_presentation() &&
   self.get_options().folding &&
   self.folding_controller() is Some(controller) &&
   controller.folding_model is Some(_)

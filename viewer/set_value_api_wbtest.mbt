@@ -41,20 +41,20 @@ test "set_value without a model is a no-op (cew:490-492)" {
 
 ///|
 extern "js" fn same_test_model_browser_data(
-  left : ModelBrowserData,
-  right : ModelBrowserData,
+  left : CodeBrowserData,
+  right : CodeBrowserData,
 ) -> Bool = "(left, right) => left === right"
 
 ///|
 test "set_value marks mounted rendered content stale on the same browser data" {
   with_mounted_test_viewer("one\ntwo", viewer => {
-    let browser = viewer.current_browser_data().unwrap()
+    let browser = viewer.current_code_browser_data().unwrap()
     browser.rendered_window = Some({ start: 1, end: 2 })
     viewer.set_value("a")
     assert_true(browser.rendered_window is None)
     assert_true(
       same_test_model_browser_data(
-        viewer.current_browser_data().unwrap(),
+        viewer.current_code_browser_data().unwrap(),
         browser,
       ),
     )
