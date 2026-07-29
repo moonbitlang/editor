@@ -143,6 +143,9 @@ fn MarkdownDocumentHoverWidget::write_metadata(
 
 ///|
 /// Small pure geometry seam used after the rows have their natural size.
+let markdown_hover_wrapper_border_size : Double = 2.0
+
+///|
 pub fn markdown_hover_clamped_origin(
   pointer_x : Double,
   line_top : Double,
@@ -203,6 +206,24 @@ pub fn MarkdownDocumentHoverWidget::show(
     "max-height",
     "\{max_height}px",
   )
+  // Release the previous hover's locked box and give the absolutely
+  // positioned child the whole viewport as its temporary containing block.
+  // This is the Markdown-presentation equivalent of ContentHoverWidget's
+  // `_removeConstraintsRenderNormally`; otherwise shrink-to-fit collapses long
+  // documentation to its min-content width on the first show and every
+  // replacement inherits that narrow measurement.
+  @base_browser.set_style_property(self.wrapper, "left", "0px")
+  @base_browser.set_style_property(self.wrapper, "top", "0px")
+  @base_browser.set_style_property(
+    self.wrapper,
+    "width",
+    "\{viewport_rect.get_width()}px",
+  )
+  @base_browser.set_style_property(
+    self.wrapper,
+    "height",
+    "\{viewport_rect.get_height()}px",
+  )
   let hover_rect = self.hover.get_bounding_client_rect()
   let line_rect = line_element.get_bounding_client_rect()
   let (top, left) = markdown_hover_clamped_origin(
@@ -213,8 +234,8 @@ pub fn MarkdownDocumentHoverWidget::show(
     viewport_rect.get_top(),
     viewport_rect.get_width(),
     viewport_rect.get_height(),
-    hover_rect.get_width(),
-    hover_rect.get_height(),
+    hover_rect.get_width() + markdown_hover_wrapper_border_size,
+    hover_rect.get_height() + markdown_hover_wrapper_border_size,
   )
   @base_browser.set_style_property(self.wrapper, "left", "\{left}px")
   @base_browser.set_style_property(self.wrapper, "top", "\{top}px")
@@ -466,7 +487,10 @@ pub struct MarkdownDocumentHoverBridge {
   priv mut request_generation : Int
   priv mut current_source_offset : Int?
   priv mut current_block_index : Int?
+  priv mut request_start_timer : @base_common.Disposable?
+  priv mut loading_timer : @base_common.Disposable?
   priv mut request_source : @language.CancellationTokenSource?
+  priv mut request_pending : Bool
   priv mut active : Bool
   priv mut disposed : Bool
 }
@@ -496,7 +520,10 @@ pub fn MarkdownDocumentHoverBridge::MarkdownDocumentHoverBridge(
     request_generation: 0,
     current_source_offset: None,
     current_block_index: None,
+    request_start_timer: None,
+    loading_timer: None,
     request_source: None,
+    request_pending: false,
     active: false,
     disposed: false,
   }
@@ -577,11 +604,22 @@ fn MarkdownDocumentHoverBridge::bind_semantic_dom(
 fn MarkdownDocumentHoverBridge::cancel_request(
   self : MarkdownDocumentHoverBridge,
 ) -> Unit {
+  match self.request_start_timer {
+    Some(timer) => timer.dispose()
+    None => ()
+  }
+  self.request_start_timer = None
+  match self.loading_timer {
+    Some(timer) => timer.dispose()
+    None => ()
+  }
+  self.loading_timer = None
   match self.request_source {
     Some(source) => source.dispose(cancel=true)
     None => ()
   }
   self.request_source = None
+  self.request_pending = false
 }
 
 ///|
@@ -768,6 +806,79 @@ fn MarkdownDocumentHoverBridge::accept_parts(
 }
 
 ///|
+fn MarkdownDocumentHoverBridge::start_pointer_request(
+  self : MarkdownDocumentHoverBridge,
+  stamp : MarkdownDocumentHoverRequestStamp,
+  hit : MarkdownSemanticPointerHit,
+  anchor : @hover.HoverAnchor,
+) -> Unit {
+  self.request_start_timer = None
+  guard self.stamp_is_current(stamp) else { return }
+  let sync_parts = match
+    self.computer.compute_sync(self.model, anchor, source=HoverStartMouse) {
+    Some(computed) => computed.parts
+    None => []
+  }
+  if self.stamp_is_current(stamp) {
+    self.accept_parts(stamp, hit, sync_parts)
+  }
+  let loading_delay_ms = @hover.hover_loading_message_ms -
+    @hover.hover_first_wait_ms
+  self.loading_timer = Some(
+    @base_browser.schedule_timeout(
+      () => {
+        self.loading_timer = None
+        guard self.request_pending && self.stamp_is_current(stamp) else {
+          return
+        }
+        match self.computer.create_loading_message(anchor) {
+          Some(loading) =>
+            self.accept_parts(
+              stamp,
+              hit,
+              markdown_sorted_hover_parts(sync_parts, [loading]),
+            )
+          None => ()
+        }
+      },
+      loading_delay_ms,
+    ),
+  )
+  let computer = self.computer
+  let model = self.model
+  (self.launch_async_task)(() => {
+    let computed = computer.compute_async(
+      model,
+      anchor,
+      source=HoverStartMouse,
+      token=stamp.cancellation_token,
+      is_current=() => self.stamp_is_current(stamp),
+    )
+    guard self.stamp_is_current(stamp) else { return }
+    self.request_pending = false
+    match self.loading_timer {
+      Some(timer) => timer.dispose()
+      None => ()
+    }
+    self.loading_timer = None
+    let async_parts = match computed {
+      Some(value) => value.parts
+      None => []
+    }
+    self.accept_parts(
+      stamp,
+      hit,
+      markdown_sorted_hover_parts(sync_parts, async_parts),
+    )
+    match self.request_source {
+      Some(source) => source.dispose()
+      None => ()
+    }
+    self.request_source = None
+  })
+}
+
+///|
 fn MarkdownDocumentHoverBridge::on_pointer_move(
   self : MarkdownDocumentHoverBridge,
   client_x : Double,
@@ -805,35 +916,13 @@ fn MarkdownDocumentHoverBridge::on_pointer_move(
     initial_mouse_pos_x=Some(client_x),
     initial_mouse_pos_y=Some(client_y),
   )
-  let sync_parts = match
-    self.computer.compute_sync(self.model, anchor, source=HoverStartMouse) {
-    Some(computed) => computed.parts
-    None => []
-  }
-  if self.stamp_is_current(stamp) {
-    self.accept_parts(stamp, hit, sync_parts)
-  }
-  let computer = self.computer
-  let model = self.model
-  (self.launch_async_task)(() => {
-    let computed = computer.compute_async(
-      model,
-      anchor,
-      source=HoverStartMouse,
-      token=stamp.cancellation_token,
-      is_current=() => self.stamp_is_current(stamp),
-    )
-    guard self.stamp_is_current(stamp) else { return }
-    let async_parts = match computed {
-      Some(value) => value.parts
-      None => []
-    }
-    self.accept_parts(
-      stamp,
-      hit,
-      markdown_sorted_hover_parts(sync_parts, async_parts),
-    )
-  })
+  self.request_pending = true
+  self.request_start_timer = Some(
+    @base_browser.schedule_timeout(
+      () => self.start_pointer_request(stamp, hit, anchor),
+      @hover.hover_first_wait_ms,
+    ),
+  )
 }
 
 ///|

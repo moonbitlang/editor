@@ -26,13 +26,20 @@ they share content and sanitization policy without sharing widget state.
 supplies only caret text-node offsets and measured DOM rectangles; MoonBit
 resolves the retained semantic row, converts its UTF-16 boundary to the
 original model position, runs `ContentHoverComputer`, projects live marker
-decorations, and owns request cancellation. Every async completion is gated by
-model identity, caller and content versions, URI/revision, attach generation,
-projection generation/source version, block identity, source offset, and
-request token. Content, theme, and model replacement invalidate the relevant
-state before presentation DOM replacement. Layout may update geometry
-synchronously first; layout, marker change, pointer exit, and disposal still
-invalidate freshness before a pending async hover may commit.
+decorations, and owns request cancellation. A changing pointer replaces one
+clearable first-wait timer; only a source boundary held for the shared 150 ms
+first-wait launches semantic work, and a still-pending request displays the
+shared loading row roughly 900 ms after the pointer settles (plus synchronous
+computation time). This presentation-local bridge intentionally omits Code's
+separate 300 ms display gate. Every async completion is gated by model identity,
+caller and content versions, URI/revision, attach generation, projection
+generation/source version, block identity, source offset, and request token.
+Content, theme, and model replacement invalidate the relevant state before
+presentation DOM replacement. Layout may update geometry synchronously first;
+layout, marker change, pointer exit, and disposal still invalidate freshness
+before a pending async hover may commit. Before measuring each row set, the
+widget temporarily releases its previous locked box against the full Markdown
+viewport, then clamps and locks the resulting readable natural size.
 
 Projected diagnostics consume the marker package's resolved class, z-index,
 and range metadata in the same overlay order as Code. Markdown owns the visible
