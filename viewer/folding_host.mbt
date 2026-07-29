@@ -34,12 +34,25 @@ fn Viewer::folding_controller(
 /// This is the host-facing mechanism for applying an initial fold policy. It
 /// intentionally supplies no blocked lines, unlike Monaco's
 /// `editor.foldLevel1` action, so the region containing the current selection
-/// is folded as well. The call does nothing when folding is disabled or no
+/// is folded as well. MoonBit function bodies use their opening-brace line as
+/// the folded header, keeping every source-formatted signature line and the
+/// delimiter visible. The call does nothing when folding is disabled or no
 /// folding model is attached.
 pub fn Viewer::fold_top_level(self : Viewer) -> Unit {
   guard self.get_options().folding else { return }
   guard self.folding_controller() is Some(controller) else { return }
   guard controller.folding_model is Some(folding_model) else { return }
+  if folding_model.text_model().get_language_id() == "moonbit" {
+    let current_regions = folding_model.regions()
+    let outline_regions = moonbit_outline_folding_regions(
+      folding_model.text_model().snapshot,
+      current_regions,
+      self.get_options().folding_maximum_regions,
+    )
+    if !physical_equal(current_regions, outline_regions) {
+      folding_model.update_post(outline_regions)
+    }
+  }
   @folding_browser.set_collapse_state_at_level(folding_model, 1, true, [])
 }
 
@@ -142,7 +155,18 @@ fn Viewer::trigger_folding_model_changed(self : Viewer) -> Unit {
     controller,
     folding_model.text_model(),
   )
-  let folding_ranges = provider.compute()
+  let provider_ranges = provider.compute()
+  let folding_ranges = if folding_model.text_model().get_language_id() ==
+    "moonbit" &&
+    has_outline_body_folding_ranges(folding_model.regions()) {
+    moonbit_outline_folding_regions(
+      folding_model.text_model().snapshot,
+      provider_ranges,
+      self.get_options().folding_maximum_regions,
+    )
+  } else {
+    provider_ranges
+  }
   // some cursors might have moved into hidden regions, make sure they are
   // in expanded regions
   let selections = self.get_selections().unwrap_or([])

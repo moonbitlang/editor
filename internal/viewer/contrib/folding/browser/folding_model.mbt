@@ -12,14 +12,14 @@
 /// function record instead of a MoonBit trait object: the source boundary is
 /// three callbacks, not a runtime-subtyped object hierarchy.
 pub struct FoldingDecorationAccess {
-  priv get_decoration_option_ : (Bool, Bool, Bool) -> @model.ModelDecorationOptions
+  priv get_decoration_option_ : (Bool, Bool, Bool, Bool) -> @model.ModelDecorationOptions
   priv change_decorations_ : ((@model.ModelDecorationsChangeAccessor) -> Unit) -> Unit
   priv remove_decorations_ : (Array[String]) -> Unit
 }
 
 ///|
 fn FoldingDecorationAccess::new(
-  get_decoration_option : (Bool, Bool, Bool) -> @model.ModelDecorationOptions,
+  get_decoration_option : (Bool, Bool, Bool, Bool) -> @model.ModelDecorationOptions,
   change_decorations : ((@model.ModelDecorationsChangeAccessor) -> Unit) -> Unit,
   remove_decorations : (Array[String]) -> Unit,
 ) -> FoldingDecorationAccess {
@@ -36,8 +36,11 @@ fn FoldingDecorationAccess::get_decoration_option(
   is_collapsed : Bool,
   is_hidden : Bool,
   is_manual : Bool,
+  is_outline_body : Bool,
 ) -> @model.ModelDecorationOptions {
-  (self.get_decoration_option_)(is_collapsed, is_hidden, is_manual)
+  (self.get_decoration_option_)(
+    is_collapsed, is_hidden, is_manual, is_outline_body,
+  )
 }
 
 ///|
@@ -146,6 +149,8 @@ pub fn FoldingModel::toggle_collapse_state(
               is_collapsed,
               end_line_number <= last_hidden_line.val,
               is_manual,
+              self.regions.get_type(k.val) ==
+              Some(OUTLINE_BODY_FOLDING_RANGE_TYPE),
             ),
           )
         }
@@ -251,6 +256,7 @@ pub fn FoldingModel::update_post(
         is_collapsed,
         end_line_number <= last_hidden_line,
         is_manual,
+        new_regions.get_type(index) == Some(OUTLINE_BODY_FOLDING_RANGE_TYPE),
       ),
     })
     if is_collapsed && end_line_number > last_hidden_line {

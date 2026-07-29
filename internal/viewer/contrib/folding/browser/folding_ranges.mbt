@@ -45,6 +45,25 @@ pub struct FoldRange {
 } derive(Eq, Debug)
 
 ///|
+/// Creates a fold range for callers that compose provider ranges before
+/// installing them in a `FoldingModel`.
+pub fn FoldRange::FoldRange(
+  start_line_number : Int,
+  end_line_number : Int,
+  type_? : String,
+  is_collapsed? : Bool = false,
+  source? : FoldSource = Provider,
+) -> FoldRange {
+  { start_line_number, end_line_number, type_, is_collapsed, source }
+}
+
+///|
+/// Marks a host-computed outline fold whose header already contains the full
+/// declaration. Its collapsed decoration keeps the chevron and optional
+/// highlight but omits the ordinary trailing ellipsis.
+pub const OUTLINE_BODY_FOLDING_RANGE_TYPE : String = "editor.outlineBody"
+
+///|
 /// `MAX_FOLDING_REGIONS` (`foldingRanges.ts:33`).
 pub const MAX_FOLDING_REGIONS : Int = 0xFFFF
 

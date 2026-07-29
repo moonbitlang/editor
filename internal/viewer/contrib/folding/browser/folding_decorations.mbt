@@ -52,6 +52,27 @@ let collapsed_highlighted_visual_decoration : @model.ModelDecorationOptions = Mo
 )
 
 ///|
+/// A collapsed host outline whose visible line already ends at the body
+/// delimiter. The chevron communicates collapse without appending `⋯` to the
+/// complete declaration header.
+let collapsed_outline_body_visual_decoration : @model.ModelDecorationOptions = ModelDecorationOptions(
+  "",
+  description="folding-collapsed-outline-body-visual-decoration",
+  stickiness=AlwaysGrowsWhenTypingAtEdges,
+  is_whole_line=true,
+  first_line_decoration_class_name=FOLDING_COLLAPSED_ICON_CLASS,
+)
+
+///|
+let collapsed_outline_body_highlighted_visual_decoration : @model.ModelDecorationOptions = ModelDecorationOptions(
+  "folded-background",
+  description="folding-collapsed-outline-body-highlighted-visual-decoration",
+  stickiness=AlwaysGrowsWhenTypingAtEdges,
+  is_whole_line=true,
+  first_line_decoration_class_name=FOLDING_COLLAPSED_ICON_CLASS,
+)
+
+///|
 /// `MANUALLY_COLLAPSED_VISUAL_DECORATION`.
 let manually_collapsed_visual_decoration : @model.ModelDecorationOptions = ModelDecorationOptions(
   "",
@@ -90,6 +111,22 @@ let no_controls_collapsed_highlighted_range_decoration : @model.ModelDecorationO
   description="folding-no-controls-range-decoration",
   stickiness=AlwaysGrowsWhenTypingAtEdges,
   after_content_class_name="inline-folded",
+  is_whole_line=true,
+)
+
+///|
+let no_controls_collapsed_outline_body_range_decoration : @model.ModelDecorationOptions = ModelDecorationOptions(
+  "",
+  description="folding-no-controls-outline-body-range-decoration",
+  stickiness=AlwaysGrowsWhenTypingAtEdges,
+  is_whole_line=true,
+)
+
+///|
+let no_controls_collapsed_outline_body_highlighted_range_decoration : @model.ModelDecorationOptions = ModelDecorationOptions(
+  "folded-background",
+  description="folding-no-controls-outline-body-range-decoration",
+  stickiness=AlwaysGrowsWhenTypingAtEdges,
   is_whole_line=true,
 )
 
@@ -199,6 +236,7 @@ fn FoldingDecorationProvider::get_decoration_option(
   is_collapsed : Bool,
   is_hidden : Bool,
   is_manual : Bool,
+  is_outline_body : Bool,
 ) -> @model.ModelDecorationOptions {
   if is_hidden {
     // is inside another collapsed region
@@ -206,6 +244,13 @@ fn FoldingDecorationProvider::get_decoration_option(
   }
   if self.show_folding_controls == Never {
     if is_collapsed {
+      if is_outline_body {
+        return if self.show_folding_highlights {
+          no_controls_collapsed_outline_body_highlighted_range_decoration
+        } else {
+          no_controls_collapsed_outline_body_range_decoration
+        }
+      }
       return if self.show_folding_highlights {
         no_controls_collapsed_highlighted_range_decoration
       } else {
@@ -215,7 +260,13 @@ fn FoldingDecorationProvider::get_decoration_option(
     return no_controls_expanded_range_decoration
   }
   if is_collapsed {
-    if is_manual {
+    if is_outline_body {
+      if self.show_folding_highlights {
+        collapsed_outline_body_highlighted_visual_decoration
+      } else {
+        collapsed_outline_body_visual_decoration
+      }
+    } else if is_manual {
       if self.show_folding_highlights {
         manually_collapsed_highlighted_visual_decoration
       } else {
@@ -268,8 +319,10 @@ pub fn FoldingDecorationProvider::access(
   self : FoldingDecorationProvider,
 ) -> FoldingDecorationAccess {
   FoldingDecorationAccess::new(
-    (is_collapsed, is_hidden, is_manual) => {
-      self.get_decoration_option(is_collapsed, is_hidden, is_manual)
+    (is_collapsed, is_hidden, is_manual, is_outline_body) => {
+      self.get_decoration_option(
+        is_collapsed, is_hidden, is_manual, is_outline_body,
+      )
     },
     callback => self.change_decorations(callback),
     decoration_ids => self.remove_decorations(decoration_ids),

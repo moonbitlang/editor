@@ -19,6 +19,8 @@ pub const MAX_FOLDING_REGIONS : Int = 0xFFFF
 
 pub const MAX_LINE_NUMBER : Int = 0xFFFFFF
 
+pub const OUTLINE_BODY_FOLDING_RANGE_TYPE : String = "editor.outlineBody"
+
 pub fn compute_ranges(@model.TextModel, Bool, markers? : @languages.FoldingMarkers, folding_ranges_limit? : FoldingLimitReporter, tab_size? : Int) -> FoldingRegions
 
 pub fn get_next_fold_line(Int, FoldingModel) -> Int?
@@ -55,6 +57,7 @@ pub struct FoldRange {
   mut is_collapsed : Bool
   mut source : FoldSource
 } derive(Eq, @debug.Debug)
+pub fn FoldRange::FoldRange(Int, Int, type_? : String, is_collapsed? : Bool, source? : FoldSource) -> Self
 
 pub enum FoldRangesOrRegions {
   Regions(FoldingRegions)
