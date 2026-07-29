@@ -63,6 +63,7 @@ fn memory_workspace() -> MemoryWorkspace {
   let directories : Map[String, Array[@workspace.WorkspaceStat]] = Map([])
   directories[memory_root] = [
     memory_dir("src", "src"),
+    memory_file("README.md", "README.md"),
     memory_file("moon.mod", "moon.mod"),
   ]
   directories[memory_root + "/src"] = [
@@ -73,6 +74,15 @@ fn memory_workspace() -> MemoryWorkspace {
     memory_file("src/lib/util.mbt", "util.mbt"),
   ]
   let documents : Map[String, String] = Map([])
+  documents[memory_root + "/README.md"] = (
+    #|# Embedded Markdown document
+    #|
+    #|This URI-backed in-memory model is rendered directly by the public **Viewer**.
+    #|
+    #|- No workbench presentation branch participates.
+    #|- No remote protocol or WebSocket participates.
+    #|
+  )
   documents[memory_root + "/moon.mod"] = "name = \"embedded-example\"\n"
   documents[memory_root + "/src/main.mbt"] = (
     #|///|

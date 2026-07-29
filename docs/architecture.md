@@ -28,20 +28,30 @@ flowchart LR
   C --> D[ViewLayout<br>common/view_layout]
   D --> E[BrowserPresentation<br>closed family]
   E --> F[Code: View<br>browser/view]
-  F --> G[DOM]
+  E --> G[Markdown: document view<br>+ hover bridge]
+  F --> H[DOM]
+  G --> H
 ```
 
 The stages after the host document live in `viewer/common/model`,
-`viewer/common/view_model`, `viewer/common/view_layout`, and — behind the
-Viewer-owned closed `BrowserPresentation` family — `internal/viewer/browser/view`.
+`viewer/common/view_model`, and `viewer/common/view_layout`. The Viewer-owned
+closed `BrowserPresentation` family then selects
+`internal/viewer/browser/view.View` for Code or
+`internal/viewer/browser/markdown_document.MarkdownDocumentView` plus the
+`internal/viewer/contrib/hover/browser.MarkdownDocumentHoverBridge` for
+Markdown.
 
 `Viewer` keeps cross-domain ordering at the root and delegates private state to
 five concrete owners: `EditorConfigurationState`, `ViewerModelSlot`,
 `ViewerMount`, `EditorContributions`, and `CursorEventDelivery`.
 `ViewerModelSlot.current` is the one nullable `ModelData`; its optional closed
-`BrowserPresentation` makes active-root dispatch explicit. The current
-`Code(CodeBrowserData)` payload pairs a real `View` with its retained mouse
-handler and view-scoped render/reveal facts. Public construction seeds
+`BrowserPresentation` makes active-root dispatch explicit. It contains exactly
+`Code(CodeBrowserData)` and `Markdown(MarkdownBrowserData)`; root lookup, focus,
+theme, layout, scroll, reveal, and lifecycle dispatch exhaustively over that
+family instead of assuming a hidden Code `View`. The Code payload pairs a real
+`View` with its retained mouse handler and view-scoped render/reveal facts. The
+Markdown payload pairs a contribution-free document view with a
+presentation-local bridge over the original model. Public construction seeds
 `EditorConfigurationState` synchronously from the host client box before model
 attachment. Each `ModelData` then carries one generation-scoped initialization
 boundary: the host invokes `Viewer::handle_initialized` after model, view-state,
@@ -49,16 +59,25 @@ and option setup, publishing stable visible-token demand outside `attach_model`
 and independently of the animation-frame render loop. Repeated calls
 re-stabilize the current model's demand instead of consuming one-shot state.
 
+Presentation selection belongs to the root Viewer. An exact lowercase URI-path
+`.md` suffix, including `.mbt.md`, or the exact `markdown` language id selects
+Markdown; every other model selects Code. URI matching excludes query and
+fragment text and remains case-sensitive. Shells and embedders always supply an
+ordinary caller-owned `TextModel`; they do not parse Markdown or select a
+presentation. Both variants retain that original model and `ViewModel` as
+source truth.
+
 Headless means `ViewerMount::Headless`: there is no caller host, placeholder,
-browser `View`, DOM focus state, or root animation frame. A headless Viewer may
-still have a model and `ViewModel`, represented only by
-`ModelData.browser=None`; on supported construction paths, a mounted model
-always has `Some(BrowserPresentation)`. `ViewerMount` installs and removes the
-active presentation root without knowing its concrete payload. This is
-distinct from a mounted Viewer with no model, which owns and paints one
-complete placeholder pair. Mounting is one-way; disposal removes Viewer-owned
-DOM and clears mounted placeholder/frame/focus state, but retains the caller's
-host for container lookup.
+browser presentation, DOM focus state, or root animation frame. A headless
+Viewer may still have a model and `ViewModel`; `ModelData.presentation_kind`
+retains the same automatic selection while `ModelData.browser=None`. On
+supported construction paths, a mounted model always has
+`Some(BrowserPresentation)`. `ViewerMount` installs and removes the active
+presentation root without knowing its concrete payload. This is distinct from
+a mounted Viewer with no model, which owns and paints one complete placeholder
+pair. Mounting is one-way; disposal removes Viewer-owned DOM and clears mounted
+placeholder/frame/focus state, but retains the caller's host for container
+lookup.
 
 The host owns files, transport, persistence, reload policy, shell chrome, and
 error presentation. The viewer owns readonly rendering, selection, scrolling,
@@ -137,6 +156,9 @@ common -> foundations
   diagnostics-to-decoration flow. Their opaque `LanguageHandle`,
   `MarkerServiceHandle`, and `MarkerDecorationsHandle` expose only the reviewed
   Viewer capability floor while hosts retain the concrete registries/stores.
+  The marker-decoration handle can resolve the live, exact-model occurrences
+  used by browser presentations; Markdown does not create a second marker
+  store or decorate a synthetic model.
 - `core`, `cursor`, `config`: coordinates, selection/cursor state, and editor
   configuration values.
 - `view_model`: injected text, wrapping/folding projection, model/view
@@ -174,6 +196,13 @@ js-only. Concrete browser runtime packages live below the module-private
   state/render-phase trace. Observation records are constructed only while the
   matching Viewer has a listener; the package never imports root Viewer and is
   not an external API.
+- `internal/viewer/browser/markdown_document` owns the focusable Markdown root,
+  native scroll viewport, replaceable article, retained overlay mount, and the
+  same-parse source projection. Only compiler-recognized fenced rows receive
+  semantic source boundaries; cross-line tokenization state is preserved, and
+  decoded-text or row-cardinality mismatches fail closed. The package owns no
+  model, provider, marker store, or request policy. Root and the hover browser
+  package own those higher-level contracts.
 - `internal/viewer/markdown` is the multi-target safe-cmark boundary. It owns
   plaintext fallback, a cmark-independent code-block value, conversion facts,
   the shared editor-token HTML override, and the private synchronous adapter
@@ -227,7 +256,18 @@ editor common/browser layers; editor common never depends on them.
 
 - `internal/viewer/contrib/hover` is the DOM-free state/computation layer;
   `internal/viewer/contrib/hover/browser` owns its widget and browser
-  controller. The emitted hover stylesheet remains at
+  controller. Its single-owner row renderer is shared by Code hover and the
+  Markdown document bridge without sharing widget state. The Markdown bridge
+  resolves real DOM carets through retained UTF-16 source boundaries, queries
+  providers against the original model, and projects exact-model marker
+  occurrences into the semantic rows. Its freshness stamp covers request,
+  model, content, URI/revision, attach, projection, block, source-offset, and
+  cancellation identities before any DOM commit. Projected diagnostics reuse
+  resolved class, range, and z-index policy. The
+  `squiggly-inline-unnecessary` opacity and
+  `squiggly-inline-deprecated` strike-through effects are explicitly deferred
+  because they mutate source glyphs; the overlay does not approximate them.
+  The emitted hover stylesheet remains at
   `viewer/contrib/hover/hover.css`.
 - `internal/viewer/contrib/agent_feedback` owns concrete feedback
   storage/service projection; host DTOs and the callback handle live in
@@ -293,6 +333,13 @@ the owner then becomes non-lookuppable, and retained hover browser resources
 are released at their later root cleanup slot before the map is cleared.
 Declared instantiation modes are retained for source parity, but all modes
 currently instantiate eagerly.
+
+The Markdown hover bridge is not a seventh central Code contribution. It is
+owned by `MarkdownBrowserData`, is activated only after the corresponding
+`ModelData` becomes current, and is cancelled before any source/theme
+projection replacement. Detach retires the bridge and renderer while the root
+is still mounted, removes the now-inert presentation root, and only then
+releases model listeners, the attached-view handle, and the `ViewModel`.
 
 The Markdown-comment entry owns Viewer-lifetime model/content subscriptions and
 a model-scoped stable-key map. A mounted Viewer replaces normalized comment
@@ -381,6 +428,11 @@ module's internal packages, and they stay excluded from the published package.
   markers, the file tree, theme, and harness events. Its private MoonBit
   Markdown-comment provider adapts exact `///|` item anchors and their following
   `///` documentation into the Viewer's language-neutral provider contract.
+  It installs every document through the same `Viewer::set_model` path; `.md`
+  and `.mbt.md` require no shell-side presentation branch. Remote hover and
+  diagnostics are accepted only for the exact current model identity, version,
+  URI, revision, and content generation, so the Markdown bridge receives the
+  same original-model freshness guarantees as Code.
 
 ## Dependency Rules
 
@@ -409,5 +461,8 @@ script:
 - `Position`, `Range`, and `LineRange` use 1-based UTF-16 line/column values.
 - `OffsetRange` is a 0-based half-open UTF-16 span.
 - `TextSnapshot` owns offset/position conversion.
+- Markdown DOM projection boundaries and remote hover wire offsets are 0-based
+  UTF-16 offsets. Provider positions and returned ranges remain 1-based and
+  always refer to the original model.
 - Keep conversions at model/view, protocol, and DOM boundaries; do not pass an
   unlabelled integer between coordinate spaces.

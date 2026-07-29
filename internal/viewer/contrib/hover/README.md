@@ -27,7 +27,10 @@ timing, and rendering can be tested on JS and native targets.
   synchronous; registered language hover providers are asynchronous. The
   caller token/freshness predicate guard both sides of each await, and an
   injected task runner lets the browser merge participant results in completion
-  order without a multi-target runtime dependency.
+  order without a multi-target runtime dependency. The browser sibling reuses
+  this computer for semantic Markdown rows while keeping the original
+  `TextModel` as provider identity; projected fence text is never a synthetic
+  model.
 - `render_hover_code_block` preserves hover's synchronous compatibility
   surface while delegating fenced/active-language selection and editor-token
   HTML to `internal/viewer/markdown`'s shared override. This package neither

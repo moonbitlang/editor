@@ -21,16 +21,18 @@ single-owner `HoverRowsRender`: `mount_into` succeeds at most once, and
 Code content widget and the Markdown document bridge use this lifetime, so
 they share content and sanitization policy without sharing widget state.
 
-`MarkdownDocumentHoverWidget` is a presentation-local bridge over the original
-`TextModel`. Browser FFI supplies only caret text-node offsets and measured DOM
-rectangles; MoonBit resolves the retained semantic row, converts its UTF-16
-boundary to the original model position, runs `ContentHoverComputer`, projects
-live marker decorations, and owns request cancellation. Every async completion
-is gated by model identity, caller and content versions, URI/revision, attach
-generation, projection generation/source version, block identity, source
-offset, and request token. Content/theme replacement, layout, marker change,
-model replacement, pointer exit, and disposal invalidate the relevant
-presentation-local state before DOM mutation.
+`MarkdownDocumentHoverBridge` is a presentation-local bridge over the original
+`TextModel` and owns one retained `MarkdownDocumentHoverWidget`. Browser FFI
+supplies only caret text-node offsets and measured DOM rectangles; MoonBit
+resolves the retained semantic row, converts its UTF-16 boundary to the
+original model position, runs `ContentHoverComputer`, projects live marker
+decorations, and owns request cancellation. Every async completion is gated by
+model identity, caller and content versions, URI/revision, attach generation,
+projection generation/source version, block identity, source offset, and
+request token. Content, theme, and model replacement invalidate the relevant
+state before presentation DOM replacement. Layout may update geometry
+synchronously first; layout, marker change, pointer exit, and disposal still
+invalidate freshness before a pending async hover may commit.
 
 Projected diagnostics consume the marker package's resolved class, z-index,
 and range metadata in the same overlay order as Code. Markdown owns the visible
