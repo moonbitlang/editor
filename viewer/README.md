@@ -58,13 +58,16 @@ viewer.slot.data -> model: borrows readonly
   diagnostics, feedback, and quick-diff state between Viewers.
 - `set_model(TextModel?)` installs a caller-owned readonly model in the one
   `ViewerModelSlot.current` bundle. The same object is a no-op; replacement or
-  clearing invalidates the generation before cleanup, then disposes the old
-  model-scoped listeners, exact model-owned attached-view handle, optional
-  `BrowserPresentation`, and `ViewModel` in order. Attachment acquires the
-  handle before `ViewModel` construction and selects one private closed
-  presentation kind. An exact lowercase URI-path `.md` suffix (including
+  clearing invalidates the generation before cleanup. Code and headless retain
+  their existing listener → attached-view → optional View → ViewModel order,
+  followed by mounted root removal. Markdown first cancels its bridge and
+  disposes semantic/render lifetimes while the root is mounted, removes that
+  inert root, then releases listeners, the attached-view handle, and the
+  ViewModel. Attachment acquires the handle before `ViewModel` construction and
+  selects one private closed presentation kind. An exact lowercase URI-path
+  `.md` suffix (including
   `.mbt.md`) or the exact `markdown` language id selects
-  `Markdown(MarkdownDocumentView)`; every other model selects
+  `Markdown(MarkdownBrowserData)`; every other model selects
   `Code(CodeBrowserData)`. URI matching does not include query/fragment text
   and is case-sensitive. Headless attachments retain the same kind without
   constructing DOM. The Code payload cannot hold a `View` without its retained
@@ -100,8 +103,10 @@ viewer.slot.data -> model: borrows readonly
   exact attached-view handle in its `ModelData`. Multiple Viewers sharing a
   service and model share the identity owner until the final lease and maintain
   an aggregate attached count; `set_value` refreshes that owner without
-  acquiring again. Model-scoped listeners dispose before model detachment, the
-  View disposes next, and the ViewModel disposes last.
+  acquiring again. Code publishes the final model-detachment boundary before
+  disposing its View, preserving the established Monaco order. Markdown
+  publishes that boundary only after its renderer is disposed and presentation
+  root removed, so no attachment callback can observe live Markdown feature DOM.
 - Overlay-widget registrations belong to the Viewer and are re-added to each
   Code presentation. With another presentation active, add/remove still update
   the Viewer-lifetime registration map but perform no DOM work. Content widgets
@@ -113,13 +118,24 @@ lifecycle. Markdown content is always rendered from the original `TextModel`
 snapshot and URI; `set_value` replaces only the article contents while
 retaining the root, viewport, and overlay mount. Theme changes perform another
 same-source projection replacement so tokenized fences and Mermaid use the
-current theme. Markdown reveal converts the validated model range to an
-absolute source offset through `TextSnapshot` and selects the containing or
-nearest preceding source anchor. Visible ranges convert intersecting rendered
-anchors back through the same snapshot; a document with no renderable anchor
-falls back to its full model range. Cursor, selection, ViewZones, mouse events,
-folding, quick diff, feedback widgets, Markdown comments, and code overlays
-remain dormant on the Markdown variant.
+current theme. The Markdown payload also owns one presentation-local language
+bridge. Only compiler-recognized `mbt check` fence rows participate: a real DOM
+caret is converted through the retained `MarkdownCodeLine` boundary map to the
+original model's 1-based position, and hover providers run against that
+original model/URI/revision. Live original-model marker decorations are
+projected into those same rows and their marker hover parts are merged with
+language hover rows. Content/theme/layout/marker/model changes and disposal
+invalidate pending requests and projected DOM before replacement.
+
+Markdown reveal converts the validated model range to an absolute source offset
+through `TextSnapshot` and selects the containing or nearest preceding source
+anchor. Visible ranges convert intersecting rendered anchors back through the
+same snapshot; a document with no renderable anchor falls back to its full
+model range. Cursor, selection, ViewZones, editor mouse events, folding, quick
+diff, feedback widgets, Markdown comments, and Code-view overlays remain
+dormant on the Markdown variant. The Markdown bridge's native pointer listener,
+diagnostic spans, and DOM-anchored hover widget are presentation-owned rather
+than Code contributions.
 
 ## Public surface
 

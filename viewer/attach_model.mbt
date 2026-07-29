@@ -128,7 +128,7 @@ fn Viewer::attach_model(self : Viewer, model : @model.TextModel) -> Unit {
         }
         None => ()
       }
-      match self.current_markdown_document() {
+      match self.current_markdown_browser_data() {
         Some(markdown) =>
           markdown.replace_source(model.get_value(), model.get_version_id())
         None => ()
@@ -213,7 +213,7 @@ fn Viewer::attach_model(self : Viewer, model : @model.TextModel) -> Unit {
     }),
   )
   let browser = self.create_browser_presentation(
-    model, view_model, presentation_kind,
+    model, view_model, presentation_kind, model_data_generation,
   )
   self.model_slot.install_current({
     model,
@@ -223,6 +223,10 @@ fn Viewer::attach_model(self : Viewer, model : @model.TextModel) -> Unit {
     attached_view,
     listeners_to_remove,
   })
+  match browser {
+    Some(presentation) => presentation.activate()
+    None => ()
+  }
   if browser is Some(Markdown(_)) {
     self.scroll_dirty = true
   }
@@ -260,6 +264,7 @@ fn Viewer::create_browser_presentation(
   model : @model.TextModel,
   view_model : @view_model.ViewModel,
   presentation_kind : DocumentPresentationKind,
+  model_data_generation : Int,
 ) -> BrowserPresentation? {
   let mounted = match self.mount {
     Headless => return None
@@ -277,9 +282,22 @@ fn Viewer::create_browser_presentation(
         () => self.on_markdown_document_scroll(),
         focused => self.on_markdown_document_focus_changed(focused),
         () => self.on_markdown_document_size_changed(),
+        show_unused=self.configuration.snapshot().options.show_unused,
       )
       mounted.install_presentation_root(markdown.root())
-      return Some(Markdown(markdown))
+      let hover_bridge = @hover_browser.MarkdownDocumentHoverBridge(
+        markdown,
+        model,
+        self.make_hover_computer(),
+        self.services.marker_decorations,
+        model_data_generation,
+        () => {
+          self.is_current_model_data_generation(model_data_generation) &&
+          self.is_current_model(model)
+        },
+        launch_async_task,
+      )
+      return Some(Markdown({ view: markdown, hover_bridge }))
     }
     CodeDocument => ()
   }

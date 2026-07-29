@@ -23,7 +23,8 @@ fn ViewerModelSlot::begin_attach_generation(self : ViewerModelSlot) -> Int {
 ///|
 /// Invalidates swap-scoped callbacks before detach cleanup while leaving the
 /// outgoing bundle available to the root transaction through its exact
-/// listener -> attached-view -> View -> ViewModel disposal order.
+/// presentation -> root removal -> listener -> attached-view -> ViewModel
+/// disposal order.
 fn ViewerModelSlot::invalidate_current_for_detach(
   self : ViewerModelSlot,
 ) -> ModelData? {
@@ -83,7 +84,59 @@ priv enum DocumentPresentationKind {
 /// family instead of assuming a hidden code `View`.
 priv enum BrowserPresentation {
   Code(CodeBrowserData)
-  Markdown(@markdown_document.MarkdownDocumentView)
+  Markdown(MarkdownBrowserData)
+}
+
+///|
+/// Root-owned composition for the Markdown presentation. The lower document
+/// view remains contribution-free; this payload enforces cancel → retire
+/// semantic lifetime → rerender → rebind/project ordering for every source or
+/// theme replacement.
+priv struct MarkdownBrowserData {
+  view : @markdown_document.MarkdownDocumentView
+  hover_bridge : @hover_browser.MarkdownDocumentHoverBridge
+}
+
+///|
+fn MarkdownBrowserData::activate(self : MarkdownBrowserData) -> Unit {
+  self.hover_bridge.activate()
+}
+
+///|
+fn MarkdownBrowserData::replace_source(
+  self : MarkdownBrowserData,
+  source : String,
+  source_model_version : Int,
+) -> Unit {
+  self.hover_bridge.before_projection_replaced()
+  self.view.replace_source(source, source_model_version)
+  self.hover_bridge.after_projection_replaced()
+}
+
+///|
+fn MarkdownBrowserData::apply_theme(
+  self : MarkdownBrowserData,
+  theme : String,
+) -> Unit {
+  self.hover_bridge.before_projection_replaced()
+  self.view.apply_theme(theme)
+  self.hover_bridge.after_projection_replaced()
+}
+
+///|
+fn MarkdownBrowserData::layout(
+  self : MarkdownBrowserData,
+  width : Double,
+  height : Double,
+) -> Unit {
+  self.view.layout(width, height)
+  self.hover_bridge.layout_changed()
+}
+
+///|
+fn MarkdownBrowserData::dispose(self : MarkdownBrowserData) -> Unit {
+  self.hover_bridge.dispose()
+  self.view.dispose()
 }
 
 ///|
@@ -135,7 +188,7 @@ fn CodeBrowserData::sync_rendered_window(
 fn BrowserPresentation::root(self : BrowserPresentation) -> @rdom.Element {
   match self {
     Code(code) => code.view.root
-    Markdown(markdown) => markdown.root()
+    Markdown(markdown) => markdown.view.root()
   }
 }
 
@@ -179,7 +232,25 @@ fn BrowserPresentation::markdown(
 ) -> @markdown_document.MarkdownDocumentView? {
   match self {
     Code(_) => None
+    Markdown(markdown) => Some(markdown.view)
+  }
+}
+
+///|
+fn BrowserPresentation::markdown_data(
+  self : BrowserPresentation,
+) -> MarkdownBrowserData? {
+  match self {
+    Code(_) => None
     Markdown(markdown) => Some(markdown)
+  }
+}
+
+///|
+fn BrowserPresentation::activate(self : BrowserPresentation) -> Unit {
+  match self {
+    Code(_) => ()
+    Markdown(markdown) => markdown.activate()
   }
 }
 
@@ -226,17 +297,49 @@ fn Viewer::current_markdown_document(
 }
 
 ///|
-/// `ModelData.dispose` (`cew:2133-2141`): remove the swap-scoped listeners,
-/// release the attached-view handle, dispose the active presentation, then
-/// unregister the ViewModel from the model.
-fn ModelData::dispose(self : ModelData) -> Unit {
+fn Viewer::current_markdown_browser_data(self : Viewer) -> MarkdownBrowserData? {
+  match self.current_browser_presentation() {
+    Some(presentation) => presentation.markdown_data()
+    None => None
+  }
+}
+
+///|
+/// Shared first half of the original ModelData order.
+fn ModelData::dispose_listeners_and_attached_view(self : ModelData) -> Unit {
   for listener in self.listeners_to_remove {
     listener.dispose()
   }
   self.model.on_before_detached(self.attached_view)
+}
+
+///|
+/// Preserve Monaco's existing Code/headless order exactly: listeners,
+/// attached-view handle, browser View when present, then ViewModel.
+fn ModelData::dispose_code_or_headless(self : ModelData) -> Unit {
+  self.dispose_listeners_and_attached_view()
   match self.browser {
     Some(browser) => browser.dispose()
     None => ()
   }
+  self.view_model.dispose()
+}
+
+///|
+/// Retires the Markdown browser-owned bridge, renderer, and semantic registry
+/// while its presentation root is still mounted.
+fn ModelData::dispose_markdown_presentation(self : ModelData) -> Unit {
+  match self.browser {
+    Some(Markdown(markdown)) => markdown.dispose()
+    Some(Code(_)) | None => ()
+  }
+}
+
+///|
+/// Remaining `ModelData` teardown (`cew:2133-2141`) after root Viewer has
+/// removed the disposed presentation subtree: remove swap-scoped listeners,
+/// release the attached-view handle, then unregister the ViewModel.
+fn ModelData::dispose_after_markdown_root(self : ModelData) -> Unit {
+  self.dispose_listeners_and_attached_view()
   self.view_model.dispose()
 }

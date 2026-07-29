@@ -15,14 +15,17 @@ import {
 pub struct MarkdownDocumentView {
   // private fields
 }
-pub fn MarkdownDocumentView::MarkdownDocumentView(String, Int, String, @common.Uri, @markdown.MarkdownResourceKind, String, () -> Unit, (Bool) -> Unit, () -> Unit) -> Self
+pub fn MarkdownDocumentView::MarkdownDocumentView(String, Int, String, @common.Uri, @markdown.MarkdownResourceKind, String, () -> Unit, (Bool) -> Unit, () -> Unit, show_unused? : Bool) -> Self
+pub fn MarkdownDocumentView::apply_marker_unused_visibility(Self, Bool) -> Unit
 pub fn MarkdownDocumentView::apply_theme(Self, String) -> Unit
 pub fn MarkdownDocumentView::article(Self) -> @dom.Element
 pub fn MarkdownDocumentView::content_height(Self) -> Double
 pub fn MarkdownDocumentView::content_width(Self) -> Double
 pub fn MarkdownDocumentView::dispose(Self) -> Unit
 pub fn MarkdownDocumentView::has_rendered_source_anchors(Self) -> Bool
+pub fn MarkdownDocumentView::language_id(Self) -> String
 pub fn MarkdownDocumentView::layout(Self, Double, Double) -> Unit
+pub fn MarkdownDocumentView::listen_semantic_dom(Self, String, (@dom.Event) -> Unit) -> Unit
 pub fn MarkdownDocumentView::overlay_mount(Self) -> @dom.Element
 pub fn MarkdownDocumentView::projection(Self) -> @markdown.MarkdownDocumentProjection
 pub fn MarkdownDocumentView::projection_generation(Self) -> Int
@@ -34,10 +37,19 @@ pub fn MarkdownDocumentView::scroll_height(Self) -> Double
 pub fn MarkdownDocumentView::scroll_left(Self) -> Double
 pub fn MarkdownDocumentView::scroll_top(Self) -> Double
 pub fn MarkdownDocumentView::scroll_width(Self) -> Double
+pub fn MarkdownDocumentView::semantic_code_lines(Self) -> Array[MarkdownSemanticCodeLineDom]
 pub fn MarkdownDocumentView::set_scroll_position(Self, scroll_top? : Double, scroll_left? : Double) -> Unit
 pub fn MarkdownDocumentView::source_model_version(Self) -> Int
 pub fn MarkdownDocumentView::viewport(Self) -> @dom.Element
 pub fn MarkdownDocumentView::visible_source_ranges(Self) -> Array[@common.OffsetRange]
+
+pub(all) struct MarkdownSemanticCodeLineDom {
+  block_index : Int
+  block_source_range : @common.OffsetRange
+  line_index : Int
+  code_line : @markdown.MarkdownCodeLine
+  element : @dom.Element
+}
 
 // Type aliases
 

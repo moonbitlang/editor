@@ -29,8 +29,8 @@ fn Viewer::active_scroll_position(
   match model_data.browser {
     Some(Markdown(markdown)) =>
       Some({
-        scroll_top: markdown.scroll_top(),
-        scroll_left: markdown.scroll_left(),
+        scroll_top: markdown.view.scroll_top(),
+        scroll_left: markdown.view.scroll_left(),
       })
     Some(Code(_)) | None =>
       if model_data.is_code_presentation() {
@@ -45,7 +45,7 @@ fn Viewer::active_scroll_position(
 fn Viewer::active_content_width(self : Viewer) -> Double? {
   guard self.model_slot.current is Some(model_data) else { return None }
   match model_data.browser {
-    Some(Markdown(markdown)) => Some(markdown.content_width())
+    Some(Markdown(markdown)) => Some(markdown.view.content_width())
     Some(Code(_)) | None =>
       if model_data.is_code_presentation() {
         Some(model_data.view_model.view_layout.get_content_width())
@@ -59,7 +59,7 @@ fn Viewer::active_content_width(self : Viewer) -> Double? {
 fn Viewer::active_scroll_width(self : Viewer) -> Double? {
   guard self.model_slot.current is Some(model_data) else { return None }
   match model_data.browser {
-    Some(Markdown(markdown)) => Some(markdown.scroll_width())
+    Some(Markdown(markdown)) => Some(markdown.view.scroll_width())
     Some(Code(_)) | None =>
       if model_data.is_code_presentation() {
         Some(model_data.view_model.view_layout.get_scroll_width())
@@ -73,7 +73,7 @@ fn Viewer::active_scroll_width(self : Viewer) -> Double? {
 fn Viewer::active_content_height(self : Viewer) -> Double? {
   guard self.model_slot.current is Some(model_data) else { return None }
   match model_data.browser {
-    Some(Markdown(markdown)) => Some(markdown.content_height())
+    Some(Markdown(markdown)) => Some(markdown.view.content_height())
     Some(Code(_)) | None =>
       if model_data.is_code_presentation() {
         Some(model_data.view_model.view_layout.get_content_height())
@@ -87,7 +87,7 @@ fn Viewer::active_content_height(self : Viewer) -> Double? {
 fn Viewer::active_scroll_height(self : Viewer) -> Double? {
   guard self.model_slot.current is Some(model_data) else { return None }
   match model_data.browser {
-    Some(Markdown(markdown)) => Some(markdown.scroll_height())
+    Some(Markdown(markdown)) => Some(markdown.view.scroll_height())
     Some(Code(_)) | None =>
       if model_data.is_code_presentation() {
         Some(model_data.view_model.view_layout.get_scroll_height())
@@ -106,7 +106,7 @@ fn Viewer::set_active_scroll_position(
   guard self.model_slot.current is Some(model_data) else { return }
   match model_data.browser {
     Some(Markdown(markdown)) => {
-      markdown.set_scroll_position(scroll_top?, scroll_left?)
+      markdown.view.set_scroll_position(scroll_top?, scroll_left?)
       self.on_markdown_document_scroll()
     }
     Some(Code(_)) | None => {

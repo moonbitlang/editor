@@ -99,6 +99,27 @@ test "hover render lifetimes dispose on replacement hide and teardown" {
 }
 
 ///|
+test "opaque hover rows lifetime drains retained resources exactly once" {
+  install_hover_row_test_document()
+  let count = Ref(0)
+  let rows : HoverRowsRender = {
+    fragment: @rdom.document().create_document_fragment(),
+    disposables: [
+      @base_common.Disposable::from(() => count.val = count.val + 1),
+    ],
+    transferred: false,
+    disposed: false,
+  }
+  let target = @rdom.document().create_element("div")
+  assert_true(rows.mount_into(target))
+  assert_false(rows.mount_into(target))
+  rows.dispose()
+  rows.dispose()
+  assert_eq(count.val, 1)
+  restore_hover_row_test_document()
+}
+
+///|
 test "only tokenized code-block Markdown lifts the hover contents width cap" {
   assert_eq(hover_contents_class(false), "hover-contents")
   assert_eq(hover_contents_class(true), "hover-contents code-hover-contents")
@@ -148,6 +169,7 @@ extern "js" fn install_hover_row_test_document() -> Unit =
   #|     attributes: Object.create(null),
   #|     children: [],
   #|     childNodes: [],
+  #|     style: {},
   #|     setAttribute(name, value) { this.attributes[name] = String(value); },
   #|     appendChild(child) {
   #|       child.parentNode = this;
@@ -164,6 +186,17 @@ extern "js" fn install_hover_row_test_document() -> Unit =
   #|   });
   #|   globalThis.document = {
   #|     createElement: element,
+  #|     createDocumentFragment() {
+  #|       return {
+  #|         nodeType: 11,
+  #|         childNodes: [],
+  #|         appendChild(child) {
+  #|           child.parentNode = this;
+  #|           this.childNodes.push(child);
+  #|           return child;
+  #|         },
+  #|       };
+  #|     },
   #|     createTextNode(text) {
   #|       return { nodeType: 3, textContent: String(text), parentNode: null };
   #|     },

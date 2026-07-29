@@ -56,11 +56,41 @@ pub fn MarkerServiceHandle::remove(
 /// Production marker-decoration capabilities consumed by Viewer and editor
 /// contributions. The concrete decoration service retains lifecycle ownership;
 /// leases and subscriptions returned here remain independently disposable.
+pub(all) struct ResolvedMarkerDecoration {
+  range : @base_common.Range
+  marker : Marker
+  options : @model.ModelDecorationOptions
+}
+
+///|
+/// Matches the Code decorations overlay's observable ordering: z-index,
+/// JavaScript UTF-16 lexicographic class name, then range start.
+fn compare_resolved_marker_decorations(
+  left : ResolvedMarkerDecoration,
+  right : ResolvedMarkerDecoration,
+) -> Int {
+  if left.options.z_index != right.options.z_index {
+    return left.options.z_index - right.options.z_index
+  }
+  let class_order = @base_common.compare(
+    left.options.class_name,
+    right.options.class_name,
+  )
+  if class_order != 0 {
+    return class_order
+  }
+  @base_common.Range::compare_ranges_using_starts(left.range, right.range)
+}
+
+///|
 pub struct MarkerDecorationsHandle {
   priv acquire_model : (@model.TextModel) -> @base_common.Disposable
   priv on_did_change_marker_decorations : ((@model.TextModel) -> Unit) -> @base_common.Disposable
   priv get_live_markers_for_model : (@model.TextModel) -> Array[
     (@base_common.Range, Marker),
+  ]
+  priv get_live_resolved_marker_decorations_for_model : (@model.TextModel) -> Array[
+    ResolvedMarkerDecoration,
   ]
 }
 
@@ -75,6 +105,19 @@ pub fn MarkerDecorationsService::marker_decorations_handle(
       self.on_did_change_marker_decorations(listener)
     },
     get_live_markers_for_model: model => self.get_live_markers_for_model(model),
+    get_live_resolved_marker_decorations_for_model: model => {
+      let resolved : Array[ResolvedMarkerDecoration] = []
+      for pair in self.get_live_markers_for_model(model) {
+        let (range, marker) = pair
+        resolved.push({
+          range,
+          marker,
+          options: create_decoration_option(marker),
+        })
+      }
+      resolved.sort_by(compare_resolved_marker_decorations)
+      resolved
+    },
   }
 }
 
@@ -103,6 +146,19 @@ pub fn MarkerDecorationsHandle::get_live_markers_for_model(
   model : @model.TextModel,
 ) -> Array[(@base_common.Range, Marker)] {
   (self.get_live_markers_for_model)(model)
+}
+
+///|
+/// Returns the same live, exact-model entries together with the decoration
+/// options already resolved by the marker package's single severity/tag
+/// policy and sorted in Code-overlay paint order. Alternate DOM presentations
+/// consume these values rather than rebuilding a parallel marker store,
+/// severity matrix, or overlap order.
+pub fn MarkerDecorationsHandle::get_live_resolved_marker_decorations_for_model(
+  self : MarkerDecorationsHandle,
+  model : @model.TextModel,
+) -> Array[ResolvedMarkerDecoration] {
+  (self.get_live_resolved_marker_decorations_for_model)(model)
 }
 
 ///|

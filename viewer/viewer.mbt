@@ -392,6 +392,13 @@ pub fn Viewer::update_options(self : Viewer, options : ViewerOptions) -> Unit {
     self.apply_theme()
     self.markdown_comments_on_theme_changed(options.theme)
   }
+  if previous.show_unused != options.show_unused {
+    match self.current_markdown_document() {
+      Some(markdown) =>
+        markdown.apply_marker_unused_visibility(options.show_unused)
+      None => ()
+    }
+  }
   if previous.smooth_scrolling != options.smooth_scrolling {
     match self.get_view_model() {
       Some(view_model) =>
@@ -620,27 +627,47 @@ fn Viewer::detach_model(self : Viewer) -> @model.TextModel? {
   self.clear_agent_feedback_widgets() |> ignore
   // Markdown ViewZones retain caller DOM below the outgoing View. Release the
   // shared renderer/observer lifetimes and remove their hidden source before
-  // `ModelData::dispose` tears that View down.
+  // the browser presentation is retired.
   self.clear_markdown_comment_model_state()
-  model_data.dispose()
-  self.model_slot.clear_current_after_dispose()
-  self.configuration.reset_model_line_counts()
-  match self.mount {
-    Mounted(mounted) => {
-      mounted.container.remove_attribute("data-mode-id")
-      match model_data.browser {
-        Some(presentation) =>
-          // The no-model placeholder returns on an ordinary detach. Viewer
-          // disposal removes it instead and never re-appends owned DOM.
+  match model_data.browser {
+    Some(Markdown(markdown)) => {
+      let root = markdown.view.root()
+      // Markdown feature requests/listeners and shared renderers are retired
+      // while their DOM is still mounted. The inert root is removed next; only
+      // then may the remaining attachment publish its final 1 -> 0 transition.
+      model_data.dispose_markdown_presentation()
+      match self.mount {
+        Mounted(mounted) => {
+          mounted.container.remove_attribute("data-mode-id")
           mounted.remove_presentation_root(
-            presentation.root(),
+            root,
             restore_placeholder=!self.disposed,
           )
-        None => ()
+        }
+        Headless => ()
+      }
+      model_data.dispose_after_markdown_root()
+    }
+    Some(Code(code)) => {
+      let root = code.view.root
+      // Keep the pre-existing Code order: listener -> attached-view -> View ->
+      // ViewModel, followed by root removal.
+      model_data.dispose_code_or_headless()
+      match self.mount {
+        Mounted(mounted) => {
+          mounted.container.remove_attribute("data-mode-id")
+          mounted.remove_presentation_root(
+            root,
+            restore_placeholder=!self.disposed,
+          )
+        }
+        Headless => ()
       }
     }
-    Headless => ()
+    None => model_data.dispose_code_or_headless()
   }
+  self.model_slot.clear_current_after_dispose()
+  self.configuration.reset_model_line_counts()
   Some(model)
 }
 

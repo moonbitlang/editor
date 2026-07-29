@@ -146,6 +146,41 @@ test "mount keeps one host and one placeholder pair across detach" {
 }
 
 ///|
+test "Code detach preserves attachment event before presentation root removal" {
+  install_mounted_test_browser()
+  defer restore_mounted_test_browser()
+  let viewer = Viewer::Viewer()
+  let model = test_model("code detach order")
+  defer {
+    viewer.dispose()
+    model.dispose()
+  }
+  let host = @rdom.document().create_element("div")
+  viewer.attach(host)
+  viewer.set_model(Some(model))
+  guard viewer.current_code_view() is Some(view) else {
+    fail("mounted Code model did not install a View")
+  }
+  let root = view.root
+  assert_true(@base_browser.element_contains(host, root))
+  let final_attachment_event_ran = Ref(false)
+  let event_saw_root_still_mounted = Ref(false)
+  let subscription = model.on_did_change_attached(() => {
+    if !model.is_attached_to_editor() {
+      final_attachment_event_ran.val = true
+      event_saw_root_still_mounted.val = @base_browser.element_contains(
+        host, root,
+      )
+    }
+  })
+  viewer.set_model(None)
+  subscription.dispose()
+  assert_true(final_attachment_event_ran.val)
+  assert_true(event_saw_root_still_mounted.val)
+  assert_false(@base_browser.element_contains(host, root))
+}
+
+///|
 test "mounted scheduler clears publication before a reentrant schedule" {
   install_mounted_test_browser()
   defer restore_mounted_test_browser()

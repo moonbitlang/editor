@@ -35,13 +35,15 @@ pub(all) struct RenderedContentHover {
 
 ///|
 /// Monaco's `RenderedContentHoverParts` prepares a detached
-/// `DocumentFragment` and the lifetimes owned by those rows before
-/// `ContentHoverWidget._setRenderedHover` releases the previous render.
-/// Keep that browser-only preparation private instead of widening the
-/// data-only `RenderedContentHover` boundary.
-priv struct PreparedHoverContent {
-  fragment : @rdom.DocumentFragment
-  disposables : Array[@base_common.Disposable]
+/// `DocumentFragment` and the lifetimes owned by those rows before a widget
+/// releases its previous render. This opaque browser-only value is shared by
+/// the code content widget and the DOM-anchored Markdown widget so Markdown
+/// rendering policy and retained listener disposal have one implementation.
+pub struct HoverRowsRender {
+  priv fragment : @rdom.DocumentFragment
+  priv disposables : Array[@base_common.Disposable]
+  priv mut transferred : Bool
+  priv mut disposed : Bool
 }
 
 ///|
@@ -54,6 +56,32 @@ fn dispose_hover_render_disposables(
     disposable.dispose()
   }
   values.clear()
+}
+
+///|
+/// Transfers the detached rows into exactly one widget container. The render
+/// value remains alive afterwards solely to own row resources; callers never
+/// receive the fragment and therefore cannot mount the same retained rows
+/// twice.
+pub fn HoverRowsRender::mount_into(
+  self : HoverRowsRender,
+  target : @rdom.Element,
+) -> Bool {
+  guard !self.disposed && !self.transferred else { return false }
+  self.transferred = true
+  replace_hover_contents(target, self.fragment)
+  true
+}
+
+///|
+/// Replacement, hide, and teardown may converge on the same retained value;
+/// make that convergence explicitly idempotent.
+pub fn HoverRowsRender::dispose(self : HoverRowsRender) -> Unit {
+  if self.disposed {
+    return
+  }
+  self.disposed = true
+  dispose_hover_render_disposables(self.disposables)
 }
 
 ///|
@@ -106,7 +134,7 @@ pub struct ContentHoverWidget {
   host : ContentHoverWidgetHost
   mut rendered_hover : RenderedContentHover?
   mut position_preference : @view.ContentWidgetPositionPreference?
-  priv mut render_disposables : Array[@base_common.Disposable]
+  priv mut hover_rows : HoverRowsRender?
 }
 
 ///|
@@ -178,7 +206,7 @@ pub fn ContentHoverWidget::ContentHoverWidget(
     host,
     rendered_hover: None,
     position_preference: None,
-    render_disposables: [],
+    hover_rows: None,
   }
   // Content widgets swallow pointer motion, but a hover may overlap source
   // text; non-interactive mousedown should still start editor selection at
@@ -266,10 +294,13 @@ pub fn ContentHoverWidget::is_visible(self : ContentHoverWidget) -> Bool {
 fn ContentHoverWidget::set_rendered_hover(
   self : ContentHoverWidget,
   rendered_hover : RenderedContentHover?,
-  render_disposables : Array[@base_common.Disposable],
+  hover_rows : HoverRowsRender?,
 ) -> Unit {
-  dispose_hover_render_disposables(self.render_disposables)
-  self.render_disposables = render_disposables
+  match self.hover_rows {
+    Some(rows) => rows.dispose()
+    None => ()
+  }
+  self.hover_rows = hover_rows
   self.rendered_hover = rendered_hover
   let hidden = if rendered_hover is Some(_) { "" } else { " hidden" }
   self.hover.set_attribute("class", "monaco-hover fade-in" + hidden)
@@ -280,10 +311,10 @@ fn ContentHoverWidget::set_rendered_hover(
 /// render every row and register its lifetime in a detached fragment before
 /// touching the currently displayed hover. Each row receives the source's
 /// `_registerListenersOnRenderedParts` `tabIndex = 0`.
-fn prepare_hover_content(
+pub fn render_hover_rows(
   parts : Array[@hover.HoverPart],
   language_id : String,
-) -> PreparedHoverContent {
+) -> HoverRowsRender {
   let fragment = @rdom.document().create_document_fragment()
   let disposables : Array[@base_common.Disposable] = []
   for part in parts {
@@ -296,18 +327,7 @@ fn prepare_hover_content(
     row.set_attribute("tabindex", "0")
     fragment.append_child(row.as_node())
   }
-  { fragment, disposables }
-}
-
-///|
-/// Monaco `_updateContent` (`contentHoverWidget.ts:295-300`): reset the resize
-/// padding, clear all child nodes via `textContent`, then transfer the prepared
-/// fragment in one append.
-fn ContentHoverWidget::update_content(
-  self : ContentHoverWidget,
-  fragment : @rdom.DocumentFragment,
-) -> Unit {
-  replace_hover_contents(self.scrollable.content, fragment)
+  { fragment, disposables, transferred: false, disposed: false }
 }
 
 ///|
@@ -436,12 +456,12 @@ fn ContentHoverWidget::render_rendered_hover(
   self : ContentHoverWidget,
   rendered_hover : RenderedContentHover,
 ) -> Unit {
-  let prepared = prepare_hover_content(
+  let hover_rows = render_hover_rows(
     rendered_hover.parts,
     rendered_hover.language_id,
   )
-  self.set_rendered_hover(Some(rendered_hover), prepared.disposables)
-  self.update_content(prepared.fragment)
+  self.set_rendered_hover(Some(rendered_hover), Some(hover_rows))
+  hover_rows.mount_into(self.scrollable.content) |> ignore
   self.handle_contents_changed()
   // Simply force a synchronous render on the editor
   // such that the widget does not really render with left = '0px'
@@ -480,7 +500,7 @@ pub fn ContentHoverWidget::hide(self : ContentHoverWidget) -> Unit {
   let hover_stole_focus = @base_browser.element_contains_active_element(
     self.wrapper,
   )
-  self.set_rendered_hover(None, [])
+  self.set_rendered_hover(None, None)
   (self.host.layout_content_widget)()
   if hover_stole_focus {
     (self.host.focus_editor)()
@@ -492,7 +512,11 @@ pub fn ContentHoverWidget::hide(self : ContentHoverWidget) -> Unit {
 /// scrollbar resource. Root Viewer teardown calls this before dropping its
 /// persistent widget reference. Idempotence follows both owned resources.
 pub fn ContentHoverWidget::dispose(self : ContentHoverWidget) -> Unit {
-  dispose_hover_render_disposables(self.render_disposables)
+  match self.hover_rows {
+    Some(rows) => rows.dispose()
+    None => ()
+  }
+  self.hover_rows = None
   self.scrollable.dispose()
 }
 

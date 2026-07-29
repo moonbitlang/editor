@@ -53,6 +53,24 @@
   border-radius: inherit;
 }
 
+.moonbit-viewer-markdown-hover-widget > .monaco-hover {
+  inset: 0 auto auto 0;
+}
+
+.moonbit-viewer-markdown-hover-widget {
+  pointer-events: auto;
+}
+
+.moonbit-viewer-markdown-hover-widget[data-markdown-hover-visible='false'] {
+  display: none;
+  pointer-events: none;
+}
+
+.moonbit-viewer-markdown-hover-widget .monaco-hover-content {
+  max-width: inherit;
+  max-height: inherit;
+}
+
 .monaco-hover:focus {
   outline: 1px solid var(--vscode-focusBorder);
   outline-offset: -1px;
@@ -228,4 +246,65 @@
 .monaco-hover .hover-copy-button:focus {
   outline: 1px solid var(--vscode-focusBorder);
   outline-offset: -1px;
+}
+
+/* The code View's squiggle selectors are intentionally scoped to rendered
+ * view lines. Markdown consumes the same resolved decoration option classes,
+ * but owns visible styling for its independent document surface. */
+.moonbit-viewer-markdown-diagnostic,
+.moonbit-viewer-markdown-hover-range {
+  position: absolute;
+  z-index: 2;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.moonbit-viewer-markdown-diagnostic {
+  bottom: 1px;
+  height: 3px;
+  background-repeat: repeat-x;
+  background-position: left bottom;
+  background-size: 6px 3px;
+}
+
+.moonbit-viewer-markdown-diagnostic.squiggly-error {
+  background-image: linear-gradient(
+    135deg,
+    transparent 0 35%,
+    var(--vscode-editorError-foreground, #e51400) 35% 55%,
+    transparent 55% 100%
+  );
+}
+
+.moonbit-viewer-markdown-diagnostic.squiggly-warning {
+  background-image: linear-gradient(
+    135deg,
+    transparent 0 35%,
+    var(--vscode-editorWarning-foreground, #cca700) 35% 55%,
+    transparent 55% 100%
+  );
+}
+
+.moonbit-viewer-markdown-diagnostic.squiggly-info,
+.moonbit-viewer-markdown-diagnostic.squiggly-hint {
+  background-image: linear-gradient(
+    135deg,
+    transparent 0 35%,
+    var(--vscode-editorInfo-foreground, #75beff) 35% 55%,
+    transparent 55% 100%
+  );
+}
+
+.moonbit-viewer-markdown-document.showUnused
+  .moonbit-viewer-markdown-diagnostic.squiggly-unnecessary {
+  border-bottom: 1px dashed
+    var(--vscode-editorUnnecessaryCode-border, currentColor);
+}
+
+.moonbit-viewer-markdown-hover-range {
+  inset-block: 0;
+  background: var(
+    --vscode-editor-hoverHighlightBackground,
+    rgba(173, 214, 255, 0.15)
+  );
 }
