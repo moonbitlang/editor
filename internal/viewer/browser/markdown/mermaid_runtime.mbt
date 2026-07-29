@@ -55,26 +55,16 @@ fn MermaidRuntime::enqueue(
 /// whether the eventual result may commit.
 ///
 /// ```mermaid
-/// flowchart TD
-///   A[enqueue request or finish previous] --> B{running or queue empty?}
-///   B -->|yes| C[return]
-///   B -->|no| D[dequeue oldest request]
-///   D --> E{cached API uses same loader?}
-///   E -->|yes| F[initialize and render]
-///   E -->|no| G[load module]
-///   G --> M{load succeeded?}
-///   M -->|yes| N[update cache]
-///   N --> F
-///   M -->|no| K[finish request]
-///   F --> O{render succeeded?}
-///   O -->|no| K
-///   O -->|yes| H{target, lifetime, and epoch current?}
-///   H -->|yes| I[replace fallback with SVG]
-///   H -->|no| J[discard stale result]
-///   I --> K[finish request]
-///   J --> K
-///   K --> L[clear running flag]
-///   L --> A
+/// flowchart LR
+///   A[Pump] --> B{Running or<br>queue empty?}
+///   B -->|yes| C[Return]
+///   B -->|no| D[Dequeue oldest<br>request]
+///   D --> E[Load module or<br>reuse cached API]
+///   E --> F{Rendered and consumer<br>still current?}
+///   F -->|yes| G[Replace fallback<br>with SVG]
+///   F -->|no| H[Discard stale or<br>failed result]
+///   G --> I[Finish request,<br>pump again]
+///   H --> I
 /// ```
 fn MermaidRuntime::pump(self : MermaidRuntime) -> Unit {
   if self.running || self.requests.length() == 0 {

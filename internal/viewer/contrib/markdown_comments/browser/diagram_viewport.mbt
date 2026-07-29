@@ -145,23 +145,19 @@ pub struct MarkdownCommentDiagramViewports {
 /// this component writes a new inline viewport height.
 ///
 /// ```d2
-/// group: MarkdownCommentDiagramViewports
-/// target: borrowed Markdown target
-/// wrapper: borrowed diagram wrapper and SVG
-/// controller: one controller per direct Diago SVG
-/// listeners: pointer, keyboard, wheel listeners
-/// observer: ResizeObserver
-/// frame: pending layout frame
-/// cursor: optional document body-cursor lease
+/// direction: right
+///
+/// group: viewport group
+/// controller: one controller per Diago SVG
+/// wrapper: borrowed wrapper and SVG
+/// hooks: pointer, wheel, resize hooks
+/// cursor: body-cursor lease
 /// callback: ViewZone measurement callback
 ///
-/// target -> wrapper: contains
 /// group -> controller: owns many
 /// controller -> wrapper: temporarily enhances
-/// controller -> listeners: owns
-/// controller -> observer: owns
-/// controller -> frame: owns
-/// controller -> cursor: owns while resizing
+/// controller -> hooks: owns
+/// controller -> cursor: while resizing
 /// controller -> callback: inline height changed
 /// ```
 ///
