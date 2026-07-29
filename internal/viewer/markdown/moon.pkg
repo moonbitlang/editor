@@ -1,8 +1,10 @@
 import {
   "Milky2018/diago",
+  "moonbit-community/cmark/cmark_base",
   "moonbit-community/cmark/cmark",
   "moonbit-community/cmark/cmark_html",
   "moonbit-community/cmark/cmark_renderer",
+  "moonbitlang/editor/base/common",
   "moonbitlang/editor/syntax",
   "moonbitlang/editor/viewer/common/languages",
   "moonbitlang/editor/viewer/common/model",

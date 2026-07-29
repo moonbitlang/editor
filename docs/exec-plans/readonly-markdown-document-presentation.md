@@ -948,3 +948,13 @@ checks do not replace the focused evidence above.
   `moon test --target js viewer` passed 244 tests and
   `just test-browser-component` passed 75 tests with one opt-in live-network
   case skipped.
+- 2026-07-29, Milestone 2: one cmark parse with layout and locations now feeds
+  both safe HTML and cmark-independent source projections. Per-line UTF-16
+  boundary maps retain synthetic indentation as non-semantic, semantic fence
+  classification matches the compiler's exact ASCII-space prefix grammar, and
+  top-level anchors carry explicit safe-render element ordinals. The cmark
+  0.4.4 inline cleaner panics on isolated low surrogates, so the parser boundary
+  replaces each isolated surrogate unit with one U+FFFD while preserving valid
+  pairs and total UTF-16 length; locations therefore continue to index the
+  original snapshot. JS and native focused suites each passed 26 tests, and
+  the browser Markdown consumer suite passed 12 tests.
