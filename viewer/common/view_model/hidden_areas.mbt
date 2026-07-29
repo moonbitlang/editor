@@ -209,25 +209,17 @@ fn ViewModel::capture_stable_viewport(self : ViewModel) -> StableViewport {
 /// emissions, which the frame-based caller turns into a re-render.
 ///
 /// ```mermaid
-/// flowchart TD
-///   A[Replace one source range set] --> B[Merge every source]
-///   B --> C{Union changed or forced?}
+/// flowchart LR
+///   A[Replace one<br>source range set] --> B[Merge every source]
+///   B --> C{Union changed<br>or forced?}
 ///   C -->|no| D[Return false]
-///   C -->|yes| E[Capture top visible model position]
-///   E --> F[Apply ranges to projected lines]
-///   F --> G{Line mapping changed?}
-///   G -->|yes| H[Reproject cursor]
-///   H --> I[Invalidate decorations]
-///   I --> J[Flush layout line count and height]
-///   G -->|no| K[Keep existing mapping]
-///   J --> L{Captured anchor still visible?}
-///   K --> L
-///   L -->|yes| M[Recover viewport scroll offset]
-///   L -->|no| N[Keep new projection position]
-///   M --> O{Line mapping changed?}
-///   N --> O
-///   O -->|yes| P[Emit changed-only outgoing event]
-///   O -->|no| Q[Return false without an event]
+///   C -->|yes| E[Capture top anchor,<br>apply projected ranges]
+///   E --> F{Line mapping<br>changed?}
+///   F -->|yes| G[Re-point cursor,<br>decorations, layout]
+///   F -->|no| H[Keep mapping]
+///   G --> I[Restore visible<br>viewport anchor]
+///   H --> I
+///   I --> J[Emit changed-only<br>outgoing event]
 /// ```
 pub fn ViewModel::set_hidden_areas(
   self : ViewModel,

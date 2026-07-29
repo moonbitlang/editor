@@ -9,19 +9,15 @@
 /// the next render flush.
 ///
 /// ```mermaid
-/// flowchart TD
-///   A[set_model] --> B[Begin model generation]
-///   B --> C[Install model-scoped listeners]
-///   C --> D[Acquire marker lease]
-///   D --> E[Acquire attached-view handle]
-///   E --> F[Build ViewModel]
-///   F --> G{Mounted?}
-///   G -->|yes| H[Create View and input handler]
-///   G -->|no| I[Keep browser data empty]
-///   H --> J[Install one ModelData bundle]
-///   I --> J
-///   J --> K[Publish flush, layout, and build facts]
-///   K --> L[Schedule the render frame]
+/// flowchart LR
+///   A[set_model] --> B[Install model-scoped<br>listeners and leases]
+///   B --> C[Build ViewModel]
+///   C --> D{Mounted?}
+///   D -->|yes| E[Create View and<br>input handler]
+///   D -->|no| F[Stay headless]
+///   E --> G[Install one<br>ModelData bundle]
+///   F --> G
+///   G --> H[Publish flush facts,<br>schedule render frame]
 /// ```
 ///
 /// ViewModel callbacks use the generation gate, while model listeners are

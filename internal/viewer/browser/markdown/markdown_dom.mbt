@@ -19,20 +19,19 @@ priv struct MarkdownDomLifetime {
 /// lifetime.
 ///
 /// ```d2
+/// direction: right
+///
 /// html: converted HTML
-/// parse: inert template parse
-/// inputs: checkbox and input policy
-/// media: image URI policy
-/// links: anchor URI and action policy
-/// diagrams: diagram discovery and wheel ownership
-/// target: caller-owned target
-/// mermaid: serialized Mermaid queue
+/// parse: inert parse
+/// policy: sanitizing policy pass
+/// target: caller target
+/// mermaid: Mermaid queue
 ///
 /// html -> parse
-/// parse -> inputs -> media -> links -> diagrams
-/// diagrams -> target: replace children once
-/// target -> mermaid: enqueue exact enabled wrappers
-/// mermaid -> target: freshness-checked SVG commit
+/// parse -> policy
+/// policy -> target: replace once
+/// target -> mermaid: enqueue wrappers
+/// mermaid -> target: fresh SVG commit
 /// ```
 fn install_markdown_dom(
   target : @rdom.Element,

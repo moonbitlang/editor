@@ -4,11 +4,13 @@
 /// existing fallback.
 ///
 /// ```d2
-/// fence: fenced code block
+/// direction: right
+///
+/// fence: fenced block
 /// language: exact d2 or diago?
-/// compile: Diago parse, layout, and SVG render
-/// wrapper: diagram wrapper with compiled SVG
-/// fallback: caller override or ordinary code HTML
+/// compile: Diago compile to SVG
+/// wrapper: diagram wrapper
+/// fallback: ordinary code HTML
 ///
 /// fence -> language
 /// language -> compile: yes

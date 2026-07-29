@@ -380,21 +380,23 @@ extern "js" fn open_markdown_comment_link(uri : String) -> Unit =
 /// ```
 ///
 /// ```d2
-/// source: TextModel source truth
-/// blocks: normalized Markdown blocks
-/// zones: measured rendered ViewZones
-/// hidden: markdown-comments hidden ranges
-/// projection: ViewModel projection
-/// browser: browser View
-/// copy: tokens, selection, and copy
+/// direction: right
 ///
-/// source -> blocks: provider or language rule
+/// source: model source
+/// blocks: normalized blocks
+/// zones: measured zones
+/// hidden: hidden ranges
+/// projection: projection
+/// browser: browser view
+/// copy: selection and copy
+///
+/// source -> blocks: provider
 /// blocks -> zones: Markdown body
-/// blocks -> hidden: owned line ranges
-/// zones -> projection: replacement geometry
-/// hidden -> projection: remove source lines visually
+/// blocks -> hidden: owned lines
+/// zones -> projection: geometry
+/// hidden -> projection: hide source
 /// projection -> browser
-/// source -> copy: unchanged model coordinates
+/// source -> copy: model coordinates
 /// ```
 fn Viewer::refresh_markdown_comments(
   self : Viewer,

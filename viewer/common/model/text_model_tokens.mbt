@@ -709,20 +709,22 @@ fn DefaultBackgroundTokenizer::background_tokenize_with_deadline(
 /// idle turn.
 ///
 /// ```d2
+/// direction: right
+///
 /// idle: idle callback
-/// slice: tokenization slice
-/// budget: time remains in this idle deadline?
+/// slice: tokenize slice
+/// budget: deadline left?
 /// zero: zero-timeout yield
-/// next: request another idle turn
-/// cancel: detach, reset, or dispose
+/// next: next idle turn
+/// cancel: detach or dispose
 ///
 /// idle -> slice
-/// slice -> budget: at least one line or about 1 ms
+/// slice -> budget: 1+ line or ~1 ms
 /// budget -> zero: yes
-/// zero -> slice
 /// budget -> next: no
+/// zero -> slice
 /// next -> idle
-/// cancel -> slice: generation mismatch stops stale work
+/// cancel -> slice: stale generation stops
 /// ```
 fn DefaultBackgroundTokenizer::execute_slice_until_deadline(
   self : DefaultBackgroundTokenizer,
