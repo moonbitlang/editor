@@ -16,6 +16,63 @@ As of 2026-07-30 there are no active checked-in execution plans.
 
 ## Completed Work
 
+### HTML editor context menu behavior port
+
+The browser Viewer now renders a Monaco-shaped HTML editor context menu instead
+of relying on the browser-native surface for eligible definition targets. The
+port used the pinned `vscode` gitlink at
+`b18492a288de038fbc7643aae6de8247029d11bd`: DOM event routing, target and
+selection policy, live grouped actions, focus/dismissal, keyboard/submenu
+interaction, viewport fitting, and CSS were reviewed in behavior-port mode.
+This targets Monaco/VS Code Web, not Electron's optional native desktop menu.
+
+A real `contextmenu` event now travels through the existing mouse factory,
+hit-test controller, model-coordinate conversion, and public Viewer event
+surface before root policy runs. Code content text and empty-space hits focus
+the editor and move one cursor only when outside every current selection.
+Exact semantic Markdown rows map the pointer to the original model and share
+the same commands. Injected text, widgets, margins, scrollbars, prose, ordinary
+fences, padding, stale projections, and empty action sets retain the native
+browser menu; an unhandled native-fallback event also retires any stale custom
+menu and Markdown definition anchor.
+
+The closed editor registry now stores command titles, keybinding labels,
+ordered menu placements, and the `EditorContextPeek` submenu. Preconditions are
+resolved at each show, empty groups/submenus disappear, and separators occur
+only between nonempty groups. The selected surface contains top-level
+`Go to Definition` and `Peek > Peek Definition`, reusing the existing F12 and
+Alt+F12 implementations. Shift+F10 and the Context Menu key open the same menu
+at the rendered Code cursor or the latest valid semantic Markdown anchor.
+
+One lazy JS-only widget per Viewer owns detached body-level DOM, copied theme
+tokens, temporary listeners, focus return, submenu timers, geometry, and
+idempotent disposal. Its 24px rows, menu/menuitem roles, submenu ARIA state,
+83ms fade, shadow, corners, and keybinding layout follow the selected upstream
+HTML surface. Up/Down/Home/End/PageUp/PageDown, Enter/Space, Right/Left,
+250/750ms submenu hover, Escape, Tab, outside primary input, focus/window blur,
+model/content changes, scroll, replacement, and action-hide-before-run are
+covered. Root and submenu overlays prefer right/down placement and flip/clamp
+inside the visual viewport.
+
+Intentional exclusions are Electron/native integration, clipboard/edit/
+refactor/source/history and extension-contributed actions, scrollbar commands,
+touch long press, settings, icons/mnemonics/check states, visible disabled
+rows, deeper flyouts, and a public menu API. Independent Viewers each own their
+menu rather than sharing VS Code's process-global `IContextMenuService`.
+
+Focused evidence passed 2 geometry tests, all 14 editor-registry tests, and all
+9 definition/context-menu Chromium scenarios. Final validation passed 1,669 JS
+and 1,104 native MoonBit tests (wasm and wasm-gc have no test entries) and 113
+of 114 browser scenarios, with the existing opt-in live-CDN Mermaid diagnostic
+skipped. `moon info --target all`, `moon fmt --check`, `just check`,
+`just test`, `just build`, `just test-browser-smoke`, JavaScript syntax checks,
+and diff checks passed. Existing inexhaustive-test-guard and fixture-package
+warnings remain unchanged. Milestones were `f3c9876` (plan), `6e6bc15`
+(hit-tested event path), `af66c25` (implementation), and `72cfc4e`
+(validation record).
+
+Former artifact: `html-context-menu-behavior-port.md`.
+
 ### Definition navigation parity remediation
 
 Definition navigation now uses the `vscode` gitlink at
