@@ -120,8 +120,18 @@ and read back `display:none` over retained root elements. It compiles and
 carries no caller yet, so **no browser test exercises it**. It must not be
 considered done until gate 3 below passes.
 
-**Not started:** the root Viewer fold state, the toggle affordance and its
-accessibility pair, scroll anchoring, and the component scenario.
+**Landed: the table of contents.** `markdown_table_of_contents` derives an
+outline from the same section tree, with structural depth normalized so a level
+jump or a document starting at `###` still indents from depth 1. Each row carries
+the heading's reveal offset, its `section_index`, and the same `is_foldable`
+answer the fold control will use, so a TOC row and a fold control cannot
+disagree. DOM-free and tested; no TOC *UI* exists yet.
+
+**Not started -- this is all of the user-visible work:** the root Viewer fold
+state, the toggle affordance and its accessibility pair, the TOC sidebar or
+overlay that renders these rows, scroll anchoring, CSS, and the component
+scenario. Nothing in the product calls any of the functions above, so a reader
+currently sees no fold control and no outline.
 
 ### Next executor: start here
 

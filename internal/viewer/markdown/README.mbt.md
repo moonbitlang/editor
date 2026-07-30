@@ -343,6 +343,79 @@ closing `##` sequence are stripped, interior whitespace collapses, and a setext
 heading keys identically to its ATX equivalent — so re-spelling a heading's
 markup does not silently drop its fold state.
 
+### Table of contents
+
+`markdown_table_of_contents` derives an outline from the same section tree, so a
+TOC row and a fold control can never disagree about what a section is.
+
+`depth` is *structural* nesting, normalized so the first heading is depth 1 and a
+deeper heading sits exactly one level below its parent. A document whose top
+heading is `###`, or which jumps `#` straight to `###`, therefore indents
+sensibly instead of leaving a gap.
+
+```mbt check
+///|
+test "the outline indents by structural depth, not literal level" {
+  let projection = @markdown.render_markdown(
+      (
+        #|# Top
+        #|
+        #|body
+        #|
+        #|### Jumped straight to three
+        #|
+        #|body
+        #|
+        #|## Back to two
+        #|
+        #|body
+        #|
+      ),
+    ).projection
+  debug_inspect(
+    @markdown.markdown_table_of_contents(projection).map(entry => {
+      (entry.depth, entry.level, entry.text)
+    }),
+    content=(
+      #|[
+      #|  (1, 1, "Top"),
+      #|  (2, 3, "Jumped straight to three"),
+      #|  (2, 2, "Back to two"),
+      #|]
+    ),
+  )
+}
+```
+
+Each row carries `source_offset` — the heading's start, which is what
+`MarkdownDocumentView::reveal_source_offset` takes — plus `section_index` into
+`markdown_sections` and the same `is_foldable` answer the fold control uses.
+Headings inside a blockquote or list item are content, not outline structure, so
+they do not appear.
+
+```mbt check
+///|
+test "outline rows are revealable and exclude container headings" {
+  let projection = @markdown.render_markdown(
+      (
+        #|# A `code` and *emphasis* heading
+        #|
+        #|> # quoted, not outline structure
+        #|> text
+        #|
+      ),
+    ).projection
+  debug_inspect(
+    @markdown.markdown_table_of_contents(projection).map(entry => {
+      (entry.text, entry.source_offset, entry.is_foldable)
+    }),
+    content=(
+      #|[("A code and emphasis heading", 0, true)]
+    ),
+  )
+}
+```
+
 Consumers must collapse by hiding those retained elements with `display:none`.
 Re-rendering, or hiding with `visibility:hidden` or a zero height, would break
 the `.mbt.md` semantic-fence contract: the hover bridge resolves a caret through

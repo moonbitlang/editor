@@ -262,3 +262,53 @@ pub fn markdown_section_keys(
   }
   keys
 }
+
+///|
+/// One table-of-contents row.
+///
+/// `level` is the literal heading level; `depth` is the *structural* nesting
+/// depth, normalized so the first heading is depth 1 and a deeper heading is
+/// exactly one level below its parent. A document whose top heading is `###`,
+/// or which jumps `#` to `###`, therefore indents sensibly instead of leaving a
+/// gap. `source_offset` is the heading's start, which is what a reveal takes.
+pub(all) struct MarkdownTocEntry {
+  level : Int
+  depth : Int
+  text : String
+  source_offset : Int
+  section_index : Int
+  is_foldable : Bool
+} derive(Eq, Debug)
+
+///|
+/// Derives a table of contents from a parsed projection, in document order.
+///
+/// This is the same section tree folding uses, so a TOC row and a fold control
+/// can never disagree about what a section is. Only top-level headings appear:
+/// a heading inside a blockquote or list item is content, not outline structure.
+pub fn markdown_table_of_contents(
+  projection : MarkdownDocumentProjection,
+) -> Array[MarkdownTocEntry] {
+  let sections = markdown_sections(projection)
+  let entries = []
+  // Ancestor literal levels, innermost last. A heading pops every ancestor at
+  // its own level or deeper, so its depth is whatever remains plus one.
+  let ancestors = []
+  for section_index, section in sections {
+    while ancestors.length() > 0 &&
+          ancestors[ancestors.length() - 1] >= section.level {
+      ancestors.pop() |> ignore
+    }
+    let depth = ancestors.length() + 1
+    ancestors.push(section.level)
+    entries.push({
+      level: section.level,
+      depth,
+      text: markdown_section_heading_text(section, projection, ""),
+      source_offset: projection.block_anchors[section.heading_anchor_index].source_range.start,
+      section_index,
+      is_foldable: section.is_foldable(projection),
+    })
+  }
+  entries
+}
