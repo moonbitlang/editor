@@ -50,7 +50,7 @@ and container/view DOM contracts compiling without importing browser internals.
 
 ## Validation
 
-`just build-moon-web` emits `web/dist/embed.{html,mjs}`. The native server serves
+`just dist-front-end` emits `web/dist/embed.{html,mjs}`. The native server serves
 `/embed.html`; `tests/browser/smoke/embed.spec.js` covers Code and in-memory
 Markdown rendering, lazy expansion, navigation, stale ready callbacks, and the
 absence of a WebSocket.

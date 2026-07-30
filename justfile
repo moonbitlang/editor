@@ -12,20 +12,20 @@ test: test-moon
 # Compilation is plain moon build; the js entry points land under
 # _build/js/debug/build/ and scripts/build-web.mbtx stages them from there.
 # Assemble editor.mjs, embed.mjs, style.css, codicon.ttf, and the HTML pages into web/dist
-build-moon-web:
+dist-front-end:
     moon build
     moon run --target native scripts/build-web.mbtx
 
 # Stage the browser-correctness scenario bundles into web/dist/browser-tests
-build-browser-tests: build-moon-web
+build-browser-tests: dist-front-end
     moon run --target native scripts/build-browser-tests.mbtx -- smoke
 
 # Stage the perf scenarios plus the pinned Monaco oracle into web/dist/browser-tests
-build-browser-perf-tests: build-moon-web
+build-browser-perf-tests: dist-front-end
     moon run --target native scripts/build-browser-tests.mbtx -- perf
 
 # Web assets and the native server binary (moon build covers the server member)
-build: build-moon-web
+build: dist-front-end
 
 # ---------------------------------------------------------------------------
 # Serving. Override any variable by listing it BEFORE the recipe name
