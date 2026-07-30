@@ -447,7 +447,7 @@ fn set_workbench_model(
     RevealDefinition(location) =>
       if location.uri.to_string() == text_model.uri.to_string() {
         let target = text_model.validate_position(
-          @base_common.Position(
+          Position(
             location.range.start_line_number,
             location.range.start_column,
           ),

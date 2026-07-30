@@ -222,7 +222,7 @@ async test "definition provider failures are logged and isolated" {
   let locations = languages.definition_at(
     test_model(),
     3,
-    @log.LogService(logger=memory),
+    LogService(logger=memory),
   )
   assert_eq(locations.length(), 1)
   assert_eq(calls.val, 1)
@@ -248,7 +248,7 @@ async test "definition cancellation and disposal reject late data silently" {
   let token = @language.CancellationToken::new()
   @async.with_task_group() <| group => {
     let request = group.spawn(() => {
-      languages.definition_at(model, 3, @log.LogService(logger=memory), token~)
+      languages.definition_at(model, 3, LogService(logger=memory), token~)
     })
     let observed = started.get()
     assert_true(physical_equal(observed, token))

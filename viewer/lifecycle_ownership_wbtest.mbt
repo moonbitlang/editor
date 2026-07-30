@@ -311,7 +311,7 @@ async test "navigation handles stay optional and borrowed after bundle disposal"
     resolve_calls.val += 1
     if resource.to_string() == target.to_string() {
       Some(
-        @navigation_api.TextModelReference(model, release=() => {
+        TextModelReference(model, release=() => {
           release_calls.val += 1
         }),
       )
@@ -329,8 +329,8 @@ async test "navigation handles stay optional and borrowed after bundle disposal"
   services.dispose()
   let request : @navigation_api.OpenLocationRequest = {
     source_viewer_id: "viewer-navigation-owner",
-    location: { uri: target, range: @base_common.Range(1, 5, 1, 15) },
-    mode: @navigation_api.Current,
+    location: { uri: target, range: Range(1, 5, 1, 15) },
+    mode: Current,
   }
   assert_true(opener.open(request))
   guard resolver.resolve(target, @language.CancellationToken::none())
