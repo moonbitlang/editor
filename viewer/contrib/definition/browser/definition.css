@@ -27,19 +27,71 @@
   cursor: pointer;
 }
 
-.moonbit-viewer-definition-message {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  max-width: min(420px, calc(100% - 24px));
-  box-sizing: border-box;
-  padding: 6px 10px;
-  border: 1px solid var(--vscode-widget-border, rgba(128, 128, 128, 0.45));
-  border-radius: 3px;
-  color: var(--vscode-notifications-foreground, inherit);
-  background: var(--vscode-notifications-background, #252526);
-  box-shadow: 0 2px 8px var(--vscode-widget-shadow, rgba(0, 0, 0, 0.35));
+/* Ported from messageController.css. */
+.moonbit-viewer .moonbit-viewer-definition-message {
+  z-index: 10000;
+  margin-left: -6px;
+  padding-bottom: 8px;
   pointer-events: none;
+}
+
+.moonbit-viewer .moonbit-viewer-definition-message.below {
+  padding-top: 8px;
+  padding-bottom: 0;
+}
+
+@keyframes moonbit-viewer-definition-message-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.moonbit-viewer .moonbit-viewer-definition-message.fadeIn {
+  animation: moonbit-viewer-definition-message-fade-in 150ms ease-out;
+}
+
+.moonbit-viewer .moonbit-viewer-definition-message .message {
+  box-sizing: border-box;
+  max-width: min(420px, calc(100vw - 24px));
+  padding: 2px 4px;
+  color: var(--vscode-editorHoverWidget-foreground, inherit);
+  background-color: var(--vscode-editorHoverWidget-background, #252526);
+  border: 1px solid var(--vscode-inputValidation-infoBorder, #007acc);
+  border-radius: 3px;
+}
+
+.moonbit-viewer .moonbit-viewer-definition-message .anchor {
+  position: absolute;
+  left: 2px;
+  z-index: 1000;
+  width: 0 !important;
+  height: 0 !important;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 8px;
+}
+
+.moonbit-viewer .moonbit-viewer-definition-message .anchor.top {
+  border-bottom-color: var(--vscode-inputValidation-infoBorder, #007acc);
+}
+
+.moonbit-viewer .moonbit-viewer-definition-message .anchor.below {
+  border-top-color: var(--vscode-inputValidation-infoBorder, #007acc);
+}
+
+.moonbit-viewer
+  .moonbit-viewer-definition-message:not(.below)
+  .anchor.top,
+.moonbit-viewer .moonbit-viewer-definition-message.below .anchor.below {
+  display: none;
+}
+
+.moonbit-viewer .moonbit-viewer-definition-message.below .anchor.top {
+  top: -8px;
 }
 
 .moonbit-viewer-definition-message[hidden] {

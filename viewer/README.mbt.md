@@ -165,7 +165,8 @@ viewer.slot.data -> model: borrows readonly
 - Overlay-widget registrations belong to the Viewer and are re-added to each
   Code presentation. With another presentation active, add/remove still update
   the Viewer-lifetime registration map but perform no DOM work. Content widgets
-  are an internal code-view-part seam; hover owns the current implementation.
+  are an internal code-view-part seam; hover and the definition action's
+  request-anchored message own the current implementations.
 
 The active presentation owns DOM lookup, focus, layout, theme, scroll
 position/extents, reveal, visible ranges, render publication, and root
@@ -348,13 +349,19 @@ registration) and exact URI/range duplicates are removed. One result opens
 directly. Multiple results open Peek in an outer mounted Viewer without
 querying providers again; a headless or nested Viewer retains the deterministic
 provider-first fallback. A same-resource result is applied locally at its
-collapsed start with reveal and focus; Code also updates its cursor. A
+collapsed start with reveal and focus; Code also updates its cursor. A direct
+target paints the complete result range with `symbolHighlight`; the decoration
+clears after 350 ms only while the exact target model remains installed. A
 cross-resource result is sent to the optional host-owned
-`LocationOpenerHandle`. Rejection or absence produces non-destructive feedback
-only while the initiating model/version and opener generation remain current,
-so a late failure cannot overwrite a newer navigation. Neither Viewer nor the
-request value owns files, tabs, workspace, groups, navigation history, or
-transport.
+`LocationOpenerHandle`; the reference workbench applies the same target-range
+feedback after installing the resolved model. Rejection or absence produces
+non-destructive feedback only while the initiating model/version and opener
+generation remain current, so a late failure cannot overwrite a newer
+navigation. A zero-result Code request uses the source word in
+`No definition found for '<word>'` when available and mounts the message as an
+above/below content widget at the validated request position. Neither Viewer
+nor the request value owns files, tabs, workspace, groups, navigation history,
+or transport.
 
 Ctrl/Command+Click uses an algorithm-fidelity gesture state rather than a
 second ordinary-click path. Only exact platform Ctrl or Command over real
@@ -386,7 +393,8 @@ same model/version/position command toggles the existing Peek closed. The shell
 sorts normalized results by URI/range, initially selects the result nearest the
 source, and hosts one nested readonly Viewer. A zero-result request retires its
 loading shell, restores outer focus, and reports `No definition found` instead
-of leaving an empty dialog.
+of leaving an empty dialog; when the source anchor has a word, the message uses
+the same word-specific form as ordinary goto.
 Same-resource preview reuses the caller-owned model; cross-resource preview
 uses the optional host-owned `TextModelResolverHandle` and retains its
 `TextModelReference` only for the preview lifetime. A current missing, rejected,

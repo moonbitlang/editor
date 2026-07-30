@@ -25,8 +25,11 @@ nested Viewer mounts.
 
 `DefinitionMessageWidget` is a separate detached ARIA status node for
 non-destructive action feedback such as “No definition found” or “Unable to
-open definition”. The root Viewer chooses its mounting mechanism and controls
-message visibility.
+open definition”. For Code it exposes Monaco's overflowing content-widget
+contract, retains the exact request position, prefers above then below with
+right affinity, and renders the matching arrow/message DOM. The root Viewer
+chooses the presentation-specific mount, drives layout after show/hide, and
+controls message visibility.
 
 Exact callable types are in `pkg.generated.mbti`. Run focused tests with:
 

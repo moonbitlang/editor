@@ -264,7 +264,7 @@ fn Viewer::begin_definition_peek(
   state.peek.anchor = Some(anchor)
   guard self.open_definition_peek_shell(position, generation) else {
     state.peek.anchor = None
-    self.show_definition_message("No preview available")
+    self.show_definition_message("No preview available", position~)
     return None
   }
   Some(generation)
@@ -362,7 +362,10 @@ fn Viewer::install_definition_peek_locations(
     // local shell already exists while the async request runs, so retire it
     // before presenting the same non-destructive action feedback.
     self.close_definition_peek(restore_focus=true)
-    self.show_definition_message("No definition found")
+    self.show_definition_message(
+      self.definition_no_result_message(source_position),
+      position=source_position,
+    )
     return
   }
   let selected_index = nearest_definition_peek_index(

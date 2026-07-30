@@ -446,15 +446,30 @@ fn set_workbench_model(
   match view_state {
     RevealDefinition(location) =>
       if location.uri.to_string() == text_model.uri.to_string() {
-        let target = text_model.validate_position(
-          Position(
-            location.range.start_line_number,
-            location.range.start_column,
-          ),
-        )
+        let target_range = text_model.validate_range(location.range)
+        let target = target_range.get_start_position()
         viewer.set_position(target, source="gotoDefinition")
         viewer.reveal_position_in_center_if_outside_viewport(target)
         viewer.focus()
+        let decorations = viewer.create_decorations_collection(decorations=[
+          {
+            range: target_range,
+            options: ModelDecorationOptions(
+              "symbolHighlight",
+              description="symbol-navigate-action-highlight",
+            ),
+          },
+        ])
+        @base_browser.schedule_timeout(
+          () => {
+            match viewer.get_model() {
+              Some(current) if current.same(text_model) => decorations.clear()
+              _ => ()
+            }
+          },
+          350,
+        )
+        |> ignore
       }
     PreserveScroll | ResetScroll => ()
   }

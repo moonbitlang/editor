@@ -1,7 +1,9 @@
 import {
   "moonbitlang/editor/base/browser" @base_browser,
   "moonbitlang/editor/base/common" @base_common,
+  "moonbitlang/editor/internal/viewer/browser/view",
   "moonbitlang/editor/language",
+  "moonbitlang/editor/viewer/common/model",
   "moonbit-community/rabbita/dom" @rdom,
 }
 

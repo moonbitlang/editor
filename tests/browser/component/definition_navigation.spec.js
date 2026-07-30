@@ -289,6 +289,122 @@ test('HTML context menu preserves an enclosing selection and runs Go to Definiti
   }
 });
 
+test('Go to Definition flashes the full target range for the VS Code 350ms window', async ({
+  page,
+}, testInfo) => {
+  const reporter = await mountDefinitionFixture(page, testInfo);
+  try {
+    await page.locator(outerEditor).evaluate((root) => {
+      const trace = {
+        appearedAt: null,
+        disappearedAt: null,
+        rect: null,
+      };
+      globalThis.__definitionHighlightTrace = trace;
+      const sample = () => {
+        const highlight = root.querySelector('.symbolHighlight');
+        if (highlight && trace.appearedAt === null) {
+          const rect = highlight.getBoundingClientRect();
+          trace.appearedAt = performance.now();
+          trace.rect = {
+            left: rect.left,
+            top: rect.top,
+            width: rect.width,
+            height: rect.height,
+          };
+        } else if (
+          !highlight &&
+          trace.appearedAt !== null &&
+          trace.disappearedAt === null
+        ) {
+          trace.disappearedAt = performance.now();
+        }
+      };
+      new MutationObserver(sample).observe(root, {
+        attributes: true,
+        childList: true,
+        subtree: true,
+      });
+    });
+    const point = await referencePoint(page);
+    await page.mouse.click(point.x, point.y);
+    await page.keyboard.press('F12');
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => globalThis.__definitionHighlightTrace.appearedAt,
+        ),
+      )
+      .not.toBeNull();
+    await expect
+      .poll(async () => (await state(page)).position)
+      .toEqual({ line: 1, column: 5 });
+    const target = await textRange(
+      page,
+      outerEditor,
+      1,
+      'definition_alpha',
+    );
+    const appeared = await page.evaluate(
+      () => globalThis.__definitionHighlightTrace.rect,
+    );
+    expect(Math.abs(appeared.left - target.left)).toBeLessThan(3);
+    expect(Math.abs(appeared.top - target.top)).toBeLessThan(3);
+    expect(Math.abs(appeared.width - target.width)).toBeLessThan(3);
+
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => globalThis.__definitionHighlightTrace.disappearedAt,
+        ),
+      )
+      .not.toBeNull();
+    const duration = await page.evaluate(() => {
+      const trace = globalThis.__definitionHighlightTrace;
+      return trace.disappearedAt - trace.appearedAt;
+    });
+    expect(duration).toBeGreaterThanOrEqual(250);
+    expect(duration).toBeLessThan(1000);
+    await expect(
+      page.locator(`${outerEditor} .symbolHighlight`),
+    ).toHaveCount(0);
+  } finally {
+    reporter.dispose();
+  }
+});
+
+test('an empty definition result shows a request-anchored inline message', async ({
+  page,
+}, testInfo) => {
+  const reporter = await mountDefinitionFixture(page, testInfo);
+  try {
+    const point = await textRange(page, outerEditor, 2, 'use');
+    await page.mouse.click(point.x, point.y);
+    const cursor = await page
+      .locator(`${outerEditor} .cursor`)
+      .first()
+      .boundingBox();
+    expect(cursor).not.toBeNull();
+
+    await page.keyboard.press('F12');
+    const message = page.locator(
+      `${outerEditor} .moonbit-viewer-definition-message`,
+    );
+    await expect(message).toBeVisible();
+    await expect(message).toContainText("No definition found for 'use'");
+    await expect(message).toHaveClass(/below/);
+    const box = await message.boundingBox();
+    expect(box).not.toBeNull();
+    expect(Math.abs(box.x - (cursor.x - 6))).toBeLessThan(4);
+    expect(box.y).toBeGreaterThanOrEqual(cursor.y + cursor.height - 2);
+
+    await page.keyboard.press('ArrowRight');
+    await expect(message).toBeHidden();
+  } finally {
+    reporter.dispose();
+  }
+});
+
 test('Shift+F10 fits the menu at a viewport edge and keyboard-opens Peek Definition', async ({
   page,
 }, testInfo) => {

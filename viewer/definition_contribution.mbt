@@ -31,7 +31,6 @@ priv struct DefinitionContributionState {
   mut definition_mouse_down_line : Int
   mut last_message : String?
   mut message_widget : @definition_browser.DefinitionMessageWidget?
-  mut message_overlay : @editor_browser.OverlayWidget?
   mut message_hide : @base_common.Disposable?
   peek : DefinitionPeekState
   link_decorations : EditorDecorationsCollection
@@ -56,7 +55,6 @@ fn DefinitionContributionState::DefinitionContributionState(
     definition_mouse_down_line: 0,
     last_message: None,
     message_widget: None,
-    message_overlay: None,
     message_hide: None,
     peek: DefinitionPeekState(),
     link_decorations: viewer.create_decorations_collection(),
@@ -434,7 +432,10 @@ async fn Viewer::dispatch_definition_locations(
 ) -> Unit noraise {
   if locations.is_empty() {
     if !mute_message {
-      self.show_definition_message("No definition found")
+      self.show_definition_message(
+        self.definition_no_result_message(source_position),
+        position=source_position,
+      )
     }
     return
   }
@@ -442,7 +443,12 @@ async fn Viewer::dispatch_definition_locations(
     self.open_definition_peek_with_locations(source_position, locations)
     return
   }
-  self.open_definition_location(locations[0], Current) |> ignore
+  self.open_definition_location(
+    locations[0],
+    Current,
+    message_position=source_position,
+  )
+  |> ignore
 }
 
 ///|
@@ -835,6 +841,7 @@ async fn Viewer::open_definition_location(
   self : Viewer,
   location : @language.Location,
   mode : @navigation_api.OpenLocationMode,
+  message_position? : @base_common.Position,
 ) -> Bool noraise {
   guard !self.disposed else { return false }
   guard self.definition_contribution() is Some(state) else { return false }
@@ -861,6 +868,7 @@ async fn Viewer::open_definition_location(
           ),
         )
         self.focus()
+        self.show_definition_target_highlight(source_model, range)
         return true
       }
       _ => ()
@@ -872,9 +880,42 @@ async fn Viewer::open_definition_location(
     None => false
   }
   if !accepted && self.definition_open_is_current(stamp) {
-    self.show_definition_message("Unable to open definition")
+    self.show_definition_message(
+      "Unable to open definition",
+      position?=message_position,
+    )
   }
   accepted
+}
+
+///|
+/// VS Code's `_openReference` target feedback: retain the full target range
+/// for 350ms, and clear it only if the Viewer still owns the exact model that
+/// received the decoration.
+fn Viewer::show_definition_target_highlight(
+  self : Viewer,
+  target_model : @model.TextModel,
+  range : @base_common.Range,
+) -> Unit {
+  let decorations = self.create_decorations_collection(decorations=[
+    {
+      range,
+      options: ModelDecorationOptions(
+        "symbolHighlight",
+        description="symbol-navigate-action-highlight",
+      ),
+    },
+  ])
+  @base_browser.schedule_timeout(
+    () => {
+      match self.get_model() {
+        Some(current) if current.same(target_model) => decorations.clear()
+        _ => ()
+      }
+    },
+    350,
+  )
+  |> ignore
 }
 
 ///|
@@ -895,7 +936,27 @@ fn Viewer::definition_open_is_current(
 }
 
 ///|
-fn Viewer::show_definition_message(self : Viewer, message : String) -> Unit {
+fn Viewer::definition_no_result_message(
+  self : Viewer,
+  position : @base_common.Position,
+) -> String {
+  match self.get_model() {
+    Some(model) =>
+      match model.get_word_at_position(model.validate_position(position)) {
+        Some(word) if !word.word.is_empty() =>
+          "No definition found for '\{word.word}'"
+        _ => "No definition found"
+      }
+    None => "No definition found"
+  }
+}
+
+///|
+fn Viewer::show_definition_message(
+  self : Viewer,
+  message : String,
+  position? : @base_common.Position,
+) -> Unit {
   match self.definition_contribution() {
     Some(state) => {
       state.last_message = Some(message)
@@ -908,6 +969,17 @@ fn Viewer::show_definition_message(self : Viewer, message : String) -> Unit {
         self.current_code_browser_data() is Some(_) else {
         return
       }
+      guard self.get_model() is Some(model) else { return }
+      let position = model.validate_position(
+        match position {
+          Some(position) => position
+          None =>
+            match self.get_position() {
+              Some(position) => position
+              None => Position(1, 1)
+            }
+        },
+      )
       let widget = match state.message_widget {
         Some(widget) => widget
         None => {
@@ -918,32 +990,54 @@ fn Viewer::show_definition_message(self : Viewer, message : String) -> Unit {
       }
       match self.current_markdown_document() {
         Some(markdown) => {
-          match state.message_overlay {
-            Some(overlay) => self.remove_overlay_widget(overlay)
-            None => ()
-          }
-          state.message_overlay = None
           markdown.overlay_mount().append_child(widget.get_dom_node().as_node())
+          @base_browser.set_style_property(
+            widget.get_dom_node(),
+            "position",
+            "absolute",
+          )
+          @base_browser.set_style_property(widget.get_dom_node(), "top", "12px")
+          @base_browser.set_style_property(
+            widget.get_dom_node(),
+            "right",
+            "12px",
+          )
         }
         None => {
-          guard self.current_code_browser_data() is Some(_) else { return }
-          if state.message_overlay is None {
-            let overlay = overlay_widget(
-              "editor.contrib.definition.message",
-              widget.get_dom_node(),
-            )
-            state.message_overlay = Some(overlay)
-            self.add_overlay_widget(overlay)
+          guard self.current_code_view() is Some(view) else { return }
+          if widget.get_dom_node().get_attribute("data-content-widget") is None {
+            view.content_widgets.add_widget(widget.content_widget_handle())
           }
+          @base_browser.remove_style_property(widget.get_dom_node(), "top")
+          @base_browser.remove_style_property(widget.get_dom_node(), "right")
+          self.reveal_position_in_center_if_outside_viewport(position)
         }
       }
       widget.set_message(message)
-      widget.show()
+      widget.show_at(position)
+      match self.current_code_view() {
+        Some(view) => {
+          view.content_widgets.set_widget_position(
+            widget.content_widget_handle(),
+          )
+          self.schedule_render()
+        }
+        None => ()
+      }
       state.message_hide = Some(
         @base_browser.schedule_timeout(
           () => {
             if !state.disposed {
               widget.hide()
+              match self.current_code_view() {
+                Some(view) => {
+                  view.content_widgets.set_widget_position(
+                    widget.content_widget_handle(),
+                  )
+                  self.schedule_render()
+                }
+                None => ()
+              }
               state.message_hide = None
             }
           },
@@ -966,7 +1060,18 @@ fn Viewer::clear_definition_message(self : Viewer) -> Unit {
       }
       state.message_hide = None
       match state.message_widget {
-        Some(widget) => widget.hide()
+        Some(widget) => {
+          widget.hide()
+          match self.current_code_view() {
+            Some(view) => {
+              view.content_widgets.set_widget_position(
+                widget.content_widget_handle(),
+              )
+              self.schedule_render()
+            }
+            None => ()
+          }
+        }
         None => ()
       }
     }
@@ -983,11 +1088,6 @@ fn Viewer::dispose_definition_message(self : Viewer) -> Unit {
         None => ()
       }
       state.message_hide = None
-      match state.message_overlay {
-        Some(overlay) => self.remove_overlay_widget(overlay)
-        None => ()
-      }
-      state.message_overlay = None
       match state.message_widget {
         Some(widget) => {
           @base_browser.remove_element(widget.get_dom_node())

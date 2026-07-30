@@ -489,7 +489,12 @@ test "definition message widget shows hides and disposes idempotently" {
     definition_peek_test_has_attribute(widget.get_dom_node(), "hidden"),
   )
   widget.set_message("No definition found")
-  widget.show()
+  widget.show_at(Position(2, 3))
+  assert_eq(widget.position, Some(Position(2, 3)))
+  widget.after_render(Some(Below))
+  assert_true(
+    widget.get_dom_node().get_attribute("class").unwrap().contains("below"),
+  )
   assert_false(
     definition_peek_test_has_attribute(widget.get_dom_node(), "hidden"),
   )
@@ -498,13 +503,14 @@ test "definition message widget shows hides and disposes idempotently" {
     "No definition found",
   )
   widget.hide()
+  assert_true(widget.position is None)
   assert_true(
     definition_peek_test_has_attribute(widget.get_dom_node(), "hidden"),
   )
   widget.dispose()
   widget.dispose()
   widget.set_message("late")
-  widget.show()
+  widget.show_at(Position(4, 5))
   assert_true(
     definition_peek_test_has_attribute(widget.get_dom_node(), "hidden"),
   )

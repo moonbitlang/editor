@@ -194,6 +194,15 @@ async test "F12 reveals a same-resource definition without calling the opener" {
   assert_eq(viewer.get_position(), Some(Position(1, 14)))
   assert_eq(opener_calls.val, 0)
   assert_true(viewer.definition_message_for_test() is None)
+  let highlights = viewer
+    .get_line_decorations(1)
+    .filter(decoration => decoration.options.class_name == "symbolHighlight")
+  assert_eq(highlights.length(), 1)
+  assert_eq(highlights[0].range, location.range)
+  assert_eq(
+    highlights[0].options.description,
+    "symbol-navigate-action-highlight",
+  )
 
   viewer.dispose()
   services.dispose()
@@ -400,7 +409,7 @@ async test "empty and stale definition actions cannot navigate" {
   empty_tasks.run_next()
   assert_eq(
     empty_viewer.definition_message_for_test(),
-    Some("No definition found"),
+    Some("No definition found for 'let'"),
   )
 
   viewer.dispose()
@@ -1040,7 +1049,10 @@ async fn run_empty_definition_peek_test() -> Unit {
   }
   assert_true(state.peek.widget is None)
   assert_true(state.peek.zone_id is None)
-  assert_eq(viewer.definition_message_for_test(), Some("No definition found"))
+  assert_eq(
+    viewer.definition_message_for_test(),
+    Some("No definition found for 'source'"),
+  )
 
   viewer.dispose()
   services.dispose()
