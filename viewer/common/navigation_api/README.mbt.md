@@ -10,7 +10,9 @@ document, tab, editor group, or navigation history.
 `OpenLocationRequest`. The request contains only the initiating public Viewer
 id, a language `Location`, and the host-neutral `Current`/`Side` intent. The
 Viewer reveals same-resource locations locally; the opener is for locations
-that require host action.
+that require host action. Host acceptance cannot be revoked after dispatch, but
+the Viewer stamps each request and suppresses late rejection feedback after a
+newer navigation, model/version replacement, or Viewer disposal.
 
 `TextModelResolverHandle` is an injected dependency-inversion boundary for
 cross-resource Peek previews. The host decides where a model comes from and

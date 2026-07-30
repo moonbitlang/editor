@@ -311,42 +311,69 @@ padding. Smooth requests of at most one line downgrade to immediate, and the
 Definition UI is a behavior port of Monaco standalone. In Code, F12 and the web
 Ctrl/Cmd+F12 fallback request definitions at the current cursor. In semantic
 `.mbt.md` fences, F12 uses the most recent valid projected pointer position.
-Both paths preserve provider order after exact URI/range de-duplication and use
-the first result. A same-resource result is applied locally with reveal and
-focus; Code also updates its cursor. A cross-resource result is sent to the
-optional host-owned `LocationOpenerHandle`; rejection or absence produces
-non-destructive feedback. Neither Viewer nor the request value owns files,
-tabs, workspace, groups, navigation history, or transport.
+The browser runner starts every matching provider concurrently; completed live
+results are flattened in Monaco registry priority (selector score, then newest
+registration) and exact URI/range duplicates are removed. One result opens
+directly. Multiple results open Peek in an outer mounted Viewer without
+querying providers again; a headless or nested Viewer retains the deterministic
+provider-first fallback. A same-resource result is applied locally at its
+collapsed start with reveal and focus; Code also updates its cursor. A
+cross-resource result is sent to the optional host-owned
+`LocationOpenerHandle`. Rejection or absence produces non-destructive feedback
+only while the initiating model/version and opener generation remain current,
+so a late failure cannot overwrite a newer navigation. Neither Viewer nor the
+request value owns files, tabs, workspace, groups, navigation history, or
+transport.
 
 Ctrl/Command+Click uses an algorithm-fidelity gesture state rather than a
 second ordinary-click path. Only exact platform Ctrl or Command over real
 content text starts resolution; injected text, foreign elements, margins,
 widgets, and non-word positions are excluded. The token becomes a link only
-after a non-empty result. An empty result is cached for the rest of that exact
-modifier gesture and reported once as non-destructive feedback, avoiding
-repeated semantic checks on every mousemove. Selection suppression occurs only
-when a single left mousedown matches that armed token and the modifier was
-already held; mouseup must still match before opening the cached first result.
-Modifier release, scroll, drag, leave, selection, model/content change, and
-disposal cancel the request and clear the link. Code paints that link as a model
-decoration. Semantic Markdown asks the document projection to paint the exact
-source range as caller-owned spans; ordinary fences and synthetic padding stay
-inert, and projection replacement removes those spans before their DOM retires.
+after a non-empty result. An empty result is cached without feedback while the
+pointer stays on that word during the exact modifier gesture, avoiding repeated
+semantic checks on every mousemove. Moving within one word reuses the preview
+request. Selection suppression occurs only when a left mousedown with click
+detail at most one matches that armed token and the modifier is held; a
+same-line eligible mouseup launches a fresh ordinary Definition action even
+when the preview request is still pending. Modifier release, unrelated
+Ctrl/Cmd chords, blur, scroll, drag, leave, model/content change, and disposal
+cancel the transient link gesture. A selection change cancels the preview
+request; when an unresolved link mousedown already recorded its source line, it
+preserves that down-line until the same-line mouseup launches the fresh action.
+Semantic Markdown stores the most recent plain-click pointer target as its
+command anchor; modifier edges do not replace it, while leave, scroll,
+projection/model change, and disposal clear it. Code paints an armed link as a
+model decoration. Semantic Markdown asks the document projection to paint the
+exact source range as caller-owned spans; ordinary fences and synthetic padding
+stay inert, and projection replacement removes those spans before their DOM
+retires.
 
 Alt+F12 opens Peek only in an outer mounted Viewer. Code mounts the Viewer-owned
 shell in a ViewZone; semantic Markdown mounts it in the persistent projection
 overlay and stamps the session with the current projection generation. The
-shell presents all normalized results and hosts one nested readonly Viewer.
+same model/version/position command toggles the existing Peek closed. The shell
+sorts normalized results by URI/range, initially selects the result nearest the
+source, and hosts one nested readonly Viewer. A zero-result request retires its
+loading shell, restores outer focus, and reports `No definition found` instead
+of leaving an empty dialog.
 Same-resource preview reuses the caller-owned model; cross-resource preview
 uses the optional host-owned `TextModelResolverHandle` and retains its
-`TextModelReference` only for the preview lifetime. Missing, rejected, stale,
-cancelled, disposed, or wrong-URI results cannot replace the current preview
-and release any returned reference. F4/Shift+F4 switch results, Enter confirms
-through the normal opener path, and Escape closes and restores focus. A nested
+`TextModelReference` only for the preview lifetime. A current missing, rejected,
+or wrong-URI resolution replaces the installed child with the unavailable
+fallback and releases its reference. Stale, cancelled, or disposed late results
+cannot commit and release any returned reference. A slow replacement retains
+the installed child/reference until the new preview is current and ready to
+commit. Focus is scheduled after the Code ViewZone becomes visible. An
+F4/Shift+F4 replacement restores preview focus only when the retiring preview
+still owns focus at commit time, so a user focus move during resolution wins.
+Enter confirms only from the shell/list focus domain; Enter inside the nested
+preview remains native. Escape closes and restores outer focus. A nested
 preview borrows services but cannot recursively open another Peek. Teardown
-cancels both generations before disposing listeners, layout work, nested
-Viewer, model reference, the active ViewZone or Markdown overlay, and finally
-restoring outer focus.
+atomically detaches every session/preview owner slot before any synchronous
+cancellation or disposal callback, then disposes the nested Viewer before its
+reference, the shell, and finally the active ViewZone or Markdown overlay.
+Confirmation is stamped with both the source model and latest open intent, so
+a queued confirmation cannot overwrite a newer cursor or navigation action.
 
 `ViewerServices` is an opaque capability aggregate. Its constructor accepts a
 `LanguageHandle`, one closed marker source (`MarkerStore` or `Decorations`), an

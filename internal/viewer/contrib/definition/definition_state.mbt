@@ -49,6 +49,21 @@ pub fn DefinitionTargetFingerprint::is_current(
 }
 
 ///|
+/// Whether two pointer positions address the same word in the same immutable
+/// model snapshot. Monaco caches definition-link preview work by the word,
+/// rather than issuing a new request for every caret column inside that word.
+pub fn DefinitionTargetFingerprint::same_word(
+  self : DefinitionTargetFingerprint,
+  other : DefinitionTargetFingerprint,
+) -> Bool {
+  self.model_identity == other.model_identity &&
+  self.model_generation == other.model_generation &&
+  self.model_version_id == other.model_version_id &&
+  self.word_range == other.word_range &&
+  self.word == other.word
+}
+
+///|
 /// A definition request sequence plus its immutable source target.
 pub(all) struct DefinitionRequestStamp {
   sequence : Int
@@ -88,30 +103,6 @@ pub(all) enum DefinitionLinkState {
   LinkResolving(DefinitionRequestStamp)
   LinkResolvedEmpty(DefinitionRequestStamp)
   LinkArmed(DefinitionRequestStamp, Array[@language.Location])
-  LinkPressed(DefinitionRequestStamp, Array[@language.Location])
-}
-
-///|
-pub fn DefinitionLinkState::stamp(
-  self : DefinitionLinkState,
-) -> DefinitionRequestStamp? {
-  match self {
-    LinkIdle => None
-    LinkResolving(stamp)
-    | LinkResolvedEmpty(stamp)
-    | LinkArmed(stamp, _)
-    | LinkPressed(stamp, _) => Some(stamp)
-  }
-}
-
-///|
-pub fn DefinitionLinkState::locations(
-  self : DefinitionLinkState,
-) -> Array[@language.Location] {
-  match self {
-    LinkArmed(_, locations) | LinkPressed(_, locations) => locations.copy()
-    LinkIdle | LinkResolving(_) | LinkResolvedEmpty(_) => []
-  }
 }
 
 ///|
@@ -123,5 +114,4 @@ pub(all) enum DefinitionPeekPhase {
   PeekLoadingPreview(Int, Int)
   PeekShown(Int, Int)
   PeekUnavailable(Int, Int)
-  PeekEmpty(Int)
 } derive(Eq, Debug)

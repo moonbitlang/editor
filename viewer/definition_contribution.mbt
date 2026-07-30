@@ -7,7 +7,14 @@ priv struct DefinitionActionStamp {
   model_identity : Int
   model_generation : Int
   model_version_id : Int
-  position : @base_common.Position
+}
+
+///|
+priv struct DefinitionOpenStamp {
+  generation : Int
+  model_identity : Int
+  model_generation : Int
+  model_version_id : Int
 }
 
 ///|
@@ -15,11 +22,13 @@ priv struct DefinitionContributionState {
   mut disposed : Bool
   mut action_generation : Int
   mut action_source : @language.CancellationTokenSource?
+  mut open_generation : Int
   mut link_generation : Int
   mut link_source : @language.CancellationTokenSource?
   mut link_state : @definition.DefinitionLinkState
   mut link_modifier_down : Bool
   mut last_pointer_target : @definition.DefinitionTargetFingerprint?
+  mut definition_mouse_down_line : Int
   mut last_message : String?
   mut message_widget : @definition_browser.DefinitionMessageWidget?
   mut message_overlay : @editor_browser.OverlayWidget?
@@ -38,11 +47,13 @@ fn DefinitionContributionState::DefinitionContributionState(
     disposed: false,
     action_generation: 0,
     action_source: None,
+    open_generation: 0,
     link_generation: 0,
     link_source: None,
     link_state: LinkIdle,
     link_modifier_down: false,
     last_pointer_target: None,
+    definition_mouse_down_line: 0,
     last_message: None,
     message_widget: None,
     message_overlay: None,
@@ -59,11 +70,19 @@ fn DefinitionContributionState::cancel_action(
   self : DefinitionContributionState,
 ) -> Unit {
   self.action_generation += 1
-  match self.action_source {
+  let source = self.action_source
+  self.action_source = None
+  match source {
     Some(source) => source.dispose(cancel=true)
     None => ()
   }
-  self.action_source = None
+}
+
+///|
+fn DefinitionContributionState::invalidate_open_feedback(
+  self : DefinitionContributionState,
+) -> Unit {
+  self.open_generation += 1
 }
 
 ///|
@@ -89,10 +108,7 @@ fn DefinitionContributionState::cancel_link(
   self : DefinitionContributionState,
 ) -> Unit {
   self.link_generation += 1
-  match self.link_source {
-    Some(source) => source.dispose(cancel=true)
-    None => ()
-  }
+  let source = self.link_source
   self.link_source = None
   self.link_state = LinkIdle
   self.link_decorations.clear()
@@ -100,6 +116,10 @@ fn DefinitionContributionState::cancel_link(
     @base_browser.remove_element(element)
   }
   self.markdown_link_elements.clear()
+  match source {
+    Some(source) => source.dispose(cancel=true)
+    None => ()
+  }
 }
 
 ///|
@@ -121,9 +141,19 @@ fn DefinitionContributionState::retire_link_source(
 fn DefinitionContributionState::reset_link_gesture(
   self : DefinitionContributionState,
 ) -> Unit {
+  self.cancel_link_gesture()
+  self.last_pointer_target = None
+}
+
+///|
+/// Retires the modifier/click transaction while retaining the live pointer
+/// anchor used by semantic Markdown keyboard commands.
+fn DefinitionContributionState::cancel_link_gesture(
+  self : DefinitionContributionState,
+) -> Unit {
   self.cancel_link()
   self.link_modifier_down = false
-  self.last_pointer_target = None
+  self.definition_mouse_down_line = 0
 }
 
 ///|
@@ -219,12 +249,17 @@ fn Viewer::hook_definition_contribution(
   [
     self.on_did_change_model(_ => self.reset_definition_requests()),
     self.on_did_change_model_content(_ => self.reset_definition_requests()),
-    self.on_did_change_cursor_selection(_ => {
-      self.on_definition_cursor_selection_changed()
+    self.on_did_change_cursor_selection(event => {
+      self.on_definition_cursor_selection_changed(event.selection.is_empty())
     }),
     self.on_mouse_move(event => self.on_definition_mouse_move(event)),
     self.on_mouse_up(event => self.on_definition_mouse_up(event)),
     self.on_mouse_leave(_ => self.reset_definition_link()),
+    self.on_did_scroll_change(event => {
+      if event.scroll_top_changed || event.scroll_left_changed {
+        self.reset_definition_link()
+      }
+    }),
   ]
 }
 
@@ -232,11 +267,23 @@ fn Viewer::hook_definition_contribution(
 /// Cursor movement invalidates an F12 action and a definition-link request.
 /// A Peek that is still resolving its definitions is anchored to that same
 /// source position and must close; once results are installed, ordinary
-/// selection changes do not destroy the Viewer-owned Peek session.
-fn Viewer::on_definition_cursor_selection_changed(self : Viewer) -> Unit {
+/// selection changes do not destroy the Viewer-owned Peek session. When an
+/// unresolved definition link lets a collapsed mousedown perform the ordinary
+/// cursor move, that event cancels only the preview request: the independent
+/// mouse-down line must survive until mouseup launches the fresh action. A
+/// non-empty drag selection resets the whole gesture and must never navigate.
+fn Viewer::on_definition_cursor_selection_changed(
+  self : Viewer,
+  selection_is_empty : Bool,
+) -> Unit {
   guard self.definition_contribution() is Some(state) else { return }
+  state.invalidate_open_feedback()
   state.cancel_action()
-  state.reset_link_gesture()
+  if state.definition_mouse_down_line > 0 && selection_is_empty {
+    state.cancel_link()
+  } else {
+    state.reset_link_gesture()
+  }
   match state.peek.phase {
     PeekLoadingDefinitions(_) => self.close_definition_peek(restore_focus=false)
     _ => ()
@@ -247,10 +294,7 @@ fn Viewer::on_definition_cursor_selection_changed(self : Viewer) -> Unit {
 ///|
 fn Viewer::cancel_definition_link(self : Viewer) -> Unit {
   match self.definition_contribution() {
-    Some(state) => {
-      state.link_modifier_down = false
-      state.cancel_link()
-    }
+    Some(state) => state.cancel_link_gesture()
     None => ()
   }
 }
@@ -278,9 +322,33 @@ fn Viewer::reset_definition_link(self : Viewer) -> Unit {
 
 ///|
 fn Viewer::start_goto_definition(self : Viewer) -> Unit {
+  guard self.definition_command_position() is Some(position) else { return }
+  self.start_goto_definition_at(position, mute_message=false)
+}
+
+///|
+/// Starts the ordinary Definition action at an already validated source
+/// position. Definition-link mouseup deliberately uses this entry instead of
+/// consuming the preview request's cached locations.
+fn Viewer::start_goto_definition_at(
+  self : Viewer,
+  position : @base_common.Position,
+  mute_message~ : Bool,
+) -> Unit {
   guard self.definition_contribution() is Some(state) else { return }
   guard self.get_model() is Some(model) else { return }
-  guard self.definition_command_position() is Some(position) else { return }
+  let position = model.validate_position(position)
+  // An ordinary Definition action is a newer navigation intent than a Peek
+  // request that is still resolving its definition list. Retire only that
+  // loading shell: an already populated Peek remains independently usable.
+  match state.peek.phase {
+    PeekLoadingDefinitions(_) => self.close_definition_peek(restore_focus=false)
+    _ => ()
+  }
+  // A new navigation intent immediately supersedes feedback from any opener
+  // that is still awaiting its host, even before this provider request
+  // resolves far enough to call the next opener.
+  state.invalidate_open_feedback()
   state.cancel_action()
   self.clear_definition_message()
   state.action_generation += 1
@@ -292,7 +360,6 @@ fn Viewer::start_goto_definition(self : Viewer) -> Unit {
     model_identity: model.identity(),
     model_generation: self.model_slot.generation,
     model_version_id: model.get_version_id(),
-    position,
   }
   let offset = model.get_offset_at(position)
   let task = state.launch_async_task
@@ -301,6 +368,7 @@ fn Viewer::start_goto_definition(self : Viewer) -> Unit {
       model,
       offset,
       token=source.token(),
+      run_tasks=run_async_tasks_concurrently,
     )
     if !self.definition_action_is_current(stamp, source) {
       state.retire_action_source(source, cancel=true)
@@ -309,12 +377,31 @@ fn Viewer::start_goto_definition(self : Viewer) -> Unit {
     source.dispose()
     state.action_source = None
     let locations = @definition.normalize_definition_locations(locations)
-    if locations.is_empty() {
-      self.show_definition_message("No definition found")
-      return
-    }
-    self.open_definition_location(locations[0], Current) |> ignore
+    self.dispatch_definition_locations(position, locations, mute_message~)
   })
+}
+
+///|
+/// Applies Monaco's default definition result policy without asking providers
+/// a second time: direct-open one result, or populate Peek for multiple
+/// results when this outer mounted Viewer can host it.
+async fn Viewer::dispatch_definition_locations(
+  self : Viewer,
+  source_position : @base_common.Position,
+  locations : Array[@language.Location],
+  mute_message~ : Bool,
+) -> Unit noraise {
+  if locations.is_empty() {
+    if !mute_message {
+      self.show_definition_message("No definition found")
+    }
+    return
+  }
+  if locations.length() > 1 && self.definition_peek_available() {
+    self.open_definition_peek_with_locations(source_position, locations)
+    return
+  }
+  self.open_definition_location(locations[0], Current) |> ignore
 }
 
 ///|
@@ -415,6 +502,30 @@ fn Viewer::definition_link_target_is_current(
 }
 
 ///|
+/// Commits a plain-click command anchor. Pointer hover alone must not cancel a
+/// Markdown request, but an actual click is the projection equivalent of a Code
+/// cursor change and invalidates the old action/loading Peek immediately.
+fn Viewer::commit_plain_definition_pointer_target(
+  self : Viewer,
+  target : @definition.DefinitionTargetFingerprint?,
+) -> Unit {
+  guard self.definition_contribution() is Some(state) else { return }
+  state.invalidate_open_feedback()
+  state.cancel_action()
+  match state.peek.phase {
+    PeekLoadingDefinitions(_) => self.close_definition_peek(restore_focus=false)
+    _ => ()
+  }
+  state.last_pointer_target = match target {
+    Some(target) if self.definition_link_target_is_current(target) =>
+      Some(target)
+    _ => None
+  }
+  state.cancel_link_gesture()
+  self.clear_definition_message()
+}
+
+///|
 fn Viewer::start_definition_link_request(
   self : Viewer,
   target : @definition.DefinitionTargetFingerprint,
@@ -426,10 +537,9 @@ fn Viewer::start_definition_link_request(
     return
   }
   match state.link_state {
-    LinkResolving(stamp)
-    | LinkResolvedEmpty(stamp)
-    | LinkArmed(stamp, _)
-    | LinkPressed(stamp, _) if stamp.target == target => return
+    LinkResolving(stamp) | LinkResolvedEmpty(stamp) | LinkArmed(stamp, _) if stamp.target.same_word(
+        target,
+      ) => return
     _ => ()
   }
   state.cancel_link()
@@ -446,6 +556,7 @@ fn Viewer::start_definition_link_request(
       model,
       offset,
       token=source.token(),
+      run_tasks=run_async_tasks_concurrently,
     )
     if !self.definition_link_request_is_current(stamp, source) {
       state.retire_link_source(source, cancel=true)
@@ -457,7 +568,6 @@ fn Viewer::start_definition_link_request(
     if locations.is_empty() {
       state.link_state = LinkResolvedEmpty(stamp)
       state.link_decorations.clear()
-      self.show_definition_message("No definition found")
       return
     }
     state.link_state = LinkArmed(stamp, locations)
@@ -496,7 +606,10 @@ fn Viewer::definition_link_request_is_current(
   guard self.definition_contribution() is Some(state) else { return false }
   guard state.link_generation == stamp.sequence else { return false }
   guard state.link_modifier_down else { return false }
-  guard state.last_pointer_target == Some(stamp.target) else { return false }
+  guard state.last_pointer_target is Some(pointer_target) &&
+    pointer_target.same_word(stamp.target) else {
+    return false
+  }
   guard self.definition_link_target_is_current(stamp.target) else {
     return false
   }
@@ -535,7 +648,11 @@ fn Viewer::handle_definition_pointer_move(
   guard self.definition_contribution() is Some(state) else { return }
   state.last_pointer_target = target
   let active = definition_link_modifier_is_active(ctrl, meta, alt, shift)
-  if !active || buttons != 0 {
+  if buttons != 0 {
+    state.reset_link_gesture()
+    return
+  }
+  if !active {
     state.link_modifier_down = false
     state.cancel_link()
     return
@@ -548,8 +665,19 @@ fn Viewer::handle_definition_pointer_move(
 }
 
 ///|
-fn Viewer::handle_definition_modifier_change(
+fn definition_link_key_is_trigger(key : String) -> Bool {
+  if @base_common.is_macintosh {
+    key == "Meta"
+  } else {
+    key == "Control"
+  }
+}
+
+///|
+fn Viewer::handle_definition_modifier_key(
   self : Viewer,
+  key : String,
+  key_down : Bool,
   ctrl : Bool,
   meta : Bool,
   alt : Bool,
@@ -557,9 +685,23 @@ fn Viewer::handle_definition_modifier_change(
 ) -> Unit {
   guard self.definition_contribution() is Some(state) else { return }
   let active = definition_link_modifier_is_active(ctrl, meta, alt, shift)
+  let trigger_key = definition_link_key_is_trigger(key)
+  if !key_down {
+    if trigger_key {
+      state.cancel_link_gesture()
+    }
+    return
+  }
   if !active {
-    state.link_modifier_down = false
-    state.cancel_link()
+    if trigger_key || state.link_modifier_down {
+      state.cancel_link_gesture()
+    }
+    return
+  }
+  if !trigger_key {
+    // A Ctrl/Cmd chord is not a link gesture. Clearing the whole click state
+    // prevents its eventual mouseup from becoming an accidental navigation.
+    state.cancel_link_gesture()
     return
   }
   let became_active = !state.link_modifier_down
@@ -585,6 +727,8 @@ fn Viewer::on_definition_mouse_up(
     event.event.meta_key,
     event.event.alt_key,
     event.event.shift_key,
+    left_button=event.event.left_button,
+    detail=event.event.detail,
   )
   |> ignore
 }
@@ -597,28 +741,35 @@ fn Viewer::handle_definition_pointer_up(
   meta : Bool,
   alt : Bool,
   shift : Bool,
+  left_button? : Bool = true,
+  detail? : Int = 1,
 ) -> Bool {
   guard self.definition_contribution() is Some(state) else { return false }
   let modifier_active = definition_link_modifier_is_active(
     ctrl, meta, alt, shift,
   )
-  match state.link_state {
-    LinkPressed(stamp, locations) if modifier_active &&
-      state.link_modifier_down &&
-      target == Some(stamp.target) &&
-      self.definition_link_target_is_current(stamp.target) => {
-      let location = locations[0]
-      state.cancel_link()
-      let task = state.launch_async_task
-      task(async fn() noraise {
-        self.open_definition_location(location, Current) |> ignore
-      })
-      return true
+  let mouse_down_line = state.definition_mouse_down_line
+  state.definition_mouse_down_line = 0
+  guard modifier_active &&
+    left_button &&
+    detail <= 1 &&
+    state.link_modifier_down &&
+    mouse_down_line > 0 &&
+    target is Some(target) &&
+    target.position.line_number == mouse_down_line &&
+    self.definition_link_target_is_current(target) else {
+    if !modifier_active && left_button && detail <= 1 {
+      self.commit_plain_definition_pointer_target(target)
     }
-    LinkPressed(_, _) => state.cancel_link()
-    _ => ()
+    return false
   }
-  false
+  let position = target.position
+  state.reset_link_gesture()
+  if self.current_markdown_document() is None {
+    self.set_position(position, source="gotoDefinitionLink")
+  }
+  self.start_goto_definition_at(position, mute_message=true)
+  true
 }
 
 ///|
@@ -635,8 +786,7 @@ fn Viewer::definition_action_is_current(
   guard self.get_model() is Some(model) else { return false }
   model.identity() == stamp.model_identity &&
   self.model_slot.generation == stamp.model_generation &&
-  model.get_version_id() == stamp.model_version_id &&
-  self.definition_command_position() == Some(stamp.position)
+  model.get_version_id() == stamp.model_version_id
 }
 
 ///|
@@ -645,12 +795,30 @@ async fn Viewer::open_definition_location(
   location : @language.Location,
   mode : @navigation_api.OpenLocationMode,
 ) -> Bool noraise {
+  guard !self.disposed else { return false }
+  guard self.definition_contribution() is Some(state) else { return false }
+  guard self.get_model() is Some(source_model) else { return false }
+  state.invalidate_open_feedback()
+  let stamp : DefinitionOpenStamp = {
+    generation: state.open_generation,
+    model_identity: source_model.identity(),
+    model_generation: self.model_slot.generation,
+    model_version_id: source_model.get_version_id(),
+  }
   if mode == Current {
-    match self.get_model() {
-      Some(model) if model.uri.to_string() == location.uri.to_string() => {
-        let range = model.validate_range(location.range)
-        self.set_position(range.get_start_position(), source="gotoDefinition")
-        self.reveal_range_in_center_if_outside_viewport(range)
+    match source_model {
+      model if model.uri.to_string() == location.uri.to_string() => {
+        let range = source_model.validate_range(location.range)
+        let start = range.get_start_position()
+        self.set_position(start, source="gotoDefinition")
+        self.reveal_range_in_center_if_outside_viewport(
+          Range(
+            start.line_number,
+            start.column,
+            start.line_number,
+            start.column,
+          ),
+        )
         self.focus()
         return true
       }
@@ -662,10 +830,27 @@ async fn Viewer::open_definition_location(
       opener.open({ source_viewer_id: self.get_id(), location, mode })
     None => false
   }
-  if !accepted {
+  if !accepted && self.definition_open_is_current(stamp) {
     self.show_definition_message("Unable to open definition")
   }
   accepted
+}
+
+///|
+fn Viewer::definition_open_is_current(
+  self : Viewer,
+  stamp : DefinitionOpenStamp,
+) -> Bool {
+  guard !self.disposed else { return false }
+  guard self.definition_contribution() is Some(state) &&
+    !state.disposed &&
+    state.open_generation == stamp.generation else {
+    return false
+  }
+  guard self.get_model() is Some(model) else { return false }
+  model.identity() == stamp.model_identity &&
+  self.model_slot.generation == stamp.model_generation &&
+  model.get_version_id() == stamp.model_version_id
 }
 
 ///|

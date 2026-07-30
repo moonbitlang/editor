@@ -7,20 +7,21 @@ fn Viewer::before_definition_mouse_down_selection(
   event : @editor_browser.EditorDomMouseEvent,
   target : @editor_browser.MouseTarget,
 ) -> Bool {
-  guard event.left_button && event.detail == 1 else { return false }
+  guard event.left_button && event.detail <= 1 else { return false }
+  let target = self.definition_target_from_mouse_target(
+    self.convert_mouse_target(target),
+  )
   guard definition_link_modifier_is_active(
     event.ctrl_key,
     event.meta_key,
     event.alt_key,
     event.shift_key,
   ) else {
+    self.commit_plain_definition_pointer_target(target)
     return false
   }
   guard self.definition_contribution() is Some(state) else { return false }
-  guard state.link_modifier_down else { return false }
-  let target = self.definition_target_from_mouse_target(
-    self.convert_mouse_target(target),
-  )
+  state.link_modifier_down = true
   self.before_definition_target_mouse_down(target)
 }
 
@@ -30,13 +31,18 @@ fn Viewer::before_definition_target_mouse_down(
   target : @definition.DefinitionTargetFingerprint?,
 ) -> Bool {
   guard self.definition_contribution() is Some(state) else { return false }
-  guard state.link_modifier_down else { return false }
+  // Callers have already validated the current mousedown event's modifier;
+  // do not depend on an earlier root keydown/mousemove having been observed.
+  state.link_modifier_down = true
+  state.definition_mouse_down_line = match target {
+    Some(target) if self.definition_link_target_is_current(target) =>
+      target.position.line_number
+    _ => 0
+  }
   match state.link_state {
-    LinkArmed(stamp, locations) if target == Some(stamp.target) &&
-      self.definition_link_target_is_current(stamp.target) => {
-      state.link_state = LinkPressed(stamp, locations)
-      true
-    }
+    LinkArmed(stamp, _) if target is Some(target) &&
+      target.same_word(stamp.target) &&
+      self.definition_link_target_is_current(stamp.target) => true
     _ => false
   }
 }

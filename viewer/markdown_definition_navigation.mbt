@@ -98,19 +98,21 @@ fn MarkdownDocumentDefinitionBridge::bind_semantic_dom(
       return
     }
     let standard = @base_browser.StandardMouseEvent(mouse)
-    guard standard.left_button && standard.detail == 1 else { return }
+    guard standard.left_button && standard.detail <= 1 else { return }
     let target = self.target_at(
       mouse.get_client_x().to_double(),
       mouse.get_client_y().to_double(),
     )
     self.viewer.focus()
-    if definition_link_modifier_is_active(
-        standard.ctrl_key,
-        standard.meta_key,
-        standard.alt_key,
-        standard.shift_key,
-      ) &&
-      self.viewer.before_definition_target_mouse_down(target) {
+    let modifier_active = definition_link_modifier_is_active(
+      standard.ctrl_key,
+      standard.meta_key,
+      standard.alt_key,
+      standard.shift_key,
+    )
+    if !modifier_active {
+      self.viewer.commit_plain_definition_pointer_target(target)
+    } else if self.viewer.before_definition_target_mouse_down(target) {
       event.prevent_default()
       event.stop_propagation()
     }
@@ -119,6 +121,7 @@ fn MarkdownDocumentDefinitionBridge::bind_semantic_dom(
     guard self.is_current() && event.to_mouse_event() is Some(mouse) else {
       return
     }
+    let standard = @base_browser.StandardMouseEvent(mouse)
     let handled = self.viewer.handle_definition_pointer_up(
       self.target_at(
         mouse.get_client_x().to_double(),
@@ -128,6 +131,8 @@ fn MarkdownDocumentDefinitionBridge::bind_semantic_dom(
       mouse.get_meta_key(),
       mouse.get_alt_key(),
       mouse.get_shift_key(),
+      left_button=standard.left_button,
+      detail=standard.detail,
     )
     if handled {
       event.prevent_default()
@@ -148,7 +153,9 @@ fn MarkdownDocumentDefinitionBridge::activate(
       event.to_keyboard_event() is Some(keyboard) else {
       return
     }
-    self.viewer.handle_definition_modifier_change(
+    self.viewer.handle_definition_modifier_key(
+      keyboard.key(),
+      true,
       keyboard.ctrl_key(),
       keyboard.meta_key(),
       keyboard.alt_key(),
@@ -170,7 +177,9 @@ fn MarkdownDocumentDefinitionBridge::activate(
       event.to_keyboard_event() is Some(keyboard) else {
       return
     }
-    self.viewer.handle_definition_modifier_change(
+    self.viewer.handle_definition_modifier_key(
+      keyboard.key(),
+      false,
       keyboard.ctrl_key(),
       keyboard.meta_key(),
       keyboard.alt_key(),

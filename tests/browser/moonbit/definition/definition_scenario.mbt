@@ -7,6 +7,8 @@
 priv struct BrowserDefinitionProvider {
   calls : Ref[Int]
   location : @language.Location
+  alternate_location : @language.Location?
+  multiple : Ref[Bool]
   reference_line : Int
 }
 
@@ -22,7 +24,10 @@ impl @language.DefinitionProvider for BrowserDefinitionProvider with fn provide_
     position.line_number == self.reference_line &&
     position.column >= definition_reference_start_column() &&
     position.column <= definition_reference_end_column() {
-    [self.location]
+    match (self.multiple.val, self.alternate_location) {
+      (true, Some(alternate)) => [self.location, alternate]
+      _ => [self.location]
+    }
   } else {
     []
   }
@@ -142,9 +147,12 @@ fn run_definition_browser_test() -> Unit {
     definition_source(),
   )
   let provider_calls = Ref(0)
+  let provider_multiple = Ref(false)
   let provider = BrowserDefinitionProvider::{
     calls: provider_calls,
     location: { uri, range: Range(1, 5, 1, 21) },
+    alternate_location: Some({ uri, range: Range(3, 1, 3, 14) }),
+    multiple: provider_multiple,
     reference_line: 2,
   }
   let markdown_uri = try! @base_common.Uri::from(
@@ -161,6 +169,7 @@ fn run_definition_browser_test() -> Unit {
     markdown_definition_source(),
   )
   let markdown_provider_calls = Ref(0)
+  let markdown_provider_multiple = Ref(false)
   let markdown_provider = BrowserDefinitionProvider::{
     calls: markdown_provider_calls,
     location: {
@@ -172,6 +181,8 @@ fn run_definition_browser_test() -> Unit {
         21,
       ),
     },
+    alternate_location: None,
+    multiple: markdown_provider_multiple,
     reference_line: 2,
   }
   let languages = @languages.Languages()
@@ -229,6 +240,7 @@ fn run_definition_browser_test() -> Unit {
     () => viewer.set_scroll_top(0.0),
     () => viewer.focus(),
     () => markdown_viewer.focus(),
+    () => provider_multiple.val = true,
     () => {
       markdown_model.set_value(
         markdown_definition_source() + "\n\nProjection generation changed.",
@@ -275,6 +287,7 @@ extern "js" fn install_definition_controls(
   reset_scroll : () -> Unit,
   focus_outer : () -> Unit,
   focus_markdown : () -> Unit,
+  enable_multiple_definitions : () -> Unit,
   replace_markdown_source : () -> Unit,
 ) -> Unit =
   #| (
@@ -285,6 +298,7 @@ extern "js" fn install_definition_controls(
   #|   resetScroll,
   #|   focusOuter,
   #|   focusMarkdown,
+  #|   enableMultipleDefinitions,
   #|   replaceMarkdownSource,
   #| ) => {
   #|   globalThis.__definitionControls = {
@@ -295,6 +309,7 @@ extern "js" fn install_definition_controls(
   #|     reset_scroll: resetScroll,
   #|     focus_outer: focusOuter,
   #|     focus_markdown: focusMarkdown,
+  #|     enable_multiple_definitions: enableMultipleDefinitions,
   #|     replace_markdown_source: replaceMarkdownSource,
   #|   };
   #| }

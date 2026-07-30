@@ -9,16 +9,20 @@ The overall implementation is a Monaco behavior port. The Ctrl/Command link
 gesture and Peek cancellation/lifetime transitions use algorithm-fidelity
 ports because their ordering is observable. `DefinitionTargetFingerprint`
 captures model identity, attachment generation, content version, position, and
-word range; `DefinitionLinkState` records resolving, armed, and pressed
-transitions plus a gesture-scoped resolved-empty cache without owning browser
-resources. `DefinitionPeekPhase` records definition and preview generations
-while root `viewer` owns and tears down their cancellation sources, Code
-decorations or projected Markdown link spans, Code ViewZone or Markdown
+word range; same-word positions share preview work while mouse execution tracks
+the pressed line independently. `DefinitionLinkState` records resolving and
+armed transitions plus a gesture-scoped resolved-empty cache without owning
+browser resources. `DefinitionPeekPhase` records definition and preview
+generations while root `viewer` owns and tears down their cancellation sources,
+Code decorations or projected Markdown link spans, Code ViewZone or Markdown
 overlay, nested Viewer, scheduled layout, and optional model-reference lease.
 
-Provider order is stable. Normalization removes only exact URI/range
-duplicates, so ordinary goto and confirmed Peek select the first surviving
-result without imposing workspace policy.
+Provider order follows Monaco registry priority: selector score descending,
+then newest registration first. Normalization removes only exact URI/range
+duplicates. Ordinary goto opens one surviving result directly, delegates
+multiple results to Peek when the outer Viewer can host it, and retains the
+first result only as the deterministic headless/nested fallback. Peek display
+sorting does not change provider-first direct-navigation policy.
 
 The JS-only browser sibling supplies the Peek/result-list and message widget
 shells. Host-neutral opening and target-model resolution live in

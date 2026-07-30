@@ -568,7 +568,7 @@ extern "js" fn string_is_whitespace_only(value : String) -> Bool =
   #| (value) => /^\s*$/.test(value)
 
 ///|
-extern "js" fn reading_target(line_node : @rdom.Element) -> @rdom.Element = "(lineNode) => lineNode.firstChild"
+extern "js" fn reading_target(line_node : @rdom.Element) -> @rdom.Element = "(lineNode) => lineNode.firstChild ?? lineNode"
 
 ///|
 extern "js" fn element_has_first_child(element : @rdom.Element) -> Bool = "(element) => Boolean(element.firstChild)"

@@ -56,7 +56,9 @@ fn Viewer::hook_view_input(
     guard @base_browser.event_target_is(event, view.root) else { return }
     match event.to_keyboard_event() {
       Some(keyboard) => {
-        self.handle_definition_modifier_change(
+        self.handle_definition_modifier_key(
+          keyboard.key(),
+          true,
           keyboard.ctrl_key(),
           keyboard.meta_key(),
           keyboard.alt_key(),
@@ -79,7 +81,9 @@ fn Viewer::hook_view_input(
     guard @base_browser.event_target_is(event, view.root) else { return }
     match event.to_keyboard_event() {
       Some(keyboard) =>
-        self.handle_definition_modifier_change(
+        self.handle_definition_modifier_key(
+          keyboard.key(),
+          false,
           keyboard.ctrl_key(),
           keyboard.meta_key(),
           keyboard.alt_key(),

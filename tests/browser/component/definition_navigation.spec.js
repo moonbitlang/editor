@@ -192,6 +192,16 @@ test('definition link preserves plain selection, paints only while armed, and na
     await expect(page.locator(definitionLink)).toHaveCount(0);
     expect((await state(page)).position.line).toBe(2);
 
+    const emptyTarget = await textRange(page, outerEditor, 2, 'use');
+    await page.keyboard.down(platformModifier);
+    await page.mouse.move(emptyTarget.x, emptyTarget.y);
+    await settle(page);
+    await expect(page.locator(definitionLink)).toHaveCount(0);
+    await expect(
+      page.locator(`${outerEditor} .moonbit-viewer-definition-message`),
+    ).toBeHidden();
+    await page.keyboard.up(platformModifier);
+
     const scrollPoint = await armDefinitionLink(page);
     await page.mouse.move(scrollPoint.x, scrollPoint.y);
     await page.mouse.wheel(0, 240);
@@ -229,12 +239,18 @@ test('definition link preserves plain selection, paints only while armed, and na
     await expect(page.locator(definitionLink)).toHaveCount(0);
 
     const gotoPoint = await armDefinitionLink(page);
-    await page.mouse.move(gotoPoint.x, gotoPoint.y);
+    const callsBeforeSameWordMove = (await state(page)).providerCalls;
+    await page.mouse.move(gotoPoint.left + 2, gotoPoint.y);
+    await settle(page);
+    expect((await state(page)).providerCalls).toBe(callsBeforeSameWordMove);
+    const callsBeforeClick = (await state(page)).providerCalls;
     await page.mouse.down();
     await page.mouse.up();
     await expect
       .poll(async () => (await state(page)).position)
       .toEqual({ line: 1, column: 5 });
+    expect((await state(page)).providerCalls).toBe(callsBeforeClick + 1);
+    await expect(page.locator(definitionLink)).toHaveCount(0);
     await page.keyboard.up(platformModifier);
     await expect(page.locator(definitionLink)).toHaveCount(0);
   } finally {
@@ -256,6 +272,19 @@ test('Alt+F12 mounts one measured Peek preview, blocks recursive Peek, and Escap
     await page.keyboard.press('Alt+F12');
     await expect(page.locator(peek)).toHaveCount(1);
     await expect(page.locator(preview)).toHaveCount(1);
+    await expect
+      .poll(() =>
+        page.evaluate(
+          (selector) =>
+            document.querySelector(selector)?.contains(document.activeElement) ??
+            false,
+          peek,
+        ),
+      )
+      .toBe(true);
+    await expect
+      .poll(() => page.locator(peek).getAttribute('aria-hidden'))
+      .toBeNull();
     await expect
       .poll(async () => (await state(page)).scrollHeight)
       .toBeGreaterThan(scrollHeightBeforePeek);
@@ -336,6 +365,107 @@ test('Alt+F12 mounts one measured Peek preview, blocks recursive Peek, and Escap
   }
 });
 
+test('same-anchor Alt+F12 toggles Peek closed without another provider request', async ({
+  page,
+}, testInfo) => {
+  const reporter = await mountDefinitionFixture(page, testInfo);
+  try {
+    const point = await referencePoint(page);
+    await page.mouse.click(point.x, point.y);
+    await page.keyboard.press('Alt+F12');
+    await expect(page.locator(peek)).toHaveCount(1);
+    await expect(page.locator(preview)).toHaveCount(1);
+    const callsAfterOpen = (await state(page)).providerCalls;
+
+    await page.evaluate(() => globalThis.__definitionControls.focus_outer());
+    await page.keyboard.press('Alt+F12');
+    await expect(page.locator(peek)).toHaveCount(0);
+    expect((await state(page)).providerCalls).toBe(callsAfterOpen);
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            document.activeElement ===
+            globalThis.__definitionControls.outerRoot,
+        ),
+      )
+      .toBe(true);
+  } finally {
+    reporter.dispose();
+  }
+});
+
+test('F4 replaces a multi-definition preview without losing preview focus', async ({
+  page,
+}, testInfo) => {
+  const reporter = await mountDefinitionFixture(page, testInfo);
+  try {
+    await page.evaluate(() =>
+      globalThis.__definitionControls.enable_multiple_definitions(),
+    );
+    const point = await referencePoint(page);
+    await page.mouse.click(point.x, point.y);
+    await page.keyboard.press('Alt+F12');
+    await expect(page.locator(peek)).toHaveCount(1);
+    await expect(page.locator(`${peek} [role="option"]`)).toHaveCount(2);
+    await expect(page.locator(preview)).toHaveCount(1);
+    const providerCalls = (await state(page)).providerCalls;
+
+    await page.locator(preview).focus();
+    await page.keyboard.press('F4');
+    await expect(
+      page.locator(`${preview} .view-line[data-line="3"]`),
+    ).toContainText('filler_line_3');
+    const nextTarget = await textRange(page, preview, 3, 'filler_line_3');
+    await expect
+      .poll(async () => page.locator(`${preview} .cursor`).first().boundingBox())
+      .not.toBeNull();
+    const nextCursor = await page
+      .locator(`${preview} .cursor`)
+      .first()
+      .boundingBox();
+    expect(Math.abs(nextCursor.x - nextTarget.left)).toBeLessThan(3);
+    await expect
+      .poll(() =>
+        page.evaluate(
+          (selector) => document.activeElement?.matches(selector) ?? false,
+          preview,
+        ),
+      )
+      .toBe(true);
+    expect((await state(page)).providerCalls).toBe(providerCalls);
+
+    await page.keyboard.press('Shift+F4');
+    await expect(
+      page.locator(`${preview} .view-line[data-line="1"]`),
+    ).toContainText('definition_alpha');
+    const previousTarget = await textRange(
+      page,
+      preview,
+      1,
+      'definition_alpha',
+    );
+    const previousCursor = await page
+      .locator(`${preview} .cursor`)
+      .first()
+      .boundingBox();
+    expect(Math.abs(previousCursor.x - previousTarget.left)).toBeLessThan(3);
+    await expect
+      .poll(() =>
+        page.evaluate(
+          (selector) => document.activeElement?.matches(selector) ?? false,
+          preview,
+        ),
+      )
+      .toBe(true);
+
+    await page.keyboard.press('Escape');
+    await expect(page.locator(peek)).toHaveCount(0);
+  } finally {
+    reporter.dispose();
+  }
+});
+
 test('semantic Markdown projects an exact definition link while ordinary fences and replacement stay inert', async ({
   page,
 }, testInfo) => {
@@ -395,9 +525,12 @@ test('semantic Markdown projects an exact definition link while ordinary fences 
       true,
       0,
     );
-    await page.keyboard.down(platformModifier);
+    // Keep the pointer on the semantic token, but deliver modifier keydown to
+    // the other Viewer. Markdown mousedown must trust its current event rather
+    // than requiring a prior key/move notification in its own bridge.
     await page.mouse.move(freshPoint.x, freshPoint.y);
-    await expect(page.locator(markdownDefinitionLink)).toHaveCount(1);
+    await page.evaluate(() => globalThis.__definitionControls.focus_outer());
+    await page.keyboard.down(platformModifier);
     await page.mouse.down();
     await page.mouse.up();
     await expect

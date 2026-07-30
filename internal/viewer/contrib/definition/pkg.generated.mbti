@@ -19,10 +19,7 @@ pub(all) enum DefinitionLinkState {
   LinkResolving(DefinitionRequestStamp)
   LinkResolvedEmpty(DefinitionRequestStamp)
   LinkArmed(DefinitionRequestStamp, Array[@language.Location])
-  LinkPressed(DefinitionRequestStamp, Array[@language.Location])
 }
-pub fn DefinitionLinkState::locations(Self) -> Array[@language.Location]
-pub fn DefinitionLinkState::stamp(Self) -> DefinitionRequestStamp?
 
 pub(all) enum DefinitionPeekPhase {
   PeekClosed
@@ -30,7 +27,6 @@ pub(all) enum DefinitionPeekPhase {
   PeekLoadingPreview(Int, Int)
   PeekShown(Int, Int)
   PeekUnavailable(Int, Int)
-  PeekEmpty(Int)
 } derive(Eq, @debug.Debug)
 
 pub(all) struct DefinitionRequestStamp {
@@ -48,6 +44,7 @@ pub(all) struct DefinitionTargetFingerprint {
 } derive(Eq, @debug.Debug)
 pub fn DefinitionTargetFingerprint::from_model(@model.TextModel, Int, @common.Position, @model.WordAtPosition) -> Self
 pub fn DefinitionTargetFingerprint::is_current(Self, @model.TextModel, Int) -> Bool
+pub fn DefinitionTargetFingerprint::same_word(Self, Self) -> Bool
 
 // Type aliases
 

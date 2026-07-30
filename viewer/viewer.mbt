@@ -552,6 +552,7 @@ pub fn Viewer::set_model(self : Viewer, model : @model.TextModel?) -> Unit {
     None => None
   }
   let had_text_focus = self.has_text_focus()
+  let had_definition_peek_focus = self.definition_peek_contains_focus()
   let detached_model = self.detach_model()
   match model {
     Some(model) => self.attach_model(model)
@@ -563,7 +564,7 @@ pub fn Viewer::set_model(self : Viewer, model : @model.TextModel?) -> Unit {
   }
   if self.has_model() {
     // "we have a new model (with a new view)!" (`cew:528-532`).
-    if had_text_focus {
+    if had_text_focus || had_definition_peek_focus {
       self.focus()
     }
   } else {
@@ -626,6 +627,9 @@ fn Viewer::detach_model(self : Viewer) -> @model.TextModel? {
       hc.hover_keep_open = false
       hc.hover_ignore_mouse_events = false
       hc.hover_is_mouse_down = false
+      hc.hover_mouse_posx = 0.0
+      hc.hover_mouse_posy = 0.0
+      hc.hover_last_modifiers = @hover.EventModifiers::none()
     }
     None => ()
   }
