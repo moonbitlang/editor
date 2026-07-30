@@ -39,9 +39,9 @@ build: dist-front-end
 #                                       # highlighting, and `moon ide` hover /
 #                                       # `moon check` diagnostics run in that
 #                                       # repo's root (via MOON_COMMAND)
-#   just TARGET=wasm dev                # run the server on the wasm backend
-#                                       # (~3x faster incremental rebuilds; no
-#                                       # C compile/link step)
+#   just TARGET=native dev              # run the server on the native backend
+#                                       # (default is wasm: ~3x faster
+#                                       # incremental rebuilds, no C link step)
 #
 # `serve` defaults to loopback; `dev` defaults to 0.0.0.0 for trusted LANs.
 # The reference server has no authentication and exposes ROOT's source files.
@@ -52,7 +52,7 @@ HOST := ""
 PORT := "5173"
 ASSET_DIR := "web/dist"
 MOON_COMMAND := "moon"
-TARGET := "native"
+TARGET := "wasm"
 
 serve:
     moon run --target {{ TARGET }} server/host/main -- \
