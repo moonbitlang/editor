@@ -83,6 +83,9 @@ if accepts(payload, current_model_identity) {
   URI, returns ref-counted `TextModelReference` leases, and closes/disposes the
   backing only after the final lease and in-flight read retire. Active-document
   teardown defers its remote close while a preview lease still uses that URI.
+  Viewer disposal synchronously closes the resolver to new work, marks existing
+  resources as closing, and lets their real lease/in-flight counters reach zero
+  before retiring models or late remote opens.
 - The protocol client correlates in-flight requests by ID and resolves all
   pending requests on connection loss. Provider cancellation removes the
   pending continuation, disposes its token subscription, and retains a

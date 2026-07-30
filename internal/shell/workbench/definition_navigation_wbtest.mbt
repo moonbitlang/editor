@@ -21,7 +21,7 @@ test "preview references share one host model and retire it after the final leas
     model: Some(model),
     in_flight: 0,
     leases: 0,
-    disposed: false,
+    lifecycle: PreviewResourceOpen,
   }
   preview_resources[uri.to_string()] = state
 
@@ -45,9 +45,60 @@ test "preview references share one host model and retire it after the final leas
 }
 
 ///|
+test "preview shutdown waits for real leases and in-flight reads" {
+  let leased_uri = definition_navigation_test_uri("shutdown-leased")
+  let leased_model = @model.TextModel(
+    leased_uri, "shutdown-leased.mbt", "moonbit", 1, "rev-shutdown", "let target = 1",
+  )
+  let leased_state : PreviewResourceState = {
+    uri: leased_uri,
+    model: Some(leased_model),
+    in_flight: 0,
+    leases: 0,
+    lifecycle: PreviewResourceOpen,
+  }
+  preview_resources[leased_uri.to_string()] = leased_state
+  let lease = acquire_preview_reference(leased_state, leased_model)
+
+  begin_preview_resource_shutdown(leased_state)
+  assert_true(leased_state.lifecycle == PreviewResourceClosing)
+  assert_eq(leased_state.leases, 1)
+  assert_false(leased_model.is_disposed())
+  assert_true(preview_resources.contains(leased_uri.to_string()))
+
+  lease.dispose()
+  assert_eq(leased_state.leases, 0)
+  assert_true(leased_state.lifecycle == PreviewResourceDisposed)
+  assert_true(leased_model.is_disposed())
+  assert_false(preview_resources.contains(leased_uri.to_string()))
+
+  let pending_uri = definition_navigation_test_uri("shutdown-pending")
+  let pending_state : PreviewResourceState = {
+    uri: pending_uri,
+    model: None,
+    in_flight: 1,
+    leases: 0,
+    lifecycle: PreviewResourceOpen,
+  }
+  preview_resources[pending_uri.to_string()] = pending_state
+  begin_preview_resource_shutdown(pending_state)
+  assert_true(pending_state.lifecycle == PreviewResourceClosing)
+  assert_eq(pending_state.in_flight, 1)
+  assert_true(preview_resources.contains(pending_uri.to_string()))
+
+  // Simulates the late resolver continuation decrementing its own request.
+  pending_state.in_flight = pending_state.in_flight - 1
+  retire_preview_resource_if_unused(pending_state)
+  assert_true(pending_state.lifecycle == PreviewResourceDisposed)
+  assert_false(preview_resources.contains(pending_uri.to_string()))
+}
+
+///|
 async test "remote definition provider preserves ordered locations and cancellation" {
   let previous_send = protocol_send.val
   let previous_dispatch = workbench_dispatch.val
+  let previous_preview_shutdown = preview_resources_shutdown.val
+  preview_resources_shutdown.val = false
   let source_uri = definition_navigation_test_uri("definition-source")
   let first_uri = definition_navigation_test_uri("definition-first")
   let second_uri = definition_navigation_test_uri("definition-second")
@@ -197,6 +248,60 @@ async test "remote definition provider preserves ordered locations and cancellat
   assert_eq(opened_uri.val, first_uri.to_string())
   assert_false(opener.open({ ..open_request, mode: Side }))
   assert_false(unexpected_packet.val)
+
+  let shutdown_uri = definition_navigation_test_uri("definition-shutdown")
+  let shutdown_open_count = Ref(0)
+  let shutdown_close_count = Ref(0)
+  let shutdown_saw_real_in_flight = Ref(false)
+  protocol_send.val = Some(packet => {
+    match packet {
+      OpenDocument(request) => {
+        shutdown_open_count.val = shutdown_open_count.val + 1
+        match preview_resources.get(request.uri.to_string()) {
+          Some(state) =>
+            shutdown_saw_real_in_flight.val = state.in_flight == 1 &&
+              state.lifecycle == PreviewResourceOpen
+          None => ()
+        }
+        // This is the real synchronous `Viewer::on_did_dispose` boundary:
+        // the wire request has started, but its continuation has not resumed.
+        shutdown_preview_resources()
+        resolve_pending_response(
+          DocumentLoaded({
+            id: request.id,
+            document: DocumentSnapshot(
+              request.uri,
+              "definition-shutdown.mbt",
+              "moonbit",
+              "rev-shutdown",
+              "let shutdown = 1",
+            ),
+          }),
+        )
+        |> ignore
+      }
+      CloseDocument(_) =>
+        shutdown_close_count.val = shutdown_close_count.val + 1
+      _ => unexpected_packet.val = true
+    }
+  })
+  let shutdown_result = resolve_preview_model(
+    shutdown_uri,
+    @language.CancellationToken::none(),
+  )
+  assert_true(shutdown_saw_real_in_flight.val)
+  assert_true(shutdown_result is None)
+  assert_eq(shutdown_open_count.val, 1)
+  assert_eq(shutdown_close_count.val, 1)
+  assert_false(preview_resources.contains(shutdown_uri.to_string()))
+
+  let rejected_after_shutdown = resolve_preview_model(
+    definition_navigation_test_uri("definition-after-shutdown"),
+    @language.CancellationToken::none(),
+  )
+  assert_true(rejected_after_shutdown is None)
+  assert_eq(shutdown_open_count.val, 1)
+  preview_resources_shutdown.val = previous_preview_shutdown
 
   protocol_send.val = previous_send
   workbench_dispatch.val = previous_dispatch

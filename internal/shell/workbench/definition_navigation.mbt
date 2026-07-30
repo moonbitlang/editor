@@ -1,4 +1,11 @@
 ///|
+priv enum PreviewResourceLifecycle {
+  PreviewResourceOpen
+  PreviewResourceClosing
+  PreviewResourceDisposed
+} derive(Eq)
+
+///|
 /// Host-owned state for one cross-resource Peek preview. The remote document
 /// cache is URI-keyed, while each `TextModelReference` is a local lease over
 /// the one model created from the returned snapshot.
@@ -7,11 +14,17 @@ priv struct PreviewResourceState {
   mut model : @model.TextModel?
   mut in_flight : Int
   mut leases : Int
-  mut disposed : Bool
+  mut lifecycle : PreviewResourceLifecycle
 }
 
 ///|
 let preview_resources : Map[String, PreviewResourceState] = Map([])
+
+///|
+/// Viewer disposal is terminal for this composition root. Set this at the
+/// `on_did_dispose` boundary, before Viewer-owned contributions release their
+/// nested preview leases, so reentrant resolver calls cannot create new work.
+let preview_resources_shutdown : Ref[Bool] = Ref(false)
 
 ///|
 fn is_workbench_resource(uri : @base_common.Uri) -> Bool {
@@ -47,14 +60,18 @@ async fn resolve_preview_model(
   resource : @base_common.Uri,
   token : @language.CancellationToken,
 ) -> @navigation_api.TextModelReference? noraise {
-  if token.is_cancellation_requested() ||
+  if preview_resources_shutdown.val ||
+    token.is_cancellation_requested() ||
     !is_workbench_resource(resource) ||
     protocol_send.val is None {
     return None
   }
   let key = resource.to_string()
   let state = match preview_resources.get(key) {
-    Some(state) =>
+    Some(state) => {
+      if state.lifecycle != PreviewResourceOpen {
+        return None
+      }
       match state.model {
         Some(model) if !model.is_disposed() =>
           return Some(acquire_preview_reference(state, model))
@@ -68,13 +85,14 @@ async fn resolve_preview_model(
           state
         }
       }
+    }
     None => {
       let state : PreviewResourceState = {
         uri: resource,
         model: None,
         in_flight: 1,
         leases: 0,
-        disposed: false,
+        lifecycle: PreviewResourceOpen,
       }
       preview_resources[key] = state
       state
@@ -93,7 +111,11 @@ async fn resolve_preview_model(
   if state.in_flight > 0 {
     state.in_flight = state.in_flight - 1
   }
-  if state.disposed || token.is_cancellation_requested() {
+  if preview_resources_shutdown.val {
+    begin_preview_resource_shutdown(state)
+    return None
+  }
+  if state.lifecycle != PreviewResourceOpen || token.is_cancellation_requested() {
     retire_preview_resource_if_unused(state)
     return None
   }
@@ -136,10 +158,12 @@ fn acquire_preview_reference(
 
 ///|
 fn retire_preview_resource_if_unused(state : PreviewResourceState) -> Unit {
-  if state.disposed || state.in_flight > 0 || state.leases > 0 {
+  if state.lifecycle == PreviewResourceDisposed ||
+    state.in_flight > 0 ||
+    state.leases > 0 {
     return
   }
-  state.disposed = true
+  state.lifecycle = PreviewResourceDisposed
   let key = state.uri.to_string()
   match preview_resources.get(key) {
     Some(current) if physical_equal(current, state) =>
@@ -171,14 +195,25 @@ fn preview_resource_retains_remote_document(uri : @base_common.Uri) -> Bool {
 }
 
 ///|
-fn dispose_preview_resources() -> Unit {
+/// Starts terminal preview-cache shutdown without fabricating ownership
+/// counters. Existing nested Viewers keep their models alive until their real
+/// references release, and late reads retire only after their real in-flight
+/// count reaches zero.
+fn shutdown_preview_resources() -> Unit {
+  preview_resources_shutdown.val = true
   let states : Array[PreviewResourceState] = []
   for _key, state in preview_resources {
     states.push(state)
   }
   for state in states {
-    state.in_flight = 0
-    state.leases = 0
-    retire_preview_resource_if_unused(state)
+    begin_preview_resource_shutdown(state)
   }
+}
+
+///|
+fn begin_preview_resource_shutdown(state : PreviewResourceState) -> Unit {
+  if state.lifecycle == PreviewResourceOpen {
+    state.lifecycle = PreviewResourceClosing
+  }
+  retire_preview_resource_if_unused(state)
 }

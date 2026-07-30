@@ -196,6 +196,10 @@ fn install_viewer_event_subscriptions(viewer : @viewer.Viewer) -> Unit {
   })
   |> ignore
   viewer.on_did_dispose(() => {
+    // `Viewer::on_did_dispose` intentionally fires before contribution
+    // teardown. Enter terminal resolver shutdown now, but let the nested Peek
+    // Viewer release its real model lease before the cache retires that model.
+    shutdown_preview_resources()
     workbench_services().remote_language.invalidate()
     dispatch_workbench_msg(ViewerEvent(DidDispose))
   })
@@ -624,10 +628,7 @@ fn viewer_event_update(
       emit_scroll_event(event.scroll_top, event.scroll_left)
       (@rabbita.none, model)
     }
-    DidDispose => {
-      dispose_preview_resources()
-      (@rabbita.none, { ..model, viewer_has_frame: false })
-    }
+    DidDispose => (@rabbita.none, { ..model, viewer_has_frame: false })
   }
 }
 
