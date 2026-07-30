@@ -226,7 +226,7 @@ fn view_model_lines_get_decorations_in_range(
       // JS `<` on decoration ids; ids share one `<instance>;` prefix, where
       // MoonBit's length-first compare and JS lexicographic order agree for
       // the numeric suffixes only when lengths match — compare code units.
-      lexicographic_id_compare(a.id, b.id)
+      @base_common.compare(a.id, b.id)
     } else {
       res
     }
@@ -245,21 +245,4 @@ fn view_model_lines_get_decorations_in_range(
     final_result.push(dec)
   }
   final_result
-}
-
-///|
-fn lexicographic_id_compare(left : String, right : String) -> Int {
-  let min_len = if left.length() < right.length() {
-    left.length()
-  } else {
-    right.length()
-  }
-  for i in 0..<min_len {
-    let l = left[i].to_int()
-    let r = right[i].to_int()
-    if l != r {
-      return l - r
-    }
-  }
-  left.length() - right.length()
 }

@@ -50,7 +50,10 @@ fn filter_and_sort_overlay_decorations(
     if a.options.z_index > b.options.z_index {
       return 1
     }
-    let class_cmp = code_unit_compare(
+    // JS `<`/`>` string order, i.e. lexicographic by UTF-16 code unit.
+    // MoonBit's `String::compare` is length-first, so this must go through
+    // `@base_common.compare`.
+    let class_cmp = @base_common.compare(
       a.options.class_name,
       b.options.class_name,
     )
@@ -60,25 +63,6 @@ fn filter_and_sort_overlay_decorations(
     @base_common.Range::compare_ranges_using_starts(a.range, b.range)
   })
   result
-}
-
-///|
-/// JS `<`/`>` string order: lexicographic by UTF-16 code unit (MoonBit's
-/// `String::compare` is length-first, so compare code units explicitly).
-fn code_unit_compare(left : String, right : String) -> Int {
-  let min_len = if left.length() < right.length() {
-    left.length()
-  } else {
-    right.length()
-  }
-  for i in 0..<min_len {
-    let l = left[i].to_int()
-    let r = right[i].to_int()
-    if l != r {
-      return l - r
-    }
-  }
-  left.length() - right.length()
 }
 
 ///|

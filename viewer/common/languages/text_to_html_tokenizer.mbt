@@ -11,31 +11,6 @@
 /// `tokenizeEncoded` ignores tokenization state.
 
 ///|
-/// Splits `text` on `\r\n` / `\r` / `\n`. Mirrors `strings.splitLines`.
-fn split_lines(text : String) -> Array[String] {
-  let lines = []
-  let len = text.length()
-  let mut i = 0
-  let mut line_start = 0
-  while i < len {
-    let code = text[i].to_int()
-    if code == 13 { // \r
-      lines.push(text.unsafe_substring(start=line_start, end=i))
-      if i + 1 < len && text[i + 1].to_int() == 10 {
-        i += 1 // consume the \n of a \r\n pair
-      }
-      line_start = i + 1
-    } else if code == 10 { // \n
-      lines.push(text.unsafe_substring(start=line_start, end=i))
-      line_start = i + 1
-    }
-    i += 1
-  }
-  lines.push(text.unsafe_substring(start=line_start, end=len))
-  lines
-}
-
-///|
 /// Renders a single line's tokens to HTML with inline styles, expanding tabs and
 /// (when `use_nbsp`) collapsing runs of spaces to `&#160;`. Faithful port of
 /// `tokenizeLineToHTML`.
@@ -162,7 +137,7 @@ pub fn tokenize_to_string(
 ) -> String {
   let result = StringBuilder::new()
   result.write_string("<div class=\"monaco-tokenized-source\">")
-  let lines = split_lines(text)
+  let lines = @base_common.split_lines(text)
   for i, line in lines {
     if i > 0 {
       result.write_string("<br/>")
