@@ -19,7 +19,7 @@ This is the reference app's browser entry point, not an import surface. It is
 excluded from the published package.
 
 ```sh
-just build-moon-web   # production browser assets only
+just dist-front-end   # production browser assets only
 just dev              # build, serve, and print Local/Network URLs
 ```
 
@@ -29,5 +29,5 @@ an entrypoint rather than a shared domain layer.
 
 `scripts/build-web.mbtx` bundles it as `web/dist/editor.mjs`, generates the HTML,
 and assembles owner-adjacent CSS into `web/dist/style.css`; the native server
-serves those assets. Run `just build-moon-web` (or `just build`). Browser harness
+serves those assets. Run `just dist-front-end` (or `just build`). Browser harness
 contracts are documented in `../../../docs/harness.md`.
