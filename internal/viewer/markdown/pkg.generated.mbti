@@ -13,6 +13,8 @@ pub fn markdown_section_keys(Array[MarkdownSection], MarkdownDocumentProjection,
 
 pub fn markdown_sections(MarkdownDocumentProjection) -> Array[MarkdownSection]
 
+pub fn markdown_table_of_contents(MarkdownDocumentProjection) -> Array[MarkdownTocEntry]
+
 pub fn render_markdown(String, language_id? : String, code_block_renderer? : (MarkdownCodeBlock, String?) -> String) -> MarkdownRenderFact
 
 pub fn render_tokenized_code_block(MarkdownCodeBlock, String?) -> String
@@ -80,6 +82,15 @@ pub(all) struct MarkdownSection {
 } derive(Eq, @debug.Debug)
 pub fn MarkdownSection::body_rendered_element_indexes(Self, MarkdownDocumentProjection) -> Array[Int]
 pub fn MarkdownSection::is_foldable(Self, MarkdownDocumentProjection) -> Bool
+
+pub(all) struct MarkdownTocEntry {
+  level : Int
+  depth : Int
+  text : String
+  source_offset : Int
+  section_index : Int
+  is_foldable : Bool
+} derive(Eq, @debug.Debug)
 
 // Type aliases
 

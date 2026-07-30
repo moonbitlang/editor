@@ -547,3 +547,110 @@ test "inline markup and setext line breaks do not change a heading's identity" {
     ),
   )
 }
+
+///|
+/// Renders `source` and describes its TOC as `depth/level indent text`.
+fn describe_toc(source : String) -> Array[String] {
+  @markdown.markdown_table_of_contents(
+    @markdown.render_markdown(source).projection,
+  ).map(entry => {
+    "d\{entry.depth}/h\{entry.level} \{"  ".repeat(entry.depth - 1)}\{entry.text}"
+  })
+}
+
+///|
+test "the toc indents by structural depth, not literal heading level" {
+  debug_inspect(
+    describe_toc(
+      (
+        #|# Top
+        #|
+        #|body
+        #|
+        #|### Jumped straight to three
+        #|
+        #|body
+        #|
+        #|## Back to two
+        #|
+        #|body
+        #|
+        #|# Second top
+        #|
+        #|body
+        #|
+      ),
+    ),
+    content=(
+      #|[
+      #|  "d1/h1 Top",
+      #|  "d2/h3   Jumped straight to three",
+      #|  "d2/h2   Back to two",
+      #|  "d1/h1 Second top",
+      #|]
+    ),
+  )
+}
+
+///|
+test "a document starting at h3 still indents from depth one" {
+  debug_inspect(
+    describe_toc(
+      (
+        #|### Deep but first
+        #|
+        #|body
+        #|
+        #|#### Child
+        #|
+        #|body
+        #|
+      ),
+    ),
+    content=(
+      #|["d1/h3 Deep but first", "d2/h4   Child"]
+    ),
+  )
+}
+
+///|
+test "toc text is markup-independent and skips headings inside containers" {
+  debug_inspect(
+    describe_toc(
+      (
+        #|# A `code` and *emphasis* heading
+        #|
+        #|> # quoted, not outline structure
+        #|> text
+        #|
+        #|## Real child
+        #|
+        #|body
+        #|
+      ),
+    ),
+    content=(
+      #|["d1/h1 A code and emphasis heading", "d2/h2   Real child"]
+    ),
+  )
+}
+
+///|
+test "toc rows carry the reveal offset and agree with foldability" {
+  let source =
+    #|# Has a body
+    #|
+    #|body
+    #|
+    #|# Empty
+    #|
+  let projection = @markdown.render_markdown(source).projection
+  debug_inspect(
+    @markdown.markdown_table_of_contents(projection).map(entry => {
+      (entry.text, entry.source_offset, entry.is_foldable, entry.section_index)
+    }),
+    content=(
+      #|[("Has a body", 0, true, 0), ("Empty", 20, false, 1)]
+    ),
+  )
+}
