@@ -88,7 +88,7 @@ fn Viewer::get_visible_ranges_plus_viewport_above_below(
   let height = view_model.view_layout.dimensions().height
   // `Math.round` of a non-negative ratio is `floor(x + 0.5)`.
   let rounded = (height / line_height + 0.5).to_int()
-  let lines_around = if rounded > 20 { rounded } else { 20 }
+  let lines_around = rounded.max(20)
   let (completely_start, completely_end) = view_model.view_layout.completely_visible_line_range()
   let start_view_line = @base_common.clamp_int(
     completely_start - lines_around,

@@ -101,7 +101,7 @@ fn compute_screen_aware_size(
 ) -> Double {
   let screen_px = device_pixel_ratio * css_px
   let snapped = screen_px.floor()
-  (if snapped < 1.0 { 1.0 } else { snapped }) / device_pixel_ratio
+  snapped.max(1.0) / device_pixel_ratio
 }
 
 ///|

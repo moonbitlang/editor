@@ -126,7 +126,7 @@ fn new_text_model(
     display_name
   }
   let language_id = if language_id == "" { "moonbit" } else { language_id }
-  let version = if version < 1 { 1 } else { version }
+  let version = version.max(1)
   let snapshot = TextSnapshot(text)
   // Permanently respect the construction-time large-file decision. Equality
   // stays enabled; only strict greater-than disables tokenization.
