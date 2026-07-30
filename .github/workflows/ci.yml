@@ -8,6 +8,9 @@ on:
 jobs:
   moon-gates:
     runs-on: ${{ matrix.os }}
+    # Nightly toolchain breakage is advance warning, not a gate: it must not
+    # block a PR that is green on stable.
+    continue-on-error: ${{ matrix.channel == 'nightly' }}
     strategy:
       fail-fast: false
       matrix:
@@ -15,6 +18,9 @@ jobs:
         # instead surfaced at publish time; macOS keeps the other side of
         # platform-sensitive behavior (ExtUri case bias, font defaults) honest.
         os: [ubuntu-latest, macos-latest]
+        # `latest` is the install script's stable default; `nightly` is its
+        # named channel (unix.sh takes the channel as a positional argument).
+        channel: [stable, nightly]
     permissions:
       contents: read
     steps:
@@ -23,9 +29,13 @@ jobs:
           persist-credentials: false
           submodules: true
 
-      - name: install moon
+      - name: install moon (${{ matrix.channel }})
         run: |
-          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          if [ "${{ matrix.channel }}" = "nightly" ]; then
+            curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash -s nightly
+          else
+            curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          fi
           echo "$HOME/.moon/bin" >> $GITHUB_PATH
 
       - name: post install
