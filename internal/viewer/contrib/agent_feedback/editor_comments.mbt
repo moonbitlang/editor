@@ -87,15 +87,11 @@ pub fn compare_session_editor_comments(
 /// replies at the same rate.
 fn estimate_expanded_comment_lines(comment : SessionEditorComment) -> Int {
   let chars_per_line = 50
-  let text_length = if comment.text.length() > 1 {
-    comment.text.length()
-  } else {
-    1
-  }
+  let text_length = comment.text.length().max(1)
   let text_lines = (text_length + chars_per_line - 1) / chars_per_line
   let mut reply_lines = 0
   for reply in comment.replies {
-    let reply_length = if reply.length() > 1 { reply.length() } else { 1 }
+    let reply_length = reply.length().max(1)
     reply_lines += (reply_length + chars_per_line - 1) / chars_per_line
   }
   text_lines + 1 + reply_lines

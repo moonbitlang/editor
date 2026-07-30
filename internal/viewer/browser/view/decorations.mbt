@@ -267,7 +267,7 @@ fn render_normal_decoration(
         // half-up on positives: `floor(x + 0.5)`.
         let center = (left + width / 2.0 + 0.5).floor()
         let expanded_left = (center - typical_half_width / 2.0 + 0.5).floor()
-        let left = if expanded_left > 0.0 { expanded_left } else { 0.0 }
+        let left = expanded_left.max(0.0)
         widened_first = Some((left, typical_half_width))
       }
     }

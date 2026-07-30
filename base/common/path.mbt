@@ -598,7 +598,7 @@ pub fn Win32::relative(from : String, to : String) -> String {
     }
     let from_len = from_split.length()
     let to_len = to_split.length()
-    let length = if from_len < to_len { from_len } else { to_len }
+    let length = from_len.min(to_len)
     let mut i = 0
     while i < length {
       if to_lower_js(from_split[i]) != to_lower_js(to_split[i]) {
@@ -649,7 +649,7 @@ pub fn Win32::relative(from : String, to : String) -> String {
   let to_len = to_end - to_start
 
   // Compare paths to find the longest common path from root
-  let length = if from_len < to_len { from_len } else { to_len }
+  let length = from_len.min(to_len)
   let mut last_common_sep = -1
   let mut i = 0
   while i < length {
@@ -1125,7 +1125,7 @@ pub fn Posix::relative(from : String, to : String) -> String {
   let to_len = to.length() - to_start
 
   // Compare paths to find the longest common path from root
-  let length = if from_len < to_len { from_len } else { to_len }
+  let length = from_len.min(to_len)
   let mut last_common_sep = -1
   let mut i = 0
   while i < length {

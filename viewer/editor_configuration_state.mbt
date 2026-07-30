@@ -146,7 +146,7 @@ fn EditorConfigurationState::commit_measured_container_size(
   width : Double,
   height : Double,
 ) -> Unit {
-  self.measured_width = if width > 0.0 { width } else { 0.0 }
+  self.measured_width = width.max(0.0)
   self.measured_height = height
   self.recompute_content_width_from_outer()
 }
@@ -180,7 +180,7 @@ fn EditorConfigurationState::recompute_content_width_from_outer(
 ) -> Unit {
   let available = self.measured_width -
     self.snapshot().gutter_width(self.model_line_count)
-  self.measured_content_width = if available > 0.0 { available } else { 0.0 }
+  self.measured_content_width = available.max(0.0)
 }
 
 ///|

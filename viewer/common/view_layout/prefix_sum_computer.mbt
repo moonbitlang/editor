@@ -105,7 +105,7 @@ pub fn PrefixSumComputer::remove_values(
     return false
   }
   let max_count = old_values.length() - start_index
-  let count = if count >= max_count { max_count } else { count }
+  let count = count.min(max_count)
   if count == 0 {
     return false
   }

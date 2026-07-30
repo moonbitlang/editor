@@ -91,7 +91,7 @@ pub fn single_letter_hash(n : Int) -> String {
 pub fn compare(a : String, b : String) -> Int {
   let a_len = a.length()
   let b_len = b.length()
-  let len = if a_len < b_len { a_len } else { b_len }
+  let len = a_len.min(b_len)
   for i in 0..<len {
     let code_a = a[i].to_int()
     let code_b = b[i].to_int()

@@ -231,11 +231,7 @@ pub fn ExtUri::relative_path(self : ExtUri, from : Uri, to : Uri) -> String? {
   if (self.ignore_path_casing_fn)(from) {
     // make casing of fromPath match toPath
     let mut i = 0
-    let len = if from_path.length() < to_path.length() {
-      from_path.length()
-    } else {
-      to_path.length()
-    }
+    let len = from_path.length().min(to_path.length())
     while i < len {
       if from_path[i].to_int() != to_path[i].to_int() {
         if to_lower_js(js_slice(from_path, i, end=i + 1)) !=
