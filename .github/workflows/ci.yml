@@ -43,9 +43,9 @@ jobs:
           moon version --all
           moon update
 
-      # The same gates docs/quality.md names as `just check` + `just test`,
-      # spelled out so CI does not need just installed. Runs at the workspace
-      # root, so the native server member is covered too.
+      # The check and test gates docs/quality.md names, spelled out so this
+      # job does not need just installed. Runs at the workspace root, so the
+      # native server member is covered too.
       - name: check
         run: |
           moon check --target all --warn-list +73
@@ -53,3 +53,47 @@ jobs:
 
       - name: test
         run: moon test --target all
+
+  # The browser-correctness gate (`just test-browser-smoke`). It exercises the
+  # asset pipeline and the Playwright suites end to end — the layer where a
+  # justfile/serve/config drift is invisible to moon check and moon test.
+  # One platform and channel is enough: this gate tests DOM behavior, not
+  # toolchains. The perf profile stays out of CI; it is an opt-in diagnostic
+  # and needs the heavyweight VS Code submodule.
+  browser-correctness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: install moon
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+
+      - name: post install
+        run: |
+          moon version --all
+          moon update
+
+      # The Playwright webServer command and the smoke recipe both go through
+      # just, so this job installs it (the moon-gates job deliberately does
+      # not need it).
+      - name: install just
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          curl --proto '=https' --tlsv1.2 -fsSL https://just.systems/install.sh \
+            | bash -s -- --to "$HOME/.local/bin"
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: install playwright
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: browser smoke suite
+        run: just test-browser-smoke
