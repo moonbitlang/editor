@@ -19,6 +19,13 @@ flowchart LR
 // Directories resolve lazily: an unresolved stat carries `children: None`.
 tree.expand(directory_uri)      // triggers one resolve
 tree.on_select(uri => workbench.open_document(uri))
+
+// Level order is host policy: a negative rank leads its level.
+@file_tree.FileTree(provider, on_open~, rank=stat => match stat.name {
+  "README.md" => -1
+  "pkg.generated.mbti" => -1
+  _ => 0
+})
 ```
 
 ## Contract
@@ -26,6 +33,11 @@ tree.on_select(uri => workbench.open_document(uri))
 - Directories start collapsed. First expansion calls
   `WorkspaceTreeProvider.resolve` for exactly one level; successful children are
   cached and ordered directories-first. Collapse/re-expand reuses the cache.
+- Level order is the host's policy, passed as `rank~`: entries render by
+  ascending rank, and equal ranks fall back to directories-before-files and then
+  to the provider's order. The default ranks everything alike; a negative rank
+  pins a name above the directories (the workbench pins `README*`, then
+  `pkg.generated.mbti`) and a positive one sinks it below the files.
 - A failed resolve leaves an empty `resolve-failed` row; the next
   collapse/re-expand retries.
 - `set_active` selects a URI and resolves/expands its ancestor chain
@@ -34,8 +46,8 @@ tree.on_select(uri => workbench.open_document(uri))
 - Clicking a file reports its URI through `on_open`; the host owns reads and
   editor selection.
 
-Public API: `FileTree::FileTree(provider, on_open~)`, `view`, `refresh`, and
-`set_active` (see `pkg.generated.mbti`). Stable test selectors include
+Public API: `FileTree::FileTree(provider, on_open~, rank?)`, `view`, `refresh`,
+and `set_active` (see `pkg.generated.mbti`). Stable test selectors include
 `workspace-item`, `workspace-folder`/`workspace-file`, `is-selected`,
 `data-workspace-id`, `data-workspace-kind`, and the ARIA expansion/selection
 attributes.

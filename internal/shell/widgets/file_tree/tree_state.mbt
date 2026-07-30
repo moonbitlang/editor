@@ -40,39 +40,57 @@ priv enum RevealStep {
 }
 
 ///|
-/// Builds a node from a resolved stat. Children render directories first,
-/// then files, keeping the provider's name order within each group (the
-/// explorer's default sort).
+/// Builds a node from a resolved stat. Children render in the level order
+/// `rank` describes (see `TreeNode::from_stats`).
 fn TreeNode::from_stat(
   stat : @workspace.WorkspaceStat,
   expanded~ : Bool,
+  rank~ : (@workspace.WorkspaceStat) -> Int,
 ) -> TreeNode {
   {
     uri: stat.uri,
     name: stat.name,
     kind: stat.kind,
-    children: stat.children.map(stats => TreeNode::from_stats(stats)),
+    children: stat.children.map(stats => TreeNode::from_stats(stats, rank~)),
     expanded,
     resolve_failed: false,
   }
 }
 
 ///|
+/// Orders one resolved directory level: ascending `rank` first, then
+/// directories before files, then the provider's own order. `Array::sort_by`
+/// is unstable, so the source position is the last sort key rather than an
+/// assumed tie-break.
 fn TreeNode::from_stats(
   stats : Array[@workspace.WorkspaceStat],
+  rank~ : (@workspace.WorkspaceStat) -> Int,
 ) -> @vec.Vector[TreeNode] {
-  let nodes : Array[TreeNode] = []
-  for stat in stats {
-    if stat.kind == Directory {
-      nodes.push(TreeNode::from_stat(stat, expanded=false))
+  let ranks = stats.map(rank)
+  let order = Array::makei(stats.length(), index => index)
+  order.sort_by((left, right) => {
+    match ranks[left].compare(ranks[right]) {
+      0 =>
+        match
+          kind_rank(stats[left].kind).compare(kind_rank(stats[right].kind)) {
+          0 => left.compare(right)
+          by_kind => by_kind
+        }
+      by_rank => by_rank
     }
+  })
+  Vector(
+    order.map(index => TreeNode::from_stat(stats[index], expanded=false, rank~)),
+  )
+}
+
+///|
+/// Directories before files within one rank (the explorer's default sort).
+fn kind_rank(kind : @workspace.WorkspaceEntryKind) -> Int {
+  match kind {
+    Directory => 0
+    File => 1
   }
-  for stat in stats {
-    if stat.kind == File {
-      nodes.push(TreeNode::from_stat(stat, expanded=false))
-    }
-  }
-  Vector(nodes)
 }
 
 ///|
@@ -81,18 +99,19 @@ fn TreeNode::with_resolved(
   self : TreeNode,
   uri : @base_common.Uri,
   stat : @workspace.WorkspaceStat,
+  rank~ : (@workspace.WorkspaceStat) -> Int,
 ) -> TreeNode? {
   if self.uri == uri {
     return Some({
       ..self,
-      children: stat.children.map(stats => TreeNode::from_stats(stats)),
+      children: stat.children.map(stats => TreeNode::from_stats(stats, rank~)),
       resolve_failed: false,
     })
   }
   guard self.children is Some(children) else { return None }
   let mut index = 0
   for child in children {
-    if child.with_resolved(uri, stat) is Some(next) {
+    if child.with_resolved(uri, stat, rank~) is Some(next) {
       return Some({ ..self, children: Some(children.set(index, next)) })
     }
     index = index + 1

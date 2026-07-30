@@ -55,12 +55,31 @@ fn workspace_file_tree() -> @file_tree.FileTree {
   match file_tree_cell.val {
     Some(tree) => tree
     None => {
-      let tree = @file_tree.FileTree(workspace_tree_provider, on_open=uri => {
-        dispatch_workbench_msg(SelectWorkspace(uri))
-      })
+      let tree = @file_tree.FileTree(
+        workspace_tree_provider,
+        on_open=uri => dispatch_workbench_msg(SelectWorkspace(uri)),
+        rank=workspace_entry_rank,
+      )
       file_tree_cell.val = Some(tree)
       tree
     }
+  }
+}
+
+///|
+/// Explorer ordering policy (app policy, not widget behavior): the files that
+/// describe a MoonBit package to a reader — its README first (any extension,
+/// including `README.mbt.md`), then the generated `pkg.generated.mbti`
+/// interface — lead every directory level, above the widget's
+/// directories-before-files default. Everything else keeps that default.
+fn workspace_entry_rank(stat : @workspace.WorkspaceStat) -> Int {
+  guard stat.kind is File else { return 0 }
+  if stat.name == "README" || stat.name.has_prefix("README.") {
+    -2
+  } else if stat.name == "pkg.generated.mbti" {
+    -1
+  } else {
+    0
   }
 }
 
