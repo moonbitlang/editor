@@ -536,16 +536,8 @@ fn HorizontalRevealRangeRequest::should_cancel_on_scroll(
     return false
   }
   let scroll_top = change.position.scroll_top
-  let low = if self.start_scroll_top < self.stop_scroll_top {
-    self.start_scroll_top
-  } else {
-    self.stop_scroll_top
-  }
-  let high = if self.start_scroll_top > self.stop_scroll_top {
-    self.start_scroll_top
-  } else {
-    self.stop_scroll_top
-  }
+  let low = self.start_scroll_top.min(self.stop_scroll_top)
+  let high = self.start_scroll_top.max(self.stop_scroll_top)
   scroll_top < low || scroll_top > high
 }
 

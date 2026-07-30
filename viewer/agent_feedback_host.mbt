@@ -491,12 +491,7 @@ fn Viewer::ensure_agent_feedback_input(
         on_blur_empty: () => self.auto_hide_agent_feedback_input(),
         content_width: () => {
           let layout = self.get_layout_info()
-          let width = layout.width - layout.content_left
-          if width > 0.0 {
-            width
-          } else {
-            0.0
-          }
+          (layout.width - layout.content_left).max(0.0)
         },
       })
       match ic {

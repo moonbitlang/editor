@@ -194,18 +194,7 @@ fn Viewer::apply_font_info_to_view(self : Viewer, view : @view.View) -> Unit {
 fn read_container_size(container : @rdom.Element) -> (Double, Double) {
   let width = @base_browser.element_client_width(container)
   let height = @base_browser.element_client_height(container)
-  (
-    if width > 5.0 {
-      width
-    } else {
-      5.0
-    },
-    if height > 5.0 {
-      height
-    } else {
-      5.0
-    },
-  )
+  (width.max(5.0), height.max(5.0))
 }
 
 ///|

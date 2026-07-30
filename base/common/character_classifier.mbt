@@ -9,13 +9,7 @@
 
 ///|
 fn to_uint8(v : Int) -> Int {
-  if v < 0 {
-    0
-  } else if v > 255 {
-    255
-  } else {
-    v
-  }
+  v.clamp(min=0, max=255)
 }
 
 ///|

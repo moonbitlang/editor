@@ -117,17 +117,10 @@ fn render_whole_line_decorations(
     if !d.options.is_whole_line {
       continue
     }
-    let start_line_number = if d.range.start_line_number >
-      visible_start_line_number {
-      d.range.start_line_number
-    } else {
-      visible_start_line_number
-    }
-    let end_line_number = if d.range.end_line_number < visible_end_line_number {
-      d.range.end_line_number
-    } else {
-      visible_end_line_number
-    }
+    let start_line_number = d.range.start_line_number.max(
+      visible_start_line_number,
+    )
+    let end_line_number = d.range.end_line_number.min(visible_end_line_number)
     for j in start_line_number..<=end_line_number {
       output.push({
         line_index: j - visible_start_line_number,
@@ -243,16 +236,8 @@ fn render_normal_decoration(
   // deviation): per visible line of the range, the DOM rects of its
   // zero-based column span; a line outside the rendered window yields no
   // rects (`outsideRenderedLine`).
-  let start_line_number = if range.start_line_number > visible_start_line_number {
-    range.start_line_number
-  } else {
-    visible_start_line_number
-  }
-  let end_line_number = if range.end_line_number < visible_end_line_number {
-    range.end_line_number
-  } else {
-    visible_end_line_number
-  }
+  let start_line_number = range.start_line_number.max(visible_start_line_number)
+  let end_line_number = range.end_line_number.min(visible_end_line_number)
   for line_number in start_line_number..<=end_line_number {
     let line_index = line_number - visible_start_line_number
     let start_column = if line_number == range.start_line_number {

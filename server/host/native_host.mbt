@@ -15,13 +15,7 @@ pub fn NativeServerHost::NativeServerHost() -> NativeServerHost {
 pub fn NativeServerHost::with_poll_interval(
   poll_interval_ms : Int,
 ) -> NativeServerHost {
-  {
-    poll_interval_ms: if poll_interval_ms < 10 {
-      10
-    } else {
-      poll_interval_ms
-    },
-  }
+  { poll_interval_ms: poll_interval_ms.max(10) }
 }
 
 ///|

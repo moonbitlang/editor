@@ -82,11 +82,7 @@ fn margin_view_overlays_render(
   }
   self.render_focused()
   let overlays = self.overlays.dom_node.element()
-  let height = if context.dimensions.scroll_height < 1000000.0 {
-    context.dimensions.scroll_height
-  } else {
-    1000000.0
-  }
+  let height = context.dimensions.scroll_height.min(1000000.0)
   let overlays_style = context.margin_transform +
     ";width:" +
     self.content_left.to_string() +
@@ -304,11 +300,7 @@ fn content_view_overlays_render(
   // render the rows, then size the container to
   // `max(ctx.scrollWidth, contentWidth)`.
   self.overlays.render_lines(context.viewport)
-  let width = if context.dimensions.scroll_width > self.content_width {
-    context.dimensions.scroll_width
-  } else {
-    self.content_width
-  }
+  let width = context.dimensions.scroll_width.max(self.content_width)
   self.set_focused(self.overlays.is_focused)
   self.overlays.dom_node.set_width(Pixels(width))
 }
@@ -335,11 +327,7 @@ fn prepare_current_line_overlay(
     state.render_line_highlight,
     state.render_line_highlight_only_when_focus,
     // `max(ctx.scrollWidth, this._contentWidth)` (cLH:211).
-    if context.dimensions.scroll_width > state.content_width {
-      context.dimensions.scroll_width
-    } else {
-      state.content_width
-    },
+    context.dimensions.scroll_width.max(state.content_width),
   )
 }
 

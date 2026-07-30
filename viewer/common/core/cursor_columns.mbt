@@ -176,12 +176,7 @@ pub fn next_indent_tab_stop(visible_column : Int, indent_size : Int) -> Int {
 ///|
 /// ATTENTION: this works with 0-based columns.
 pub fn prev_render_tab_stop(column : Int, tab_size : Int) -> Int {
-  let value = column - 1 - (column - 1) % tab_size
-  if value > 0 {
-    value
-  } else {
-    0
-  }
+  (column - 1 - (column - 1) % tab_size).max(0)
 }
 
 ///|
