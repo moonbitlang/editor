@@ -196,20 +196,34 @@ The governing principle, which supersedes D2 and D4:
 - **D4 (fully expanded) is retained for now but is probably not the right
   product default** — see the open question below.
 
-### Open question for the owner
+### D4 replaced: the approved auto-fold policy
 
-Codex proposes replacing D4 with a conservative auto-fold policy: keep
-structural depths 1-2 expanded; at depth 3+ initially collapse a foldable
-section whose hideable run has >= 6 rendered elements or whose body spans >= 12
-source lines; keep the ancestor chain of an explicit reveal anchor open; never
-use the editor cursor as an intent signal, because in this readonly surface it
-is usually just the default `(1,1)`; manual overrides always win. It also notes
-*structural* depth beats literal ATX level, so a `####` heading at document root
-is depth 1.
+**Approved by the owner.** D4 ("everything expanded") is superseded by
+`markdown_default_collapsed_sections`, which is implemented and tested:
 
-The shape is sound and the cursor point is a good catch. **The thresholds are
-invented and need the owner's decision before they become product behavior.**
-Until then D4 stands, which is safe because nothing is wired yet.
+- structural depths 1 and 2 always stay expanded, so the document's shape is
+  visible with no interaction;
+- at depth 3 or deeper, a foldable section starts collapsed when its hideable
+  run has >= 6 rendered root elements **or** its body spans >= 12 source lines;
+- a non-foldable section is never listed, so no control is offered for something
+  that would hide nothing;
+- structural depth, not literal ATX level -- a `####` heading at document root is
+  depth 1 and is not collapsed as though it were deeply nested.
+
+All three thresholds are optional parameters (`min_depth`,
+`min_rendered_elements`, `min_body_lines`) so they can be tuned without touching
+the policy.
+
+Two parts of the policy remain for the wiring step, because they need state the
+pure function does not have:
+
+- keep the entire ancestor chain of an explicit navigation/reveal anchor open;
+- a reader's manual expand/collapse always overrides the policy, which is why
+  the state is tri-state rather than a set.
+
+Do **not** use the ordinary editor cursor as an intent signal: in this readonly
+surface it is usually just the model default `(1,1)`, not evidence of what the
+reader is looking at.
 
 ### The ordering rule for hover invalidation (supersedes K3)
 
