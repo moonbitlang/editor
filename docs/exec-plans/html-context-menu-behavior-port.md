@@ -155,4 +155,20 @@ browser resources.
 - [x] behaviors/invariants accounted for
 - [x] deferrals, exclusions, and skips explicit
 - [x] focused evidence green
-- [ ] relevant repository checks green
+- [x] relevant repository checks green
+
+## Completion Evidence
+
+- Focused evidence passed 2 context-menu geometry tests, all 14 editor-registry
+  tests, and all 9 definition/context-menu Chromium scenarios.
+- Repository validation passed 1,669 JS and 1,104 native MoonBit tests; wasm
+  and wasm-gc currently have no test entries.
+- The browser correctness gate passed 113 of 114 scenarios; the remaining
+  real-CDN Mermaid diagnostic is the existing opt-in skip.
+- `moon info --target all`, `moon fmt --check`, `just check`, `just test`,
+  `just build`, `just test-browser-smoke`, JavaScript syntax validation, and
+  staged/working-tree diff checks passed. Existing inexhaustive-test-guard and
+  fixture-main-package warnings remain unchanged.
+- Milestones: `f3c9876` froze the plan, `6e6bc15` added the hit-tested event
+  path, and `af66c25` landed the HTML shell, menu registry, definition actions,
+  semantic Markdown bridge, tests, and current architecture documentation.
