@@ -977,13 +977,6 @@ fn Widget::render(
 }
 
 ///|
-/// JavaScript `Math.round` for finite CSS geometry, retained as `Double` for
-/// the style/placement pipeline.
-fn js_math_round(value : Double) -> Double {
-  (value + 0.5).floor()
-}
-
-///|
 /// Monaco `safeInvoke(actual.beforeRender, actual)`: callback failures become
 /// a null preferred-dimension result and therefore fall back to DOM measure.
 fn safe_invoke_before_render(

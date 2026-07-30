@@ -452,9 +452,9 @@ test "ViewLines converter progression covers first middle final and partial wind
 
 ///|
 test "ViewLines range integerization keeps JavaScript negative-half rounding" {
-  inspect(view_lines_js_math_round_to_int(-7.5), content="-7")
-  inspect(view_lines_js_math_round_to_int(-7.51), content="-8")
-  inspect(view_lines_js_math_round_to_int(7.5), content="8")
+  inspect(js_math_round(-7.5).to_int(), content="-7")
+  inspect(js_math_round(-7.51).to_int(), content="-8")
+  inspect(js_math_round(7.5).to_int(), content="8")
 }
 
 ///|

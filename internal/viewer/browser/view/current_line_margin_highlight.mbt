@@ -52,7 +52,9 @@ fn prepare_current_line_margin_render(
     render_line_highlight, render_line_highlight_only_when_focus, editor_has_focus,
     selection_is_empty,
   )
-  let (first_line, last_line) = margin_current_line_span(
+  // The wrapped pass spans the same view lines as the content overlay's
+  // (`currentLineHighlight.ts:141-158` is shared by both subclasses).
+  let (first_line, last_line) = current_line_span(
     view_model, cursor_line, word_wrap,
   )
   for view_line in first_line..<=last_line {
@@ -75,28 +77,4 @@ fn prepare_current_line_margin_render(
       "px\"></div>"
   }
   render_data
-}
-
-///|
-/// The view-line span (wrapped pass, `currentLineHighlight.ts:141-158`) —
-/// the margin twin of the content source unit's `current_line_span`.
-fn margin_current_line_span(
-  view_model : @view_model.ViewModel?,
-  cursor_view_line : Int,
-  word_wrap : Bool,
-) -> (Int, Int) {
-  if !word_wrap {
-    return (cursor_view_line, cursor_view_line)
-  }
-  match view_model {
-    Some(view_model) => {
-      let lines = view_model.lines()
-      @view_layout.view_line_span_of_model_line(
-        cursor_view_line,
-        lines.get_view_line_count(),
-        view_line => lines.model_line_number_of_view_line(view_line),
-      )
-    }
-    None => (cursor_view_line, cursor_view_line)
-  }
 }

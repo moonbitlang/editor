@@ -878,10 +878,7 @@ fn ViewLines::raw_lines_visible_ranges_for_range(
     let rounded_ranges : Array[(Int, Int)] = []
     for range in float_ranges {
       rounded_ranges.push(
-        (
-          view_lines_js_math_round_to_int(range.0),
-          view_lines_js_math_round_to_int(range.1),
-        ),
+        (js_math_round(range.0).to_int(), js_math_round(range.1).to_int()),
       )
     }
     result.push((line_number, rounded_ranges))
@@ -1011,12 +1008,4 @@ fn view_lines_parent_element(el : @rdom.Element) -> @rdom.Element? {
   } else {
     None
   }
-}
-
-///|
-/// JavaScript `Math.round` for finite DOM geometry. In particular, negative
-/// half values round toward positive infinity (`Math.round(-7.5) === -7`),
-/// unlike the usual ties-away-from-zero rule on some MoonBit backends.
-fn view_lines_js_math_round_to_int(value : Double) -> Int {
-  (value + 0.5).floor().to_int()
 }
