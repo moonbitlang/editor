@@ -101,15 +101,18 @@
 .moonbit-viewer-definition-peek {
   display: flex;
   flex-direction: column;
-  width: 100%;
-  height: 100%;
   box-sizing: border-box;
   overflow: hidden;
   color: var(--vscode-editor-foreground, inherit);
   background: var(--vscode-peekViewEditor-background, var(--vscode-editor-background));
-  border: 1px solid var(--vscode-peekView-border, #007acc);
-  box-shadow: 0 2px 8px var(--vscode-widget-shadow, rgba(0, 0, 0, 0.35));
+  border-top: 1px solid var(--vscode-peekView-border, #007acc);
+  border-bottom: 1px solid var(--vscode-peekView-border, #007acc);
+  box-shadow: var(--vscode-shadow-lg, 0 2px 8px rgba(0, 0, 0, 0.35));
   pointer-events: auto;
+}
+
+.moonbit-viewer-definition-peek-zone {
+  overflow: hidden;
 }
 
 .moonbit-viewer-definition-peek-overlay {
@@ -122,21 +125,54 @@
 
 .moonbit-viewer-definition-peek-header {
   display: flex;
+  flex: 0 0 auto;
   align-items: center;
   min-height: 28px;
   box-sizing: border-box;
-  padding: 0 6px 0 10px;
+  padding-right: 2px;
   color: var(--vscode-peekViewTitleLabel-foreground, inherit);
   background: var(--vscode-peekViewTitle-background, rgba(128, 128, 128, 0.12));
 }
 
 .moonbit-viewer-definition-peek-title {
+  display: flex;
   flex: 1;
+  align-items: baseline;
+  min-width: 0;
+  margin-left: 20px;
   overflow: hidden;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.moonbit-viewer-definition-peek-title-filename,
+.moonbit-viewer-definition-peek-title-dirname,
+.moonbit-viewer-definition-peek-title-meta {
+  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.moonbit-viewer-definition-peek-title-filename {
+  flex: 0 1 auto;
+}
+
+.moonbit-viewer-definition-peek-title-dirname {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-left: 0.5em;
+  color: var(--vscode-peekViewTitleDescription-foreground, inherit);
+  font-size: 0.9em;
+}
+
+.moonbit-viewer-definition-peek-title-meta {
+  flex: 0 1 auto;
+  color: var(--vscode-peekViewTitleDescription-foreground, inherit);
+}
+
+.moonbit-viewer-definition-peek-title-meta:not(:empty)::before {
+  padding: 0 0.3em;
+  content: "-";
 }
 
 .moonbit-viewer-definition-peek-close {
@@ -162,15 +198,16 @@
 .moonbit-viewer-definition-peek-body {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(150px, 28%) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 72%) minmax(150px, 28%);
   flex: 1;
   min-height: 0;
+  border-top: 1px solid var(--vscode-peekView-border, #007acc);
 }
 
 .moonbit-viewer-definition-peek-list {
   min-width: 0;
   overflow: auto;
-  border-right: 1px solid var(--vscode-peekViewResult-background, rgba(128, 128, 128, 0.25));
+  border-left: 1px solid var(--vscode-peekView-border, rgba(128, 128, 128, 0.25));
   background: var(--vscode-peekViewResult-background, var(--vscode-editor-background));
 }
 
@@ -179,20 +216,33 @@
 }
 
 .moonbit-viewer-definition-peek-item {
-  display: block;
+  display: flex;
+  align-items: center;
   width: 100%;
+  height: 23px;
   box-sizing: border-box;
   overflow: hidden;
-  padding: 5px 8px;
+  padding: 0 8px;
   border: 0;
   color: var(--vscode-peekViewResult-fileForeground, inherit);
   background: transparent;
   font: inherit;
   font-size: 12px;
   text-align: left;
+  cursor: pointer;
+}
+
+.moonbit-viewer-definition-peek-item-filename {
+  min-width: 0;
+  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  cursor: pointer;
+}
+
+.moonbit-viewer-definition-peek-item-position {
+  flex: 0 0 auto;
+  margin-left: auto;
+  color: var(--vscode-peekViewResult-lineForeground, inherit);
 }
 
 .moonbit-viewer-definition-peek-item:hover {
@@ -200,8 +250,8 @@
 }
 
 .moonbit-viewer-definition-peek-item.selected {
-  color: var(--vscode-list-activeSelectionForeground, inherit);
-  background: var(--vscode-list-activeSelectionBackground, rgba(0, 122, 204, 0.35));
+  color: var(--vscode-peekViewResult-selectionForeground, inherit);
+  background: var(--vscode-peekViewResult-selectionBackground, rgba(51, 153, 255, 0.2));
 }
 
 .moonbit-viewer-definition-peek-preview {
@@ -215,6 +265,26 @@
 .moonbit-viewer-definition-peek-preview > * {
   width: 100%;
   height: 100%;
+}
+
+.moonbit-viewer-definition-peek-preview .moonbit-viewer,
+.moonbit-viewer-definition-peek-preview .overflow-guard,
+.moonbit-viewer-definition-peek-preview .monaco-editor-background,
+.moonbit-viewer-definition-peek-preview .margin {
+  background: var(
+    --vscode-peekViewEditor-background,
+    var(--vscode-editor-background)
+  );
+}
+
+.moonbit-viewer-definition-peek-preview
+  .moonbit-viewer-definition-peek-match {
+  background-color: var(
+    --vscode-peekViewEditor-matchHighlightBackground,
+    rgba(255, 143, 0, 0.6)
+  );
+  box-shadow: inset 0 0 0 1px
+    var(--vscode-peekViewEditor-matchHighlightBorder, transparent);
 }
 
 .moonbit-viewer-definition-peek-status {
@@ -237,16 +307,16 @@
 
 .moonbit-viewer-definition-peek-list:not([hidden]) ~
   .moonbit-viewer-definition-peek-status {
-  left: 28%;
+  right: 28%;
 }
 
 @media (max-width: 520px) {
   .moonbit-viewer-definition-peek-body {
-    grid-template-columns: minmax(110px, 38%) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 62%) minmax(110px, 38%);
   }
 
   .moonbit-viewer-definition-peek-list:not([hidden]) ~
     .moonbit-viewer-definition-peek-status {
-    left: 38%;
+    right: 38%;
   }
 }

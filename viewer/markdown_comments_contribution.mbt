@@ -396,6 +396,11 @@ fn Viewer::refresh_markdown_comments(
   force_update~ : Bool,
 ) -> Unit {
   guard !self.disposed else { return }
+  // A Peek preview is an embedded source editor, matching Monaco's preview
+  // surface. Whole-line documentation replacement belongs only to the outer
+  // Viewer; otherwise an asynchronously measured comment zone above the target
+  // can move the selected definition out of the tiny embedded viewport.
+  guard self.role == OuterViewer else { return }
   guard self.markdown_comment_contribution() is Some(state) else { return }
   guard self.get_model() is Some(model) else { return }
   // A headless Viewer has no replacement DOM and must keep source visible.

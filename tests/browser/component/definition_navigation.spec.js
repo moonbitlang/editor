@@ -717,20 +717,87 @@ test('Alt+F12 mounts one measured Peek preview, blocks recursive Peek, and Escap
       .poll(async () => (await state(page)).scrollHeight)
       .toBeGreaterThan(scrollHeightBeforePeek);
     const geometry = await page.locator(peek).evaluate((root) => {
-      const zone = root.closest('[monaco-view-zone]');
+      const editor = root.closest('.monaco-editor');
+      const zone = editor?.querySelector(
+        '.moonbit-viewer-definition-peek-zone[monaco-view-zone]',
+      );
+      const header = root.querySelector(
+        '.moonbit-viewer-definition-peek-header',
+      );
+      const body = root.querySelector('.moonbit-viewer-definition-peek-body');
+      const previewHost = root.querySelector(
+        '.moonbit-viewer-definition-peek-preview',
+      );
+      const list = root.querySelector('.moonbit-viewer-definition-peek-list');
+      const nested = previewHost?.firstElementChild;
       const rootRect = root.getBoundingClientRect();
+      const editorRect = editor?.getBoundingClientRect();
       const zoneRect = zone?.getBoundingClientRect();
+      const headerRect = header?.getBoundingClientRect();
+      const bodyRect = body?.getBoundingClientRect();
+      const previewRect = previewHost?.getBoundingClientRect();
+      const listRect = list?.getBoundingClientRect();
+      const nestedRect = nested?.getBoundingClientRect();
+      const visibleLineCount = Array.from(
+        previewHost?.querySelectorAll('.view-line') ?? [],
+      ).filter((line) => {
+        const rect = line.getBoundingClientRect();
+        return (
+          previewRect &&
+          rect.bottom > previewRect.top &&
+          rect.top < previewRect.bottom
+        );
+      }).length;
       return {
+        rootX: rootRect.x,
         rootWidth: rootRect.width,
         rootHeight: rootRect.height,
+        editorX: editorRect?.x ?? 0,
+        editorWidth: editorRect?.width ?? 0,
+        editorTop: editorRect?.top ?? 0,
+        editorBottom: editorRect?.bottom ?? 0,
+        rootTop: rootRect.top,
+        rootBottom: rootRect.bottom,
         zoneWidth: zoneRect?.width ?? 0,
         zoneHeight: zoneRect?.height ?? 0,
+        headerHeight: headerRect?.height ?? 0,
+        bodyHeight: bodyRect?.height ?? 0,
+        previewX: previewRect?.x ?? 0,
+        previewHeight: previewRect?.height ?? 0,
+        listX: listRect?.x ?? 0,
+        nestedHeight: nestedRect?.height ?? 0,
+        visibleLineCount,
       };
     });
     expect(geometry.rootWidth).toBeGreaterThan(0);
     expect(geometry.rootHeight).toBeGreaterThan(0);
     expect(geometry.zoneWidth).toBeGreaterThan(0);
     expect(geometry.zoneHeight).toBeGreaterThan(0);
+    expect(Math.abs(geometry.rootX - geometry.editorX)).toBeLessThan(2);
+    expect(
+      Math.abs(geometry.rootWidth - (geometry.editorWidth - 14)),
+    ).toBeLessThan(3);
+    expect(Math.abs(geometry.rootHeight - geometry.zoneHeight)).toBeLessThan(2);
+    expect(geometry.rootTop).toBeGreaterThanOrEqual(geometry.editorTop - 1);
+    expect(geometry.rootBottom).toBeLessThanOrEqual(geometry.editorBottom + 1);
+    expect(geometry.headerHeight).toBeGreaterThan(0);
+    expect(geometry.bodyHeight).toBeGreaterThan(
+      geometry.rootHeight - geometry.headerHeight - 3,
+    );
+    expect(Math.abs(geometry.previewHeight - geometry.bodyHeight)).toBeLessThan(
+      2,
+    );
+    expect(Math.abs(geometry.nestedHeight - geometry.previewHeight)).toBeLessThan(
+      2,
+    );
+    expect(geometry.previewX).toBeLessThan(geometry.listX);
+    expect(geometry.visibleLineCount).toBeGreaterThan(4);
+    await expect(
+      page.locator(`${peek} .moonbit-viewer-definition-peek-title-filename`),
+    ).toHaveText('definition-fixture.mbt');
+    await expect(
+      page.locator(`${peek} .moonbit-viewer-definition-peek-title-meta`),
+    ).toHaveText('1 result');
 
     const targetRect = await textRange(
       page,
@@ -748,6 +815,15 @@ test('Alt+F12 mounts one measured Peek preview, blocks recursive Peek, and Escap
     expect(targetRect.top + targetRect.height).toBeLessThanOrEqual(
       previewBox.y + previewBox.height,
     );
+    const match = page.locator(
+      `${preview} .moonbit-viewer-definition-peek-match`,
+    );
+    await expect(match).toHaveCount(1);
+    const matchRect = await match.boundingBox();
+    expect(matchRect).not.toBeNull();
+    expect(Math.abs(matchRect.x - targetRect.left)).toBeLessThan(3);
+    expect(Math.abs(matchRect.y - targetRect.top)).toBeLessThan(3);
+    expect(Math.abs(matchRect.width - targetRect.width)).toBeLessThan(3);
 
     const nestedPoint = await textRange(
       page,

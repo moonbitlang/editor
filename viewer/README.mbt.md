@@ -386,15 +386,23 @@ exact source range as caller-owned spans; ordinary fences and synthetic padding
 stay inert, and projection replacement removes those spans before their DOM
 retires.
 
-Alt+F12 opens Peek only in an outer mounted Viewer. Code mounts the Viewer-owned
-shell in a ViewZone; semantic Markdown mounts it in the persistent projection
-overlay and stamps the session with the current projection generation. The
-same model/version/position command toggles the existing Peek closed. The shell
-sorts normalized results by URI/range, initially selects the result nearest the
-source, and hosts one nested readonly Viewer. A zero-result request retires its
-loading shell, restores outer focus, and reports `No definition found` instead
-of leaving an empty dialog; when the source anchor has a word, the message uses
-the same word-specific form as ordinary goto.
+Alt+F12 opens Peek only in an outer mounted Viewer. Code reserves up to the
+Monaco-default 18 lines with a blank ViewZone and aligns the interactive shell
+through a Viewer-owned overlay; keeping the two DOM nodes separate prevents
+ViewZone's absolute block styles from collapsing the shell's flex body.
+The anchor-to-following-line range is revealed after insertion so the ViewZone
+height participates in scroll fitting and the shell cannot open clipped below
+the editor.
+Semantic Markdown mounts the shell in the persistent projection overlay and
+stamps the session with the current projection generation. The shell places
+the readonly preview on the left and the result list on the right, labels the
+selected filename/directory and result count, and highlights the selected
+target range. The same model/version/position command toggles the existing Peek
+closed. Results are sorted by URI/range and initially select the location
+nearest the source. A zero-result request retires its loading shell, restores
+outer focus, and reports `No definition found` instead of leaving an empty
+dialog; when the source anchor has a word, the message uses the same
+word-specific form as ordinary goto.
 Same-resource preview reuses the caller-owned model; cross-resource preview
 uses the optional host-owned `TextModelResolverHandle` and retains its
 `TextModelReference` only for the preview lifetime. A current missing, rejected,
@@ -407,10 +415,14 @@ F4/Shift+F4 replacement restores preview focus only when the retiring preview
 still owns focus at commit time, so a user focus move during resolution wins.
 Enter confirms only from the shell/list focus domain; Enter inside the nested
 preview remains native. Escape closes and restores outer focus. A nested
-preview borrows services but cannot recursively open another Peek. Teardown
+preview borrows services but cannot recursively open another Peek. It retains
+raw source presentation: whole-line Markdown-comment replacement remains an
+outer-Viewer contribution so an asynchronously measured comment zone cannot
+shift the selected target out of the compact preview. Teardown
 atomically detaches every session/preview owner slot before any synchronous
 cancellation or disposal callback, then disposes the nested Viewer before its
-reference, the shell, and finally the active ViewZone or Markdown overlay.
+reference, the Code overlay and shell, and finally the active ViewZone spacer
+or Markdown overlay.
 Confirmation is stamped with both the source model and latest open intent, so
 a queued confirmation cannot overwrite a newer cursor or navigation action.
 

@@ -63,6 +63,19 @@
   --vscode-editorError-foreground: #f14c4c;
   --vscode-editorInfo-foreground: #59a4f9;
   --vscode-editorHint-foreground: #eeeeeeb3;
+  --vscode-peekView-border: #59a4f9;
+  --vscode-peekViewTitle-background: #252526;
+  --vscode-peekViewTitleLabel-foreground: #ffffff;
+  --vscode-peekViewTitleDescription-foreground: #ccccccb3;
+  --vscode-peekViewResult-background: #252526;
+  --vscode-peekViewResult-lineForeground: #bbbbbb;
+  --vscode-peekViewResult-fileForeground: #ffffff;
+  --vscode-peekViewResult-selectionBackground: #3399ff33;
+  --vscode-peekViewResult-selectionForeground: #ffffff;
+  --vscode-peekViewEditor-background: #001f33;
+  --vscode-peekViewEditorGutter-background: #001f33;
+  --vscode-peekViewEditor-matchHighlightBackground: #ff8f0099;
+  --vscode-peekViewEditor-matchHighlightBorder: transparent;
 
   /* editorError/Warning/Info/Hint.border are null in VS Code's normal (non-HC)
      themes, so they stay unset here too — the visible squiggle is the runtime
@@ -192,6 +205,19 @@
   --vscode-editorError-foreground: #e51400;
   --vscode-editorInfo-foreground: #0063d3;
   --vscode-editorHint-foreground: #6c6c6c;
+  --vscode-peekView-border: #0063d3;
+  --vscode-peekViewTitle-background: #f3f3f3;
+  --vscode-peekViewTitleLabel-foreground: #000000;
+  --vscode-peekViewTitleDescription-foreground: #616161;
+  --vscode-peekViewResult-background: #f3f3f3;
+  --vscode-peekViewResult-lineForeground: #646465;
+  --vscode-peekViewResult-fileForeground: #1e1e1e;
+  --vscode-peekViewResult-selectionBackground: #3399ff33;
+  --vscode-peekViewResult-selectionForeground: #6c6c6c;
+  --vscode-peekViewEditor-background: #f2f8fc;
+  --vscode-peekViewEditorGutter-background: #f2f8fc;
+  --vscode-peekViewEditor-matchHighlightBackground: #f5d802de;
+  --vscode-peekViewEditor-matchHighlightBorder: transparent;
 
   /* See the Dark Modern block above. */
   --vscode-editorUnnecessaryCode-opacity: 0.47;

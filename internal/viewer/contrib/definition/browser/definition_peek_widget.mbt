@@ -11,10 +11,9 @@ pub(all) struct DefinitionPeekWidgetCallbacks {
 }
 
 ///|
-/// The fixed ViewZone height used by the initial Peek implementation. The root
-/// Viewer remains the ViewZone owner and may translate this line count through
-/// its live layout configuration.
-pub let definition_peek_height_in_lines : Int = 12
+/// Monaco's requested default Peek height. The root Viewer caps this against
+/// the live editor viewport before constructing the ViewZone.
+pub let definition_peek_height_in_lines : Int = 18
 
 ///|
 /// Browser DOM shell for one Peek Definition session. `preview_host` is empty
@@ -22,6 +21,9 @@ pub let definition_peek_height_in_lines : Int = 12
 /// there without creating a dependency cycle.
 pub struct DefinitionPeekWidget {
   priv root : @rdom.Element
+  priv title_filename : @rdom.Element
+  priv title_dirname : @rdom.Element
+  priv title_meta : @rdom.Element
   priv list : @rdom.Element
   priv preview_host : @rdom.Element
   priv status : @rdom.Element
@@ -34,8 +36,10 @@ pub struct DefinitionPeekWidget {
 }
 
 ///|
-/// Constructs the detached shell. The caller appends `get_dom_node()` to its
-/// ViewZone before mounting a nested Viewer into `get_preview_host()`.
+/// Constructs the detached shell. The caller mounts `get_dom_node()` in its
+/// presentation-owned overlay before mounting a nested Viewer into
+/// `get_preview_host()`. Code uses a separate blank ViewZone as the layout
+/// spacer; Markdown uses its projection overlay.
 #alias(new, deprecated)
 pub fn DefinitionPeekWidget::DefinitionPeekWidget(
   callbacks : DefinitionPeekWidgetCallbacks,
@@ -49,9 +53,21 @@ pub fn DefinitionPeekWidget::DefinitionPeekWidget(
 
   let header = document.create_element("header")
   header.set_attribute("class", "moonbit-viewer-definition-peek-header")
-  let title = document.create_element("span")
+  let title = document.create_element("div")
   title.set_attribute("class", "moonbit-viewer-definition-peek-title")
-  title.append_child(document.create_text_node("Peek Definition").as_node())
+  let title_filename = document.create_element("span")
+  title_filename.set_attribute(
+    "class", "moonbit-viewer-definition-peek-title-filename",
+  )
+  let title_dirname = document.create_element("span")
+  title_dirname.set_attribute(
+    "class", "moonbit-viewer-definition-peek-title-dirname",
+  )
+  let title_meta = document.create_element("span")
+  title_meta.set_attribute("class", "moonbit-viewer-definition-peek-title-meta")
+  title.append_child(title_filename.as_node())
+  title.append_child(title_dirname.as_node())
+  title.append_child(title_meta.as_node())
   header.append_child(title.as_node())
   let close = document.create_element("button")
   close.set_attribute("class", "moonbit-viewer-definition-peek-close")
@@ -74,13 +90,16 @@ pub fn DefinitionPeekWidget::DefinitionPeekWidget(
   status.set_attribute("class", "moonbit-viewer-definition-peek-status")
   status.set_attribute("role", "status")
   status.set_attribute("aria-live", "polite")
-  body.append_child(list.as_node())
   body.append_child(preview_host.as_node())
+  body.append_child(list.as_node())
   body.append_child(status.as_node())
   root.append_child(body.as_node())
 
   let widget : DefinitionPeekWidget = {
     root,
+    title_filename,
+    title_dirname,
+    title_meta,
     list,
     preview_host,
     status,
@@ -92,12 +111,13 @@ pub fn DefinitionPeekWidget::DefinitionPeekWidget(
     disposed: false,
   }
   widget.install_persistent_listeners(close)
+  widget.show_default_title()
   widget.show_loading()
   widget
 }
 
 ///|
-/// Root node appended by the ViewZone owner.
+/// Root node mounted by the presentation owner.
 pub fn DefinitionPeekWidget::get_dom_node(
   self : DefinitionPeekWidget,
 ) -> @rdom.Element {
@@ -135,6 +155,7 @@ pub fn DefinitionPeekWidget::show_loading(self : DefinitionPeekWidget) -> Unit {
     return
   }
   self.clear_results()
+  self.show_default_title()
   self.list.set_attribute("hidden", "")
   self.status.remove_attribute("hidden")
   self.status.set_attribute(
@@ -157,6 +178,7 @@ pub fn DefinitionPeekWidget::show_unavailable(
     return
   }
   self.clear_results()
+  self.show_default_title()
   self.list.set_attribute("hidden", "")
   self.status.remove_attribute("hidden")
   self.status.set_attribute(
@@ -242,6 +264,7 @@ pub fn DefinitionPeekWidget::set_locations(
     selected_index,
     self.locations.length(),
   )
+  self.update_title()
   self.status.set_attribute("hidden", "")
   self.list.remove_attribute("hidden")
   self.preview_host.remove_attribute("aria-busy")
@@ -268,11 +291,37 @@ pub fn DefinitionPeekWidget::set_locations(
     item.set_attribute("aria-posinset", (index + 1).to_string())
     item.set_attribute("aria-setsize", count.to_string())
     item.set_attribute("data-definition-index", index.to_string())
-    item.append_child(
+    let label = definition_peek_location_label(self.locations[index])
+    item.set_attribute("aria-label", label)
+    item.set_attribute("title", label)
+    let filename = document.create_element("span")
+    filename.set_attribute(
+      "class", "moonbit-viewer-definition-peek-item-filename",
+    )
+    filename.append_child(
       document
-      .create_text_node(definition_peek_location_label(self.locations[index]))
+      .create_text_node(
+        @base_common.basename_or_authority(self.locations[index].uri),
+      )
       .as_node(),
     )
+    let position = self.locations[index].range.get_start_position()
+    let position_label = document.create_element("span")
+    position_label.set_attribute(
+      "class", "moonbit-viewer-definition-peek-item-position",
+    )
+    position_label.append_child(
+      document
+      .create_text_node(
+        ":" +
+        position.line_number.to_string() +
+        ":" +
+        position.column.to_string(),
+      )
+      .as_node(),
+    )
+    item.append_child(filename.as_node())
+    item.append_child(position_label.as_node())
     self.listen_result(item, "click", event => {
       event.prevent_default()
       event.stop_propagation()
@@ -308,6 +357,7 @@ pub fn DefinitionPeekWidget::set_selected_index(
     selected_index,
     self.locations.length(),
   )
+  self.update_title()
   let children = self.list.get_children()
   for i in 0..<children.length() {
     let selected = i == self.selected_index
@@ -471,6 +521,63 @@ fn DefinitionPeekWidget::clear_results(self : DefinitionPeekWidget) -> Unit {
   self.list.set_inner_html("")
   self.locations = []
   self.selected_index = -1
+}
+
+///|
+fn DefinitionPeekWidget::show_default_title(
+  self : DefinitionPeekWidget,
+) -> Unit {
+  self.set_title("Peek Definition", "", "")
+}
+
+///|
+fn DefinitionPeekWidget::update_title(self : DefinitionPeekWidget) -> Unit {
+  guard self.selected_index >= 0 &&
+    self.selected_index < self.locations.length() else {
+    self.show_default_title()
+    return
+  }
+  let location = self.locations[self.selected_index]
+  let count = self.locations.length()
+  let meta = if count == 1 {
+    count.to_string() + " result"
+  } else {
+    count.to_string() + " results"
+  }
+  self.set_title(
+    @base_common.basename_or_authority(location.uri),
+    @base_common.dirname(location.uri.path),
+    meta,
+  )
+}
+
+///|
+fn DefinitionPeekWidget::set_title(
+  self : DefinitionPeekWidget,
+  filename : String,
+  dirname : String,
+  meta : String,
+) -> Unit {
+  self.title_filename.set_inner_html("")
+  self.title_filename.append_child(
+    @rdom.document().create_text_node(filename).as_node(),
+  )
+  self.title_filename.set_attribute("title", filename)
+  self.title_dirname.set_inner_html("")
+  if dirname != "" {
+    self.title_dirname.append_child(
+      @rdom.document().create_text_node(dirname).as_node(),
+    )
+    self.title_dirname.set_attribute("title", dirname)
+  } else {
+    self.title_dirname.remove_attribute("title")
+  }
+  self.title_meta.set_inner_html("")
+  if meta != "" {
+    self.title_meta.append_child(
+      @rdom.document().create_text_node(meta).as_node(),
+    )
+  }
 }
 
 ///|

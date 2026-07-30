@@ -277,8 +277,9 @@ editor common/browser layers; editor common never depends on them.
   `internal/viewer/contrib/definition/browser` owns only the Peek and
   non-destructive-message DOM shells. Root `viewer` owns provider requests,
   cancellation, Code decorations or projected Markdown link spans, Code
-  ViewZones or the projection-scoped Markdown overlay, nested Viewer
-  composition, opener dispatch, and target-model reference release. The
+  ViewZone spacers plus overlay registrations or the projection-scoped
+  Markdown overlay, nested Viewer composition, opener dispatch, and
+  target-model reference release. The
   Markdown adapter resolves native pointer geometry through the document-owned
   source map and never creates a virtual model. The emitted stylesheet remains
   at `viewer/contrib/definition/browser/definition.css`.

@@ -63,14 +63,17 @@ async fn ManualDefinitionTasks::run_next(
 }
 
 ///|
-fn definition_navigation_test_model(resource : String) -> @model.TextModel {
+fn definition_navigation_test_model(
+  resource : String,
+  text? : String = "let source = target\n",
+) -> @model.TextModel {
   TextModel(
     try! @base_common.Uri::parse(resource),
     "source.mbt",
     "moonbit",
     1,
     "revision-1",
-    "let source = target\n",
+    text,
   )
 }
 
@@ -1026,6 +1029,39 @@ async fn run_same_resource_definition_peek_test() -> Unit {
 }
 
 ///|
+fn run_definition_peek_reveal_test() -> Unit raise {
+  let source = definition_navigation_test_model(
+    "file:///reveal-source.mbt",
+    text=Array::make(40, "let source = target").join("\n"),
+  )
+  let location : @language.Location = {
+    uri: source.uri,
+    range: Range(38, 14, 38, 20),
+  }
+  let services = definition_navigation_services([location])
+  let host = @rdom.document().create_element("div")
+  set_mounted_test_client_size(host, 640.0, 360.0)
+  let viewer = Viewer::create(host, services~)
+  let tasks = ManualDefinitionTasks()
+  viewer.set_definition_host_for_test(task => tasks.schedule(task))
+  viewer.set_model(Some(source))
+  viewer.set_position(Position(39, 5))
+  assert_eq(viewer.get_scroll_top(), 0.0)
+
+  viewer.start_peek_definition()
+  guard viewer.definition_contribution() is Some(state) else {
+    fail("missing definition contribution")
+  }
+  assert_true(state.peek.zone_id is Some(_))
+  assert_true(state.peek.overlay_widget is Some(_))
+  assert_true(viewer.get_scroll_top() > 0.0)
+
+  viewer.dispose()
+  services.dispose()
+  source.dispose()
+}
+
+///|
 async fn run_empty_definition_peek_test() -> Unit {
   let source = definition_navigation_test_model("file:///empty-peek.mbt")
   let services = definition_navigation_services([])
@@ -1581,6 +1617,7 @@ async test "Peek Definition owns nested preview, switching, cancellation, and fr
   install_mounted_test_browser()
   defer restore_mounted_test_browser()
   run_same_resource_definition_peek_test()
+  run_definition_peek_reveal_test()
   run_empty_definition_peek_test()
   run_multiple_definition_default_peek_test()
   run_definition_action_replaces_loading_peek_test()

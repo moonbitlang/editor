@@ -26,6 +26,7 @@ priv struct DefinitionPeekState {
   mut anchor : DefinitionPeekAnchor?
   mut widget : @definition_browser.DefinitionPeekWidget?
   mut zone_id : String?
+  mut overlay_widget : @editor_browser.OverlayWidget?
   mut markdown_projection_generation : Int?
   mut preview_viewer : Viewer?
   mut preview_reference : @navigation_api.TextModelReference?
@@ -58,6 +59,7 @@ fn DefinitionPeekState::DefinitionPeekState() -> DefinitionPeekState {
     anchor: None,
     widget: None,
     zone_id: None,
+    overlay_widget: None,
     markdown_projection_generation: None,
     preview_viewer: None,
     preview_reference: None,
@@ -400,11 +402,41 @@ fn Viewer::open_definition_peek_shell(
   })
   match self.current_code_browser_data() {
     Some(_) => {
+      let zone_dom_node = @rdom.document().create_element("div")
+      zone_dom_node.set_attribute(
+        "class", "moonbit-viewer-definition-peek-zone",
+      )
+      let widget_dom_node = widget.get_dom_node()
+      let layout = self.get_layout_info()
+      @base_browser.set_style_property(widget_dom_node, "position", "absolute")
+      @base_browser.set_style_property(widget_dom_node, "top", "-1000000px")
+      @base_browser.set_style_property(widget_dom_node, "left", "0")
+      @base_browser.set_style_property(
+        widget_dom_node,
+        "right",
+        layout.vertical_scrollbar_width.to_string() + "px",
+      )
+      @base_browser.set_style_property(widget_dom_node, "width", "auto")
       let zone = @editor_browser.ViewZone(
         position.line_number,
-        widget.get_dom_node(),
+        zone_dom_node,
+        after_column=position.column,
         suppress_mouse_down=true,
-        height_in_lines=@definition_browser.definition_peek_height_in_lines.to_double(),
+        height_in_lines=self.definition_peek_height_in_lines(),
+        on_dom_node_top=top => {
+          @base_browser.set_style_property(
+            widget_dom_node,
+            "top",
+            top.to_string() + "px",
+          )
+        },
+        on_computed_height=height => {
+          @base_browser.set_style_property(
+            widget_dom_node,
+            "height",
+            height.to_string() + "px",
+          )
+        },
       )
       let added_id = Ref("")
       self.change_view_zones(accessor => added_id.val = accessor.add_zone(zone))
@@ -412,11 +444,14 @@ fn Viewer::open_definition_peek_shell(
         widget.dispose()
         return false
       }
-      // ViewZones hide caller nodes from the accessibility tree while they
-      // are generic layout whitespace. Peek is an interactive dialog, so its
-      // owner explicitly opts the mounted node back in.
-      widget.get_dom_node().remove_attribute("aria-hidden")
       state.peek.zone_id = Some(added_id.val)
+      let overlay = overlay_widget(
+        "moonbit.viewer.definitionPeek." + self.get_id(),
+        widget_dom_node,
+      )
+      self.add_overlay_widget(overlay)
+      state.peek.overlay_widget = Some(overlay)
+      self.reveal_definition_peek_zone(position)
     }
     None =>
       match self.current_markdown_document() {
@@ -455,6 +490,36 @@ fn Viewer::open_definition_peek_shell(
 }
 
 ///|
+/// Mirrors `ZoneWidget.show`: reveal the anchor through the following model
+/// line after installing the whitespace. The range crosses the Peek ViewZone,
+/// so the scroll computation brings the whole widget into the viewport instead
+/// of leaving a newly opened shell clipped below the editor.
+fn Viewer::reveal_definition_peek_zone(
+  self : Viewer,
+  position : @base_common.Position,
+) -> Unit {
+  guard self.get_model() is Some(model) else { return }
+  let line_number = position.line_number
+  let end_line_number = (line_number + 1).min(model.get_line_count())
+  if end_line_number == line_number {
+    self.reveal_line_near_top(line_number)
+  } else {
+    self.reveal_lines(line_number, end_line_number)
+  }
+}
+
+///|
+fn Viewer::definition_peek_height_in_lines(self : Viewer) -> Double {
+  let snapshot = self.configuration.snapshot()
+  let requested = @definition_browser.definition_peek_height_in_lines.to_double()
+  let line_height = snapshot.font_info.line_height.to_double()
+  if snapshot.height <= 0.0 || line_height <= 0.0 {
+    return requested
+  }
+  requested.min((snapshot.height / line_height * 0.8).max(12.0))
+}
+
+///|
 fn Viewer::definition_peek_request_is_current(
   self : Viewer,
   stamp : DefinitionPeekRequestStamp,
@@ -485,9 +550,14 @@ fn Viewer::definition_peek_session_is_current(
   guard state.peek.generation == generation && state.peek.widget is Some(_) else {
     return false
   }
-  match (state.peek.zone_id, state.peek.markdown_projection_generation) {
-    (Some(_), None) => self.current_code_browser_data() is Some(_)
-    (None, Some(projection_generation)) =>
+  match
+    (
+      state.peek.zone_id,
+      state.peek.overlay_widget,
+      state.peek.markdown_projection_generation,
+    ) {
+    (Some(_), Some(_), None) => self.current_code_browser_data() is Some(_)
+    (None, None, Some(projection_generation)) =>
       match self.current_markdown_document() {
         Some(markdown) =>
           markdown.projection_generation() == projection_generation
@@ -712,6 +782,16 @@ fn Viewer::schedule_definition_peek_preview(
     state.peek.preview_viewer = Some(preview)
     preview.set_model(Some(model))
     let range = model.validate_range(location.range)
+    preview.create_decorations_collection(decorations=[
+      {
+        range,
+        options: ModelDecorationOptions(
+          "moonbit-viewer-definition-peek-match",
+          description="peek-definition-match",
+        ),
+      },
+    ])
+    |> ignore
     let start = range.get_start_position()
     preview.set_position(start, source="peekDefinition")
     preview.reveal_range_in_center_if_outside_viewport(
@@ -873,6 +953,8 @@ fn Viewer::close_definition_peek(self : Viewer, restore_focus~ : Bool) -> Unit {
   peek.widget = None
   let zone_id = peek.zone_id
   peek.zone_id = None
+  let overlay_widget = peek.overlay_widget
+  peek.overlay_widget = None
   let markdown_projection_generation = peek.markdown_projection_generation
   peek.markdown_projection_generation = None
   let detached_preview = self.detach_installed_definition_peek_preview()
@@ -898,6 +980,18 @@ fn Viewer::close_definition_peek(self : Viewer, restore_focus~ : Bool) -> Unit {
     Some(detached) => detached.dispose()
     None => ()
   }
+  match overlay_widget {
+    Some(overlay_widget) => self.remove_overlay_widget(overlay_widget)
+    None => ()
+  }
+  match markdown_projection_generation {
+    Some(_) =>
+      match widget {
+        Some(widget) => @base_browser.remove_element(widget.get_dom_node())
+        None => ()
+      }
+    None => ()
+  }
   match widget {
     Some(widget) => widget.dispose()
     None => ()
@@ -920,14 +1014,6 @@ fn Viewer::close_definition_peek(self : Viewer, restore_focus~ : Bool) -> Unit {
         // zone's layout gap; focus restoration must not be that render's
         // accidental trigger.
         self.change_view_zones(accessor => accessor.remove_zone(zone_id))
-      }
-    None => ()
-  }
-  match markdown_projection_generation {
-    Some(_) =>
-      match widget {
-        Some(widget) => @base_browser.remove_element(widget.get_dom_node())
-        None => ()
       }
     None => ()
   }

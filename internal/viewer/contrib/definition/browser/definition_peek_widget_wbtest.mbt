@@ -248,6 +248,12 @@ extern "js" fn definition_peek_test_dispatch_key(
 extern "js" fn definition_peek_test_is_active(element : @rdom.Element) -> Bool = "element => element.ownerDocument.activeElement === element"
 
 ///|
+extern "js" fn definition_peek_test_same_element(
+  left : @rdom.Element,
+  right : @rdom.Element,
+) -> Bool = "(left, right) => left === right"
+
+///|
 fn definition_peek_test_location(
   path : String,
   line : Int,
@@ -330,8 +336,39 @@ test "peek result list updates selection and dispatches select and confirm" {
   let first = definition_peek_test_child(widget.get_list_node(), 0)
   let second = definition_peek_test_child(widget.get_list_node(), 1)
   let third = definition_peek_test_child(widget.get_list_node(), 2)
+  let body = definition_peek_test_child(widget.get_dom_node(), 1)
+  assert_true(
+    definition_peek_test_same_element(
+      definition_peek_test_child(body, 0),
+      widget.get_preview_host(),
+    ),
+  )
+  assert_true(
+    definition_peek_test_same_element(
+      definition_peek_test_child(body, 1),
+      widget.get_list_node(),
+    ),
+  )
   assert_true(definition_peek_test_text_content(first).contains("a.mbt:2:3"))
+  assert_eq(
+    definition_peek_test_attribute(first, "aria-label"),
+    "file:///workspace/a.mbt:2:3",
+  )
   assert_eq(definition_peek_test_attribute(second, "aria-selected"), "true")
+  let header = definition_peek_test_child(widget.get_dom_node(), 0)
+  let title = definition_peek_test_child(header, 0)
+  assert_eq(
+    definition_peek_test_text_content(definition_peek_test_child(title, 0)),
+    "b.mbt",
+  )
+  assert_eq(
+    definition_peek_test_text_content(definition_peek_test_child(title, 1)),
+    "/workspace",
+  )
+  assert_eq(
+    definition_peek_test_text_content(definition_peek_test_child(title, 2)),
+    "3 results",
+  )
 
   widget.show_preview_loading()
   assert_true(
@@ -359,6 +396,10 @@ test "peek result list updates selection and dispatches select and confirm" {
   widget.set_selected_index(99)
   assert_eq(widget.get_selected_index(), Some(2))
   assert_eq(definition_peek_test_attribute(third, "aria-selected"), "true")
+  assert_eq(
+    definition_peek_test_text_content(definition_peek_test_child(title, 0)),
+    "c.mbt",
+  )
   assert_eq(definition_peek_test_dispatch(first, "click"), "true:true")
   assert_eq(selected.val, 0)
   assert_eq(widget.get_selected_index(), Some(0))

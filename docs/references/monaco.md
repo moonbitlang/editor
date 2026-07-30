@@ -223,17 +223,20 @@ Intentional local differences and exclusions:
 - The upstream 350 ms `symbolHighlight` is deferred: the current host opener
   cannot provide consistent target-model decoration for cross-resource opens.
 - Workbench navigation history, alternative commands, `gotoAndPeek`, stable
-  Peek, editor-group migration, grouped resource tree, drag-and-drop, sash and
-  persisted Peek layout, and preview reference decorations are N-A.
-- The local Peek uses a fixed ViewZone and nested readonly Viewer instead of
-  `PeekViewWidget` plus `EmbeddedCodeEditorWidget`. The selected fidelity
-  contract is request generation/cancellation, stale-reference release,
-  preview replacement, child teardown, close/focus ordering, and recursive
-  Peek suppression; Monaco's default 18-line/split-layout presentation is not
-  part of that contract. Upstream unavailable preview uses a fallback text
-  model, while the local shell removes its child/reference and shows an
-  unavailable state. Upstream same-Peek toggle accepts a range containing the
-  widget position; the local readonly anchor is exact
+  Peek, editor-group migration, grouped resource tree, drag-and-drop, sash,
+  persisted Peek layout, and multi-result reference decorations are N-A.
+- The local Peek uses a blank ViewZone spacer plus Viewer overlay and nested
+  readonly Viewer instead of `PeekViewWidget` plus
+  `EmbeddedCodeEditorWidget`. The selected fidelity contract includes the
+  default 18-line requested height capped to the current viewport, preview-left
+  and results-right split, filename/directory/result-count title, selected
+  target match decoration, post-insertion anchor-to-next-line reveal,
+  request generation/cancellation, stale-reference release, preview
+  replacement, child teardown, close/focus ordering, and recursive Peek
+  suppression. Upstream unavailable preview uses a fallback text model, while
+  the local shell removes its child/reference and shows an unavailable state.
+  Upstream same-Peek toggle accepts a range containing the widget position; the
+  local readonly anchor is exact
   model/generation/version/position.
 - `IModelService`, `ITextModelContentProvider`, filesystem/network loading, tab
   policy, and HTTP window fallback are N-A. The host resolver owns all loading

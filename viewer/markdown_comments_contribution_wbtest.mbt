@@ -280,6 +280,7 @@ fn with_markdown_contribution_viewer(
   provider_blocks? : Array[@language.MarkdownCommentBlock],
   provider_foldable? : Bool = false,
   configure_line_comments? : Bool = false,
+  role? : ViewerRole = OuterViewer,
 ) -> Unit raise {
   install_mounted_test_browser()
   defer restore_mounted_test_browser()
@@ -319,7 +320,7 @@ fn with_markdown_contribution_viewer(
   defer services.dispose()
   let model = test_model(text)
   defer model.dispose()
-  let viewer = Viewer::Viewer(services~)
+  let viewer = Viewer::Viewer(services~, role~)
   defer viewer.dispose()
   let host = @rdom.document().create_element("div")
   viewer.attach(host)
@@ -449,6 +450,23 @@ test "Markdown comment fallbacks leave source visible for absent empty invalid a
       markdown_contribution_block(1, 2, "first"),
       markdown_contribution_block(2, 4, "rest"),
     ],
+  )
+}
+
+///|
+test "Peek preview leaves Markdown-comment source unprojected" {
+  with_markdown_contribution_viewer(
+    "// documentation\npub fn target() -> Unit {}",
+    (viewer, _) => {
+      assert_eq(markdown_contribution_state(viewer).rendered.length(), 0)
+      assert_true(viewer.test_view_model().get_hidden_areas() == [])
+      assert_eq(viewer.test_view_model().get_whitespaces().length(), 0)
+      assert_eq(viewer.test_view_model().line_count(), 2)
+    },
+    provider_blocks=[
+      markdown_contribution_block(1, 2, "rendered documentation"),
+    ],
+    role=PeekPreviewViewer,
   )
 }
 
