@@ -87,11 +87,7 @@ jobs:
       # just, so this job installs it (the moon-gates job deliberately does
       # not need it).
       - name: install just
-        run: |
-          mkdir -p "$HOME/.local/bin"
-          curl --proto '=https' --tlsv1.2 -fsSL https://just.systems/install.sh \
-            | bash -s -- --to "$HOME/.local/bin"
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+        run: brew install just
 
       - name: install playwright
         run: |
