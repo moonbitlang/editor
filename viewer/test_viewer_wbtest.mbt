@@ -116,7 +116,25 @@ extern "js" fn install_mounted_test_browser() -> Unit =
   #|     }
   #|     setAttribute(name, value) { this.attributes.set(name, String(value)); }
   #|     getAttribute(name) { return this.attributes.get(name) ?? null; }
+  #|     hasAttribute(name) { return this.attributes.has(name); }
   #|     removeAttribute(name) { this.attributes.delete(name); }
+  #|     insertBefore(child, reference) {
+  #|       if (!reference) return this.appendChild(child);
+  #|       if (child.parentNode) child.parentNode.removeChild(child);
+  #|       const index = this.childNodes.indexOf(reference);
+  #|       if (index < 0) return this.appendChild(child);
+  #|       this.childNodes.splice(index, 0, child);
+  #|       child.parentNode = this;
+  #|       return child;
+  #|     }
+  #|     closest(selector) {
+  #|       let node = this;
+  #|       while (node && node.nodeType === 1) {
+  #|         if (selectorMatches(node, selector)) return node;
+  #|         node = node.parentNode;
+  #|       }
+  #|       return null;
+  #|     }
   #|     appendChild(child) {
   #|       if (child.parentNode) child.parentNode.removeChild(child);
   #|       this.childNodes.push(child);

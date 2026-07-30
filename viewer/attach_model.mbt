@@ -297,7 +297,15 @@ fn Viewer::create_browser_presentation(
         },
         launch_async_task,
       )
-      return Some(Markdown({ view: markdown, hover_bridge }))
+      let markdown_data : MarkdownBrowserData = {
+        view: markdown,
+        hover_bridge,
+        fold: MarkdownFoldState(),
+      }
+      // Seed fold state (auto-fold policy plus controls) before the bridge is
+      // activated, so the first activation already sees final visibility.
+      markdown_data.initialize_markdown_folding(model.get_value())
+      return Some(Markdown(markdown_data))
     }
     CodeDocument => ()
   }

@@ -95,6 +95,7 @@ priv enum BrowserPresentation {
 priv struct MarkdownBrowserData {
   view : @markdown_document.MarkdownDocumentView
   hover_bridge : @hover_browser.MarkdownDocumentHoverBridge
+  fold : MarkdownFoldState
 }
 
 ///|
@@ -110,6 +111,10 @@ fn MarkdownBrowserData::replace_source(
 ) -> Unit {
   self.hover_bridge.before_projection_replaced()
   self.view.replace_source(source, source_model_version)
+  // Fold reconciliation must land inside the replacement bracket: the
+  // pending hover is already invalidated, and `after_projection_replaced`
+  // may only refresh diagnostics once final visibility is installed.
+  self.reconcile_markdown_folding(source)
   self.hover_bridge.after_projection_replaced()
 }
 
@@ -120,6 +125,10 @@ fn MarkdownBrowserData::apply_theme(
 ) -> Unit {
   self.hover_bridge.before_projection_replaced()
   self.view.apply_theme(theme)
+  // The source is unchanged, so reconciliation preserves fold state exactly;
+  // what needs re-publishing is the visibility and controls the re-rendered
+  // article just lost.
+  self.reconcile_markdown_folding(self.fold.source)
   self.hover_bridge.after_projection_replaced()
 }
 

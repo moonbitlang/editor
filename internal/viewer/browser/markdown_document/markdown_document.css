@@ -66,3 +66,57 @@
   overflow: hidden;
   pointer-events: none;
 }
+
+/* Section folding. Collapsed bodies ride on a dedicated attribute owned by
+   MarkdownDocumentView::set_hidden_root_elements. display:none (not
+   visibility:hidden or a zero height) is load-bearing: it removes the subtree
+   from hit testing and the accessibility tree, so caretPositionFromPoint can
+   never resolve a caret inside collapsed content and the semantic hover
+   bridge fails closed. */
+.moonbit-viewer-markdown-document-article > [data-markdown-section-hidden] {
+  display: none;
+}
+
+.moonbit-viewer-markdown-fold-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: baseline;
+  width: 1em;
+  height: 1em;
+  margin-right: 0.35em;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  opacity: 0.35;
+}
+
+.moonbit-viewer-markdown-fold-toggle::before {
+  content: "";
+  width: 0;
+  height: 0;
+  border-left: 0.32em solid transparent;
+  border-right: 0.32em solid transparent;
+  border-top: 0.42em solid currentColor;
+}
+
+.moonbit-viewer-markdown-fold-toggle[data-collapsed="true"]::before {
+  border-top: 0.32em solid transparent;
+  border-bottom: 0.32em solid transparent;
+  border-left: 0.42em solid currentColor;
+  border-right: none;
+}
+
+:is(h1, h2, h3, h4, h5, h6):hover > .moonbit-viewer-markdown-fold-toggle,
+.moonbit-viewer-markdown-fold-toggle:focus-visible,
+.moonbit-viewer-markdown-fold-toggle[data-collapsed="true"] {
+  opacity: 1;
+}
+
+.moonbit-viewer-markdown-fold-toggle:focus-visible {
+  outline: 1px solid currentColor;
+  outline-offset: 2px;
+}

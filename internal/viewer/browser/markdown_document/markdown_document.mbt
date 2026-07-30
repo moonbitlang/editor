@@ -60,6 +60,7 @@ pub struct MarkdownDocumentView {
   priv mut rendered : @browser_markdown.RenderedMarkdown
   priv mut semantic_dom : MarkdownSemanticDomLifetime
   priv listeners : Array[@base_common.Disposable]
+  priv mut on_section_fold_toggle : (Int) -> Unit
   priv mut disposed : Bool
 }
 
@@ -120,9 +121,21 @@ pub fn MarkdownDocumentView::MarkdownDocumentView(
     rendered,
     semantic_dom: MarkdownSemanticDomLifetime::empty(),
     listeners: [],
+    on_section_fold_toggle: _ => (),
     disposed: false,
   }
   view.post_render()
+  // One delegated listener owns every fold-toggle click for the view's whole
+  // lifetime: the article element survives projection replacements even
+  // though its children do not, so per-button listeners would need
+  // per-generation bookkeeping for no benefit.
+  view.listen(article, "click", event => {
+    guard !view.disposed else { return }
+    match markdown_fold_toggle_section(event) {
+      Some(section_index) => (view.on_section_fold_toggle)(section_index)
+      None => ()
+    }
+  })
   view.listen(viewport, "scroll", _event => if !view.disposed { on_scroll() })
   view.listen(root, "focus", _event => {
     if !view.disposed {
@@ -538,13 +551,15 @@ pub fn MarkdownDocumentView::set_hidden_root_elements(
       hidden.add(index)
     }
   }
+  // Visibility rides on a dedicated attribute the stylesheet maps to
+  // `display:none`, so the view never owns or clobbers an element's `style`
+  // attribute, and no `aria-hidden` bookkeeping is needed: `display:none`
+  // already removes the subtree from the accessibility tree.
   for index, child in children {
     if hidden.contains(index) {
-      child.set_attribute("style", markdown_hidden_element_style)
-      child.set_attribute("aria-hidden", "true")
-    } else {
-      child.remove_attribute("style")
-      child.remove_attribute("aria-hidden")
+      child.set_attribute(markdown_hidden_element_attribute, "true")
+    } else if child.has_attribute(markdown_hidden_element_attribute) {
+      child.remove_attribute(markdown_hidden_element_attribute)
     }
   }
 }
@@ -558,8 +573,7 @@ pub fn MarkdownDocumentView::hidden_root_elements(
   let result = []
   guard !self.disposed else { return result }
   for index, child in self.article.get_children() {
-    if child.get_attribute("style") is Some(style) &&
-      style == markdown_hidden_element_style {
+    if child.has_attribute(markdown_hidden_element_attribute) {
       result.push(index)
     }
   }
@@ -567,10 +581,155 @@ pub fn MarkdownDocumentView::hidden_root_elements(
 }
 
 ///|
-/// Collapsed body elements are removed from layout *and* from the
-/// accessibility tree; a collapsed section must not be reachable by a screen
-/// reader any more than by the pointer.
-let markdown_hidden_element_style : String = "display:none"
+/// The attribute `markdown_document.css` maps to `display:none`. Exclusively
+/// owned by `set_hidden_root_elements`, so the renderer's own classes and
+/// inline styles are never disturbed.
+let markdown_hidden_element_attribute : String = "data-markdown-section-hidden"
+
+///|
+/// One heading's fold affordance: which article root element carries the
+/// control, which section it toggles, and the state the control displays.
+pub(all) struct MarkdownSectionFoldControl {
+  heading_element_index : Int
+  section_index : Int
+  collapsed : Bool
+} derive(Eq, Debug)
+
+///|
+/// Installs the reader-facing fold toggle on each listed heading and removes
+/// stale toggles everywhere else.
+///
+/// Each control is one real `<button>` inserted as the heading's first child:
+/// a single affordance that serves mouse and keyboard alike, unlike the
+/// ViewZone chevron/in-content pair, because nothing here lives inside an
+/// `aria-hidden` gutter. The button carries `aria-expanded` and an
+/// `aria-label`; its chevron is drawn by CSS from `data-collapsed`.
+///
+/// The view owns only the control DOM. Which sections exist and what state
+/// they display belongs to the root Viewer, which re-installs after every
+/// projection replacement. Toggle clicks arrive through the handler set by
+/// `set_section_fold_toggle_handler`; installation never fires it.
+pub fn MarkdownDocumentView::install_section_fold_controls(
+  self : MarkdownDocumentView,
+  controls : Array[MarkdownSectionFoldControl],
+) -> Unit {
+  guard !self.disposed else { return }
+  let children = self.article.get_children()
+  let wanted : Map[Int, MarkdownSectionFoldControl] = Map([])
+  for control in controls {
+    if control.heading_element_index >= 0 &&
+      control.heading_element_index < children.length() {
+      wanted[control.heading_element_index] = control
+    }
+  }
+  for index, child in children {
+    let existing = child.query_selector(markdown_fold_toggle_selector)
+    match wanted.get(index) {
+      Some(control) => {
+        let button = match existing {
+          Some(button) => button
+          None => {
+            let button = @rdom.document().create_element("button")
+            button.set_attribute("type", "button")
+            button.set_attribute("class", markdown_fold_toggle_class)
+            child
+            .as_node()
+            .insert_before(
+              button.as_node(),
+              @js.Nullable::from_option(markdown_first_child(child)),
+            )
+            button
+          }
+        }
+        button.set_attribute(
+          "data-markdown-fold-section",
+          control.section_index.to_string(),
+        )
+        button.set_attribute(
+          "data-collapsed",
+          if control.collapsed {
+            "true"
+          } else {
+            "false"
+          },
+        )
+        button.set_attribute(
+          "aria-expanded",
+          if control.collapsed {
+            "false"
+          } else {
+            "true"
+          },
+        )
+        button.set_attribute(
+          "aria-label",
+          if control.collapsed {
+            "Expand section"
+          } else {
+            "Collapse section"
+          },
+        )
+      }
+      None =>
+        match existing {
+          Some(button) => child.as_node().remove_child(button.as_node())
+          None => ()
+        }
+    }
+  }
+}
+
+///|
+/// Replaces the toggle-click handler. One delegated article listener installed
+/// at construction routes every toggle click here, so the handler survives
+/// projection replacements without per-button listener bookkeeping.
+pub fn MarkdownDocumentView::set_section_fold_toggle_handler(
+  self : MarkdownDocumentView,
+  handler : (Int) -> Unit,
+) -> Unit {
+  self.on_section_fold_toggle = handler
+}
+
+///|
+let markdown_fold_toggle_class : String = "moonbit-viewer-markdown-fold-toggle"
+
+///|
+let markdown_fold_toggle_selector : String = ".moonbit-viewer-markdown-fold-toggle"
+
+///|
+fn markdown_first_child(element : @rdom.Element) -> @rdom.Node? {
+  element.get_children().get(0).map(first => first.as_node())
+}
+
+///|
+/// Resolves a click to the fold-section index of the toggle it landed on, or
+/// `None` for every other click. Buttons live inside headings, so `closest`
+/// from the real event target is exact; text selection and link activation in
+/// the same heading never reach here.
+fn markdown_fold_toggle_section(event : @rdom.Event) -> Int? {
+  guard event.target().to_element() is Some(target) else { return None }
+  guard target.closest("[data-markdown-fold-section]") is Some(button) else {
+    return None
+  }
+  guard button.get_attribute("data-markdown-fold-section") is Some(raw) else {
+    return None
+  }
+  markdown_parse_section_index(raw)
+}
+
+///|
+/// Digit-only index parser for the toggle data attribute. Anything else --
+/// including an empty string -- is a malformed control and is ignored rather
+/// than routed to section 0.
+fn markdown_parse_section_index(raw : String) -> Int? {
+  guard raw.length() > 0 && raw.length() <= 9 else { return None }
+  let mut value = 0
+  for unit in raw {
+    guard unit >= '0' && unit <= '9' else { return None }
+    value = value * 10 + (unit.to_int() - '0'.to_int())
+  }
+  Some(value)
+}
 
 ///|
 /// Snapshot of the current replacement-scoped line registry. The returned

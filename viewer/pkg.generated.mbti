@@ -40,6 +40,7 @@ pub struct Viewer {
 }
 pub fn Viewer::add_overlay_widget(Self, @browser.OverlayWidget) -> Unit
 pub fn Viewer::change_view_zones(Self, (@browser.ViewZoneChangeAccessor) -> Unit raise) -> Unit
+pub fn Viewer::collapsed_markdown_sections(Self) -> Array[Int]
 pub fn Viewer::create(@dom.Element, services? : ViewerServices, options? : ViewerOptions) -> Self
 pub fn Viewer::create_decorations_collection(Self, decorations? : Array[@model.ModelDeltaDecoration]) -> EditorDecorationsCollection
 pub fn Viewer::delta_decorations(Self, Array[String], Array[@model.ModelDeltaDecoration]) -> Array[String]
@@ -120,6 +121,7 @@ pub fn Viewer::set_scroll_top(Self, Double) -> Unit
 pub fn Viewer::set_selection(Self, @core.Selection, source? : String) -> Unit
 pub fn Viewer::set_selections(Self, Array[@core.Selection], source? : String, reason? : @editor_api.CursorChangeReason) -> Unit
 pub fn Viewer::set_value(Self, String) -> Unit
+pub fn Viewer::toggle_markdown_section_at(Self, Int) -> Bool
 pub fn Viewer::update_options(Self, ViewerOptions) -> Unit
 
 pub struct ViewerOptions {
