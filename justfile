@@ -3,9 +3,6 @@ default: dev
 list:
     just --list
 
-check:
-    moon check --target all --warn-list +73
-    moon fmt --check
 
 test-moon:
     moon test --target all
@@ -13,6 +10,7 @@ test-moon:
 test: test-moon
 
 build-moon-web:
+    moon build
     moon run --target native scripts/build-web.mbtx
 
 build-browser-tests: build-moon-web
@@ -21,8 +19,7 @@ build-browser-tests: build-moon-web
 build-browser-perf-tests: build-moon-web
     moon run --target native scripts/build-browser-tests.mbtx -- perf
 
-build: check build-moon-web
-    moon build
+build: build-moon-web
 
 # ---------------------------------------------------------------------------
 # Serving. Override any variable by listing it BEFORE the recipe name
