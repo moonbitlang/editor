@@ -758,15 +758,9 @@ fn reduce_anchor_coordinates(
   guard secondary is Some(secondary) else { return primary }
   let mut left = secondary.left
   if left < primary.left {
-    left = content_widget_double_max(
-      left,
-      primary.left - width + typical_fullwidth_character_width,
-    )
+    left = left.max(primary.left - width + typical_fullwidth_character_width)
   } else {
-    left = double_min(
-      left,
-      primary.left + width - typical_fullwidth_character_width,
-    )
+    left = left.min(primary.left + width - typical_fullwidth_character_width)
   }
   { top: primary.top, left, height: primary.height }
 }
@@ -850,12 +844,8 @@ fn layout_horizontal_segment_in_page(
   let right_padding = 15.0
 
   // Initially, the limits are defined as the dom node limits
-  let min_limit = content_widget_double_max(
-    left_padding,
-    dom_node_position.left - width,
-  )
-  let max_limit = double_min(
-    dom_node_position.left + dom_node_position.width + width,
+  let min_limit = left_padding.max(dom_node_position.left - width)
+  let max_limit = (dom_node_position.left + dom_node_position.width + width).min(
     window_width - right_padding,
   )
   let mut left = left
@@ -983,24 +973,6 @@ fn Widget::render(
         None => ()
       }
     }
-  }
-}
-
-///|
-fn content_widget_double_max(left : Double, right : Double) -> Double {
-  if left > right {
-    left
-  } else {
-    right
-  }
-}
-
-///|
-fn double_min(left : Double, right : Double) -> Double {
-  if left < right {
-    left
-  } else {
-    right
   }
 }
 

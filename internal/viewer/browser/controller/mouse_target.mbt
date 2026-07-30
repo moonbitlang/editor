@@ -571,8 +571,7 @@ pub fn HitTestRequest::HitTestRequest(
   relative_pos : @editor_browser.CoordinatesRelativeToEditor,
   event_target : @rdom.Element?,
 ) -> HitTestRequest {
-  let mouse_vertical_offset = double_max(
-    0.0,
+  let mouse_vertical_offset = 0.0.max(
     ctx.get_current_scroll_top() + relative_pos.y,
   )
   let mouse_content_horizontal_offset = ctx.get_current_scroll_left() +
@@ -589,13 +588,10 @@ pub fn HitTestRequest::HitTestRequest(
     mouse_content_horizontal_offset,
     is_in_margin_area,
     is_in_content_area: !is_in_margin_area,
-    mouse_column: int_max(
-      0,
-      get_mouse_column_static(
-        mouse_content_horizontal_offset,
-        ctx.typical_halfwidth_character_width,
-      ),
-    ),
+    mouse_column: get_mouse_column_static(
+      mouse_content_horizontal_offset,
+      ctx.typical_halfwidth_character_width,
+    ).max(0),
     // If no event target is passed in, we will use the hit test target
     event_target,
     hit_test_result_cache: None,
@@ -1066,7 +1062,7 @@ fn hit_test_margin(
       request.mouse_vertical_offset,
     )
     let pos = range.get_start_position()
-    let mut offset = double_abs(request.relative_pos.x)
+    let mut offset = request.relative_pos.x.abs()
     let detail : @editor_browser.MouseTargetMarginData = {
       is_after_lines,
       glyph_margin_left: ctx.layout_info.glyph_margin_left,
@@ -1299,9 +1295,7 @@ fn create_mouse_target_from_hit_test_position(
     return request.fulfill_unknown(position=pos)
   }
   let column_horizontal_offset = visible_range.left.to_double()
-  if double_abs(
-      request.mouse_content_horizontal_offset - column_horizontal_offset,
-    ) <
+  if (request.mouse_content_horizontal_offset - column_horizontal_offset).abs() <
     1.0 {
     return request.fulfill_content_text(pos, None, {
       might_be_foreign_element: injected_text is Some(_),
@@ -1353,12 +1347,8 @@ fn create_mouse_target_from_hit_test_position(
       // Due to the use of zwj, the browser's hit test result is skewed
       // towards the left. Here we try to correct that if the mouse
       // horizontal offset is closer to the right than the left
-      let prev_delta = double_abs(
-        prev.0 - request.mouse_content_horizontal_offset,
-      )
-      let next_delta = double_abs(
-        curr.0 - request.mouse_content_horizontal_offset,
-      )
+      let prev_delta = (prev.0 - request.mouse_content_horizontal_offset).abs()
+      let next_delta = (curr.0 - request.mouse_content_horizontal_offset).abs()
       resolved_pos = if prev_delta < next_delta {
         Position(line_number, prev.1)
       } else {
@@ -1556,7 +1546,7 @@ fn do_hit_test_with_caret_position_from_point(
       // it returned the `<span>` of the line and the offset is the `<span>`
       // with the inline decoration
       let child_count = offset_node.get_child_count()
-      let child_index = int_min(native_caret_hit_offset(hit), child_count - 1)
+      let child_index = native_caret_hit_offset(hit).min(child_count - 1)
       if child_index >= 0 {
         match offset_node.get_child(child_index).to_element() {
           Some(token_span) =>
@@ -1604,42 +1594,6 @@ fn do_hit_test(ctx : HitTestContext, request : HitTestRequest) -> HitTestResult 
     UnknownHitTestResult(_) => ()
   }
   result
-}
-
-///|
-fn double_max(a : Double, b : Double) -> Double {
-  if a > b {
-    a
-  } else {
-    b
-  }
-}
-
-///|
-fn double_abs(a : Double) -> Double {
-  if a < 0.0 {
-    -a
-  } else {
-    a
-  }
-}
-
-///|
-fn int_max(a : Int, b : Int) -> Int {
-  if a > b {
-    a
-  } else {
-    b
-  }
-}
-
-///|
-fn int_min(a : Int, b : Int) -> Int {
-  if a < b {
-    a
-  } else {
-    b
-  }
 }
 
 ///|

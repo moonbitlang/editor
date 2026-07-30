@@ -217,12 +217,10 @@ pub fn ScrollbarState::desired_position_from_slider(
 
 ///|
 fn ScrollbarState::refresh(self : ScrollbarState) -> Unit {
-  let computed_available_size = max_double(
-    0.0,
+  let computed_available_size = 0.0.max(
     self.visible_size - self.opposite_scrollbar_size,
   )
-  let computed_representable_size = max_double(
-    0.0,
+  let computed_representable_size = 0.0.max(
     computed_available_size - 2.0 * self.arrow_size,
   )
   let computed_is_needed = self.scroll_size > 0.0 &&
@@ -236,10 +234,11 @@ fn ScrollbarState::refresh(self : ScrollbarState) -> Unit {
     return
   }
   // Artificially enlarge a too-small thumb so the mouse can grab it.
-  let computed_slider_size = max_double(
-    minimum_slider_size,
-    (self.visible_size * computed_representable_size / self.scroll_size).floor(),
-  ).round()
+  let computed_slider_size = minimum_slider_size
+    .max(
+      (self.visible_size * computed_representable_size / self.scroll_size).floor(),
+    )
+    .round()
   // The slider moves over `representable - slider` as the position moves
   // over `scroll - visible`.
   let computed_slider_ratio = (

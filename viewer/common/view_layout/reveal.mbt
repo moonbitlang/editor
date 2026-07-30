@@ -78,15 +78,12 @@ pub fn ViewLayout::compute_scroll_top_to_reveal_range(
           viewport_start_y
         } else {
           // A gap that is 20% of the viewport, with a minimum of 5 lines.
-          let desired_gap_above = max_double(
-            5.0 * line_height,
-            viewport_height * 0.2,
-          )
+          let desired_gap_above = (5.0 * line_height).max(viewport_height * 0.2)
           // Scroll just above the box with the desired gap, but never push the
           // box out of the viewport.
           let desired_scroll_top = box_start_y - desired_gap_above
           let min_scroll_top = box_end_y - viewport_height
-          max_double(min_scroll_top, desired_scroll_top)
+          min_scroll_top.max(desired_scroll_top)
         }
       Center | CenterIfOutsideViewport =>
         if vertical_type is CenterIfOutsideViewport &&
@@ -97,7 +94,7 @@ pub fn ViewLayout::compute_scroll_top_to_reveal_range(
         } else {
           // Box is outside the viewport... center it.
           let box_middle_y = (box_start_y + box_end_y) / 2.0
-          max_double(0.0, box_middle_y - viewport_height / 2.0)
+          0.0.max(box_middle_y - viewport_height / 2.0)
         }
       _ =>
         compute_minimum_scrolling(
@@ -109,15 +106,6 @@ pub fn ViewLayout::compute_scroll_top_to_reveal_range(
           reveal_at_end=vertical_type is Bottom,
         )
     }
-  }
-}
-
-///|
-fn min_double(left : Double, right : Double) -> Double {
-  if left < right {
-    left
-  } else {
-    right
   }
 }
 
@@ -154,11 +142,11 @@ pub fn ViewLayout::compute_scroll_left_to_reveal(
   let mut box_end_x = (first_left + first_width).round()
   for index in 1..<ranges.length() {
     let (left, width) = ranges[index]
-    box_start_x = min_double(box_start_x, left.round())
-    box_end_x = max_double(box_end_x, (left + width).round())
+    box_start_x = box_start_x.min(left.round())
+    box_end_x = box_end_x.max((left + width).round())
   }
   if !minimal_reveal {
-    box_start_x = max_double(0.0, box_start_x - horizontal_extra_px)
+    box_start_x = 0.0.max(box_start_x - horizontal_extra_px)
     box_end_x += reveal_horizontal_right_padding
   }
   // Horizontal measurement uses the current viewport; only the vertical
@@ -203,13 +191,13 @@ fn compute_minimum_scrolling(
     if reveal_at_start {
       box_start
     } else if reveal_at_end {
-      max_double(0.0, box_end - viewport_length)
+      0.0.max(box_end - viewport_length)
     } else if box_start < viewport_start {
       // The box is above the viewport.
       box_start
     } else if box_end > viewport_end {
       // The box is below the viewport.
-      max_double(0.0, box_end - viewport_length)
+      0.0.max(box_end - viewport_length)
     } else {
       viewport_start
     }

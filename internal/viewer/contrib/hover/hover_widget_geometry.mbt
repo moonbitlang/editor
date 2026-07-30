@@ -86,8 +86,8 @@ pub fn compute_distance_from_point_to_rectangle(
 ) -> Double {
   let x = left + width / 2.0 // x center of rectangle
   let y = top + height / 2.0 // y center of rectangle
-  let dx = max_hover_double((point_x - x).abs() - width / 2.0, 0.0)
-  let dy = max_hover_double((point_y - y).abs() - height / 2.0, 0.0)
+  let dx = ((point_x - x).abs() - width / 2.0).max(0.0)
+  let dy = ((point_y - y).abs() - height / 2.0).max(0.0)
   (dx * dx + dy * dy).sqrt()
 }
 
@@ -162,26 +162,8 @@ pub fn MouseCloserState::is_mouse_getting_closer(
     // The mouse is getting farther away.
     return false
   }
-  self.closest_distance = Some(min_hover_double(closest_distance, distance))
+  self.closest_distance = Some(closest_distance.min(distance))
   true
-}
-
-///|
-pub fn max_hover_double(left : Double, right : Double) -> Double {
-  if left > right {
-    left
-  } else {
-    right
-  }
-}
-
-///|
-pub fn min_hover_double(left : Double, right : Double) -> Double {
-  if left < right {
-    left
-  } else {
-    right
-  }
 }
 
 ///|

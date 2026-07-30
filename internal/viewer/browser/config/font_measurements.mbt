@@ -168,18 +168,16 @@ pub fn FontMeasurementsImpl::read_font_info(
         // Hey, it's Bug 14341 ... we couldn't read.
         read_config = {
           ..read_config,
-          typical_halfwidth_character_width: max_double(
-            read_config.typical_halfwidth_character_width,
+          typical_halfwidth_character_width: read_config.typical_halfwidth_character_width.max(
             5.0,
           ),
-          typical_fullwidth_character_width: max_double(
-            read_config.typical_fullwidth_character_width,
+          typical_fullwidth_character_width: read_config.typical_fullwidth_character_width.max(
             5.0,
           ),
-          space_width: max_double(read_config.space_width, 5.0),
-          middot_width: max_double(read_config.middot_width, 5.0),
-          wsmiddot_width: max_double(read_config.wsmiddot_width, 5.0),
-          max_digit_width: max_double(read_config.max_digit_width, 5.0),
+          space_width: read_config.space_width.max(5.0),
+          middot_width: read_config.middot_width.max(5.0),
+          wsmiddot_width: read_config.wsmiddot_width.max(5.0),
+          max_digit_width: read_config.max_digit_width.max(5.0),
           pixel_ratio: (self.read_pixel_ratio)(),
           is_trusted: false,
         }
@@ -256,7 +254,7 @@ fn FontMeasurementsImpl::actual_read_font_info(
   (self.read_widths)(bare_font_info, all)
   let mut max_digit_width = 0.0
   for digit in digits {
-    max_digit_width = max_double(max_digit_width, digit.width)
+    max_digit_width = max_digit_width.max(digit.width)
   }
   let mut is_monospace = bare_font_info.font_feature_settings ==
     @common_config.editor_font_ligatures_off
@@ -298,15 +296,6 @@ fn FontMeasurementsImpl::actual_read_font_info(
     middot_width: middot.width,
     wsmiddot_width: wsmiddot.width,
     max_digit_width,
-  }
-}
-
-///|
-fn max_double(left : Double, right : Double) -> Double {
-  if left > right {
-    left
-  } else {
-    right
   }
 }
 

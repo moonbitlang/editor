@@ -587,14 +587,14 @@ fn ContentHoverWidget::update_max_dimensions(self : ContentHoverWidget) -> Unit 
 /// Monaco `_updateMaxDimensions`' width arm:
 /// `Math.max(this._editor.getLayoutInfo().width * 0.66, 750)`.
 pub fn hover_max_width(editor_width : Double) -> Double {
-  @hover.max_hover_double(editor_width * 0.66, 750.0)
+  (editor_width * 0.66).max(750.0)
 }
 
 ///|
 /// Monaco `_updateMaxDimensions`' height arm:
 /// `Math.max(this._editor.getLayoutInfo().height / 4, 250)`.
 pub fn hover_max_height(editor_height : Double) -> Double {
-  @hover.max_hover_double(editor_height / 4.0, 250.0)
+  (editor_height / 4.0).max(250.0)
 }
 
 ///|
@@ -847,13 +847,10 @@ pub fn hover_prefer_above(
   space_below : Double,
   prefer_above : Bool,
 ) -> Bool {
-  let max_above = @hover.min_hover_double(space_above, widget_height)
-  let max_below = @hover.min_hover_double(space_below, widget_height)
-  let max_height = @hover.min_hover_double(
-    @hover.max_hover_double(max_above, max_below),
-    widget_height,
-  )
-  let height = @hover.min_hover_double(widget_height, max_height)
+  let max_above = space_above.min(widget_height)
+  let max_below = space_below.min(widget_height)
+  let max_height = max_above.max(max_below).min(widget_height)
+  let height = widget_height.min(max_height)
   if prefer_above {
     height <= max_above
   } else {
