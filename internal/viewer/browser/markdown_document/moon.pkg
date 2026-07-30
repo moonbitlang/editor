@@ -4,6 +4,7 @@ import {
   "moonbitlang/editor/internal/viewer/markdown" @markdown_core,
   "moonbitlang/editor/internal/viewer/browser/markdown" @browser_markdown,
   "moonbit-community/rabbita/dom" @rdom,
+  "moonbit-community/rabbita/js",
 }
 
 supported_targets = "js"

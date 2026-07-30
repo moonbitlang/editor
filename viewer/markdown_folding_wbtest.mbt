@@ -1,0 +1,175 @@
+// Mounted white-box coverage for Markdown section folding: fold state,
+// auto-fold seeding, toggle, and conservative reconciliation are all
+// synchronous root-owned state, so this is the lowest layer that can observe
+// them (docs/harness.md). Real pointer clicks, computed `display:none`, and
+// hover interleavings belong to the Playwright component scenario.
+
+///|
+fn markdown_folding_fixture_source() -> String {
+  (
+    #|# Top
+    #|
+    #|intro paragraph
+    #|
+    #|## Guide
+    #|
+    #|guide paragraph
+    #|
+    #|```mbt check
+    #|fn folded_answer() -> Int { 42 }
+    #|```
+    #|
+    #|### Deep
+    #|
+    #|deep one
+    #|
+    #|deep two
+    #|
+    #|deep three
+    #|
+    #|deep four
+    #|
+    #|deep five
+    #|
+    #|deep six
+    #|
+    #|### Tiny
+    #|
+    #|tiny body
+    #|
+  )
+}
+
+///|
+fn markdown_folding_offset_of(source : String, needle : String) -> Int raise {
+  guard source.find(needle) is Some(offset) else {
+    fail("fixture must contain \{needle}")
+  }
+  offset
+}
+
+///|
+test "auto-fold seeds depth-3 bulk, toggles by offset, and keeps the parse" {
+  install_mounted_test_browser()
+  defer restore_mounted_test_browser()
+  let viewer = Viewer::Viewer()
+  let source = markdown_folding_fixture_source()
+  let model = markdown_presentation_test_model(
+    "/src/folding.mbt.md", "moonbit", source,
+  )
+  defer {
+    viewer.dispose()
+    model.dispose()
+  }
+  let host = @rdom.document().create_element("div")
+  set_mounted_test_client_size(host, 320.0, 180.0)
+  viewer.attach(host)
+  viewer.set_model(Some(model))
+  flush_mounted_test_frames()
+  guard viewer.current_markdown_document() is Some(markdown) else {
+    fail("mounted .mbt.md did not install Markdown")
+  }
+  let generation_before = markdown.projection_generation()
+
+  // The auto-fold policy collapsed exactly the bulky depth-3 section: Top and
+  // Guide are shallower than the depth floor, Tiny is under both bulk
+  // thresholds.
+  let deep_offset = markdown_folding_offset_of(source, "### Deep")
+  assert_eq(viewer.collapsed_markdown_sections(), [deep_offset])
+  let hidden_while_seeded = markdown.hidden_root_elements()
+  assert_eq(hidden_while_seeded.length(), 6)
+
+  // Every foldable heading carries one control; the collapsed one says so in
+  // both the CSS-facing and the accessibility-facing state.
+  let toggles = markdown
+    .article()
+    .query_selector_all(".moonbit-viewer-markdown-fold-toggle")
+  assert_eq(toggles.length(), 4)
+  guard markdown.article().query_selector("[data-collapsed=\"true\"]")
+    is Some(collapsed_toggle) else {
+    fail("expected the seeded section's toggle to display collapsed")
+  }
+  assert_eq(collapsed_toggle.get_attribute("aria-expanded"), Some("false"))
+
+  // Expanding by heading offset is the host-facing seam; the DOM follows, and
+  // none of it re-parses the document.
+  assert_true(viewer.toggle_markdown_section_at(deep_offset))
+  assert_eq(viewer.collapsed_markdown_sections(), [])
+  assert_eq(markdown.hidden_root_elements(), [])
+  assert_true(viewer.toggle_markdown_section_at(deep_offset))
+  assert_eq(viewer.collapsed_markdown_sections(), [deep_offset])
+  assert_eq(markdown.hidden_root_elements(), hidden_while_seeded)
+  assert_eq(markdown.projection_generation(), generation_before)
+
+  // A fence inside a collapsed section keeps its semantic rows registered:
+  // collapse is visibility, not membership.
+  assert_true(
+    viewer.toggle_markdown_section_at(
+      markdown_folding_offset_of(source, "## Guide"),
+    ),
+  )
+  assert_true(markdown.semantic_code_lines().length() > 0)
+  assert_eq(markdown.projection_generation(), generation_before)
+
+  // An offset before every heading, and a Code presentation, both refuse.
+  assert_false(viewer.toggle_markdown_section_at(9999999))
+}
+
+///|
+test "reconciliation preserves untouched folds and expands rewritten bodies" {
+  install_mounted_test_browser()
+  defer restore_mounted_test_browser()
+  let viewer = Viewer::Viewer()
+  let source = markdown_folding_fixture_source()
+  let model = markdown_presentation_test_model(
+    "/src/folding.mbt.md", "moonbit", source,
+  )
+  defer {
+    viewer.dispose()
+    model.dispose()
+  }
+  let host = @rdom.document().create_element("div")
+  set_mounted_test_client_size(host, 320.0, 180.0)
+  viewer.attach(host)
+  viewer.set_model(Some(model))
+  flush_mounted_test_frames()
+  let deep_offset = markdown_folding_offset_of(source, "### Deep")
+
+  // An agent edit that touches only Tiny's body: Deep's key and body are
+  // unchanged, so its collapse survives the reprojection.
+  let edited_elsewhere = source.replace(
+    old="tiny body",
+    new="tiny body, edited",
+  )
+  model.set_value(edited_elsewhere)
+  flush_mounted_test_frames()
+  assert_eq(viewer.collapsed_markdown_sections(), [
+    markdown_folding_offset_of(edited_elsewhere, "### Deep"),
+  ])
+
+  // An agent edit inside Deep's own body: the fingerprint no longer matches,
+  // so the section opens rather than hiding freshly written content (P1).
+  let edited_deep = edited_elsewhere.replace(
+    old="deep three",
+    new="deep three, rewritten by an agent",
+  )
+  model.set_value(edited_deep)
+  flush_mounted_test_frames()
+  assert_eq(viewer.collapsed_markdown_sections(), [])
+
+  // Re-collapse, then change only the theme: the source is untouched, so the
+  // re-rendered article comes back with the same fold state and controls.
+  assert_true(viewer.toggle_markdown_section_at(deep_offset))
+  viewer.update_options(viewer.get_options().with_theme("dark"))
+  flush_mounted_test_frames()
+  guard viewer.current_markdown_document() is Some(markdown) else {
+    fail("theme change must not drop the Markdown presentation")
+  }
+  assert_eq(viewer.collapsed_markdown_sections(), [
+    markdown_folding_offset_of(edited_deep, "### Deep"),
+  ])
+  assert_true(markdown.hidden_root_elements().length() > 0)
+  assert_true(
+    markdown.article().query_selector("[data-collapsed=\"true\"]") is Some(_),
+  )
+}
