@@ -493,10 +493,7 @@ fn CoreEditorCommand::run_editor_command(
   (self.run_core_editor_command)(
     viewer,
     view_model,
-    match args {
-      Some(args) => args
-      None => self.default_args
-    },
+    args.unwrap_or(self.default_args),
   )
 }
 
@@ -521,10 +518,7 @@ fn EditorContributionRegistry::run_core_editor_command(
       (command.run_core_editor_command)(
         viewer,
         view_model,
-        match args {
-          Some(args) => args
-          None => command.default_args
-        },
+        args.unwrap_or(command.default_args),
       )
     }
     _ => false

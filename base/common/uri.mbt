@@ -436,26 +436,11 @@ pub fn Uri::with_(
   query? : String,
   fragment? : String,
 ) -> Uri raise UriError {
-  let scheme = match scheme {
-    Some(value) => value
-    None => self.scheme
-  }
-  let authority = match authority {
-    Some(value) => value
-    None => self.authority
-  }
-  let path = match path {
-    Some(value) => value
-    None => self.path
-  }
-  let query = match query {
-    Some(value) => value
-    None => self.query
-  }
-  let fragment = match fragment {
-    Some(value) => value
-    None => self.fragment
-  }
+  let scheme = scheme.unwrap_or(self.scheme)
+  let authority = authority.unwrap_or(self.authority)
+  let path = path.unwrap_or(self.path)
+  let query = query.unwrap_or(self.query)
+  let fragment = fragment.unwrap_or(self.fragment)
   if scheme == self.scheme &&
     authority == self.authority &&
     path == self.path &&

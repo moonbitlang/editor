@@ -163,15 +163,15 @@ pub fn ScrollState::with_scroll_dimensions(
 ) -> ScrollState {
   ScrollState(
     force_integer_values=self.force_integer_values,
-    option_or(update.width, self.width),
-    option_or(update.scroll_width, self.scroll_width),
+    update.width.unwrap_or(self.width),
+    update.scroll_width.unwrap_or(self.scroll_width),
     if use_raw_scroll_positions {
       self.raw_scroll_left
     } else {
       self.scroll_left
     },
-    option_or(update.height, self.height),
-    option_or(update.scroll_height, self.scroll_height),
+    update.height.unwrap_or(self.height),
+    update.scroll_height.unwrap_or(self.scroll_height),
     if use_raw_scroll_positions {
       self.raw_scroll_top
     } else {
@@ -189,10 +189,10 @@ pub fn ScrollState::with_scroll_position(
     force_integer_values=self.force_integer_values,
     self.width,
     self.scroll_width,
-    option_or(update.scroll_left, self.raw_scroll_left),
+    update.scroll_left.unwrap_or(self.raw_scroll_left),
     self.height,
     self.scroll_height,
-    option_or(update.scroll_top, self.raw_scroll_top),
+    update.scroll_top.unwrap_or(self.raw_scroll_top),
   )
 }
 
@@ -603,9 +603,9 @@ pub fn Scrollable::set_position_smooth(
     Some(operation) => {
       let update : ScrollPositionUpdate = {
         scroll_left: Some(
-          option_or(update.scroll_left, operation.to.scroll_left),
+          update.scroll_left.unwrap_or(operation.to.scroll_left),
         ),
-        scroll_top: Some(option_or(update.scroll_top, operation.to.scroll_top)),
+        scroll_top: Some(update.scroll_top.unwrap_or(operation.to.scroll_top)),
       }
       let valid_target = self.state
         .with_scroll_position(update)
@@ -931,14 +931,6 @@ pub fn EditorScrollable::scroll_by(
 pub fn EditorScrollable::dispose(self : EditorScrollable) -> Unit {
   self.scrollable.dispose()
   self.content_size_emitter.dispose()
-}
-
-///|
-fn option_or(value : Double?, fallback : Double) -> Double {
-  match value {
-    Some(value) => value
-    None => fallback
-  }
 }
 
 ///|

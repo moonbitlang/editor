@@ -233,10 +233,7 @@ pub fn AgentFeedbackService::is_feedback_enabled(
   self : AgentFeedbackService,
   resource : @base_common.Uri,
 ) -> Bool {
-  match self.enabled_resources.get(resource.to_string()) {
-    Some(enabled) => enabled
-    None => false
-  }
+  self.enabled_resources.get(resource.to_string()).unwrap_or(false)
 }
 
 ///|
@@ -507,11 +504,7 @@ pub fn AgentFeedbackService::get_next_navigable_item(
     return None
   }
   let mut anchor_index = match self.navigation_anchor_by_resource.get(key) {
-    Some(anchor) =>
-      match item_ids.search_by(id => id == anchor) {
-        Some(index) => index
-        None => -1
-      }
+    Some(anchor) => item_ids.search_by(id => id == anchor).unwrap_or(-1)
     None => -1
   }
   if anchor_index < 0 && !next {
@@ -537,11 +530,7 @@ pub fn AgentFeedbackService::get_navigation_bearing(
 ) -> @agent_feedback_api.AgentFeedbackNavigationBearing {
   let active_idx = match
     self.navigation_anchor_by_resource.get(resource.to_string()) {
-    Some(anchor) =>
-      match item_ids.search_by(id => id == anchor) {
-        Some(index) => index
-        None => -1
-      }
+    Some(anchor) => item_ids.search_by(id => id == anchor).unwrap_or(-1)
     None => -1
   }
   { active_idx, total_count: item_ids.length() }

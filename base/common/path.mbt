@@ -50,10 +50,7 @@ fn char_code_at(s : String, index : Int) -> Int {
 fn js_slice(s : String, start : Int, end? : Int) -> String {
   let len = s.length()
   let mut start = start
-  let mut end = match end {
-    Some(e) => e
-    None => len
-  }
+  let mut end = end.unwrap_or(len)
   if start < 0 {
     start = len + start
     if start < 0 {
@@ -81,10 +78,7 @@ fn js_slice(s : String, start : Int, end? : Int) -> String {
 ///|
 /// JS `str.lastIndexOf(needle)` (`-1` when absent).
 fn last_index_of(s : String, needle : String) -> Int {
-  match s.rev_find(needle) {
-    Some(index) => index
-    None => -1
-  }
+  s.rev_find(needle).unwrap_or(-1)
 }
 
 ///|
@@ -999,10 +993,7 @@ pub fn Win32::delimiter() -> String {
 fn posix_cwd() -> String {
   if platform_is_win32() {
     let cwd = cwd().replace_all(old="\\", new="/")
-    let index = match cwd.find("/") {
-      Some(index) => index
-      None => -1
-    }
+    let index = cwd.find("/").unwrap_or(-1)
     js_slice(cwd, index)
   } else {
     // We're already on POSIX, no need for any transformations

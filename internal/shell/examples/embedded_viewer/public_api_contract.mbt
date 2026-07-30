@@ -23,15 +23,9 @@ fn contract_feedback_handle() -> @agent_feedback_api.AgentFeedbackHandle {
       text,
       resource,
       range,
-      kind: match kind {
-        Some(value) => value
-        None => UserReview
-      },
+      kind: kind.unwrap_or(UserReview),
       replies: [],
-      state: match state {
-        Some(value) => value
-        None => Created
-      },
+      state: state.unwrap_or(Created),
     },
     mark_feedback_submitted=_ => (),
     remove_feedback=(_, _) => (),

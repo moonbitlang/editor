@@ -261,10 +261,9 @@ fn TrackingTokenizationStateStore::get_first_invalid_end_state_line_number(
 fn TrackingTokenizationStateStore::get_first_invalid_end_state_line_number_or_max(
   self : TrackingTokenizationStateStore,
 ) -> Int {
-  match self.get_first_invalid_end_state_line_number() {
-    Some(line) => line
-    None => MAX_LINE_NUMBER_SENTINEL
-  }
+  self
+  .get_first_invalid_end_state_line_number()
+  .unwrap_or(MAX_LINE_NUMBER_SENTINEL)
 }
 
 ///|

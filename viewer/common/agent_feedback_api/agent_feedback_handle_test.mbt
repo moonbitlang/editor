@@ -64,10 +64,7 @@ test "AgentFeedbackHandle forwards its exact callback floor" {
     remove_feedback=(_, id) => calls.push("remove:" + id),
     accept_feedback=(_, id) => calls.push("accept:" + id),
     set_navigation_anchor=(_, item_id) => {
-      let anchor = match item_id {
-        Some(id) => id
-        None => "none"
-      }
+      let anchor = item_id.unwrap_or("none")
       calls.push("anchor:" + anchor)
     },
     update_feedback=(_, id, text) => calls.push("update:" + id + ":" + text),
