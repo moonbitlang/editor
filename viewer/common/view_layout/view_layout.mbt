@@ -442,10 +442,7 @@ pub fn ViewLayout::scroll_to(
   scroll_left? : Double,
 ) -> ScrollChange? {
   let position = self.scrollable.position()
-  let scroll_left = match scroll_left {
-    Some(value) => value
-    None => position.scroll_left
-  }
+  let scroll_left = scroll_left.unwrap_or(position.scroll_left)
   self.scrollable.set_position_now({
     scroll_left: Some(scroll_left),
     scroll_top: Some(scroll_top),

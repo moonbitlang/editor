@@ -111,10 +111,7 @@ pub fn get_root(path : String, sep? : String) -> String {
   // check for URI
   // scheme://authority/path
   // ^^^^^^^^^^^^^^^^^^^
-  let mut pos = match path.find("://") {
-    Some(index) => index
-    None => -1
-  }
+  let mut pos = path.find("://").unwrap_or(-1)
   if pos != -1 {
     pos += 3 // 3 -> "://".length
     while pos < len {

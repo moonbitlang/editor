@@ -230,10 +230,7 @@ fn CursorMoveBasedCommand::run(
     _ => CursorMoveCommandOptions::new()
   }
   if self.static_args.value == -1 {
-    let page_size = match dynamic_args.page_size {
-      Some(page_size) => page_size
-      None => -1
-    }
+    let page_size = dynamic_args.page_size.unwrap_or(-1)
     viewer.run_cursor_page(
       self.static_args.direction,
       self.static_args.select,
@@ -358,10 +355,7 @@ fn EndCommand::as_core_editor_command(self : EndCommand) -> CoreEditorCommand {
         EndCommandArguments(options) => options
         _ => EndCommandOptions::new()
       }
-      let sticky = match options.sticky {
-        Some(sticky) => sticky
-        None => false
-      }
+      let sticky = options.sticky.unwrap_or(false)
       ignore(view_model)
       viewer.run_cursor_end(
         self.in_selection_mode,

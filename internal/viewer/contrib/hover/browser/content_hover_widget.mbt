@@ -154,12 +154,7 @@ fn ContentHoverWidget::content_widget_position(
       Some({
         position: Some(rendered.show_at_position),
         secondary_position: Some(rendered.show_at_secondary_position),
-        preference: Some([
-          match self.position_preference {
-            Some(preference) => preference
-            None => Above
-          },
-        ]),
+        preference: Some([self.position_preference.unwrap_or(Above)]),
         position_affinity: None,
       })
     None => None

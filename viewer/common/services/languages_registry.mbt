@@ -71,10 +71,7 @@ pub fn LanguageIdCodec::encode_language_id(
   self : LanguageIdCodec,
   language : String,
 ) -> Int {
-  match self.language_to_language_id.get(language) {
-    Some(id) => id
-    None => 0
-  }
+  self.language_to_language_id.get(language).unwrap_or(0)
 }
 
 ///|

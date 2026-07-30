@@ -581,10 +581,7 @@ pub fn HoverController::start_showing_or_update_hover(
     Some(view) => filter_hover_parts(view.parts, anchor)
     None => []
   }
-  let result_anchor = match visible_result_anchor {
-    Some(current) => current
-    None => anchor
-  }
+  let result_anchor = visible_result_anchor.unwrap_or(anchor)
   let filtered = self.set_current_result(
     filtered_parts,
     self.current_complete,

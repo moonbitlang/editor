@@ -26,10 +26,9 @@ fn Viewer::build_view_context(
       view.offset_for_column(line_number, column)
     },
     model_position_to_view_position: position => {
-      match self.model_to_view_position(position.line_number, position.column) {
-        Some(view_position) => view_position
-        None => position
-      }
+      self
+      .model_to_view_position(position.line_number, position.column)
+      .unwrap_or(position)
     },
   }
 }

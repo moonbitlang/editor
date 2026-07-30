@@ -142,10 +142,9 @@ pub fn ProjectedTextLine::model_column_to_projected_column(
   affinity? : @model.PositionAffinity,
 ) -> Int {
   let column = @base_common.clamp_int(model_column, 0, self.model_line_length)
-  let projected = match self.model_to_projected_columns.get(column) {
-    Some(projected_column) => projected_column
-    None => self.text.length()
-  }
+  let projected = self.model_to_projected_columns
+    .get(column)
+    .unwrap_or(self.text.length())
   match affinity {
     Some(Right) => {
       let mut result = projected
@@ -249,10 +248,7 @@ pub fn ProjectedTextLine::projected_column_to_model_column(
   projected_column : Int,
 ) -> Int {
   let column = @base_common.clamp_int(projected_column, 0, self.text.length())
-  match self.model_columns.get(column) {
-    Some(model_column) => model_column
-    None => self.model_line_length
-  }
+  self.model_columns.get(column).unwrap_or(self.model_line_length)
 }
 
 ///|
@@ -263,10 +259,7 @@ pub fn ProjectedTextLine::injected_text_index_at_projected_column(
   projected_column : Int,
 ) -> Int {
   let column = @base_common.clamp_int(projected_column, 0, self.text.length())
-  match self.injected_text_indices.get(column) {
-    Some(index) => index
-    None => -1
-  }
+  self.injected_text_indices.get(column).unwrap_or(-1)
 }
 
 ///|

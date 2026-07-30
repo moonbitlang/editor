@@ -52,8 +52,5 @@ pub fn set_is_windows_for_testing(value? : Bool) -> Unit {
 /// read it per call so the D8 test seam can flip it (observationally
 /// identical — the platform never changes mid-session, Deviation D1).
 pub fn platform_is_win32() -> Bool {
-  match is_windows_override.val {
-    Some(value) => value
-    None => is_windows
-  }
+  is_windows_override.val.unwrap_or(is_windows)
 }

@@ -763,10 +763,7 @@ pub fn ViewModelLinesFromProjectedModel::convert_model_range_to_view_range(
   affinity? : @model.PositionAffinity,
 ) -> @base_common.Range {
   if model_range.is_empty() {
-    let affinity = match affinity {
-      Some(a) => a
-      None => Left
-    }
+    let affinity = affinity.unwrap_or(Left)
     let start = self.convert_model_position_to_view_position(
       model_range.start_line_number,
       model_range.start_column,
