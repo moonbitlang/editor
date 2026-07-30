@@ -55,9 +55,11 @@ EditorMouseEventFactory
   `base/browser`'s shared strict-next frame queue and owns the returned
   disposable, so fresh touch, `touchcancel`, and per-View teardown leave no
   runnable item. A tick's resulting Viewer render may join that current frame's
-  priority-`100` drain. It emits resolved `MouseTarget` events and
-  `MouseDispatchData`; the root Viewer converts the public event boundary to
-  model space and changes cursor state.
+  priority-`100` drain. It hit-tests ordinary and `contextmenu` mouse events,
+  emits resolved `MouseTarget` values, and emits `MouseDispatchData`; the root
+  Viewer converts the public event boundary to model space and changes cursor
+  state. Context-menu filtering, native-menu suppression, and commands remain
+  contribution policy above this controller.
 - `MouseHandler::dispose` is idempotent and is registered in the per-model
   View lifetime. It removes root/scrollbar/desperate-reveal listeners, closes
   the selection and scrollbar global-pointer monitors, ends active slider
@@ -70,10 +72,10 @@ EditorMouseEventFactory
 - `PointerHandlerLastRenderData` exposes the last cursor geometry needed by
   hit testing. Exact callable types are listed in `pkg.generated.mbti`.
 
-Compared with Monaco, the viewer omits touch tap/context-menu and pen-selection
-dispatch, mouse-wheel zoom, context-menu/wheel editor events, text
-drag-and-drop, multi-cursor and column-selection gestures, and
-textarea/GPU/minimap paths. The local gesture also rejects zero-duration
+Compared with Monaco, the viewer omits touch tap and pen-selection dispatch,
+mouse-wheel zoom and wheel editor events, text drag-and-drop, multi-cursor and
+column-selection gestures, and textarea/GPU/minimap paths. The local gesture
+also rejects zero-duration
 velocity windows, suppresses the stopped zero-translation callback, handles
 `touchcancel`, and cancels per-View; these are intentional safety/lifecycle
 extensions. Outside-editor selection drag retains its separate raw-rAF loop

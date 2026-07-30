@@ -1,16 +1,17 @@
 // Public mouse events — Monaco `ICodeEditor.onMouseDown` / `onMouseUp` /
-// `onMouseMove` / `onMouseLeave` (`codeEditorWidget.ts:161-186`), fed by the
-// controller's emit seams below (Monaco's `ViewController.emit*` →
-// `ViewUserInputEvents` → widget re-emission collapses into these methods —
-// the viewer's emitters play `ViewUserInputEvents`' callback role). Targets
-// are converted to **model** coordinates at this boundary
+// `onMouseMove` / `onMouseLeave` / `onContextMenu`
+// (`codeEditorWidget.ts:161-186`), fed by the controller's emit seams below
+// (Monaco's `ViewController.emit*` → `ViewUserInputEvents` → widget
+// re-emission collapses into these methods — the viewer's emitters play
+// `ViewUserInputEvents`' callback role). Targets are converted to **model**
+// coordinates at this boundary
 // (`convertViewToModelMouseTarget`), exactly like the source.
 //
 // The canonical hit-tested wrappers live in `viewer/browser`; the raw
 // `editorDom.ts` event there is named `EditorDomMouseEvent`.
 //
 // Omissions: `onMouseDrag`/`onMouseDrop`/`onMouseDropCanceled` (drag-and-drop
-// text move is not ported), `onContextMenu`, `onMouseWheel` — no consumers.
+// text move is not ported) and `onMouseWheel`.
 
 ///|
 /// Fires on editor mousedown with the hit-tested target — Monaco's
@@ -40,6 +41,16 @@ pub fn Viewer::on_mouse_move(
   listener : (@editor_browser.EditorMouseEvent) -> Unit,
 ) -> @base_common.Disposable {
   self.did_mouse_move.event(listener)
+}
+
+///|
+/// Fires on an editor context-menu gesture with the hit-tested target —
+/// Monaco's `onContextMenu`.
+pub fn Viewer::on_context_menu(
+  self : Viewer,
+  listener : (@editor_browser.EditorMouseEvent) -> Unit,
+) -> @base_common.Disposable {
+  self.did_context_menu.event(listener)
 }
 
 ///|
@@ -112,6 +123,20 @@ fn Viewer::emit_mouse_move(
     alt: event.alt_key,
   })
   self.on_editor_mouse_move(converted)
+}
+
+///|
+/// `ViewUserInputEvents.emitContextMenu` → public event. The subscribing
+/// contribution owns native-menu suppression and command policy.
+fn Viewer::emit_context_menu(
+  self : Viewer,
+  event : @editor_browser.EditorDomMouseEvent,
+  target : @editor_browser.MouseTarget,
+) -> Unit {
+  self.did_context_menu.fire({
+    event,
+    target: self.convert_mouse_target(target),
+  })
 }
 
 ///|

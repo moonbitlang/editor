@@ -156,6 +156,7 @@ pub(all) struct PointerHandlerHelper {
   emit_mouse_down : (@browser.EditorDomMouseEvent, @browser.MouseTarget) -> Unit
   emit_mouse_up : (@browser.EditorDomMouseEvent, @browser.MouseTarget) -> Unit
   emit_mouse_move : (@browser.EditorDomMouseEvent, @browser.MouseTarget) -> Unit
+  emit_context_menu : (@browser.EditorDomMouseEvent, @browser.MouseTarget) -> Unit
   emit_mouse_drag : (@browser.EditorDomMouseEvent, @browser.MouseTarget) -> Unit
   emit_mouse_leave : (@browser.EditorDomMouseEvent) -> Unit
   overflow_guard : @dom.Element

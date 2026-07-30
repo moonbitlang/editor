@@ -66,6 +66,7 @@ pub struct EditorMouseEventFactory {
 }
 #alias(new, deprecated)
 pub fn EditorMouseEventFactory::EditorMouseEventFactory(@dom.Element) -> Self
+pub fn EditorMouseEventFactory::on_context_menu(Self, @dom.Element, (EditorDomMouseEvent) -> Unit) -> @common.Disposable
 pub fn EditorMouseEventFactory::on_mouse_down(Self, @dom.Element, (EditorDomMouseEvent) -> Unit) -> @common.Disposable
 pub fn EditorMouseEventFactory::on_mouse_leave(Self, @dom.Element, (EditorDomMouseEvent) -> Unit) -> @common.Disposable
 pub fn EditorMouseEventFactory::on_mouse_move(Self, @dom.Element, (EditorDomMouseEvent) -> Unit) -> @common.Disposable

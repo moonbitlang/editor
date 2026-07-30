@@ -80,6 +80,7 @@ pub fn Viewer::handle_initialized(Self) -> Unit
 pub fn Viewer::has_text_focus(Self) -> Bool
 pub fn Viewer::has_widget_focus(Self) -> Bool
 pub fn Viewer::layout(Self) -> Unit
+pub fn Viewer::on_context_menu(Self, (@browser.EditorMouseEvent) -> Unit) -> @common.Disposable
 pub fn Viewer::on_did_change_cursor_position(Self, (@editor_api.CursorPositionChangedEvent) -> Unit) -> @common.Disposable
 pub fn Viewer::on_did_change_cursor_selection(Self, (@editor_api.CursorSelectionChangedEvent) -> Unit) -> @common.Disposable
 pub fn Viewer::on_did_change_hidden_areas(Self, () -> Unit) -> @common.Disposable

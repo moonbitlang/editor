@@ -62,12 +62,13 @@ pub struct Viewer {
   priv did_change_hidden_areas : @base_common.Emitter[Unit]
   priv did_dispose : @base_common.Emitter[Unit]
   /// Public mouse events (`onMouseDown`/`onMouseUp`/`onMouseMove`/
-  /// `onMouseLeave`, see `mouse_events.mbt`), fired from the controller's
-  /// notify seams; the comments contrib subscribes like Monaco's
-  /// `CommentController.registerEditorListeners`.
+  /// `onMouseLeave`/`onContextMenu`, see `mouse_events.mbt`), fired from the
+  /// controller's notify seams; contributions subscribe like Monaco's editor
+  /// controllers.
   priv did_mouse_down : @base_common.Emitter[@editor_browser.EditorMouseEvent]
   priv did_mouse_up : @base_common.Emitter[@editor_browser.EditorMouseEvent]
   priv did_mouse_move : @base_common.Emitter[@editor_browser.EditorMouseEvent]
+  priv did_context_menu : @base_common.Emitter[@editor_browser.EditorMouseEvent]
   priv did_mouse_leave : @base_common.Emitter[
     @editor_browser.PartialEditorMouseEvent,
   ]
@@ -181,6 +182,7 @@ fn Viewer::Viewer(
     did_mouse_down: Emitter(),
     did_mouse_up: Emitter(),
     did_mouse_move: Emitter(),
+    did_context_menu: Emitter(),
     did_mouse_leave: Emitter(),
     last_scroll_event: None,
     model_slot: ViewerModelSlot(),
@@ -878,6 +880,7 @@ pub fn Viewer::dispose(self : Viewer) -> Unit {
   self.did_mouse_down.dispose()
   self.did_mouse_up.dispose()
   self.did_mouse_move.dispose()
+  self.did_context_menu.dispose()
   self.did_mouse_leave.dispose()
   match self.testing_registration {
     Some(registration) => {

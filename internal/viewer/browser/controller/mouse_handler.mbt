@@ -4,8 +4,8 @@
 // `MouseDownState`. The handler registers its own DOM listeners through
 // `EditorMouseEventFactory` on the view DOM node, exactly like the source —
 // the root package only constructs it. The touch-scroll slice from
-// `pointerHandler.ts`/`touch.ts` is installed by this handler; touch tap,
-// context-menu, and pen-selection dispatch remain intentionally unported.
+// `pointerHandler.ts`/`touch.ts` is installed by this handler; touch tap and
+// pen-selection dispatch remain intentionally unported.
 //
 // Shape notes:
 //   * Monaco's `MouseHandler` also holds a `ViewContext` (view model, view
@@ -22,8 +22,7 @@
 //   * `_setupMouseWheelZoomListener` (mouseHandler.ts:140-199) — no
 //     mouse-wheel zoom; the viewer's wheel path stays on the overflow guard
 //     (scrollbar_input.mbt).
-//   * `onContextMenu`/`emitContextMenu` (no consumer) and
-//     `emitMouseWheel`.
+//   * `emitMouseWheel`.
 //   * the drag-and-drop text-move branch (`isDragAndDrop`,
 //     mouseHandler.ts:461-497) and `emitMouseDrop/DropCanceled` — readonly
 //     viewer (`EditorOption.readOnly` is constant `true`, so the source's
@@ -123,6 +122,10 @@ pub(all) struct PointerHandlerHelper {
     @editor_browser.EditorDomMouseEvent,
     @editor_browser.MouseTarget,
   ) -> Unit
+  emit_context_menu : (
+    @editor_browser.EditorDomMouseEvent,
+    @editor_browser.MouseTarget,
+  ) -> Unit
   emit_mouse_drag : (
     @editor_browser.EditorDomMouseEvent,
     @editor_browser.MouseTarget,
@@ -218,6 +221,11 @@ pub fn MouseHandler::MouseHandler(
   handler.listeners.push(
     mouse_events.on_mouse_up(view_helper.view_dom_node, e => {
       handler.on_mouse_up(e)
+    }),
+  )
+  handler.listeners.push(
+    mouse_events.on_context_menu(view_helper.view_dom_node, e => {
+      handler.on_context_menu(e)
     }),
   )
   handler.listeners.push(
@@ -387,6 +395,17 @@ fn MouseHandler::on_mouse_up(
   e : @editor_browser.EditorDomMouseEvent,
 ) -> Unit {
   (self.view_helper.emit_mouse_up)(e, self.create_mouse_target(e, true))
+}
+
+///|
+/// `_onContextMenu` (mouseHandler.ts:262-266). Policy such as target filtering,
+/// cursor movement, and native-menu suppression belongs to the subscribing
+/// context-menu contribution, not the input controller.
+fn MouseHandler::on_context_menu(
+  self : MouseHandler,
+  e : @editor_browser.EditorDomMouseEvent,
+) -> Unit {
+  (self.view_helper.emit_context_menu)(e, self.create_mouse_target(e, true))
 }
 
 ///|

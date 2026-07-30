@@ -248,6 +248,7 @@ fn touch_input_test_handler(
     emit_mouse_down: (_event, _target) => (),
     emit_mouse_up: (_event, _target) => (),
     emit_mouse_move: (_event, _target) => (),
+    emit_context_menu: (_event, _target) => (),
     emit_mouse_drag: (_event, _target) => (),
     emit_mouse_leave: _ => (),
     overflow_guard: scrollbar_input_test_element(),
