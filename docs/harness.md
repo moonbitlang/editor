@@ -144,6 +144,18 @@ model replacement, and disposal. `squiggly-inline-unnecessary` opacity and
 they require source-glyph mutation; this suite does not claim those Code-only
 effects.
 
+The Markdown section-folding proof is the direct public-Viewer component
+scenario `tests/browser/moonbit/component/markdown_folding_scenario.mbt`,
+loaded by `component.html?markdownFolding=1` and asserted by
+`tests/browser/component/markdown_folding.spec.js`. It proves the seeded
+auto-fold policy, real toggle clicks with accessible state, semantic hover in a
+sibling section while another is collapsed, hover inside a just-revealed fence
+with the projection generation unchanged, and both pending-hover interleavings
+of the fold ordering rule (programmatic collapse and agent-style
+`replace_source`), plus reconciliation in both directions and disposal. The
+synchronous fold state machine itself is pinned one layer down by
+`viewer/markdown_folding_wbtest.mbt`.
+
 The shell-independent selection and native integration layer uses
 `tests/fixtures/workspace/README.md` and
 `tests/fixtures/workspace/src/literate.mbt.md` from
