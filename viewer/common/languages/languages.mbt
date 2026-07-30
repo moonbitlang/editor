@@ -197,8 +197,8 @@ pub async fn LanguageHandle::hover_at(
 }
 
 ///|
-/// Resolves definitions through the first matching provider that returns a
-/// non-empty ordered result.
+/// Resolves definitions through every matching provider and concatenates their
+/// live results in stable registration order.
 pub async fn LanguageHandle::definition_at(
   self : LanguageHandle,
   model : @model.TextModel,
@@ -383,7 +383,7 @@ async fn Languages::hover_at_with_log_handle(
 }
 
 ///|
-/// Returns the first non-empty definition answer in provider order.
+/// Returns all live definition answers concatenated in provider order.
 pub async fn Languages::definition_at(
   self : Languages,
   model : @model.TextModel,
@@ -412,34 +412,39 @@ async fn Languages::definition_at_with_log_handle(
   }
   let position = model.get_position_at(offset)
   let providers = self.definition_provider.snapshot_matching(model)
+  let tasks : Array[async () -> Array[@language.Location]] = []
   for captured in providers {
-    if token.is_cancellation_requested() {
-      return []
-    }
-    let entry = captured.entry
-    if !entry.active.val {
-      continue
-    }
-    let locations = entry.provider.provide_definition(model, position, token) catch {
-      _ => {
-        if !token.is_cancellation_requested() {
-          log_provider_failure(
-            log_service,
-            "language.definition",
-            model,
-            captured.provider_index,
-          )
-        }
-        []
+    tasks.push(() => {
+      let entry = captured.entry
+      if token.is_cancellation_requested() || !entry.active.val {
+        return []
       }
-    }
-    if token.is_cancellation_requested() {
-      return []
-    } else if entry.active.val && !locations.is_empty() {
-      return locations
+      entry.provider.provide_definition(model, position, token) catch {
+        _ => {
+          if !token.is_cancellation_requested() {
+            log_provider_failure(
+              log_service,
+              "language.definition",
+              model,
+              captured.provider_index,
+            )
+          }
+          []
+        }
+      }
+    })
+  }
+  let provider_results = @async.all(tasks) catch { _ => [] }
+  if token.is_cancellation_requested() {
+    return []
+  }
+  let locations : Array[@language.Location] = []
+  for index, result in provider_results {
+    if providers[index].entry.active.val {
+      locations.append(result)
     }
   }
-  []
+  locations
 }
 
 ///|

@@ -24,8 +24,9 @@ and whole-line Markdown comments. Hover and definition requests snapshot
 matching registrations before their first await, forward the caller's exact
 cancellation token, reject a result from a registration disposed during the
 await, and keep cancellation silent; ordinary provider failures are logged and
-contained. `hover_at` and `definition_at` return the first non-empty live
-result. Definition location order is preserved.
+contained. `hover_at` returns the first non-empty live result. Definition
+requests start every matching provider concurrently, then concatenate every
+still-live result in stable registration order.
 
 Definition-provider presence can be queried without launching a provider, both
 from `Languages` and the borrowed `LanguageHandle`.

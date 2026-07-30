@@ -1,4 +1,5 @@
 import {
+  "moonbitlang/async",
   "moonbitlang/editor/base/common" @base_common,
   "moonbitlang/editor/language",
   "moonbitlang/editor/platform/log",
@@ -14,6 +15,5 @@ import {
 } for "test"
 
 import {
-  "moonbitlang/async",
   "moonbitlang/async/aqueue",
 } for "wbtest"
