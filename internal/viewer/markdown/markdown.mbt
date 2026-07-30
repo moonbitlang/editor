@@ -147,25 +147,10 @@ fn markdown_conversion_result(
   let html = convert() catch {
     _ =>
       return {
-        html: "<p>" + markdown_escape_html(markdown) + "</p>\n",
+        html: "<p>" + @common.escape_html(markdown) + "</p>\n",
         has_code_block: false,
         projection: empty_markdown_document_projection(),
       }
   }
   { html, has_code_block: saw_code_block.val, projection }
-}
-
-///|
-fn markdown_escape_html(text : String) -> String {
-  let escaped = StringBuilder::new(size_hint=text.length())
-  for char in text {
-    match char {
-      '&' => escaped.write_string("&amp;")
-      '<' => escaped.write_string("&lt;")
-      '>' => escaped.write_string("&gt;")
-      '"' => escaped.write_string("&quot;")
-      _ => escaped.write_char(char)
-    }
-  }
-  escaped.to_string()
 }

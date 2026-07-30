@@ -344,8 +344,9 @@ pub fn starts_with_ignore_case(str : String, candidate : String) -> Bool {
 }
 
 ///|
-/// HTML-escapes `&`, `<`, `>`. Mirrors `strings.escape` (note: unlike the view's
-/// `escape_html`, it does not escape `"`, matching Monaco's `_tokenizeToString`).
+/// HTML-escapes `&`, `<`, `>`. Mirrors `strings.escape`. It deliberately leaves
+/// `"` alone, matching Monaco's `_tokenizeToString`; use `escape_html` for text
+/// that can also land in an attribute value.
 pub fn escape(text : String) -> String {
   let sb = StringBuilder::new()
   for ch in text {
@@ -353,6 +354,24 @@ pub fn escape(text : String) -> String {
       '&' => sb.write_string("&amp;")
       '<' => sb.write_string("&lt;")
       '>' => sb.write_string("&gt;")
+      _ => sb.write_char(ch)
+    }
+  }
+  sb.to_string()
+}
+
+///|
+/// HTML-escapes text for element content **or** attribute values: `escape`'s
+/// three characters plus `"`. Callers that build markup by concatenation and
+/// may quote the result need this variant.
+pub fn escape_html(text : String) -> String {
+  let sb = StringBuilder::new()
+  for ch in text {
+    match ch {
+      '&' => sb.write_string("&amp;")
+      '<' => sb.write_string("&lt;")
+      '>' => sb.write_string("&gt;")
+      '"' => sb.write_string("&quot;")
       _ => sb.write_char(ch)
     }
   }

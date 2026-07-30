@@ -1,11 +1,11 @@
 import {
+  "moonbitlang/editor/base/common" @base_common,
   "moonbitlang/editor/viewer/common/editor_api",
   "moonbitlang/editor/viewer/common/view_layout",
   "moonbitlang/editor/viewer/common/view_model",
 }
 
 import {
-  "moonbitlang/editor/base/common" @base_common,
   "moonbitlang/editor/viewer/common/model",
   "moonbitlang/editor/syntax",
 } for "test"

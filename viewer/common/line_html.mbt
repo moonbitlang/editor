@@ -30,22 +30,9 @@ pub fn render_line_class() -> String {
 }
 
 ///|
-/// HTML-escapes text for element content or attribute values.
+/// HTML-escapes text for element content or attribute values. Retained as part
+/// of this package's documented rendering surface; the implementation is
+/// `base/common`'s.
 pub fn escape_html(text : String) -> String {
-  let html = StringBuilder()
-  write_escaped(html, text)
-  html.to_string()
-}
-
-///|
-fn write_escaped(html : StringBuilder, text : String) -> Unit {
-  for ch in text {
-    match ch {
-      '&' => html.write_string("&amp;")
-      '<' => html.write_string("&lt;")
-      '>' => html.write_string("&gt;")
-      '"' => html.write_string("&quot;")
-      _ => html.write_char(ch)
-    }
-  }
+  @base_common.escape_html(text)
 }

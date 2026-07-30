@@ -179,7 +179,7 @@ fn AgentFeedbackEditorWidget::update_title(
   self : AgentFeedbackEditorWidget,
 ) -> Unit {
   if self.comments.length() == 1 {
-    self.title.set_inner_html(input_escape_html(self.comments[0].text))
+    self.title.set_inner_html(@base_common.escape_html(self.comments[0].text))
   } else {
     self.title.set_inner_html(self.comments.length().to_string() + " comments")
   }
