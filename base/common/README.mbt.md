@@ -242,18 +242,26 @@ test "file URIs render per-platform filesystem paths" {
 joining, normalization, and filesystem conversion. The three prebuilt policies
 differ only in path-case sensitivity: `ext_uri` is case-sensitive,
 `ext_uri_ignore_path_case` folds case for every scheme, and
-`ext_uri_biased_ignore_path_case` folds case only for `file:`.
+`ext_uri_biased_ignore_path_case` folds case for `file:` only on platforms
+whose filesystems are conventionally case-insensitive — it answers like
+`ext_uri` on Linux and like `ext_uri_ignore_path_case` on macOS and Windows,
+so this example asserts the platform relationship rather than a value that
+would change under CI.
 
 ```mbt check
 ///|
 test "the ExtUri policies differ only in path-case handling" {
   let lower = @common.Uri::parse("file:///dir/file.mbt")
   let upper = @common.Uri::parse("file:///DIR/FILE.MBT")
+  let biased = @common.ext_uri_biased_ignore_path_case.is_equal(
+    Some(lower),
+    Some(upper),
+  )
   debug_inspect(
     (
       @common.ext_uri.is_equal(Some(lower), Some(upper)),
       @common.ext_uri_ignore_path_case.is_equal(Some(lower), Some(upper)),
-      @common.ext_uri_biased_ignore_path_case.is_equal(Some(lower), Some(upper)),
+      biased == !@common.is_linux,
     ),
     content=(
       #|(false, true, true)
