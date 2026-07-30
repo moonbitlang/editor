@@ -6,7 +6,7 @@ license = "Apache-2.0"
 
 description = "Native remote-workspace server host for the readonly MoonBit editor."
 
-supported_targets = "native"
+supported_targets = "native+wasm"
 
 preferred_target = "native"
 

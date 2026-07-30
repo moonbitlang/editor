@@ -12,7 +12,7 @@ keywords = [ "editor", "moonbit", "readonly", "syntax-highlighting" ]
 
 description = "Readonly MoonBit code viewer harness inspired by Monaco and CodeMirror."
 
-supported_targets = "+js+native"
+supported_targets = "+js+native+wasm"
 
 preferred_target = "js"
 
