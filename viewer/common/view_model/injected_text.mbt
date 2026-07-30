@@ -142,9 +142,12 @@ pub fn ProjectedTextLine::model_column_to_projected_column(
   affinity? : @model.PositionAffinity,
 ) -> Int {
   let column = @base_common.clamp_int(model_column, 0, self.model_line_length)
-  let projected = self.model_to_projected_columns
-    .get(column)
-    .unwrap_or(self.text.length())
+  // Deliberately not `unwrap_or`: the clamped column always hits the lookup
+  // table, so the fallback must stay off the hot path of this mapping method.
+  let projected = match self.model_to_projected_columns.get(column) {
+    Some(projected_column) => projected_column
+    None => self.text.length()
+  }
   match affinity {
     Some(Right) => {
       let mut result = projected
