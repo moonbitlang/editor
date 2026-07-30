@@ -654,3 +654,125 @@ test "toc rows carry the reveal offset and agree with foldability" {
     ),
   )
 }
+
+///|
+test "auto-fold collapses only bulky sections at depth three or deeper" {
+  let source =
+    #|# Doc
+    #|
+    #|intro
+    #|
+    #|## Shallow
+    #|
+    #|paragraph 0
+    #|
+    #|paragraph 1
+    #|
+    #|paragraph 2
+    #|
+    #|paragraph 3
+    #|
+    #|paragraph 4
+    #|
+    #|paragraph 5
+    #|
+    #|paragraph 6
+    #|
+    #|paragraph 7
+    #|
+    #|### Bulky by elements
+    #|
+    #|element 0
+    #|
+    #|element 1
+    #|
+    #|element 2
+    #|
+    #|element 3
+    #|
+    #|element 4
+    #|
+    #|element 5
+    #|
+    #|element 6
+    #|
+    #|### Bulky by lines
+    #|
+    #|```
+    #|line 0
+    #|line 1
+    #|line 2
+    #|line 3
+    #|line 4
+    #|line 5
+    #|line 6
+    #|line 7
+    #|line 8
+    #|line 9
+    #|line 10
+    #|line 11
+    #|line 12
+    #|line 13
+    #|```
+    #|
+    #|### Small
+    #|
+    #|only one paragraph
+    #|
+  let projection = @markdown.render_markdown(source).projection
+  let entries = @markdown.markdown_table_of_contents(projection)
+  let collapsed = @markdown.markdown_default_collapsed_sections(
+    projection, source,
+  )
+  debug_inspect(
+    (
+      entries.map(entry => (entry.depth, entry.text)),
+      collapsed.map(index => entries[index].text),
+    ),
+    content=(
+      #|(
+      #|  [
+      #|    (1, "Doc"),
+      #|    (2, "Shallow"),
+      #|    (3, "Bulky by elements"),
+      #|    (3, "Bulky by lines"),
+      #|    (3, "Small"),
+      #|  ],
+      #|  ["Bulky by elements", "Bulky by lines"],
+      #|)
+    ),
+  )
+}
+
+///|
+test "the thresholds are tunable and depth gating wins over bulk" {
+  let source =
+    #|# Doc
+    #|
+    #|### Deep
+    #|
+    #|body
+    #|
+  let projection = @markdown.render_markdown(source).projection
+  debug_inspect(
+    (
+      @markdown.markdown_default_collapsed_sections(projection, source).length(),
+      @markdown.markdown_default_collapsed_sections(
+        projection,
+        source,
+        min_rendered_elements=1,
+        min_body_lines=1,
+      ).length(),
+      @markdown.markdown_default_collapsed_sections(
+        projection,
+        source,
+        min_depth=99,
+        min_rendered_elements=1,
+        min_body_lines=1,
+      ).length(),
+    ),
+    content=(
+      #|(0, 0, 0)
+    ),
+  )
+}

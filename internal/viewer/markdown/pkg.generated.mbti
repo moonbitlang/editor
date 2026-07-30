@@ -7,6 +7,8 @@ import {
 }
 
 // Values
+pub fn markdown_default_collapsed_sections(MarkdownDocumentProjection, String, min_depth? : Int, min_rendered_elements? : Int, min_body_lines? : Int) -> Array[Int]
+
 pub fn markdown_section_at_source_offset(Array[MarkdownSection], Int) -> MarkdownSection?
 
 pub fn markdown_section_keys(Array[MarkdownSection], MarkdownDocumentProjection, String) -> Array[String]

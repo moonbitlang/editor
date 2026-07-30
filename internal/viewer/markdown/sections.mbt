@@ -312,3 +312,71 @@ pub fn markdown_table_of_contents(
   }
   entries
 }
+
+///|
+/// The initial auto-fold policy for a freshly projected document.
+///
+/// This surface exists to make agent-written documents interpretable, so a long
+/// structured document opens as a readable outline rather than as a wall of
+/// prose. The policy is deliberately conservative, because silently hiding
+/// content the reader never collapsed is worse than showing too much:
+///
+/// - structural depths 1 and 2 always stay expanded, so the document's shape is
+///   visible without any interaction;
+/// - at depth 3 or deeper, a foldable section starts collapsed only when it is
+///   genuinely bulky -- at least `min_rendered_elements` hideable root elements
+///   or at least `min_body_lines` source lines in its body;
+/// - a section that is not foldable is never listed, so a control is never
+///   offered for something that would hide nothing.
+///
+/// Structural depth, not the literal heading level, is the axis: a `####`
+/// heading at the document root is depth 1 and must not be collapsed as though
+/// it were deeply nested.
+///
+/// Returns section indexes into `markdown_sections(projection)`. The caller owns
+/// the reader's explicit overrides and applies them on top of this; this
+/// function has no memory and no opinion about previous state.
+pub fn markdown_default_collapsed_sections(
+  projection : MarkdownDocumentProjection,
+  source : String,
+  min_depth? : Int = 3,
+  min_rendered_elements? : Int = 6,
+  min_body_lines? : Int = 12,
+) -> Array[Int] {
+  let sections = markdown_sections(projection)
+  let entries = markdown_table_of_contents(projection)
+  let collapsed = []
+  for section_index, section in sections {
+    guard section_index < entries.length() else { continue }
+    let entry = entries[section_index]
+    guard entry.is_foldable && entry.depth >= min_depth else { continue }
+    let rendered = section.body_rendered_element_indexes(projection).length()
+    let body_lines = match section.body_source_range {
+      Some(body) => markdown_count_source_lines(source, body)
+      None => 0
+    }
+    if rendered >= min_rendered_elements || body_lines >= min_body_lines {
+      collapsed.push(section_index)
+    }
+  }
+  collapsed
+}
+
+///|
+/// Line count spanned by `range` in `source`, counting the first line even when
+/// the range contains no terminator.
+fn markdown_count_source_lines(
+  source : String,
+  range : @common.OffsetRange,
+) -> Int {
+  let start = range.start.max(0).min(source.length())
+  let end = range.end_exclusive.max(start).min(source.length())
+  guard end > start else { return 0 }
+  let mut lines = 1
+  for offset in start..<end {
+    if source[offset] == '\n' {
+      lines = lines + 1
+    }
+  }
+  lines
+}
