@@ -17,6 +17,13 @@ fn file_stat(raw : String, name : String) -> @workspace.WorkspaceStat {
 let root_raw : String = "readonly-remote://workspace"
 
 ///|
+/// The widget default: no entry is pinned, so levels order
+/// directories-before-files in the provider's order.
+fn unranked(_stat : @workspace.WorkspaceStat) -> Int {
+  0
+}
+
+///|
 fn TreeNode::find(self : TreeNode, uri : @base_common.Uri) -> TreeNode? {
   if self.uri == uri {
     return Some(self)
@@ -47,6 +54,7 @@ fn resolved_root() -> TreeNode {
       ]),
     },
     expanded=true,
+    rank=unranked,
   )
 }
 
@@ -59,6 +67,72 @@ test "orders resolved children directories first" {
   assert_true(rows[0].node.kind == Directory)
   assert_eq(rows[1].node.name, "moon.mod")
   assert_eq(rows[0].depth, 0)
+}
+
+///|
+/// A host policy that leads its level with `first.md` and sinks `last.txt`
+/// below the files; every other entry keeps the default rank.
+fn pin_first_and_last(stat : @workspace.WorkspaceStat) -> Int {
+  match stat.name {
+    "first.md" => -1
+    "last.txt" => 1
+    _ => 0
+  }
+}
+
+///|
+test "a host rank orders a level around the directories-first default" {
+  let level = [
+    file_stat(root_raw + "/moon.pkg", "moon.pkg"),
+    dir_stat(root_raw + "/src", "src"),
+    file_stat(root_raw + "/last.txt", "last.txt"),
+    dir_stat(root_raw + "/docs", "docs"),
+    file_stat(root_raw + "/first.md", "first.md"),
+  ]
+  let stat : @workspace.WorkspaceStat = {
+    uri: uri(root_raw),
+    name: "workspace",
+    kind: Directory,
+    children: Some(level),
+  }
+
+  // A negative rank leads the level, a positive one trails it, and the
+  // unranked middle keeps directories before files in the provider's order.
+  let ranked = TreeNode::from_stat(stat, expanded=true, rank=pin_first_and_last)
+  assert_eq(ranked.visible_rows().map(row => row.node.name), [
+    "first.md", "src", "docs", "moon.pkg", "last.txt",
+  ])
+
+  // Under the widget default every entry ranks alike, so the whole level
+  // falls back to directories-before-files.
+  let unpinned = TreeNode::from_stat(stat, expanded=true, rank=unranked)
+  assert_eq(unpinned.visible_rows().map(row => row.node.name), [
+    "src", "docs", "moon.pkg", "last.txt", "first.md",
+  ])
+}
+
+///|
+test "a host rank orders lazily resolved levels the same way" {
+  let src_uri = uri(root_raw + "/src")
+  let (expanded, _) = resolved_root().toggle(src_uri).unwrap()
+  let resolved = expanded
+    .with_resolved(
+      src_uri,
+      {
+        uri: src_uri,
+        name: "src",
+        kind: Directory,
+        children: Some([
+          file_stat(root_raw + "/src/main.mbt", "main.mbt"),
+          file_stat(root_raw + "/src/first.md", "first.md"),
+        ]),
+      },
+      rank=pin_first_and_last,
+    )
+    .unwrap()
+  assert_eq(resolved.visible_rows().map(row => row.node.name), [
+    "src", "first.md", "main.mbt", "moon.mod",
+  ])
 }
 
 ///|
@@ -78,12 +152,16 @@ test "directories start collapsed and expansion resolves once" {
   assert_false(original.find(src_uri).unwrap().expanded)
   assert_true(expanded.find(src_uri).unwrap().expanded)
   let resolved = expanded
-    .with_resolved(src_uri, {
-      uri: src_uri,
-      name: "src",
-      kind: Directory,
-      children: Some([file_stat(root_raw + "/src/main.mbt", "main.mbt")]),
-    })
+    .with_resolved(
+      src_uri,
+      {
+        uri: src_uri,
+        name: "src",
+        kind: Directory,
+        children: Some([file_stat(root_raw + "/src/main.mbt", "main.mbt")]),
+      },
+      rank=unranked,
+    )
     .unwrap()
 
   // Collapse keeps the cache; the next expand is free.
@@ -140,12 +218,16 @@ test "reveal expands resolved ancestors and stops at unresolved levels" {
   assert_false(original.find(src_uri).unwrap().expanded)
   assert_true(src_expanded.find(src_uri).unwrap().expanded)
   let src_resolved = src_expanded
-    .with_resolved(src_uri, {
-      uri: src_uri,
-      name: "src",
-      kind: Directory,
-      children: Some([dir_stat(root_raw + "/src/lib", "lib")]),
-    })
+    .with_resolved(
+      src_uri,
+      {
+        uri: src_uri,
+        name: "src",
+        kind: Directory,
+        children: Some([dir_stat(root_raw + "/src/lib", "lib")]),
+      },
+      rank=unranked,
+    )
     .unwrap()
 
   // lib is now reachable but unresolved.
@@ -158,12 +240,16 @@ test "reveal expands resolved ancestors and stops at unresolved levels" {
   assert_false(src_resolved.find(lib_uri).unwrap().expanded)
   assert_true(lib_expanded.find(lib_uri).unwrap().expanded)
   let lib_resolved = lib_expanded
-    .with_resolved(lib_uri, {
-      uri: lib_uri,
-      name: "lib",
-      kind: Directory,
-      children: Some([file_stat(root_raw + "/src/lib/util.mbt", "util.mbt")]),
-    })
+    .with_resolved(
+      lib_uri,
+      {
+        uri: lib_uri,
+        name: "lib",
+        kind: Directory,
+        children: Some([file_stat(root_raw + "/src/lib/util.mbt", "util.mbt")]),
+      },
+      rank=unranked,
+    )
     .unwrap()
   let (revealed, step) = lib_resolved.reveal_step(target)
   match step {
@@ -247,7 +333,7 @@ async test "in-memory provider resolves one level per request" {
   }
   match provider.resolve(provider.root()) {
     WorkspaceResolved(stat) => {
-      let root = TreeNode::from_stat(stat, expanded=true)
+      let root = TreeNode::from_stat(stat, expanded=true, rank=unranked)
       let src_uri = uri(root_raw + "/src")
       let src = root.find(src_uri).unwrap()
       // The resolved level carries unresolved directory children.
@@ -257,7 +343,7 @@ async test "in-memory provider resolves one level per request" {
         ToggleResolve(resolve_uri) =>
           match provider.resolve(resolve_uri) {
             WorkspaceResolved(stat) =>
-              expanded.with_resolved(src_uri, stat).unwrap()
+              expanded.with_resolved(src_uri, stat, rank=unranked).unwrap()
             WorkspaceResolveError(error) => fail(error.message)
           }
         ToggleNone => fail("expected resolve effect")
