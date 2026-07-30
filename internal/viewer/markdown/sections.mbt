@@ -174,10 +174,12 @@ fn MarkdownSection::stable_key(
 }
 
 ///|
-/// The heading's normalized source text: leading ATX markers and surrounding
-/// whitespace removed, interior whitespace collapsed to single spaces. Setext
-/// headings keep only their first line, so `Title\n=====` and `# Title` produce
-/// the same text and therefore the same key.
+/// The heading's identity text for reconciliation.
+///
+/// The parsed inline plaintext retained at parse time is authoritative: it has
+/// already applied the markup rules, so emphasis, code spans, and a multi-line
+/// setext heading all reduce to the words a reader sees. The source-derived
+/// fallback exists only for a projection built before that field was retained.
 fn markdown_section_heading_text(
   section : MarkdownSection,
   projection : MarkdownDocumentProjection,
@@ -187,7 +189,21 @@ fn markdown_section_heading_text(
     section.heading_anchor_index < projection.block_anchors.length() else {
     return ""
   }
-  let range = projection.block_anchors[section.heading_anchor_index].source_range
+  let anchor = projection.block_anchors[section.heading_anchor_index]
+  match anchor.heading_text {
+    Some(text) => text
+    None => markdown_heading_text_from_source(anchor, source)
+  }
+}
+
+///|
+/// Last-resort text extraction straight from the snapshot. Strips the opening
+/// ATX run and a whitespace-delimited closing run, then collapses whitespace.
+fn markdown_heading_text_from_source(
+  anchor : MarkdownBlockAnchor,
+  source : String,
+) -> String {
+  let range = anchor.source_range
   let start = range.start.max(0).min(source.length())
   let end = range.end_exclusive.max(start).min(source.length())
   let raw = source[start:end].to_owned()
@@ -199,9 +215,6 @@ fn markdown_section_heading_text(
   while trimmed.has_prefix("#") {
     trimmed = trimmed[1:].to_owned()
   }
-  // A closing ATX sequence is decoration only when whitespace-delimited.
-  // CommonMark keeps `# C#` as the text `C#`, so stripping every trailing `#`
-  // unconditionally would collide `# C` with `# C#`.
   let mut hashes = 0
   while hashes < trimmed.length() &&
         trimmed[trimmed.length() - 1 - hashes] == '#' {
@@ -214,8 +227,8 @@ fn markdown_section_heading_text(
     }
   }
   let collapsed = StringBuilder::new()
-  let mut in_space = false
   let mut wrote_any = false
+  let mut in_space = false
   for unit in trimmed.trim(chars=" \t\r") {
     if unit == ' ' || unit == '\t' {
       in_space = true

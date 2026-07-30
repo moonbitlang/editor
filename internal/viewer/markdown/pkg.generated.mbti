@@ -25,6 +25,7 @@ pub(all) struct MarkdownBlockAnchor {
   source_range : @common.OffsetRange
   rendered_element_index : Int?
   heading_level : Int?
+  heading_text : String?
 } derive(Eq, @debug.Debug)
 
 pub(all) struct MarkdownCodeBlock {

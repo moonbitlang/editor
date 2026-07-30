@@ -139,40 +139,103 @@ accessibility pair, scroll anchoring, and the component scenario.
 4. Only then add the toggle DOM and the accessible button, following the
    Markdown-comment entry's chevron/in-content-button pair.
 
-## Known limitations found in review
+## Review outcome
 
-A `codex` review of the landed increments raised seven findings. Four are fixed;
-these three are recorded because they constrain the remaining work.
+Two `codex` reviews shaped this. The second was given the product context that
+matters most: **this surface exists to make agent-written code interpretable to
+a human reader. Humans read; agents write.** That reframed three decisions.
 
-- **K1. Occurrence ordinals are only stable while preceding duplicates are.**
-  `markdown_section_keys` numbers equal `(level, text)` headings in current
-  document order, so inserting or deleting a *duplicate* heading earlier in the
-  document migrates fold state between sections. Editing body text, or editing
-  any non-duplicate heading, is safe. A stronger key would have to come from the
-  parsed heading inline tree plus a container path rather than from normalized
-  source text. Accepted for now: the failure mode is a section collapsing that
-  the reader did not collapse, not a correctness or freshness bug.
+The governing principle, which supersedes D2 and D4:
 
-- **K2. Heading text is normalized from source, not from the inline tree.**
-  `# *Title*` and `# Title` therefore key differently despite rendering the same
-  words, and a multi-line setext heading keys on its first line only. Deriving
-  the text from the parsed inlines would fix both and subsume part of K1.
+> **P1. Silently hiding agent-written content the reader never collapsed is
+> worse than losing a collapse.** Fold state is a reading convenience, not a
+> durable user document. When reconciliation is uncertain, expand.
 
-- **K3. Collapse must invalidate the hover bridge, and does not yet.**
-  `set_hidden_root_elements` changes visibility without telling
-  `MarkdownDocumentHoverBridge`. Visibility is absent from `stamp_is_current`,
-  so a request started over a fence could still reach `widget.show` after its
-  root became `display:none`, and an already-visible hover would sit at stale
-  geometry. This cannot happen today because nothing calls the API. **Every
-  collapse and expand must route through the bridge's existing
-  `layout_changed` invalidation path**, and gate 3 must include collapsing
-  while a hover request is in flight.
+### Fixed
 
-- **K4. The view operation owns the whole `style` and `aria-hidden`
-  attributes.** It replaces and clears them outright, which is safe for the
-  current renderer output but would destroy renderer-owned inline styling. A
-  dedicated class or data attribute is the better mechanism before this API
-  gains a caller.
+- Nested headings no longer bound sections (only a heading that rendered a root
+  element does), so a blockquote or list heading cannot strand its container's
+  following siblings.
+- `is_foldable` is defined by the hideable run, not the body anchor count.
+- `MarkdownBlockAnchor::heading_text` retains the **parsed inline plaintext**
+  from the same pass. Heading identity is therefore markup-independent
+  (`# *Title*` == `# Title` == `` # `Title` ``), a multi-line setext heading
+  keeps all its words, and a literal trailing `#` stays content. The
+  source-string cleaner survives only as a fallback for a projection built
+  before that field existed.
+- Both `pkg.generated.mbti` regenerated.
+
+### Revised decisions
+
+- **D2 is replaced.** Do *not* treat the heading key as durable identity across
+  a source change. Reconcile instead:
+  - **theme** reprojection preserves fold state exactly (the source is
+    unchanged);
+  - **agent source update** preserves a reader's override only for a section
+    that matches *uniquely* on (inline plaintext + heading-ancestor path) **and**
+    whose body fingerprint is unchanged. Changed, new, or ambiguous sections
+    expand. Two identical sibling headings with different bodies still match by
+    fingerprint; identical heading *and* body is ambiguous, so neither inherits.
+  - **model swap** still resets (D3 stands).
+  Occurrence ordinals remain useful *within* one projection and must not be used
+  as cross-projection identity.
+- **The state is tri-state, not a `Set[String]`:**
+  `NoOverride | ExplicitExpanded | ExplicitCollapsed`. With a `Set`, a reader who
+  expands an auto-collapsed section is indistinguishable from a reader with no
+  opinion, and the next unrelated agent edit re-collapses it.
+- **D4 (fully expanded) is retained for now but is probably not the right
+  product default** — see the open question below.
+
+### Open question for the owner
+
+Codex proposes replacing D4 with a conservative auto-fold policy: keep
+structural depths 1-2 expanded; at depth 3+ initially collapse a foldable
+section whose hideable run has >= 6 rendered elements or whose body spans >= 12
+source lines; keep the ancestor chain of an explicit reveal anchor open; never
+use the editor cursor as an intent signal, because in this readonly surface it
+is usually just the default `(1,1)`; manual overrides always win. It also notes
+*structural* depth beats literal ATX level, so a `####` heading at document root
+is depth 1.
+
+The shape is sound and the cursor point is a good catch. **The thresholds are
+invented and need the owner's decision before they become product behavior.**
+Until then D4 stands, which is safe because nothing is wired yet.
+
+### The ordering rule for hover invalidation (supersedes K3)
+
+`layout_changed` is the right primitive; the rule is *when* to call it.
+
+```text
+Standalone collapse/expand:
+  set_hidden_root_elements(final union)
+  -> hover_bridge.layout_changed()
+
+Source/theme reprojection:
+  before_projection_replaced()
+  -> replace the article
+  -> reconcile and apply the final hidden union
+  -> after_projection_replaced()
+```
+
+Do **not** call `layout_changed` while reapplying folds inside the replacement
+bracket: `before_projection_replaced` has already invalidated the request, and
+`after_projection_replaced` must refresh diagnostics only once final visibility
+is installed. Calling it before `set_hidden_root_elements` measures stale
+geometry.
+
+No new field is needed in `MarkdownDocumentHoverRequestStamp`. The existing
+checks already compose: `invalidate_pointer_request` rotates
+`request_generation`, cancels timers and token ownership, hides the widget, and
+clears overlays; `stamp_is_current` additionally checks model content/version,
+attachment, projection generation, source-model version, block and pointer
+identity, and cancellation; `accept_parts` re-checks freshness immediately
+before `widget.show`.
+
+### Still open
+
+- **K4.** `set_hidden_root_elements` replaces and clears the whole `style` and
+  `aria-hidden` attributes. Safe for current renderer output, wrong before the
+  API gains a caller — use a dedicated class or data attribute instead.
 
 ## Gates
 
@@ -181,8 +244,11 @@ these three are recorded because they constrain the remaining work.
 2. `pkg.generated.mbti` reviewed for `internal/viewer/markdown` — adding a field
    to the `pub(all)` `MarkdownBlockAnchor` is a public API change.
 3. A component scenario under `tests/browser/` proving, through the public
-   Viewer surface (and including a collapse while a hover request is pending,
-   per K3):
+   Viewer surface, and covering **both** interleavings of the ordering rule
+   above — (a) pending hover -> standalone collapse -> provider completes, and
+   (b) pending hover -> agent `replace_source` -> fold reconciliation ->
+   provider completes. In both, the stale result must never reach
+   `widget.show`:
    - collapsing a section hides exactly its body run;
    - a fence in a *sibling visible* section still resolves to the correct source
      offset while another section is collapsed;
