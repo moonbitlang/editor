@@ -29,6 +29,12 @@ pub(all) struct MarkdownBlockAnchor {
   /// Retained during the one parse that produces the HTML and this projection,
   /// so section structure cannot describe a different parse than the document.
   heading_level : Int?
+  /// The heading's rendered plain text, taken from the parsed inline tree in
+  /// that same pass. This is the identity fold-state reconciliation compares,
+  /// so `# *Title*` and `# Title` are the same heading and a multi-line setext
+  /// heading keeps all of its words. Reading it back out of the source string
+  /// instead would re-derive markup rules the parser already applied.
+  heading_text : String?
 } derive(Eq, Debug)
 
 ///|
@@ -145,6 +151,7 @@ fn markdown_document_projection(doc : @cmark.Doc) -> MarkdownDocumentProjection 
               block.meta().id,
             ),
             heading_level: markdown_block_heading_level(block),
+            heading_text: markdown_block_heading_text(block),
           })
         None => ()
       }
@@ -199,6 +206,35 @@ fn markdown_block_heading_level(block : @cmark.Block) -> Int? {
     Heading(node) => Some(node.v.level)
     _ => None
   }
+}
+
+///|
+/// The heading's plain text with interior whitespace collapsed, or `None` for a
+/// non-heading block. Soft breaks are not treated as breaks, so a multi-line
+/// setext heading yields one space-joined string.
+fn markdown_block_heading_text(block : @cmark.Block) -> String? {
+  guard block is Heading(node) else { return None }
+  let collapsed = StringBuilder::new()
+  let mut wrote_any = false
+  let mut pending_space = false
+  for line in node.v.inline.to_plain_text(break_on_soft=false) {
+    for part in line {
+      for unit in part {
+        if unit == ' ' || unit == '\t' || unit == '\n' || unit == '\r' {
+          pending_space = true
+        } else {
+          if pending_space && wrote_any {
+            collapsed.write_char(' ')
+          }
+          pending_space = false
+          wrote_any = true
+          collapsed.write_char(unit)
+        }
+      }
+    }
+    pending_space = true
+  }
+  Some(collapsed.to_string())
 }
 
 ///|
