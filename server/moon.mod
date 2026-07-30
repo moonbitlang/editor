@@ -12,5 +12,5 @@ preferred_target = "native"
 
 import {
   "moonbitlang/editor@0.3.0",
-  "moonbitlang/async@0.20.1",
+  "moonbitlang/async@0.20.3",
 }
