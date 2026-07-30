@@ -71,15 +71,16 @@ Open `http://127.0.0.1:5173/`. The dev server is the internal native backend
 shell: it serves `web/dist` and talks to the browser workbench over the
 readonly remote protocol WebSocket.
 
-`just` checks the repository, builds the browser assets and native server, then
-serves the current checkout with the default root and port. Use
-`just dev ROOT=<workspace> PORT=<port>` to override either value, or `just list`
+`just` builds the browser assets and native server, then serves the current
+checkout with the default root and port. Use
+`just ROOT=<workspace> PORT=<port> dev` to override either value, or `just list`
 to show every recipe.
 
 ## Validation
 
 ```sh
-just check
+moon check --target all --warn-list +73
+moon fmt --check
 just test
 just build
 just test-browser-smoke
