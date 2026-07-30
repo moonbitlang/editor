@@ -120,3 +120,85 @@
   outline: 1px solid currentColor;
   outline-offset: 2px;
 }
+
+/* Pinned table-of-contents bar. A sibling of the viewport, never an article
+   child: article child indexes are projection ordinals the folding and
+   source-anchor machinery depends on. */
+.moonbit-viewer-markdown-toc {
+  display: none;
+  flex-direction: column;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.25);
+  font-size: 0.85em;
+}
+
+.moonbit-viewer-markdown-toc[data-toc-visible="true"] {
+  display: flex;
+}
+
+.moonbit-viewer-markdown-toc-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  padding: 0.35em 0.9em;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: inherit;
+  cursor: pointer;
+  text-align: left;
+  opacity: 0.75;
+}
+
+.moonbit-viewer-markdown-toc-toggle::before {
+  content: "";
+  width: 0;
+  height: 0;
+  border-top: 0.3em solid transparent;
+  border-bottom: 0.3em solid transparent;
+  border-left: 0.4em solid currentColor;
+}
+
+.moonbit-viewer-markdown-toc[data-toc-expanded="true"]
+  .moonbit-viewer-markdown-toc-toggle::before {
+  border-left: 0.3em solid transparent;
+  border-right: 0.3em solid transparent;
+  border-top: 0.4em solid currentColor;
+  border-bottom: none;
+}
+
+.moonbit-viewer-markdown-toc-list {
+  display: none;
+  margin: 0;
+  padding: 0 0 0.4em 0;
+  list-style: none;
+  max-height: 40%;
+  overflow-y: auto;
+}
+
+.moonbit-viewer-markdown-toc[data-toc-expanded="true"]
+  .moonbit-viewer-markdown-toc-list {
+  display: block;
+}
+
+.moonbit-viewer-markdown-toc-row {
+  display: block;
+  width: 100%;
+  padding: 0.15em 0.9em;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: inherit;
+  cursor: pointer;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.moonbit-viewer-markdown-toc-row:hover,
+.moonbit-viewer-markdown-toc-toggle:hover {
+  opacity: 1;
+  background: rgba(128, 128, 128, 0.12);
+}

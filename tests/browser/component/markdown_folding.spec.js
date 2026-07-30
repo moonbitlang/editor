@@ -217,3 +217,47 @@ test('a pending hover never lands on content collapsed or rewritten under it', a
   await page.evaluate(() => globalThis.__markdownFoldingControls.dispose());
   await expect(page.locator(toggle)).toHaveCount(0);
 });
+
+const tocBar = `${root} > .moonbit-viewer-markdown-toc`;
+const tocToggle = `${tocBar} .moonbit-viewer-markdown-toc-toggle`;
+const tocRow = `${tocBar} .moonbit-viewer-markdown-toc-row`;
+
+test('the pinned toc bar outlines sections and navigation expands the chain', async ({ page }, testInfo) => {
+  await openFoldingScenario(page, testInfo);
+  const facts = await foldFacts(page);
+
+  // Rendered, collapsed to the summary row, and outside the article.
+  await expect(page.locator(tocBar)).toHaveAttribute('data-toc-visible', 'true');
+  await expect(page.locator(tocToggle)).toContainText('4 sections');
+  await expect(page.locator(tocRow).first()).toBeHidden();
+
+  // Expanding shows one row per section, indented by structural depth.
+  await page.locator(tocToggle).click();
+  await expect(page.locator(tocToggle)).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.locator(tocRow)).toHaveCount(4);
+  await expect(page.locator(tocRow).nth(3)).toHaveAttribute('data-toc-depth', '3');
+
+  // The Deep section starts auto-collapsed; clicking its row expands it and
+  // scrolls its heading into the viewport.
+  expect(facts.collapsed).toEqual([facts.deep]);
+  await page.locator(tocRow, { hasText: 'Deep' }).click();
+  await expect.poll(() => visibleByText(page, 'deep three')).toBe(true);
+  expect((await foldFacts(page)).collapsed).toEqual([]);
+  const deepVisible = await page.locator(`${article} > *`, { hasText: 'deep one' })
+    .first()
+    .evaluate((node) => {
+      const rect = node.getBoundingClientRect();
+      const viewport = node.closest('.moonbit-viewer-markdown-document-viewport')
+        .getBoundingClientRect();
+      return rect.top >= viewport.top - 1 && rect.top <= viewport.bottom;
+    });
+  expect(deepVisible).toBe(true);
+
+  // A revealed-by-navigation fence hovers, and the fold conversation still
+  // never re-parsed the document.
+  const generation = await projectionGeneration(page);
+  await moveToSourceText(page, 'beta_answer', 2);
+  await releaseLatestHover(page, 1, 'post-navigation hover');
+  await expect(page.locator(hoverWidget)).toContainText('post-navigation hover');
+  expect(await projectionGeneration(page)).toBe(generation);
+});
