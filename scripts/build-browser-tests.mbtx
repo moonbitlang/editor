@@ -7,7 +7,6 @@ import {
 
 ///|
 struct BrowserBundle {
-  package_path : String
   name : String
   title : String
 }
@@ -16,57 +15,46 @@ struct BrowserBundle {
 fn smoke_bundles() -> Array[BrowserBundle] {
   [
     BrowserBundle::{
-      package_path: "tests/browser/moonbit/component",
       name: "component",
       title: "MoonBit Viewer Component Test",
     },
     BrowserBundle::{
-      package_path: "tests/browser/moonbit/reveal",
       name: "reveal",
       title: "MoonBit Viewer Reveal Test",
     },
     BrowserBundle::{
-      package_path: "tests/browser/moonbit/read_api",
       name: "read_api",
       title: "MoonBit Viewer Read API Test",
     },
     BrowserBundle::{
-      package_path: "tests/browser/moonbit/whitespace",
       name: "whitespace",
       title: "MoonBit Viewer Whitespace Test",
     },
     BrowserBundle::{
-      package_path: "tests/browser/moonbit/whitespace_selection",
       name: "whitespace_selection",
       title: "MoonBit Viewer Whitespace Selection Test",
     },
     BrowserBundle::{
-      package_path: "tests/browser/moonbit/agent_feedback",
       name: "agent_feedback",
       title: "MoonBit Viewer Agent Feedback Test",
     },
     BrowserBundle::{
-      package_path: "tests/browser/moonbit/model_swap",
       name: "model_swap",
       title: "MoonBit Viewer Model Swap Test",
     },
     BrowserBundle::{
-      package_path: "tests/browser/moonbit/folding",
       name: "folding",
       title: "MoonBit Viewer Folding Test",
     },
     BrowserBundle::{
-      package_path: "tests/browser/moonbit/folding_nested",
       name: "folding_nested",
       title: "MoonBit Viewer Nested Folding Test",
     },
     BrowserBundle::{
-      package_path: "tests/browser/moonbit/quick_diff",
       name: "quick_diff",
       title: "MoonBit Viewer Quick Diff Test",
     },
     BrowserBundle::{
-      package_path: "tests/browser/moonbit/set_value",
       name: "set_value",
       title: "MoonBit Viewer Set Value Test",
     },
@@ -77,34 +65,14 @@ fn smoke_bundles() -> Array[BrowserBundle] {
 fn perf_bundles() -> Array[BrowserBundle] {
   [
     BrowserBundle::{
-      package_path: "tests/browser/moonbit/component",
       name: "component",
       title: "MoonBit Viewer Component Test",
     },
     BrowserBundle::{
-      package_path: "tests/browser/moonbit/perf",
       name: "perf",
       title: "MoonBit Viewer Performance Test",
     },
   ]
-}
-
-///|
-async fn build_js_package(package_path : String) -> Unit {
-  let status = @process.run(
-    "moon",
-    [
-      "build",
-      "--target",
-      "js",
-      "--target-dir",
-      "_build",
-      package_path,
-    ],
-  )
-  if status != 0 {
-    fail("moon build failed for \{package_path} with exit code \{status}")
-  }
 }
 
 ///|
@@ -193,9 +161,6 @@ async fn main {
   } else {
     fail("unknown browser test build profile: \{profile}; expected smoke or perf")
   }
-  for bundle in bundles {
-    build_js_package(bundle.package_path)
-  }
 
   // The committed moon.work namespaces member artifacts by module name on
   // current moon releases; older layouts keep the bare package path.
@@ -206,7 +171,7 @@ async fn main {
     "_build/js/debug/build/moonbitlang/editor/tests/browser/moonbit"
   }
   if !@fs.exists(build_dir) {
-    fail("isolated MoonBit browser build did not produce its expected output")
+    fail("missing js artifacts for the browser test bundles; run `moon build` first")
   }
   let browser_tests_dir = "web/dist/browser-tests"
   if !@fs.exists(browser_tests_dir) {
