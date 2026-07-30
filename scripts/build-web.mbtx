@@ -1,25 +1,6 @@
 import {
   "moonbitlang/async",
   "moonbitlang/async/fs",
-  "moonbitlang/async/process",
-}
-
-///|
-async fn build_js_package(package_path : String) -> Unit {
-  let status = @process.run(
-    "moon",
-    [
-      "build",
-      "--target",
-      "js",
-      "--target-dir",
-      "_build",
-      package_path,
-    ],
-  )
-  if status != 0 {
-    fail("moon build failed for \{package_path} with exit code \{status}")
-  }
 }
 
 ///|
@@ -35,15 +16,12 @@ async fn resolved_build_dir(package_path : String) -> String {
 
 ///|
 async fn main {
-  build_js_package("internal/shell/web")
-  build_js_package("internal/shell/examples/embedded_viewer")
-
   let source_dir = resolved_build_dir("internal/shell/web")
   let embed_source_dir = resolved_build_dir(
     "internal/shell/examples/embedded_viewer",
   )
   if !@fs.exists(source_dir) || !@fs.exists(embed_source_dir) {
-    fail("isolated MoonBit web build did not produce its expected output")
+    fail("missing js artifacts for the web entry points; run `moon build` first")
   }
   let target_dir = "web/dist"
   if !@fs.exists(target_dir) {
