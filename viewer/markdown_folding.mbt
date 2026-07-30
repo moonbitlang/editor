@@ -63,6 +63,7 @@ fn MarkdownBrowserData::initialize_markdown_folding(
     self.toggle_markdown_section(section_index) |> ignore
   })
   self.apply_markdown_folding()
+  self.apply_markdown_toc()
 }
 
 ///|
@@ -104,6 +105,11 @@ fn MarkdownBrowserData::reconcile_markdown_folding(
     self.fold.records[key] = record
   }
   self.apply_markdown_folding()
+  // The article and projection were just replaced; rows depend on the
+  // projection, not on collapse state, so this is the one reconciliation
+  // point that rebuilds them. Fold toggles leave the rows (and keyboard
+  // focus within them) untouched.
+  self.apply_markdown_toc()
 }
 
 ///|
@@ -168,7 +174,6 @@ fn MarkdownBrowserData::apply_markdown_folding(
   hidden_sorted.sort()
   self.view.set_hidden_root_elements(hidden_sorted)
   self.view.install_section_fold_controls(controls)
-  self.apply_markdown_toc()
 }
 
 ///|
@@ -294,7 +299,9 @@ fn MarkdownBrowserData::navigate_markdown_section(
   }
   if changed {
     self.apply_markdown_folding()
-    self.hover_bridge.layout_changed()
   }
+  // Unconditional: navigation scrolls even when no fold changed, and a
+  // pending hover must not survive the geometry change.
+  self.hover_bridge.layout_changed()
   self.view.reveal_source_offset(source_offset, "start")
 }

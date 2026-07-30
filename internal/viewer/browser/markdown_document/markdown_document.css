@@ -124,9 +124,19 @@
 /* Pinned table-of-contents bar. A sibling of the viewport, never an article
    child: article child indexes are projection ordinals the folding and
    source-anchor machinery depends on. */
+/* Overlaid, not in flow: the bar must never move the viewport. The hover
+   overlay and caret math assume the viewport starts at the root's top, and a
+   bar in normal flow would also clip the 100%-height viewport at the bottom
+   of the fixed-height root. */
 .moonbit-viewer-markdown-toc {
   display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;
   flex-direction: column;
+  background: inherit;
   border-bottom: 1px solid rgba(128, 128, 128, 0.25);
   font-size: 0.85em;
 }
@@ -172,7 +182,7 @@
   margin: 0;
   padding: 0 0 0.4em 0;
   list-style: none;
-  max-height: 40%;
+  max-height: 14em;
   overflow-y: auto;
 }
 
