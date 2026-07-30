@@ -161,11 +161,7 @@ fn EditorConfigurationState::commit_measured_size(
   content_width : Double,
   height : Double,
 ) -> Unit {
-  self.measured_content_width = if content_width > 0.0 {
-    content_width
-  } else {
-    0.0
-  }
+  self.measured_content_width = content_width.max(0.0)
   self.measured_width = self.snapshot().gutter_width(self.model_line_count) +
     self.measured_content_width
   self.measured_height = height
@@ -251,11 +247,7 @@ fn EditorConfigurationState::adjust_content_width_for_model_line_count(
     return false
   }
   let available_content_width = self.measured_width - current_content_left
-  self.measured_content_width = if available_content_width > 0.0 {
-    available_content_width
-  } else {
-    0.0
-  }
+  self.measured_content_width = available_content_width.max(0.0)
   true
 }
 

@@ -332,22 +332,10 @@ pub fn AgentFeedbackInputWidget::auto_size(
   let text_width = input_scroll_width(self.measure)
   let max_width_cap = (self.host.content_width)() *
     input_max_width_editor_fraction
-  let max_width = if input_max_width_px < max_width_cap {
-    input_max_width_px
-  } else {
-    max_width_cap
-  }
-  let min_width = if input_min_width_px < max_width {
-    input_min_width_px
-  } else {
-    max_width
-  }
-  let desired = if text_width + 10.0 > min_width {
-    text_width + 10.0
-  } else {
-    min_width
-  }
-  let width = if desired < max_width { desired } else { max_width }
+  let max_width = input_max_width_px.min(max_width_cap)
+  let min_width = input_min_width_px.min(max_width)
+  let desired = (text_width + 10.0).max(min_width)
+  let width = desired.min(max_width)
   @base_browser.set_style_property(
     self.textarea,
     "min-width",
@@ -359,11 +347,7 @@ pub fn AgentFeedbackInputWidget::auto_size(
     width.to_string() + "px",
   )
   let height = input_textarea_grown_height(self.textarea)
-  let clamped_height = if height > input_line_height_px {
-    height
-  } else {
-    input_line_height_px
-  }
+  let clamped_height = height.max(input_line_height_px)
   @base_browser.set_style_property(
     self.textarea,
     "height",

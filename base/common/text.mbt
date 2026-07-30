@@ -326,16 +326,8 @@ pub fn OffsetRange::add_range(
   if i == j {
     sorted_ranges.insert(i, range)
   } else {
-    let start = if range.start < sorted_ranges[i].start {
-      range.start
-    } else {
-      sorted_ranges[i].start
-    }
-    let end = if range.end_exclusive > sorted_ranges[j - 1].end_exclusive {
-      range.end_exclusive
-    } else {
-      sorted_ranges[j - 1].end_exclusive
-    }
+    let start = range.start.min(sorted_ranges[i].start)
+    let end = range.end_exclusive.max(sorted_ranges[j - 1].end_exclusive)
     for _ in 0..<(j - i) {
       sorted_ranges.remove(i) |> ignore
     }
