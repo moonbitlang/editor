@@ -369,7 +369,7 @@ test "peek result list updates selection and dispatches select and confirm" {
 }
 
 ///|
-test "peek shell owns Escape Enter and F4 keyboard routing" {
+test "peek shell routes Enter only from shell and result-list focus" {
   let harness = install_definition_peek_test_browser()
   defer harness.dispose()
   let close_count = Ref(0)
@@ -406,11 +406,39 @@ test "peek shell owns Escape Enter and F4 keyboard routing" {
     "true:true",
   )
   assert_eq(confirmed.val, 0)
+  let item = definition_peek_test_child(widget.get_list_node(), 0)
+  assert_eq(
+    definition_peek_test_dispatch_key(item, "Enter", false),
+    "true:true",
+  )
+  assert_eq(confirmed.val, 0)
+  confirmed.val = -1
+  let preview_input = @rdom.document().create_element("textarea")
+  widget.get_preview_host().append_child(preview_input.as_node())
+  // Enter belongs to the nested preview. The shell still contains it so the
+  // outer editor cannot act on it, but neither prevents its native default nor
+  // confirms the selected definition.
+  assert_eq(
+    definition_peek_test_dispatch_key(preview_input, "Enter", false),
+    "false:true",
+  )
+  assert_eq(confirmed.val, -1)
+  // Session commands remain available while focus is inside the preview.
+  assert_eq(
+    definition_peek_test_dispatch_key(preview_input, "Escape", false),
+    "true:true",
+  )
+  assert_eq(close_count.val, 3)
+  assert_eq(
+    definition_peek_test_dispatch_key(preview_input, "F4", false),
+    "true:true",
+  )
+  assert_eq(next_count.val, 1)
   assert_eq(
     definition_peek_test_dispatch_key(widget.get_dom_node(), "F4", false),
     "true:true",
   )
-  assert_eq(next_count.val, 1)
+  assert_eq(next_count.val, 2)
   assert_eq(
     definition_peek_test_dispatch_key(widget.get_dom_node(), "F4", true),
     "true:true",
@@ -419,7 +447,7 @@ test "peek shell owns Escape Enter and F4 keyboard routing" {
   // Unhandled keys still cannot bubble from the nested preview to the outer
   // editor, but retain their native default inside that preview.
   assert_eq(
-    definition_peek_test_dispatch_key(widget.get_dom_node(), "a", false),
+    definition_peek_test_dispatch_key(preview_input, "a", false),
     "false:true",
   )
   widget.dispose()

@@ -13,8 +13,10 @@ target-model reference; it must dispose and detach those resources before
 disposing the shell.
 
 Keyboard events from the result list or nested preview stop at the shell.
-Escape closes, Enter confirms the selected result, F4 selects the next result,
-and Shift+F4 selects the previous result. The host callback remains responsible
+Escape closes, F4 selects the next result, and Shift+F4 selects the previous
+result from either focus domain. Enter confirms the selected result only while
+the shell root or result list owns focus; Enter from the nested preview retains
+its native meaning and does not confirm. The host callback remains responsible
 for applying a requested selection with `set_selected_index`.
 Per-result `show_preview_loading` and `show_preview_unavailable` transitions
 preserve the list and selected index, allowing a failed cross-file resolution

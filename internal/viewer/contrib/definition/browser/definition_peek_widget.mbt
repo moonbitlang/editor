@@ -376,6 +376,21 @@ fn DefinitionPeekWidget::install_persistent_listeners(
       None => ()
     }
   })
+  // Enter confirms only from the result-list focus domain. Keeping this
+  // listener on the list (rather than inferring descendants at the shell
+  // root) also lets Enter retain its native meaning inside the nested preview.
+  self.listen_persistent(self.list, "keydown", event => {
+    match event.to_keyboard_event() {
+      Some(keyboard) =>
+        if keyboard.key() == "Enter" {
+          event.stop_propagation()
+          guard self.get_selected_index() is Some(index) else { return }
+          event.prevent_default()
+          (self.callbacks.on_confirm)(index)
+        }
+      None => ()
+    }
+  })
   for
     event_type in [
       "mousedown", "mouseup", "click", "contextmenu", "focusin", "focusout", "wheel",
@@ -395,6 +410,12 @@ fn DefinitionPeekWidget::install_persistent_listeners(
             (self.callbacks.on_close)()
           }
           "Enter" => {
+            // `focus()` deliberately focuses the shell root while loading.
+            // Result-list Enter is handled above; Enter from the nested
+            // preview must stop here without confirming the selected result.
+            guard @base_browser.event_target_is(event, self.root) else {
+              return
+            }
             guard self.get_selected_index() is Some(index) else { return }
             event.prevent_default()
             (self.callbacks.on_confirm)(index)
