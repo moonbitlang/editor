@@ -57,3 +57,23 @@ Run the focused suite with:
 ```sh
 MOON_WORK=off moon test --target js internal/viewer/browser/markdown_document
 ```
+
+## Section folding operations
+
+The view owns two fold mechanics and no fold policy:
+
+- `set_hidden_root_elements` marks a run of article root elements with
+  `data-markdown-section-hidden`, which the stylesheet maps to `display:none`.
+  Pure visibility over retained nodes -- never a re-render, never a projection
+  rebuild, never a `projection_generation` change -- so the `.mbt.md` semantic
+  hover contract survives folding untouched. `display:none` specifically:
+  it removes the subtree from hit testing and the accessibility tree, so
+  `caretPositionFromPoint` fails closed over collapsed content.
+- `install_section_fold_controls` places one real `<button>` (`aria-expanded`,
+  `aria-label`, CSS chevron from `data-collapsed`) as each foldable heading's
+  first child; one delegated article click listener installed at construction
+  routes toggle clicks to the handler set by
+  `set_section_fold_toggle_handler`.
+
+Which sections exist, what starts collapsed, and how state survives a source or
+theme replacement belong to the root Viewer (`viewer/markdown_folding.mbt`).

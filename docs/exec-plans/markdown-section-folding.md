@@ -107,47 +107,37 @@ Recorded so they can be overruled deliberately rather than rediscovered:
 
 ## Status
 
-**Landed: the model half.** `internal/viewer/markdown` retains
-`MarkdownBlockAnchor::heading_level` from the existing parse and derives the
-section tree (`markdown_sections`), the hideable run
-(`MarkdownSection::body_rendered_element_indexes`), and the reconciliation keys
-(`markdown_section_keys`). All of it is DOM-free, runs on js and native, and is
-covered by focused tests plus `mbt check` blocks in the package README.
+**Implemented and browser-proven.** All three layers are landed and wired:
 
-**Landed but unproven: the view-level collapse operation.**
-`MarkdownDocumentView::set_hidden_root_elements` / `hidden_root_elements` apply
-and read back `display:none` over retained root elements. It compiles and
-carries no caller yet, so **no browser test exercises it**. It must not be
-considered done until gate 3 below passes.
+- `internal/viewer/markdown`: sections, hideable runs, reconciliation keys with
+  inline-tree heading identity, the approved auto-fold policy, and the table of
+  contents. DOM-free, js+native, snapshot-tested.
+- `internal/viewer/browser/markdown_document`: attribute-based visibility
+  (`data-markdown-section-hidden` -> `display:none` in the stylesheet, K4
+  resolved), one accessible `<button>` fold control per foldable heading, and a
+  single view-lifetime delegated click listener.
+- root `viewer`: model-scoped fold records (`viewer/markdown_folding.mbt`) with
+  body-text fingerprints, conservative reconciliation inside the existing
+  hover-bridge replacement bracket, the standalone toggle ordering
+  (visibility, then `layout_changed`), and the public seam
+  `Viewer::toggle_markdown_section_at` / `Viewer::collapsed_markdown_sections`.
 
-**Landed: the table of contents.** `markdown_table_of_contents` derives an
-outline from the same section tree, with structural depth normalized so a level
-jump or a document starting at `###` still indents from depth 1. Each row carries
-the heading's reveal offset, its `section_index`, and the same `is_foldable`
-answer the fold control will use, so a TOC row and a fold control cannot
-disagree. DOM-free and tested; no TOC *UI* exists yet.
+Gate 3 is green: `tests/browser/component/markdown_folding.spec.js` proves the
+seeded auto-fold, real toggle clicks, sibling-fence hover during collapse,
+revealed-fence hover with `projection_generation` unchanged, both pending-hover
+interleavings (programmatic collapse and agent `replace_source`), reconciliation
+in both directions, and clean disposal. The mounted white-box suite
+(`viewer/markdown_folding_wbtest.mbt`) pins the synchronous state machine.
 
-**Not started -- this is all of the user-visible work:** the root Viewer fold
-state, the toggle affordance and its accessibility pair, the TOC sidebar or
-overlay that renders these rows, scroll anchoring, CSS, and the component
-scenario. Nothing in the product calls any of the functions above, so a reader
-currently sees no fold control and no outline.
+**Remaining (out of scope for the landed slice):**
 
-### Next executor: start here
-
-1. Add the fold state to `MarkdownBrowserData` (`viewer/model_data.mbt`) as a
-   `Set[String]` of collapsed keys from `markdown_section_keys`.
-2. Re-apply it at the two reprojection points that already exist —
-   `MarkdownBrowserData::replace_source` and `::apply_theme`, both of which
-   already bracket their work with
-   `hover_bridge.before_projection_replaced()` / `after_projection_replaced()`.
-   The fold re-application belongs inside that bracket, after the view has
-   re-rendered.
-3. Expose a public toggle on `Viewer` keyed by heading source offset
-   (`markdown_section_at_source_offset` resolves it), plus a read-back for
-   tests.
-4. Only then add the toggle DOM and the accessible button, following the
-   Markdown-comment entry's chevron/in-content-button pair.
+- A TOC *UI* (`markdown_table_of_contents` has no renderer; the workbench or an
+  overlay would own it).
+- Scroll anchoring when a fold above the viewport shifts content.
+- The auto-fold thresholds are owner-approved but untuned in real use; they are
+  parameters on `markdown_default_collapsed_sections`.
+- If a future path re-runs the auto-fold policy after attach, the explicit
+  override tag must return (see `MarkdownFoldRecord`'s doc comment).
 
 ## Review outcome
 

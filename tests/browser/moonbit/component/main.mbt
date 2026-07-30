@@ -4,6 +4,8 @@ fn main {
     run_initial_size_test()
   } else if markdown_document_requested() {
     run_markdown_document_test()
+  } else if markdown_folding_requested() {
+    run_markdown_folding_test()
   } else if markdown_comments_requested() {
     run_markdown_comments_test()
   } else if view_zones_requested() {
@@ -34,6 +36,10 @@ extern "js" fn initial_size_requested() -> Bool =
 ///|
 extern "js" fn markdown_comments_requested() -> Bool =
   #| () => new URLSearchParams(location.search).has('markdownComments')
+
+///|
+extern "js" fn markdown_folding_requested() -> Bool =
+  #| () => new URLSearchParams(location.search).has('markdownFolding')
 
 ///|
 extern "js" fn view_zones_requested() -> Bool =
