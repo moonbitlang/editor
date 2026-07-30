@@ -91,13 +91,15 @@ only, retained so the stylesheet build and provenance paths stay stable.
 The complete upstream
 `browser/widget/codeEditor/codeEditorContributions.ts` unit, its bounded
 `codeEditorWidget.ts` integration clusters, and the scoped hover, folding,
-agent-feedback, and quick-diff controller lifetimes map to the root
+agent-feedback, quick-diff, context-menu, and definition controller lifetimes
+map to the root
 `viewer/editor_extensions.mbt` registry plus focused root registration/host
 files. The local `Viewer.contributions` map is the one per-editor instance
 store, corresponding to Monaco's `CodeEditorContributions._instances`.
 Feature-specific root accessors are typed matches over that central map, not
 independent editor-id-keyed stores. Its closed rows are feedback input,
-feedback widgets, folding, content hover, and the local quick-diff decorator.
+feedback widgets, folding, Markdown comments, content hover, the local
+quick-diff decorator, context menu, and definition navigation.
 The registered Monaco timing modes remain recorded, but the current Viewer
 constructs every row eagerly. Local quick diff is the per-Viewer reduction of
 the workbench controller plus decorator, not a port of
@@ -107,6 +109,50 @@ The ownership migration used the checked-in `vscode` submodule. Its frozen
 upstream/local ledgers, representation proof, lifetime trace, and seam-based
 deviation remain in Git history; the completed outcome is summarized in
 `docs/exec-plans/HISTORY.md`.
+
+## HTML editor context menu
+
+The editor context menu is a behavior port audited against pinned VS Code
+revision `b18492a288de038fbc7643aae6de8247029d11bd`. It targets Monaco/VS Code
+Web's HTML surface, not Electron's optional native desktop menu.
+
+- `src/vs/editor/browser/controller/mouseHandler.ts:90-92,262-266`,
+  `viewController.ts:406-408`, `viewUserInputEvents.ts:44-46`, and
+  `browser/widget/codeEditor/codeEditorWidget.ts:179-180,1979-1983` define the
+  hit-tested DOM-to-editor `contextmenu` event path.
+- `src/vs/editor/contrib/contextmenu/browser/contextmenu.ts:31-248,391-412`
+  supplies eligible-target filtering, selection-preserving cursor placement,
+  live action collection, native fallback, pointer/cursor anchoring, and
+  Shift+F10.
+- `src/vs/platform/contextview/browser/contextMenuHandler.ts:42-164`,
+  `src/vs/base/browser/ui/contextview/contextview.ts:184-279`, and
+  `src/vs/base/browser/ui/menu/menu.ts:105-175,219-384,647-763,1019-1333`
+  supply hide-before-run, focus restoration, dismissal, keyboard/submenu
+  interaction, viewport fitting, ARIA roles/state, and the selected 24px-row
+  HTML styling.
+- `src/vs/editor/contrib/gotoSymbol/browser/goToCommands.ts:44-49,274-312,
+  343-374` supplies top-level `Go to Definition` and
+  `Peek > Peek Definition`. The local closed command registry owns their
+  labels, keybinding hints, ordering, and live preconditions; the browser
+  widget receives only an immutable entry tree and opaque command ids.
+
+Only Code content text/empty space and exact semantic Markdown source rows
+suppress the native browser menu. Injected text, margins, widgets, scrollbars,
+prose, ordinary fences, padding, unavailable action sets, and stale Markdown
+projections fall through. A pointer hit outside the current selection moves
+one cursor before menu resolution; a hit inside preserves the selection.
+Shift+F10 and the Context Menu key use the same menu, actions close it before
+dispatch, and Escape, Tab, outside primary pointer input, blur, model/content
+change, scroll, or disposal close it.
+
+The first surface intentionally omits Electron/native integration,
+clipboard/edit/refactor/source/history and extension-contributed actions,
+scrollbar-specific commands, touch long press, mnemonics/icons/check states,
+visible disabled rows, and a public menu-extension API. The browser shell
+supports the one selected `Peek` submenu level; this is not a general port of
+`IContextMenuService`, `Menu`, `ActionBar`, or workbench menu services. In
+particular, replacement is per independent Viewer rather than serialized by a
+process-global context-menu service.
 
 ## Definition navigation
 

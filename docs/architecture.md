@@ -282,6 +282,16 @@ editor common/browser layers; editor common never depends on them.
   Markdown adapter resolves native pointer geometry through the document-owned
   source map and never creates a virtual model. The emitted stylesheet remains
   at `viewer/contrib/definition/browser/definition.css`.
+- `internal/viewer/contrib/contextmenu/browser` owns the reusable detached HTML
+  menu shell, focus return, temporary document/window listeners, submenu
+  timers, ARIA state, and viewport fitting. Root `viewer` owns the per-Viewer
+  contribution, live command/menu resolution, target filtering,
+  cursor/selection policy, and semantic Markdown source anchor. Code text or
+  empty-content hits and valid semantic Markdown rows use the custom menu;
+  injected text, editor widgets, margins, scrollbars, ordinary Markdown, and
+  unavailable command sets retain the browser-native menu. The emitted
+  stylesheet remains at
+  `viewer/contrib/contextmenu/browser/contextmenu.css`.
 - `internal/viewer/contrib/agent_feedback` owns concrete feedback
   storage/service projection; host DTOs and the callback handle live in
   `viewer/common/agent_feedback_api`, while
@@ -328,9 +338,10 @@ Removal restores the caller node's original `aria-hidden` presence and value.
 
 The root editor registry has two distinct ownership layers. Its process-wide
 contribution-description table contains constructors only; the adjacent command
-and keybinding tables likewise contain no per-Viewer state.
+and keybinding tables plus closed menu/submenu descriptions likewise contain no
+per-Viewer state.
 `Viewer.contributions` is an `EditorContributions` owner whose `instances` map
-is the sole lookup table for that Viewer's seven concrete contribution entries;
+is the sole lookup table for that Viewer's eight concrete contribution entries;
 feature packages do not keep second maps keyed by editor id. Root `Viewer::`
 helpers recover typed controllers by matching both the fixed id and central
 entry variant, mirroring Monaco's typed view over
@@ -347,7 +358,7 @@ are released at their later root cleanup slot before the map is cleared.
 Declared instantiation modes are retained for source parity, but all modes
 currently instantiate eagerly.
 
-The Markdown hover bridge is not a seventh central Code contribution. It is
+The Markdown hover bridge is not a central Code contribution. It is
 owned by `MarkdownBrowserData`, is activated only after the corresponding
 `ModelData` becomes current, and is cancelled before any source/theme
 projection replacement. Detach retires the bridge and renderer while the root

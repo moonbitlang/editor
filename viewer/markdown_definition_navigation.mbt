@@ -78,20 +78,43 @@ fn MarkdownDocumentDefinitionBridge::bind_semantic_dom(
   guard self.is_current() else { return }
   self.view.listen_semantic_dom("mousemove", event => {
     guard event.to_mouse_event() is Some(mouse) else {
+      self.viewer.clear_markdown_context_menu_anchor()
       self.viewer.reset_definition_link()
       return
     }
+    let client_x = mouse.get_client_x().to_double()
+    let client_y = mouse.get_client_y().to_double()
+    let target = self.target_at(client_x, client_y)
     self.viewer.handle_definition_pointer_move(
-      self.target_at(
-        mouse.get_client_x().to_double(),
-        mouse.get_client_y().to_double(),
-      ),
+      target,
       mouse.get_ctrl_key(),
       mouse.get_meta_key(),
       mouse.get_alt_key(),
       mouse.get_shift_key(),
       mouse.get_buttons(),
     )
+    if mouse.get_buttons() == 0 {
+      self.viewer.record_markdown_context_menu_anchor(
+        target, client_x, client_y,
+      )
+    } else {
+      self.viewer.clear_markdown_context_menu_anchor()
+    }
+  })
+  self.view.listen_semantic_dom("contextmenu", event => {
+    guard self.is_current() && event.to_mouse_event() is Some(mouse) else {
+      return
+    }
+    let client_x = mouse.get_client_x().to_double()
+    let client_y = mouse.get_client_y().to_double()
+    if self.viewer.show_markdown_context_menu(
+        self.target_at(client_x, client_y),
+        client_x,
+        client_y,
+      ) {
+      event.prevent_default()
+      event.stop_propagation()
+    }
   })
   self.view.listen_semantic_dom("mousedown", event => {
     guard self.is_current() && event.to_mouse_event() is Some(mouse) else {
@@ -187,7 +210,16 @@ fn MarkdownDocumentDefinitionBridge::activate(
     )
   })
   self.listen(self.view.root(), "mouseleave", _ => {
-    self.viewer.reset_definition_link()
+    // Inserting the detached menu under the stationary pointer can make the
+    // browser synthesize a leave from the Markdown article. Retire only the
+    // modifier gesture while that menu is visible so Escape followed by
+    // Shift+F10 can still use the clicked semantic source anchor.
+    if self.viewer.context_menu_is_visible() {
+      self.viewer.cancel_definition_link()
+    } else {
+      self.viewer.clear_markdown_context_menu_anchor()
+      self.viewer.reset_definition_link()
+    }
   })
   // Peek moves focus into its overlay while the provider request remains
   // anchored to the last semantic pointer hit.
@@ -195,6 +227,7 @@ fn MarkdownDocumentDefinitionBridge::activate(
     self.viewer.cancel_definition_link()
   })
   self.listen(self.view.viewport(), "scroll", _ => {
+    self.viewer.clear_markdown_context_menu_anchor()
     self.viewer.reset_definition_link()
   })
   self.bind_semantic_dom()
@@ -221,6 +254,7 @@ fn MarkdownDocumentDefinitionBridge::layout_changed(
   self : MarkdownDocumentDefinitionBridge,
 ) -> Unit {
   guard !self.disposed else { return }
+  self.viewer.clear_markdown_context_menu_anchor()
   self.viewer.reset_definition_link()
 }
 

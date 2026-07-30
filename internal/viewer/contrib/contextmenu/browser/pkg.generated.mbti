@@ -1,0 +1,37 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitlang/editor/internal/viewer/contrib/contextmenu/browser"
+
+import {
+  "moonbit-community/rabbita/dom",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+pub(all) enum ContextMenuEntry {
+  ContextMenuAction(id~ : String, label~ : String, keybinding_label~ : String?)
+  ContextMenuSeparator
+  ContextMenuSubmenu(label~ : String, entries~ : Array[ContextMenuEntry])
+}
+
+pub struct ContextMenuWidget {
+  // private fields
+}
+#alias(new, deprecated)
+pub fn ContextMenuWidget::ContextMenuWidget(ContextMenuWidgetCallbacks) -> Self
+pub fn ContextMenuWidget::dispose(Self) -> Unit
+pub fn ContextMenuWidget::get_dom_node(Self) -> @dom.Element
+pub fn ContextMenuWidget::hide(Self, was_cancelled? : Bool) -> Unit
+pub fn ContextMenuWidget::is_visible(Self) -> Bool
+pub fn ContextMenuWidget::show(Self, Array[ContextMenuEntry], Double, Double, String, theme_source? : @dom.Element, auto_select_first? : Bool) -> Bool
+
+pub(all) struct ContextMenuWidgetCallbacks {
+  on_action : (String) -> Unit
+  on_hide : (Bool) -> Unit
+}
+
+// Type aliases
+
+// Traits

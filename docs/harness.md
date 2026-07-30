@@ -165,6 +165,18 @@ of the fold ordering rule (programmatic collapse and agent-style
 synchronous fold state machine itself is pinned one layer down by
 `viewer/markdown_folding_wbtest.mbt`.
 
+The definition and HTML-context-menu proof is the direct public-Viewer scenario
+`tests/browser/moonbit/definition/definition_scenario.mbt`, loaded by
+`definition.html` and asserted by
+`tests/browser/component/definition_navigation.spec.js`. Real right-click and
+keyboard gestures cover selection-preserving Code anchoring, the shared
+semantic Markdown command path, native fallback on ordinary Markdown and the
+Code scrollbar, live definition actions, ARIA and 24px-row styling,
+hide-before-run/focus restoration, submenu keyboard navigation, and
+bottom-right viewport fitting. Command grouping/preconditions and lifecycle
+stay in Viewer white-box tests; pure placement boundaries stay in the
+context-menu browser package.
+
 The shell-independent selection and native integration layer uses
 `tests/fixtures/workspace/README.md` and
 `tests/fixtures/workspace/src/literate.mbt.md` from

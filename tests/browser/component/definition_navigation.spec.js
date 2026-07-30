@@ -21,6 +21,16 @@ const markdownPeek =
 const markdownPreview =
   `${markdownPeek} .moonbit-viewer-definition-peek-preview > ` +
   '.moonbit-viewer-markdown-document';
+const contextMenu =
+  'body > .moonbit-context-menu:not(.moonbit-context-submenu)';
+const contextSubmenu = 'body > .moonbit-context-submenu';
+const goToDefinitionAction =
+  `${contextMenu} ` +
+  '[data-context-menu-command="editor.action.revealDefinition"]';
+const peekSubmenuAction = `${contextMenu} [aria-haspopup="menu"]`;
+const peekDefinitionAction =
+  `${contextSubmenu} ` +
+  '[data-context-menu-command="editor.action.peekDefinition"]';
 const platformModifier = process.platform === 'darwin' ? 'Meta' : 'Control';
 
 async function settle(page) {
@@ -59,6 +69,31 @@ async function markdownState(page) {
 async function resetScroll(page) {
   await page.evaluate(() => globalThis.__definitionControls.reset_scroll());
   await settle(page);
+}
+
+async function contextMenuDefaultPrevented(page, probeSelector, gesture) {
+  await page.evaluate((selector) => {
+    globalThis.__definitionContextMenuDefaultPrevented = null;
+    document.querySelector(selector).addEventListener(
+      'contextmenu',
+      (event) => {
+        globalThis.__definitionContextMenuDefaultPrevented =
+          event.defaultPrevented;
+      },
+      { once: true },
+    );
+  }, probeSelector);
+  await gesture();
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => globalThis.__definitionContextMenuDefaultPrevented,
+      ),
+    )
+    .not.toBeNull();
+  return page.evaluate(
+    () => globalThis.__definitionContextMenuDefaultPrevented,
+  );
 }
 
 async function textRange(page, rootSelector, line, needle) {
@@ -161,6 +196,283 @@ async function armDefinitionLink(page) {
   await expect(page.locator(definitionLink)).toHaveCount(1);
   return point;
 }
+
+test('HTML context menu preserves an enclosing selection and runs Go to Definition after closing', async ({
+  page,
+}, testInfo) => {
+  const reporter = await mountDefinitionFixture(page, testInfo);
+  try {
+    await page.evaluate(
+      () => globalThis.__definitionControls.select_reference(),
+    );
+    const point = await referencePoint(page);
+    expect(
+      await contextMenuDefaultPrevented(page, outerEditor, () =>
+        page.mouse.click(point.x, point.y, { button: 'right' }),
+      ),
+    ).toBe(true);
+    await expect(page.locator(contextMenu)).toHaveCount(1);
+    await expect(page.locator(`${contextMenu} [role="menu"]`)).toHaveCount(1);
+    await expect(page.locator(`${contextMenu} [role="menuitem"]`)).toHaveCount(
+      2,
+    );
+    await expect(page.locator(goToDefinitionAction)).toContainText(
+      'Go to Definition',
+    );
+    await expect(page.locator(peekSubmenuAction)).toContainText('Peek');
+    const menuState = await page.locator(contextMenu).evaluate((root) => {
+      const item = root.querySelector('.action-menu-item');
+      const menu = root.querySelector('.monaco-menu');
+      const keybinding = root.querySelector('.keybinding');
+      const style = getComputedStyle(menu);
+      return {
+        activeInside: root.contains(document.activeElement),
+        itemHeight: item.getBoundingClientRect().height,
+        background: style.backgroundColor,
+        fontSize: style.fontSize,
+        keybindingFontSize: getComputedStyle(keybinding).fontSize,
+        position: getComputedStyle(root).position,
+      };
+    });
+    expect(menuState.activeInside).toBe(true);
+    expect(menuState.itemHeight).toBe(24);
+    expect(menuState.background).not.toBe('rgba(0, 0, 0, 0)');
+    expect(menuState.keybindingFontSize).toBe(menuState.fontSize);
+    expect(menuState.position).toBe('fixed');
+    const selection = (await state(page)).selection;
+    expect(selection).toEqual({
+      anchorLine: 2,
+      anchorColumn: 11,
+      activeLine: 2,
+      activeColumn: 27,
+    });
+
+    await page.keyboard.press('Escape');
+    await expect(page.locator(contextMenu)).toHaveCount(0);
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            document.activeElement ===
+            globalThis.__definitionControls.outerRoot,
+        ),
+      )
+      .toBe(true);
+
+    await page.mouse.click(point.x, point.y, { button: 'right' });
+    await expect(page.locator(contextMenu)).toHaveCount(1);
+    await page.keyboard.press('Tab');
+    await expect(page.locator(contextMenu)).toHaveCount(0);
+
+    await page.mouse.click(point.x, point.y, { button: 'right' });
+    await expect(page.locator(contextMenu)).toHaveCount(1);
+    await page.locator('.definition-markdown-host').click({
+      position: { x: 4, y: 4 },
+    });
+    await expect(page.locator(contextMenu)).toHaveCount(0);
+
+    await page.mouse.click(point.x, point.y, { button: 'right' });
+    await expect(page.locator(contextMenu)).toHaveCount(1);
+    await page.evaluate(() => window.dispatchEvent(new Event('blur')));
+    await expect(page.locator(contextMenu)).toHaveCount(0);
+
+    const callsBefore = (await state(page)).providerCalls;
+    await page.mouse.click(point.x, point.y, { button: 'right' });
+    await page.locator(goToDefinitionAction).click();
+    await expect(page.locator(contextMenu)).toHaveCount(0);
+    await expect
+      .poll(async () => (await state(page)).position)
+      .toEqual({ line: 1, column: 5 });
+    expect((await state(page)).providerCalls).toBe(callsBefore + 1);
+  } finally {
+    reporter.dispose();
+  }
+});
+
+test('Shift+F10 fits the menu at a viewport edge and keyboard-opens Peek Definition', async ({
+  page,
+}, testInfo) => {
+  await page.setViewportSize({ width: 800, height: 600 });
+  const reporter = await mountDefinitionFixture(page, testInfo);
+  try {
+    const point = await referencePoint(page);
+    await page.mouse.click(point.x, point.y);
+    await page.locator('.definition-host').evaluate((host) => {
+      Object.assign(host.style, {
+        position: 'fixed',
+        right: '0',
+        bottom: '0',
+        width: '260px',
+        height: '70px',
+        zIndex: '10',
+      });
+    });
+    await page.evaluate(() => {
+      globalThis.__definitionControls.layout_outer();
+      globalThis.__definitionControls.focus_outer();
+    });
+    await settle(page);
+    const cursorBox = await page
+      .locator(`${outerEditor} .cursor`)
+      .first()
+      .boundingBox();
+    expect(cursorBox).not.toBeNull();
+
+    await page.keyboard.press('Shift+F10');
+    await expect(page.locator(contextMenu)).toHaveCount(1);
+    await expect
+      .poll(() =>
+        page.evaluate(
+          (selector) =>
+            document.activeElement?.matches(selector) ?? false,
+          goToDefinitionAction,
+        ),
+      )
+      .toBe(true);
+    const menuBox = await page.locator(contextMenu).boundingBox();
+    expect(menuBox).not.toBeNull();
+    expect(menuBox.x).toBeGreaterThanOrEqual(0);
+    expect(menuBox.y).toBeGreaterThanOrEqual(0);
+    expect(menuBox.x + menuBox.width).toBeLessThanOrEqual(800);
+    expect(menuBox.y + menuBox.height).toBeLessThanOrEqual(600);
+    expect(menuBox.x).toBeLessThan(cursorBox.x);
+    expect(menuBox.y).toBeLessThan(cursorBox.y);
+
+    await page.keyboard.press('ArrowDown');
+    await expect
+      .poll(() =>
+        page.evaluate(
+          (selector) =>
+            document.activeElement?.matches(selector) ?? false,
+          peekSubmenuAction,
+        ),
+      )
+      .toBe(true);
+    await page.keyboard.press('ArrowRight');
+    await expect(page.locator(contextSubmenu)).toHaveCount(1);
+    await expect(page.locator(peekDefinitionAction)).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(page.locator(contextMenu)).toHaveCount(0);
+    await expect(page.locator(contextSubmenu)).toHaveCount(0);
+    await expect(page.locator(peek)).toHaveCount(1);
+    await page.keyboard.press('Escape');
+    await expect(page.locator(peek)).toHaveCount(0);
+
+    await page.keyboard.press('Shift+F10');
+    await expect(page.locator(contextMenu)).toHaveCount(1);
+    await page.locator(peekSubmenuAction).hover();
+    await expect(page.locator(contextSubmenu)).toHaveCount(1);
+    await expect(page.locator(peekSubmenuAction)).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+    await page.locator(goToDefinitionAction).hover();
+    await expect(page.locator(contextSubmenu)).toHaveCount(0);
+    await page.keyboard.press('Escape');
+  } finally {
+    reporter.dispose();
+  }
+});
+
+test('semantic Markdown shares the HTML menu while ordinary Markdown and scrollbars keep the native menu', async ({
+  page,
+}, testInfo) => {
+  const reporter = await mountDefinitionFixture(page, testInfo);
+  try {
+    const ordinary = await markdownTextRange(
+      page,
+      'definition_alpha',
+      false,
+      0,
+    );
+    expect(
+      await contextMenuDefaultPrevented(
+        page,
+        `${markdownEditor} .moonbit-viewer-markdown-document-article`,
+        () =>
+          page.mouse.click(ordinary.x, ordinary.y, { button: 'right' }),
+      ),
+    ).toBe(false);
+    await expect(page.locator(contextMenu)).toHaveCount(0);
+    const proseBox = await page
+      .locator(
+        `${markdownEditor} ` +
+          '.moonbit-viewer-markdown-document-article p',
+      )
+      .first()
+      .boundingBox();
+    expect(proseBox).not.toBeNull();
+    const prose = { x: proseBox.x + 8, y: proseBox.y + 8 };
+
+    const semantic = await markdownTextRange(
+      page,
+      'definition_alpha',
+      true,
+      0,
+    );
+    expect(
+      await contextMenuDefaultPrevented(
+        page,
+        `${markdownEditor} .moonbit-viewer-markdown-document-article`,
+        () =>
+          page.mouse.click(semantic.x, semantic.y, { button: 'right' }),
+      ),
+    ).toBe(true);
+    await expect(page.locator(contextMenu)).toHaveCount(1);
+    expect(
+      await contextMenuDefaultPrevented(
+        page,
+        `${markdownEditor} .moonbit-viewer-markdown-document-article`,
+        () =>
+          page.mouse.click(prose.x, prose.y, { button: 'right' }),
+      ),
+    ).toBe(false);
+    await expect(page.locator(contextMenu)).toHaveCount(0);
+    const callsAfterNativeFallback = (await markdownState(page)).providerCalls;
+    await page.keyboard.press('F12');
+    await settle(page);
+    expect((await markdownState(page)).providerCalls).toBe(
+      callsAfterNativeFallback,
+    );
+
+    await page.mouse.click(semantic.x, semantic.y, { button: 'right' });
+    await expect(page.locator(contextMenu)).toHaveCount(1);
+    await page.keyboard.press('Escape');
+    await expect(page.locator(contextMenu)).toHaveCount(0);
+    await page.keyboard.press('Shift+F10');
+    await expect(page.locator(contextMenu)).toHaveCount(1);
+    await expect(page.locator(goToDefinitionAction)).toBeFocused();
+    await page.keyboard.press('Escape');
+
+    const callsBefore = (await markdownState(page)).providerCalls;
+    await page.mouse.click(semantic.x, semantic.y, { button: 'right' });
+    await page.locator(goToDefinitionAction).click();
+    await expect(page.locator(contextMenu)).toHaveCount(0);
+    await expect
+      .poll(async () => (await markdownState(page)).scrollTop)
+      .toBeGreaterThan(0);
+    expect((await markdownState(page)).providerCalls).toBe(callsBefore + 1);
+
+    const rail = page.locator(
+      `${outerEditor} ` +
+        '.monaco-scrollable-element.editor-scrollable > .scrollbar.vertical',
+    );
+    const railBox = await rail.boundingBox();
+    expect(railBox).not.toBeNull();
+    expect(
+      await contextMenuDefaultPrevented(page, outerEditor, () =>
+        page.mouse.click(
+          railBox.x + railBox.width / 2,
+          railBox.y + railBox.height / 2,
+          { button: 'right' },
+        ),
+      ),
+    ).toBe(false);
+    await expect(page.locator(contextMenu)).toHaveCount(0);
+  } finally {
+    reporter.dispose();
+  }
+});
 
 test('definition link preserves plain selection, paints only while armed, and navigates on an exact modifier click', async ({
   page,

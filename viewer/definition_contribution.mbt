@@ -175,6 +175,13 @@ fn DefinitionContributionState::dispose(
 fn register_definition_contribution(
   registry : EditorContributionRegistry,
 ) -> Unit {
+  registry.register_editor_submenu(
+    EditorContextPeek,
+    "Peek",
+    EditorContext,
+    "navigation",
+    100.0,
+  )
   registry.register_editor_contribution(
     definition_contribution_id,
     BeforeFirstInteraction,
@@ -190,13 +197,40 @@ fn register_definition_contribution(
       // VS Code's web fallback is the same Current-mode action.
       ("F12", false, true),
     ],
+    title="Go to Definition",
+    menu_keybinding_label=definition_menu_keybinding_label(
+      alt=false,
+      ctrl_cmd=false,
+    ),
+    menu_placements=[
+      { menu_id: EditorContext, group: "navigation", order: 1.1 },
+    ],
   )
   registry.register_editor_command(
     "editor.action.peekDefinition",
     viewer => viewer.definition_peek_available(),
     viewer => viewer.start_peek_definition(),
     [("F12", true, false)],
+    title="Peek Definition",
+    menu_keybinding_label=definition_menu_keybinding_label(
+      alt=true,
+      ctrl_cmd=false,
+    ),
+    menu_placements=[{ menu_id: EditorContextPeek, group: "peek", order: 2.0 }],
   )
+}
+
+///|
+fn definition_menu_keybinding_label(alt~ : Bool, ctrl_cmd~ : Bool) -> String {
+  if @base_common.is_macintosh {
+    (if alt { "\u{2325}" } else { "" }) +
+    (if ctrl_cmd { "\u{2318}" } else { "" }) +
+    "F12"
+  } else {
+    (if alt { "Alt+" } else { "" }) +
+    (if ctrl_cmd { "Ctrl+" } else { "" }) +
+    "F12"
+  }
 }
 
 ///|
@@ -230,6 +264,11 @@ fn Viewer::handle_markdown_definition_key_down(
   ctrl_cmd : Bool,
   shift : Bool,
 ) -> Bool {
+  if !alt &&
+    !ctrl_cmd &&
+    ((key == "F10" && shift) || (key == "ContextMenu" && !shift)) {
+    return self.show_markdown_context_menu_from_keyboard()
+  }
   guard key == "F12" && !shift else { return false }
   if alt && !ctrl_cmd && self.definition_peek_available() {
     self.start_peek_definition()
@@ -301,6 +340,7 @@ fn Viewer::cancel_definition_link(self : Viewer) -> Unit {
 
 ///|
 fn Viewer::reset_definition_requests(self : Viewer) -> Unit {
+  self.clear_markdown_context_menu_anchor()
   match self.definition_contribution() {
     Some(state) => {
       state.cancel_action()
@@ -314,6 +354,7 @@ fn Viewer::reset_definition_requests(self : Viewer) -> Unit {
 
 ///|
 fn Viewer::reset_definition_link(self : Viewer) -> Unit {
+  self.clear_markdown_context_menu_anchor()
   match self.definition_contribution() {
     Some(state) => state.reset_link_gesture()
     None => ()

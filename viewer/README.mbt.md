@@ -134,8 +134,9 @@ viewer.slot.data -> model: borrows readonly
   `Viewer.contributions` is the `EditorContributions` owner, and its `instances`
   map is the only per-Viewer instance store. Each central entry owns one
   concrete hover, folding, feedback-input, feedback-widget, quick-diff, or
-  Markdown-comment state value, or the definition request/link/Peek state, plus
-  its root listeners; feature packages keep no editor-id-keyed instance table.
+  Markdown-comment state value, the context-menu shell/source-anchor state, or
+  the definition request/link/Peek state, plus its root listeners; feature
+  packages keep no editor-id-keyed instance table.
   The content-hover payload additionally
   owns its controller, lazy widget and logical widget view, and timeout/async
   launch policy across model swaps. The Markdown-comment payload owns its
@@ -305,6 +306,36 @@ same Smooth request with `minimalReveal=true` after their `None` gate, so a
 target already at the viewport edge gains no extra vertical or horizontal
 padding. Smooth requests of at most one line downgrade to immediate, and the
 `smooth_scrolling=false` default also commits them immediately.
+
+## HTML editor context menu
+
+The browser Viewer uses a Monaco-shaped HTML context menu for definition
+commands. A right click on Code content text or empty content focuses the
+Viewer and moves the cursor only when the hit is outside the current selection.
+A right click on an exact semantic `.mbt.md` source row anchors the same
+original-model definition position. The live menu contains
+`Go to Definition` and `Peek > Peek Definition`; unavailable actions and empty
+submenus disappear. Ordinary Markdown, synthetic padding, injected text,
+margins, widgets, scrollbars, stale projections, and a Viewer with no available
+definition command retain the browser-native menu.
+
+The context-menu contribution owns one lazy browser widget per Viewer. Showing
+again replaces its transient DOM; running an action hides first. Escape, Tab,
+outside primary pointer input, focus/window blur, model/content change, scroll,
+and disposal dismiss it. Shift+F10 or the Context Menu key opens at the Code
+cursor, or at Markdown's most recent still-valid semantic pointer anchor.
+Keyboard navigation supports Up/Down/Home/End/PageUp/PageDown, Enter/Space, and
+Right/Left for the `Peek` submenu. Root and submenu overlays prefer
+right/down placement, flip at viewport edges, expose `menu`/`menuitem` and
+submenu ARIA state, and restore the prior focused element when focus still
+belongs to the menu.
+
+This is the selected Monaco/VS Code Web behavior, not a desktop-native menu or
+a public extension surface. Clipboard/edit/refactor/source/history entries,
+scrollbar actions, touch long press, visible disabled actions, icons,
+mnemonics, and deeper submenus remain outside this first surface. Independent
+Viewers each own their menu rather than sharing a process-global context-menu
+service.
 
 ## Definition navigation
 

@@ -21,7 +21,15 @@
   --vscode-widget-border: #313131;
   --vscode-widget-shadow: rgb(0 0 0 / 36%);
   --vscode-shadow-hover: rgb(0 0 0 / 36%);
+  --vscode-shadow-lg: 0 0 12px rgb(0 0 0 / 36%);
+  --vscode-cornerRadius-medium: 2px;
   --vscode-cornerRadius-large: 4px;
+  --vscode-menu-background: #1f1f1f;
+  --vscode-menu-foreground: #cccccc;
+  --vscode-menu-selectionBackground: #0078d4;
+  --vscode-menu-selectionForeground: #ffffff;
+  --vscode-menu-separatorBackground: #cccccc33;
+  --vscode-menu-border: transparent;
 
   --vscode-editor-background: #1f1f1f;
   --vscode-editor-foreground: #cccccc;
@@ -145,7 +153,15 @@
   --vscode-widget-border: #e5e5e5;
   --vscode-widget-shadow: rgb(0 0 0 / 16%);
   --vscode-shadow-hover: rgb(0 0 0 / 16%);
+  --vscode-shadow-lg: 0 0 12px rgb(0 0 0 / 16%);
+  --vscode-cornerRadius-medium: 2px;
   --vscode-cornerRadius-large: 4px;
+  --vscode-menu-background: #ffffff;
+  --vscode-menu-foreground: #3b3b3b;
+  --vscode-menu-selectionBackground: #005fb8;
+  --vscode-menu-selectionForeground: #ffffff;
+  --vscode-menu-separatorBackground: #3b3b3b33;
+  --vscode-menu-border: #cecece;
 
   --vscode-editor-background: #ffffff;
   --vscode-editor-foreground: #3b3b3b;

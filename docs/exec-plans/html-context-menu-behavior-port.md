@@ -48,10 +48,10 @@ Oracle: `vscode` revision `b18492a288de038fbc7643aae6de8247029d11bd`
   - the initial menu contains top-level `Go to Definition` and
     `Peek > Peek Definition`, with labels and keybinding hints owned by command
     registration rather than hard-coded in the DOM widget;
-  - only one menu is visible, showing a new menu replaces the old one, an
-    action hides the menu before it runs, and Escape, Tab, outside primary
-    pointer down, window blur, model/presentation change, and Viewer disposal
-    close it;
+  - only one menu is visible per Viewer, showing a new menu replaces the old
+    one, an action hides the menu before it runs, and Escape, Tab, outside
+    primary pointer down, window blur, model/presentation change, and Viewer
+    disposal close it;
   - focus enters the menu and returns to the previously focused element when
     the menu still owns focus on close;
   - the root menu and submenus fit the visual viewport and flip left/up when
@@ -97,9 +97,9 @@ browser resources.
 | DOM event is hit-tested and emitted with prevent/stop control | `mouseHandler.ts:90-92,262-266` and widget event forwarding | add the omitted `onContextMenu` path beside existing mouse events | focused controller and Viewer white-box tests |
 | Eligible target filtering and cursor placement | `contextmenu.ts:60-133` | Code content text/empty only; semantic Markdown uses a projected row; native widgets and ordinary Markdown fall through | Viewer white-box tests plus Chromium Code/Markdown cases |
 | Live grouped command menu with empty-submenu removal | `contextmenu.ts:164-226`, `goToCommands.ts:44-49,274-312,343-374` | closed menu IDs and command placements; definition preconditions evaluated for each show | registry white-box tests and Chromium visibility cases |
-| One active menu, hide-before-run, outside/blur close, focus restore | `contextMenuHandler.ts:42-164`, `contextview.ts:184-279` | concrete per-Viewer menu widget and exactly-once disposal | browser-package tests and Chromium lifecycle case |
+| One active menu, hide-before-run, outside/blur close, focus restore | `contextMenuHandler.ts:42-164`, `contextview.ts:184-279` | concrete per-Viewer menu widget and exactly-once disposal | mounted Viewer white-box tests and Chromium lifecycle case |
 | Viewport fit and submenu flip | `contextview.ts:184-279`, `menu.ts:647-763` | fixed-position root/submenu measurement and clamping | pure geometry tests plus Chromium edge-placement case |
-| ARIA and keyboard/submenu navigation | `menu.ts:105-175,219-384,647-763` | menu/menuitem DOM roles and selected key transitions | browser-package state tests plus Chromium Shift+F10 case |
+| ARIA and keyboard/submenu navigation | `menu.ts:105-175,219-384,647-763` | menu/menuitem DOM roles and selected key transitions | mounted Viewer DOM checks plus Chromium Shift+F10 case |
 | Monaco-like HTML surface | `menu.ts:1019-1333` | scoped CSS using local `--vscode-menu-*`, shadow, and corner variables | Chromium computed-style/layout assertions |
 | Definition action semantics | `goToCommands.ts:274-312,343-374` | reuse existing reveal/Peek command implementations and availability | existing definition suites plus new right-click action cases |
 | Scrollbar context menu | `contextmenu.ts:99-105` | N-A (no local mutable scrollbar actions); retain native browser menu | Chromium native-fallback assertion |
@@ -119,6 +119,9 @@ browser resources.
 - Monaco exposes disabled actions in some menus. The selected definition
   actions disappear when their preconditions fail, so the local entry model
   does not yet include disabled rows.
+- VS Code's application `IContextMenuService` serializes menus across editors.
+  The reusable facade deliberately keeps no process-global browser service, so
+  replacement is per independent Viewer.
 
 ## Test Matrix
 
@@ -139,8 +142,8 @@ browser resources.
 - Harness layers:
   - DOM-free MoonBit white-box tests for registration, grouping, command
     preconditions, dispatch, and geometry;
-  - browser-package tests for DOM roles, keyboard state, listener teardown, and
-    focus;
+  - mounted Viewer white-box tests for menu registration, replacement, DOM
+    roles, lifecycle, and command dispatch;
   - focused Chromium component cases for actual hit-testing, CSS, native
     fallback, edge placement, Code navigation, semantic Markdown navigation,
     and Peek.
@@ -151,5 +154,5 @@ browser resources.
 - [x] representation decision reviewed
 - [x] behaviors/invariants accounted for
 - [x] deferrals, exclusions, and skips explicit
-- [ ] focused evidence green
+- [x] focused evidence green
 - [ ] relevant repository checks green
