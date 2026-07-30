@@ -96,20 +96,20 @@ async fn resolved_browser_build_dir(
   bundles : Array[BrowserBundle],
 ) -> String {
   let plain = "_build/js/debug/build/tests/browser/moonbit"
-  let module = "_build/js/debug/build/moonbitlang/editor/tests/browser/moonbit"
+  let module_dir = "_build/js/debug/build/moonbitlang/editor/tests/browser/moonbit"
   let mut plain_complete = true
   let mut module_complete = true
   for bundle in bundles {
     if !browser_bundle_exists(plain, bundle) {
       plain_complete = false
     }
-    if !browser_bundle_exists(module, bundle) {
+    if !browser_bundle_exists(module_dir, bundle) {
       module_complete = false
     }
   }
   match (plain_complete, module_complete) {
     (true, false) => plain
-    (false, true) => module
+    (false, true) => module_dir
     (false, false) =>
       fail("missing js artifacts for the browser test bundles; run `moon build` first")
     (true, true) =>

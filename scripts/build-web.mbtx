@@ -25,13 +25,13 @@ async fn resolved_build_dir(
   artifacts : Array[String],
 ) -> String {
   let plain = "_build/js/debug/build/\{package_path}"
-  let module = "_build/js/debug/build/moonbitlang/editor/\{package_path}"
+  let module_dir = "_build/js/debug/build/moonbitlang/editor/\{package_path}"
   match (
     build_layout_contains(plain, artifacts),
-    build_layout_contains(module, artifacts),
+    build_layout_contains(module_dir, artifacts),
   ) {
     (true, false) => plain
-    (false, true) => module
+    (false, true) => module_dir
     (false, false) =>
       fail("missing js artifacts for \{package_path}; run `moon build` first")
     (true, true) =>

@@ -57,12 +57,12 @@ test "only the exact protocol version negotiates" {
     ),
     content=(
       #|(
-      #|  4,
-      #|  ProtocolAccepted(4),
+      #|  5,
+      #|  ProtocolAccepted(5),
       #|  ProtocolRejected(
       #|    {
       #|      code: ProtocolUnsupportedVersion,
-      #|      message: "Unsupported remote protocol version 3",
+      #|      message: "Unsupported remote protocol version 4",
       #|      request_id: "",
       #|      provider_code: "",
       #|    },

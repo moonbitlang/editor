@@ -73,7 +73,7 @@ fn doc_model(text : String) -> @model.TextModel raise {
 }
 
 ///|
-async test "hover_at returns the first non-empty live result" {
+async test "hover_at returns the first non-empty result in registry priority" {
   let registry = @languages.Languages()
   let log = @log.LogService(logger=@log.NullLogger())
   registry.register_hover_provider(LanguageId("moonbit"), FixedHover::{
@@ -89,7 +89,7 @@ async test "hover_at returns the first non-empty live result" {
   debug_inspect(
     hover.map(h => h.contents),
     content=(
-      #|Some([PlainText("first")])
+      #|Some([PlainText("second")])
     ),
   )
 }
