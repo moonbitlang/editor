@@ -310,11 +310,7 @@ async test "navigation handles stay optional and borrowed after bundle disposal"
   ) => {
     resolve_calls.val += 1
     if resource.to_string() == target.to_string() {
-      Some(
-        TextModelReference(model, release=() => {
-          release_calls.val += 1
-        }),
-      )
+      Some(TextModelReference(model, release=() => release_calls.val += 1))
     } else {
       None
     }

@@ -218,9 +218,7 @@ test "parses ordered moon definition results and rejects unsafe entries" {
     #|  {"path":"/workspace/demo/src/malformed.mbt","range":"bad"},
     #|  {"path":"/workspace/demo/src/missing-range.mbt"}
     #|]
-  let locations = @host.parse_moon_definition_output(
-    "/workspace/demo", raw,
-  )
+  let locations = @host.parse_moon_definition_output("/workspace/demo", raw)
   assert_eq(locations.length(), 2)
   assert_eq(
     locations[0].uri.to_string(),
@@ -239,9 +237,7 @@ test "parses ordered moon definition results and rejects unsafe entries" {
     0,
   )
   assert_eq(
-    @host.parse_moon_definition_output(
-      "/workspace/demo", "not json",
-    ).length(),
+    @host.parse_moon_definition_output("/workspace/demo", "not json").length(),
     0,
   )
 }
