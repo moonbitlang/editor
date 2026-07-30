@@ -58,10 +58,13 @@ jobs:
   # asset pipeline and the Playwright suites end to end — the layer where a
   # justfile/serve/config drift is invisible to moon check and moon test.
   # One platform and channel is enough: this gate tests DOM behavior, not
-  # toolchains. The perf profile stays out of CI; it is an opt-in diagnostic
-  # and needs the heavyweight VS Code submodule.
+  # toolchains. It runs on macOS because the suites assert font-dependent
+  # geometry (selection rectangles, DOM-measured metrics) that is maintained
+  # green against macOS font defaults; on ubuntu 16 of them fail on font
+  # differences alone. The perf profile stays out of CI; it is an opt-in
+  # diagnostic and needs the heavyweight VS Code submodule.
   browser-correctness:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     timeout-minutes: 30
     permissions:
       contents: read
