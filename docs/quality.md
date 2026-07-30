@@ -7,13 +7,14 @@ plan history in `docs/exec-plans/HISTORY.md`.
 ## Required Checks
 
 ```sh
-just check
+moon check --target all --warn-list +73
+moon fmt --check
 just test
 just build
 just test-browser-smoke
 ```
 
-Run the subset relevant to each milestone; run all four before declaring a
+Run the subset relevant to each milestone; run all of them before declaring a
 cross-package or browser-visible implementation complete.
 
 `just test-browser-perf` is a diagnostic workflow, not a routine development
@@ -26,7 +27,8 @@ render-timing, or perf-harness behavior.
 - Shared packages remain FFI-free; js/native-only packages declare their target.
 - Viewer packages use only Rabbita's DOM/JS bindings, not its TEA framework.
 - The shell/backend remains optional to embedders.
-- `just check` is read-only: it checks every target and verifies formatting.
+- The check gate is read-only: `moon check --target all --warn-list +73` covers
+  every target and `moon fmt --check` verifies formatting.
 - Review `moon.pkg` changes against `docs/architecture.md`, and review public API
   changes through `pkg.generated.mbti`.
 - Do not add architecture lint for a one-time design decision. Automate a
