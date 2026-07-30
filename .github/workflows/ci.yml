@@ -1,0 +1,45 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  moon-gates:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Linux would have caught the platform-dependent doc snapshot that
+        # instead surfaced at publish time; macOS keeps the other side of
+        # platform-sensitive behavior (ExtUri case bias, font defaults) honest.
+        os: [ubuntu-latest, macos-latest]
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          submodules: true
+
+      - name: install moon
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+
+      - name: post install
+        run: |
+          moon version --all
+          moon update
+
+      # The same gates docs/quality.md names as `just check` + `just test`,
+      # spelled out so CI does not need just installed. Runs at the workspace
+      # root, so the native server member is covered too.
+      - name: check
+        run: |
+          moon check --target all --warn-list +73
+          moon fmt --check
+
+      - name: test
+        run: moon test --target all
