@@ -54,7 +54,7 @@ type LanguageFeatureRegistry[T]
 pub struct LanguageHandle {
   // private fields
 }
-pub async fn LanguageHandle::definition_at(Self, @model.TextModel, Int, token? : @language.CancellationToken) -> Array[@language.Location] noraise
+pub async fn LanguageHandle::definition_at(Self, @model.TextModel, Int, token? : @language.CancellationToken, run_tasks? : async (Array[async () -> Unit]) -> Unit) -> Array[@language.Location] noraise
 pub fn LanguageHandle::get_language_configuration(Self, String) -> LanguageConfiguration
 pub fn LanguageHandle::has_definition_provider(Self, @model.TextModel) -> Bool
 pub async fn LanguageHandle::hover_at(Self, @model.TextModel, Int, token? : @language.CancellationToken) -> @language.Hover? noraise
@@ -66,7 +66,7 @@ pub struct Languages {
 }
 #alias(new, deprecated)
 pub fn Languages::Languages() -> Self
-pub async fn Languages::definition_at(Self, @model.TextModel, Int, @log.LogService, token? : @language.CancellationToken) -> Array[@language.Location] noraise
+pub async fn Languages::definition_at(Self, @model.TextModel, Int, @log.LogService, token? : @language.CancellationToken, run_tasks? : async (Array[async () -> Unit]) -> Unit) -> Array[@language.Location] noraise
 pub async fn Languages::document_symbols(Self, @model.TextModel, @log.LogService) -> Array[@language.DocumentSymbol] noraise
 pub fn Languages::get_language_configuration(Self, String) -> LanguageConfiguration
 pub fn Languages::has_definition_provider(Self, @model.TextModel) -> Bool

@@ -1,6 +1,7 @@
 ///|
 struct LanguageFeatureRegistry[T] {
   entries : Array[LanguageFeatureEntry[T]]
+  mut clock : Int
 }
 
 ///|
@@ -8,6 +9,7 @@ priv struct LanguageFeatureEntry[T] {
   selector : @language.LanguageSelector
   provider : T
   active : Ref[Bool]
+  registration_time : Int
 }
 
 ///|
@@ -18,11 +20,12 @@ priv struct LanguageFeatureEntry[T] {
 priv struct LanguageFeatureSnapshot[T] {
   entry : LanguageFeatureEntry[T]
   provider_index : Int
+  score : Int
 }
 
 ///|
 fn[T] LanguageFeatureRegistry::new() -> LanguageFeatureRegistry[T] {
-  { entries: [] }
+  { entries: [], clock: 0 }
 }
 
 ///|
@@ -32,7 +35,14 @@ fn[T] LanguageFeatureRegistry::register(
   provider : T,
 ) -> @base_common.Disposable {
   let active = Ref(true)
-  let entry : LanguageFeatureEntry[T] = { selector, provider, active }
+  let registration_time = self.clock
+  self.clock += 1
+  let entry : LanguageFeatureEntry[T] = {
+    selector,
+    provider,
+    active,
+    registration_time,
+  }
   self.entries.push(entry)
   @base_common.Disposable::from(() => {
     active.val = false
@@ -43,19 +53,29 @@ fn[T] LanguageFeatureRegistry::register(
 }
 
 ///|
-/// Captures the matching, currently active registrations in stable registry
-/// order. The returned array is independent of later registry compaction;
-/// each captured entry retains the registration's shared liveness reference.
+/// Captures the matching, currently active registrations in Monaco registry
+/// priority: selector score descending, then registration time descending.
+/// The returned array is independent of later registry compaction; each
+/// captured entry retains the registration's shared liveness reference.
 fn[T] LanguageFeatureRegistry::snapshot_matching(
   self : LanguageFeatureRegistry[T],
   model : @model.TextModel,
 ) -> Array[LanguageFeatureSnapshot[T]] {
   let result : Array[LanguageFeatureSnapshot[T]] = []
-  for provider_index, entry in self.entries {
-    if entry.active.val && entry.selector.matches(model) {
-      result.push({ entry, provider_index })
+  for entry in self.entries {
+    let score = entry.selector.score(model)
+    if entry.active.val && score > 0 {
+      result.push({ entry, provider_index: entry.registration_time, score })
     }
   }
+  result.sort_by((left, right) => {
+    let score_order = right.score - left.score
+    if score_order != 0 {
+      score_order
+    } else {
+      right.entry.registration_time - left.entry.registration_time
+    }
+  })
   result
 }
 
@@ -110,6 +130,7 @@ pub struct LanguageHandle {
     @model.TextModel,
     Int,
     @language.CancellationToken,
+    async (Array[async () -> Unit]) -> Unit,
   ) -> Array[@language.Location] noraise
   priv has_definition_provider_callback : (@model.TextModel) -> Bool
 }
@@ -145,8 +166,14 @@ pub fn Languages::language_handle(
     hover_at_callback: (model, offset, token) => {
       self.hover_at_with_log_handle(model, offset, log_service, token~)
     },
-    definition_at_callback: (model, offset, token) => {
-      self.definition_at_with_log_handle(model, offset, log_service, token~)
+    definition_at_callback: (model, offset, token, run_tasks) => {
+      self.definition_at_with_log_handle(
+        model,
+        offset,
+        log_service,
+        token~,
+        run_tasks~,
+      )
     },
     has_definition_provider_callback: model => {
       self.has_definition_provider(model)
@@ -198,14 +225,17 @@ pub async fn LanguageHandle::hover_at(
 
 ///|
 /// Resolves definitions through every matching provider and concatenates their
-/// live results in stable registration order.
+/// live results in Monaco registry priority (selector score, then newest
+/// registration). An injected runner must return only after every task has
+/// terminated.
 pub async fn LanguageHandle::definition_at(
   self : LanguageHandle,
   model : @model.TextModel,
   offset : Int,
   token? : @language.CancellationToken = @language.CancellationToken::none(),
+  run_tasks? : async (Array[async () -> Unit]) -> Unit = @base_common.run_async_tasks_sequentially,
 ) -> Array[@language.Location] noraise {
-  (self.definition_at_callback)(model, offset, token)
+  (self.definition_at_callback)(model, offset, token, run_tasks)
 }
 
 ///|
@@ -324,7 +354,7 @@ fn Languages::markdown_comment_provider_result_with_log_handle(
 }
 
 ///|
-/// Returns the first non-empty hover answer in provider order.
+/// Returns the first non-empty hover answer in registry priority.
 pub async fn Languages::hover_at(
   self : Languages,
   model : @model.TextModel,
@@ -383,19 +413,22 @@ async fn Languages::hover_at_with_log_handle(
 }
 
 ///|
-/// Returns all live definition answers concatenated in provider order.
+/// Returns all live definition answers concatenated in registry priority. An
+/// injected runner must return only after every task has terminated.
 pub async fn Languages::definition_at(
   self : Languages,
   model : @model.TextModel,
   offset : Int,
   log_service : @log.LogService,
   token? : @language.CancellationToken = @language.CancellationToken::none(),
+  run_tasks? : async (Array[async () -> Unit]) -> Unit = @base_common.run_async_tasks_sequentially,
 ) -> Array[@language.Location] noraise {
   self.definition_at_with_log_handle(
     model,
     offset,
     log_service.log_handle(),
     token~,
+    run_tasks~,
   )
 }
 
@@ -406,20 +439,24 @@ async fn Languages::definition_at_with_log_handle(
   offset : Int,
   log_service : @log.LogHandle,
   token? : @language.CancellationToken = @language.CancellationToken::none(),
+  run_tasks? : async (Array[async () -> Unit]) -> Unit = @base_common.run_async_tasks_sequentially,
 ) -> Array[@language.Location] noraise {
   if token.is_cancellation_requested() {
     return []
   }
   let position = model.get_position_at(offset)
   let providers = self.definition_provider.snapshot_matching(model)
-  let tasks : Array[async () -> Array[@language.Location]] = []
-  for captured in providers {
+  let provider_results : Array[Array[@language.Location]?] = [
+    for _ in 0..<providers.length() => None
+  ]
+  let tasks : Array[async () -> Unit] = []
+  for result_index, captured in providers {
     tasks.push(() => {
       let entry = captured.entry
       if token.is_cancellation_requested() || !entry.active.val {
-        return []
+        return
       }
-      entry.provider.provide_definition(model, position, token) catch {
+      let result = entry.provider.provide_definition(model, position, token) catch {
         _ => {
           if !token.is_cancellation_requested() {
             log_provider_failure(
@@ -432,16 +469,23 @@ async fn Languages::definition_at_with_log_handle(
           []
         }
       }
+      provider_results[result_index] = Some(result)
     })
   }
-  let provider_results = @async.all(tasks) catch { _ => [] }
+  run_tasks(tasks) catch {
+    _ => ()
+  }
   if token.is_cancellation_requested() {
     return []
   }
   let locations : Array[@language.Location] = []
   for index, result in provider_results {
-    if providers[index].entry.active.val {
-      locations.append(result)
+    match result {
+      Some(result) =>
+        if providers[index].entry.active.val {
+          locations.append(result)
+        }
+      None => ()
     }
   }
   locations
@@ -467,20 +511,22 @@ pub async fn Languages::document_symbols(
   let symbols : Array[@language.DocumentSymbol] = []
   let token = @language.CancellationToken::none()
   let log_handle = log_service.log_handle()
-  for index in 0..<self.document_symbol_provider.entries.length() {
-    let entry = self.document_symbol_provider.entries[index]
-    if !entry.active.val || !entry.selector.matches(model) {
-      continue
-    }
+  for captured in self.document_symbol_provider.snapshot_matching(model) {
+    let entry = captured.entry
     let result = entry.provider.provide_document_symbols(model, token) catch {
       _ => {
         log_provider_failure(
-          log_handle, "language.documentSymbols", model, index,
+          log_handle,
+          "language.documentSymbols",
+          model,
+          captured.provider_index,
         )
         []
       }
     }
-    symbols.append(result)
+    if entry.active.val {
+      symbols.append(result)
+    }
   }
   symbols
 }

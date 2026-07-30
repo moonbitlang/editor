@@ -76,6 +76,17 @@ impl @language.DefinitionProvider for GatedDefinitionProvider with fn provide_de
 }
 
 ///|
+async fn run_definition_test_tasks_concurrently(
+  tasks : Array[async () -> Unit],
+) -> Unit {
+  @async.with_task_group() <| group => {
+    for task in tasks {
+      group.spawn_bg(task)
+    }
+  }
+}
+
+///|
 async test "definition presence and query aggregate provider and location order" {
   let languages = Languages()
   let model = test_model()
@@ -135,12 +146,12 @@ async test "definition presence and query aggregate provider and location order"
   assert_true(physical_equal(result_tokens[0], token))
   assert_true(physical_equal(later_tokens[0], token))
   assert_eq(locations.length(), 3)
-  assert_eq(locations[0].uri.to_string(), model.uri.to_string())
-  assert_true(locations[0].range == Range(1, 4, 1, 8))
-  assert_eq(locations[1].uri.to_string(), target.to_string())
-  assert_true(locations[1].range == Range(7, 2, 7, 6))
-  assert_eq(locations[2].uri.to_string(), later_target.to_string())
-  assert_true(locations[2].range == Range(4, 3, 4, 7))
+  assert_eq(locations[0].uri.to_string(), later_target.to_string())
+  assert_true(locations[0].range == Range(4, 3, 4, 7))
+  assert_eq(locations[1].uri.to_string(), model.uri.to_string())
+  assert_true(locations[1].range == Range(1, 4, 1, 8))
+  assert_eq(locations[2].uri.to_string(), target.to_string())
+  assert_true(locations[2].range == Range(7, 2, 7, 6))
 
   empty.dispose()
   result.dispose()
@@ -148,6 +159,51 @@ async test "definition presence and query aggregate provider and location order"
   assert_true(!languages.has_definition_provider(model))
   assert_true(!handle.has_definition_provider(model))
   unmatched.dispose()
+}
+
+///|
+async test "definition selector score beats registration time and empty filters" {
+  let languages = Languages()
+  let model = test_model()
+  let wildcard_target = try! @base_common.Uri::parse(
+    "readonly-remote://workspace/src/wildcard.mbt",
+  )
+  let exact_target = try! @base_common.Uri::parse(
+    "readonly-remote://workspace/src/exact.mbt",
+  )
+  let wildcard_calls = Ref(0)
+  let wildcard = languages.register_definition_provider(LanguageId("*"), RecordingDefinitionProvider::{
+    locations: [{ uri: wildcard_target, range: Range(2, 1, 2, 4) }],
+    calls: wildcard_calls,
+    observed_tokens: [],
+  })
+  let exact_calls = Ref(0)
+  let exact = languages.register_definition_provider(LanguageId("moonbit"), RecordingDefinitionProvider::{
+    locations: [{ uri: exact_target, range: Range(3, 1, 3, 4) }],
+    calls: exact_calls,
+    observed_tokens: [],
+  })
+  let empty_calls = Ref(0)
+  let empty = languages.register_definition_provider(
+    LanguageFilter(LanguageFilter()),
+    RecordingDefinitionProvider::{
+      locations: [{ uri: model.uri, range: Range(4, 1, 4, 4) }],
+      calls: empty_calls,
+      observed_tokens: [],
+    },
+  )
+
+  let locations = languages.definition_at(model, 3, LogService())
+  assert_eq(exact_calls.val, 1)
+  assert_eq(wildcard_calls.val, 1)
+  assert_eq(empty_calls.val, 0)
+  assert_eq(locations.length(), 2)
+  assert_eq(locations[0].uri.to_string(), exact_target.to_string())
+  assert_eq(locations[1].uri.to_string(), wildcard_target.to_string())
+
+  empty.dispose()
+  exact.dispose()
+  wildcard.dispose()
 }
 
 ///|
@@ -205,7 +261,28 @@ async test "definition cancellation and disposal reject late data silently" {
 }
 
 ///|
-async test "definition providers start concurrently and late disposal drops data" {
+async test "definition provider disposal alone rejects late data" {
+  let languages = Languages()
+  let started = @aqueue.Queue(kind=Unbounded)
+  let gate = @aqueue.Queue(kind=Unbounded)
+  let registration = languages.register_definition_provider(
+    LanguageId("moonbit"),
+    ControlledDefinitionProvider::{ started, gate },
+  )
+  let model = test_model()
+  @async.with_task_group() <| group => {
+    let request = group.spawn(() => {
+      languages.definition_at(model, 3, LogService())
+    })
+    started.get() |> ignore
+    registration.dispose()
+    gate.put(())
+    assert_true(request.wait().is_empty())
+  }
+}
+
+///|
+async test "definition providers start concurrently and preserve registry priority" {
   let languages = Languages()
   let model = test_model()
   let started = @aqueue.Queue(kind=Unbounded)
@@ -236,7 +313,12 @@ async test "definition providers start concurrently and late disposal drops data
   let observed_completions : Array[Int] = []
   @async.with_task_group() <| group => {
     let request = group.spawn(() => {
-      languages.definition_at(model, 3, LogService())
+      languages.definition_at(
+        model,
+        3,
+        LogService(),
+        run_tasks=run_definition_test_tasks_concurrently,
+      )
     })
     match @async.with_timeout_opt(1000, () => started.get()) {
       Some(id) => observed_starts.push(id)
@@ -246,22 +328,29 @@ async test "definition providers start concurrently and late disposal drops data
       Some(id) => observed_starts.push(id)
       None => ()
     }
+    second_gate.put(())
+    match @async.with_timeout_opt(1000, () => completed.get()) {
+      Some(id) => observed_completions.push(id)
+      None => ()
+    }
     first_gate.put(())
     match @async.with_timeout_opt(1000, () => completed.get()) {
       Some(id) => observed_completions.push(id)
       None => ()
     }
-    first.dispose()
-    second_gate.put(())
     let locations = request.wait()
-    assert_eq(locations.length(), 1)
+    assert_eq(locations.length(), 2)
     assert_eq(locations[0].uri.to_string(), second_target.to_string())
     assert_true(locations[0].range == Range(5, 2, 5, 6))
+    assert_eq(locations[1].uri.to_string(), first_target.to_string())
+    assert_true(locations[1].range == Range(2, 1, 2, 4))
   }
   assert_eq(observed_starts.length(), 2)
   assert_true(observed_starts.contains(0))
   assert_true(observed_starts.contains(1))
-  assert_eq(observed_completions.length(), 1)
-  assert_eq(observed_completions[0], 0)
+  assert_eq(observed_completions.length(), 2)
+  assert_eq(observed_completions[0], 1)
+  assert_eq(observed_completions[1], 0)
+  first.dispose()
   second.dispose()
 }

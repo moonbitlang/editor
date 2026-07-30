@@ -25,8 +25,13 @@ matching registrations before their first await, forward the caller's exact
 cancellation token, reject a result from a registration disposed during the
 await, and keep cancellation silent; ordinary provider failures are logged and
 contained. `hover_at` returns the first non-empty live result. Definition
-requests start every matching provider concurrently, then concatenate every
-still-live result in stable registration order.
+requests build one task per matching provider and concatenate every still-live
+result in Monaco registry priority: selector score descending, then newest
+registration first. Exact language/scheme/path matches score above
+language/scheme wildcards; an unconstrained filter does not match. The
+runtime-neutral default runner is sequential; browser hosts inject their
+Promise-backed concurrent runner without coupling this package to a specific
+async runtime.
 
 Definition-provider presence can be queried without launching a provider, both
 from `Languages` and the borrowed `LanguageHandle`.

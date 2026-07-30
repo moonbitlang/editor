@@ -19,11 +19,11 @@ async test "provider failures are logged and isolated" {
   let memory = @log.MemoryLogger()
   let log_service = @log.LogService(logger=memory)
   let languages = Languages()
-  languages.register_hover_provider(LanguageId("moonbit"), FailingHoverProvider::{
+  languages.register_hover_provider(LanguageId("moonbit"), TestHoverProvider::{
 
   })
   |> ignore
-  languages.register_hover_provider(LanguageId("moonbit"), TestHoverProvider::{
+  languages.register_hover_provider(LanguageId("moonbit"), FailingHoverProvider::{
 
   })
   |> ignore
@@ -33,7 +33,7 @@ async test "provider failures are logged and isolated" {
   let entries = memory.entries()
   assert_eq(entries.length(), 1)
   assert_true(entries[0].category == "language.hover")
-  assert_true(entries[0].details[2] == ("providerIndex", "0"))
+  assert_true(entries[0].details[2] == ("providerIndex", "1"))
 }
 
 ///|
@@ -44,11 +44,11 @@ async test "language handle prebinds logging and forwards the exact capability" 
     comments: None,
     folding_rules: Some({ off_side: true, markers: None }),
   })
-  languages.register_hover_provider(LanguageId("moonbit"), FailingHoverProvider::{
+  languages.register_hover_provider(LanguageId("moonbit"), TestHoverProvider::{
 
   })
   |> ignore
-  languages.register_hover_provider(LanguageId("moonbit"), TestHoverProvider::{
+  languages.register_hover_provider(LanguageId("moonbit"), FailingHoverProvider::{
 
   })
   |> ignore
@@ -83,7 +83,7 @@ test "token providers dispose only the active registration" {
 }
 
 ///|
-async test "language provider registrations preserve order after disposal" {
+async test "language provider registrations prefer newer ties after disposal" {
   let languages = Languages()
   let first = languages.register_hover_provider(LanguageId("moonbit"), NamedHoverProvider::{
     text: "first",
@@ -93,10 +93,10 @@ async test "language provider registrations preserve order after disposal" {
   })
   let log_service = @log.LogService()
   let model = test_model()
-  assert_hover_text(languages.hover_at(model, 3, log_service), "first")
-  first.dispose()
   assert_hover_text(languages.hover_at(model, 3, log_service), "second")
   second.dispose()
+  assert_hover_text(languages.hover_at(model, 3, log_service), "first")
+  first.dispose()
   assert_true(languages.hover_at(model, 3, log_service) is None)
 }
 
@@ -117,11 +117,6 @@ test "markdown comment providers preserve order disposal and authoritative empty
       calls: unmatched_calls,
     },
   )
-  let empty_calls = Ref(0)
-  let empty = languages.register_markdown_comment_provider(
-    LanguageId("moonbit"),
-    RecordingMarkdownCommentProvider::{ blocks: [], calls: empty_calls },
-  )
   let second_calls = Ref(0)
   let second = languages.register_markdown_comment_provider(
     LanguageId("moonbit"),
@@ -130,6 +125,11 @@ test "markdown comment providers preserve order disposal and authoritative empty
       calls: second_calls,
     },
     foldable=true,
+  )
+  let empty_calls = Ref(0)
+  let empty = languages.register_markdown_comment_provider(
+    LanguageId("moonbit"),
+    RecordingMarkdownCommentProvider::{ blocks: [], calls: empty_calls },
   )
 
   guard languages.markdown_comment_provider_result(model, log_service)
@@ -167,10 +167,6 @@ test "markdown comment providers preserve order disposal and authoritative empty
 ///|
 test "language handle logs failed markdown provider as authoritative empty" {
   let languages = Languages()
-  let failed = languages.register_markdown_comment_provider(
-    LanguageId("moonbit"),
-    FailingMarkdownCommentProvider::{  },
-  )
   let later_calls = Ref(0)
   let later = languages.register_markdown_comment_provider(
     LanguageId("moonbit"),
@@ -178,6 +174,10 @@ test "language handle logs failed markdown provider as authoritative empty" {
       blocks: [markdown_comment_block("later")],
       calls: later_calls,
     },
+  )
+  let failed = languages.register_markdown_comment_provider(
+    LanguageId("moonbit"),
+    FailingMarkdownCommentProvider::{  },
   )
   let memory = @log.MemoryLogger()
   let handle = languages.language_handle(
@@ -191,7 +191,7 @@ test "language handle logs failed markdown provider as authoritative empty" {
   let entries = memory.entries()
   assert_eq(entries.length(), 1)
   assert_eq(entries[0].category, "language.markdownComments")
-  assert_true(entries[0].details[2] == ("providerIndex", "0"))
+  assert_true(entries[0].details[2] == ("providerIndex", "1"))
   failed.dispose()
   later.dispose()
 }

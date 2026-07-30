@@ -9,6 +9,8 @@ test "language selectors match language scheme and path" {
     "fn main {}\n",
   )
   assert_true(LanguageSelector::LanguageId("moonbit").matches(model))
+  assert_eq(LanguageSelector::LanguageId("moonbit").score(model), 10)
+  assert_eq(LanguageSelector::LanguageId("*").score(model), 5)
   assert_true(
     LanguageFilter::LanguageFilter(
       language="moonbit",
@@ -23,6 +25,12 @@ test "language selectors match language scheme and path" {
     ]).matches(model),
   )
   assert_true(!LanguageSelector::LanguageId("javascript").matches(model))
+  assert_false(LanguageFilter::LanguageFilter().matches(model))
+  assert_eq(
+    LanguageFilter::LanguageFilter(language="*", scheme="*").score(model),
+    5,
+  )
+  assert_false(LanguageFilter::LanguageFilter(pattern="").matches(model))
   assert_true(
     !LanguageFilter::LanguageFilter(language="moonbit", scheme="memory").matches(
       model,

@@ -245,13 +245,15 @@ test "none and cancelled are the constant tokens" {
 
 ## Selectors
 
-`LanguageSelector` matches by language id, filter, or selector list. Filters
-combine optional language, URI scheme, and path pattern checks. An omitted field
-is "don't care", so an empty filter matches every model.
+`LanguageSelector` scores language ids, filters, and selector lists with the
+represented subset of Monaco's priority rules: exact fields score 10,
+language/scheme wildcards score 5, lists take their maximum, and an
+unconstrained filter scores 0. Filters combine optional language, URI scheme,
+and path pattern checks.
 
 ```mbt check
 ///|
-test "a filter's omitted fields are wildcards" {
+test "a filter's omitted fields do not constrain its positive score" {
   let model = @model.TextModel(
     @base_common.Uri::parse("file://workspace/src/main.mbt"),
     "main.mbt",
@@ -269,16 +271,16 @@ test "a filter's omitted fields are wildcards" {
       @language.LanguageFilter::LanguageFilter(scheme="memory").matches(model),
     ),
     content=(
-      #|(true, false, true, true, false)
+      #|(true, false, false, true, false)
     ),
   )
 }
 ```
 
-Pattern matching is deliberately simpler than Monaco scoring. It strips one
-leading `/` from the URI path, then:
+Pattern matching remains deliberately smaller than Monaco glob matching. It
+strips one leading `/` from the URI path, then:
 
-- an empty pattern or `"*"` matches everything;
+- an empty pattern does not match, while `"*"` matches everything;
 - a pattern with no `*` must equal the path exactly;
 - otherwise the **first** `*` splits the pattern into a prefix and a suffix, and
   the path must start with the prefix *and* end with the suffix.
@@ -321,8 +323,8 @@ test "the first star splits the pattern into a prefix and a suffix" {
 }
 ```
 
-A selector list is an "any of" combinator, so a host registers one provider
-against several languages without duplicating the registration.
+A selector list takes its highest member score, so a host registers one
+provider against several languages without duplicating the registration.
 
 ```mbt check
 ///|

@@ -118,6 +118,10 @@ async fn run_async_tasks_concurrently(tasks : Array[async () -> Unit]) -> Unit {
   if tasks.is_empty() {
     return
   }
+  if tasks.length() == 1 {
+    tasks[0]()
+    return
+  }
   @js.suspend((resolve : (Unit) -> Unit, _reject : (Error) -> Unit) => {
     let remaining = Ref(tasks.length())
     for task in tasks {
