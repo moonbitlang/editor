@@ -173,3 +173,72 @@ test "reconciliation preserves untouched folds and expands rewritten bodies" {
     markdown.article().query_selector("[data-collapsed=\"true\"]") is Some(_),
   )
 }
+
+///|
+test "the toc bar lists sections, gates on three, and navigation expands" {
+  install_mounted_test_browser()
+  defer restore_mounted_test_browser()
+  let viewer = Viewer::Viewer()
+  let source = markdown_folding_fixture_source()
+  let model = markdown_presentation_test_model(
+    "/src/folding.mbt.md", "moonbit", source,
+  )
+  defer {
+    viewer.dispose()
+    model.dispose()
+  }
+  let host = @rdom.document().create_element("div")
+  set_mounted_test_client_size(host, 320.0, 180.0)
+  viewer.attach(host)
+  viewer.set_model(Some(model))
+  flush_mounted_test_frames()
+  guard viewer.current_markdown_document() is Some(markdown) else {
+    fail("mounted .mbt.md did not install Markdown")
+  }
+
+  // Four sections -> the bar renders (collapsed), one row per section, with
+  // structural depth carried for indentation.
+  assert_eq(markdown.toc_bar_state(), (true, false))
+  let rows = markdown
+    .root()
+    .query_selector_all(".moonbit-viewer-markdown-toc-row")
+  assert_eq(rows.length(), 4)
+  assert_eq(rows[0].get_attribute("data-toc-depth"), Some("1"))
+  assert_eq(rows[2].get_attribute("data-toc-depth"), Some("3"))
+
+  // Navigating to the auto-collapsed Deep section expands it (the reveal
+  // chain stays open) and records the expansion as a reader decision that
+  // survives an unrelated agent edit.
+  let deep_offset = markdown_folding_offset_of(source, "### Deep")
+  guard viewer.current_markdown_browser_data() is Some(data) else {
+    fail("expected root Markdown composition")
+  }
+  data.navigate_markdown_section(deep_offset)
+  assert_eq(viewer.collapsed_markdown_sections(), [])
+  model.set_value(source.replace(old="tiny body", new="tiny body, edited"))
+  flush_mounted_test_frames()
+  assert_eq(viewer.collapsed_markdown_sections(), [])
+
+  // A two-section document renders no bar.
+  let small = markdown_presentation_test_model(
+    "/src/small.mbt.md",
+    "moonbit",
+    (
+      #|# One
+      #|
+      #|body
+      #|
+      #|# Two
+      #|
+      #|body
+      #|
+    ),
+  )
+  viewer.set_model(Some(small))
+  flush_mounted_test_frames()
+  guard viewer.current_markdown_document() is Some(small_markdown) else {
+    fail("expected Markdown for the small document")
+  }
+  assert_eq(small_markdown.toc_bar_state(), (false, false))
+  small.dispose()
+}

@@ -168,6 +168,7 @@ fn MarkdownBrowserData::apply_markdown_folding(
   hidden_sorted.sort()
   self.view.set_hidden_root_elements(hidden_sorted)
   self.view.install_section_fold_controls(controls)
+  self.apply_markdown_toc()
 }
 
 ///|
@@ -243,4 +244,57 @@ pub fn Viewer::collapsed_markdown_sections(self : Viewer) -> Array[Int] {
     }
   }
   collapsed
+}
+
+///|
+/// Publishes the table-of-contents bar from the same section tree folding
+/// uses, so an outline row and a fold control can never disagree. Runs inside
+/// `apply_markdown_folding`'s callers via initialization/reconciliation.
+fn MarkdownBrowserData::apply_markdown_toc(self : MarkdownBrowserData) -> Unit {
+  let projection = self.view.projection()
+  let entries = @markdown_core.markdown_table_of_contents(projection).map(entry => {
+    let bar_entry : @markdown_document.MarkdownTocBarEntry = {
+      depth: entry.depth,
+      text: entry.text,
+      source_offset: entry.source_offset,
+    }
+    bar_entry
+  })
+  self.view.set_toc_entries(entries, offset => {
+    self.navigate_markdown_section(offset)
+  })
+}
+
+///|
+/// TOC navigation: expand the target section and every collapsed ancestor
+/// (the review's reveal rule -- a reveal anchor's whole chain stays open),
+/// republish visibility, invalidate the hover bridge, then scroll the heading
+/// to the top of the viewport. Expansions are recorded as explicit reader
+/// decisions: the reader asked to see this content, so a later unrelated
+/// agent edit must not re-collapse it.
+fn MarkdownBrowserData::navigate_markdown_section(
+  self : MarkdownBrowserData,
+  source_offset : Int,
+) -> Unit {
+  let projection = self.view.projection()
+  let sections = @markdown_core.markdown_sections(projection)
+  let mut changed = false
+  for section_index, section in sections {
+    guard section.source_range.contains(source_offset) &&
+      section_index < self.fold.section_keys.length() else {
+      continue
+    }
+    match self.fold.records.get(self.fold.section_keys[section_index]) {
+      Some(record) if record.collapsed => {
+        record.collapsed = false
+        changed = true
+      }
+      _ => ()
+    }
+  }
+  if changed {
+    self.apply_markdown_folding()
+    self.hover_bridge.layout_changed()
+  }
+  self.view.reveal_source_offset(source_offset, "start")
 }

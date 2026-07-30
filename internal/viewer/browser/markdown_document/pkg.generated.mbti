@@ -44,7 +44,9 @@ pub fn MarkdownDocumentView::semantic_code_lines(Self) -> Array[MarkdownSemantic
 pub fn MarkdownDocumentView::set_hidden_root_elements(Self, Array[Int]) -> Unit
 pub fn MarkdownDocumentView::set_scroll_position(Self, scroll_top? : Double, scroll_left? : Double) -> Unit
 pub fn MarkdownDocumentView::set_section_fold_toggle_handler(Self, (Int) -> Unit) -> Unit
+pub fn MarkdownDocumentView::set_toc_entries(Self, Array[MarkdownTocBarEntry], (Int) -> Unit) -> Unit
 pub fn MarkdownDocumentView::source_model_version(Self) -> Int
+pub fn MarkdownDocumentView::toc_bar_state(Self) -> (Bool, Bool)
 pub fn MarkdownDocumentView::viewport(Self) -> @dom.Element
 pub fn MarkdownDocumentView::visible_source_ranges(Self) -> Array[@common.OffsetRange]
 
@@ -61,6 +63,12 @@ pub(all) struct MarkdownSemanticCodeLineDom {
   code_line : @markdown.MarkdownCodeLine
   element : @dom.Element
 }
+
+pub(all) struct MarkdownTocBarEntry {
+  depth : Int
+  text : String
+  source_offset : Int
+} derive(Eq, @debug.Debug)
 
 // Type aliases
 

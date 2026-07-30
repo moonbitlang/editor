@@ -61,6 +61,10 @@ pub struct MarkdownDocumentView {
   priv mut semantic_dom : MarkdownSemanticDomLifetime
   priv listeners : Array[@base_common.Disposable]
   priv mut on_section_fold_toggle : (Int) -> Unit
+  priv toc_nav : @rdom.Element
+  priv toc_list : @rdom.Element
+  priv toc_toggle : @rdom.Element
+  priv mut on_toc_navigate : (Int) -> Unit
   priv mut disposed : Bool
 }
 
@@ -100,6 +104,22 @@ pub fn MarkdownDocumentView::MarkdownDocumentView(
     "class", "moonbit-viewer-markdown-document-overlays",
   )
   viewport.append_child(article.as_node())
+  // The TOC bar is pinned in the root, above the viewport: a sibling of the
+  // article, never a child, because every article child index is a projection
+  // ordinal the folding and source-anchor machinery depends on.
+  let toc_nav = document.create_element("nav")
+  toc_nav.set_attribute("class", "moonbit-viewer-markdown-toc")
+  toc_nav.set_attribute("aria-label", "Table of contents")
+  toc_nav.set_attribute("data-toc-visible", "false")
+  let toc_toggle = document.create_element("button")
+  toc_toggle.set_attribute("type", "button")
+  toc_toggle.set_attribute("class", "moonbit-viewer-markdown-toc-toggle")
+  toc_toggle.set_attribute("aria-expanded", "false")
+  let toc_list = document.create_element("ol")
+  toc_list.set_attribute("class", "moonbit-viewer-markdown-toc-list")
+  toc_nav.append_child(toc_toggle.as_node())
+  toc_nav.append_child(toc_list.as_node())
+  root.append_child(toc_nav.as_node())
   root.append_child(viewport.as_node())
   root.append_child(overlay_mount.as_node())
   let rendered = render_markdown_document(
@@ -122,6 +142,10 @@ pub fn MarkdownDocumentView::MarkdownDocumentView(
     semantic_dom: MarkdownSemanticDomLifetime::empty(),
     listeners: [],
     on_section_fold_toggle: _ => (),
+    toc_nav,
+    toc_list,
+    toc_toggle,
+    on_toc_navigate: _ => (),
     disposed: false,
   }
   view.post_render()
@@ -133,6 +157,43 @@ pub fn MarkdownDocumentView::MarkdownDocumentView(
     guard !view.disposed else { return }
     match markdown_fold_toggle_section(event) {
       Some(section_index) => (view.on_section_fold_toggle)(section_index)
+      None => ()
+    }
+  })
+  view.listen(toc_nav, "click", event => {
+    guard !view.disposed else { return }
+    guard event.target().to_element() is Some(target) else { return }
+    if target.closest(".moonbit-viewer-markdown-toc-toggle") is Some(_) {
+      let expanded = view.toc_nav.get_attribute("data-toc-expanded") ==
+        Some("true")
+      view.toc_nav.set_attribute(
+        "data-toc-expanded",
+        if expanded {
+          "false"
+        } else {
+          "true"
+        },
+      )
+      view.toc_toggle.set_attribute(
+        "aria-expanded",
+        if expanded {
+          "false"
+        } else {
+          "true"
+        },
+      )
+      return
+    }
+    match target.closest("[data-toc-offset]") {
+      Some(row) =>
+        match row.get_attribute("data-toc-offset") {
+          Some(raw) =>
+            match markdown_parse_section_index(raw) {
+              Some(offset) => (view.on_toc_navigate)(offset)
+              None => ()
+            }
+          None => ()
+        }
       None => ()
     }
   })
@@ -959,4 +1020,72 @@ pub fn MarkdownDocumentView::dispose(self : MarkdownDocumentView) -> Unit {
   }
   self.semantic_dom.dispose()
   self.rendered.dispose.dispose()
+}
+
+///|
+/// One row of the pinned table-of-contents bar.
+pub(all) struct MarkdownTocBarEntry {
+  depth : Int
+  text : String
+  source_offset : Int
+} derive(Eq, Debug)
+
+///|
+/// Replaces the TOC bar's rows and the navigation handler.
+///
+/// The bar renders only for a document with at least three sections -- an
+/// outline of one or two headings is noise -- and starts collapsed to one
+/// summary row. Row clicks arrive as the entry's heading source offset, the
+/// same coordinate `reveal_source_offset` and the fold seam use; the root
+/// Viewer owns what navigation means (expand ancestors, then reveal).
+pub fn MarkdownDocumentView::set_toc_entries(
+  self : MarkdownDocumentView,
+  entries : Array[MarkdownTocBarEntry],
+  on_navigate : (Int) -> Unit,
+) -> Unit {
+  guard !self.disposed else { return }
+  self.on_toc_navigate = on_navigate
+  let document = @rdom.document()
+  // Re-read the first child every pass: the underlying collection is live in
+  // a real browser, so removing while iterating a snapshot hands the DOM an
+  // undefined mid-loop.
+  while self.toc_list.get_children().get(0) is Some(stale) {
+    self.toc_list.as_node().remove_child(stale.as_node())
+  }
+  for entry in entries {
+    let item = document.create_element("li")
+    let row = document.create_element("button")
+    row.set_attribute("type", "button")
+    row.set_attribute("class", "moonbit-viewer-markdown-toc-row")
+    row.set_attribute("data-toc-offset", entry.source_offset.to_string())
+    row.set_attribute("data-toc-depth", entry.depth.to_string())
+    row.set_attribute(
+      "style",
+      "padding-left:\{0.75 * entry.depth.to_double()}em",
+    )
+    row.append_child(document.create_text_node(entry.text).as_node())
+    item.append_child(row.as_node())
+    self.toc_list.append_child(item.as_node())
+  }
+  if entries.length() >= 3 {
+    self.toc_nav.set_attribute("data-toc-visible", "true")
+    // textContent assignment already replaces every child.
+    self.toc_toggle.set_property(
+      "textContent",
+      @js.Value::cast_from("Contents \u{00b7} \{entries.length()} sections"),
+    )
+  } else {
+    self.toc_nav.set_attribute("data-toc-visible", "false")
+  }
+}
+
+///|
+/// Test/read-back seam: whether the bar is rendered and expanded.
+pub fn MarkdownDocumentView::toc_bar_state(
+  self : MarkdownDocumentView,
+) -> (Bool, Bool) {
+  (
+    self.toc_nav.get_attribute("data-toc-visible") == Some("true"),
+    self.toc_nav.get_attribute("data-toc-expanded") == Some("true"),
+  )
 }
