@@ -59,7 +59,6 @@ fn smoke_bundles() -> Array[BrowserBundle] {
       title: "MoonBit Viewer Set Value Test",
     },
     BrowserBundle::{
-      package_path: "tests/browser/moonbit/definition",
       name: "definition",
       title: "MoonBit Viewer Definition Navigation Test",
     },
@@ -78,6 +77,46 @@ fn perf_bundles() -> Array[BrowserBundle] {
       title: "MoonBit Viewer Performance Test",
     },
   ]
+}
+
+///|
+async fn browser_bundle_exists(
+  build_dir : String,
+  bundle : BrowserBundle,
+) -> Bool {
+  @fs.exists(build_dir + "/" + bundle.name + "/" + bundle.name + ".js") &&
+  @fs.exists(build_dir + "/" + bundle.name + "/" + bundle.name + ".js.map")
+}
+
+///|
+/// Selects only a complete, unambiguous output layout from the workspace build.
+/// If both layouts contain every requested bundle, one may be stale, so refuse
+/// to stage either instead of silently serving the wrong checkout.
+async fn resolved_browser_build_dir(
+  bundles : Array[BrowserBundle],
+) -> String {
+  let plain = "_build/js/debug/build/tests/browser/moonbit"
+  let module = "_build/js/debug/build/moonbitlang/editor/tests/browser/moonbit"
+  let mut plain_complete = true
+  let mut module_complete = true
+  for bundle in bundles {
+    if !browser_bundle_exists(plain, bundle) {
+      plain_complete = false
+    }
+    if !browser_bundle_exists(module, bundle) {
+      module_complete = false
+    }
+  }
+  match (plain_complete, module_complete) {
+    (true, false) => plain
+    (false, true) => module
+    (false, false) =>
+      fail("missing js artifacts for the browser test bundles; run `moon build` first")
+    (true, true) =>
+      fail(
+        "ambiguous browser bundle layouts; remove stale _build js artifacts and rebuild",
+      )
+  }
 }
 
 ///|
@@ -167,17 +206,7 @@ async fn main {
     fail("unknown browser test build profile: \{profile}; expected smoke or perf")
   }
 
-  // The committed moon.work namespaces member artifacts by module name on
-  // current moon releases; older layouts keep the bare package path.
-  let plain_build_dir = "_build/js/debug/build/tests/browser/moonbit"
-  let build_dir = if @fs.exists(plain_build_dir) {
-    plain_build_dir
-  } else {
-    "_build/js/debug/build/moonbitlang/editor/tests/browser/moonbit"
-  }
-  if !@fs.exists(build_dir) {
-    fail("missing js artifacts for the browser test bundles; run `moon build` first")
-  }
+  let build_dir = resolved_browser_build_dir(bundles)
   let browser_tests_dir = "web/dist/browser-tests"
   if !@fs.exists(browser_tests_dir) {
     @fs.mkdir(browser_tests_dir, recursive=true)

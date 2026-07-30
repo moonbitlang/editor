@@ -105,7 +105,11 @@ under `web/dist`. `scripts/build-browser-tests.mbtx` has separate `smoke` and
 `perf` profiles under `web/dist/browser-tests`. The smoke profile stages the
 MoonBit scenarios used by browser correctness without touching the perf bundle
 or Monaco. The perf profile stages only its local scenarios plus the pinned
-Monaco oracle, which it builds with esbuild from the VS Code submodule.
+Monaco oracle, which it builds with esbuild from the VS Code submodule. Before
+staging, the browser-test assembler requires every selected bundle and source
+map to exist in exactly one of the module-qualified or unqualified layouts; it
+rejects ambiguous layouts rather than risking a stale artifact from a different
+`moon.work` context.
 
 The whole-line Markdown proof is the direct public-Viewer component scenario
 `tests/browser/moonbit/component/markdown_comments_scenario.mbt`, loaded by
