@@ -343,6 +343,7 @@ registration and teardown stay with `ViewZones`.
 | `view_cursors.mbt` | `viewParts/viewCursors/viewCursors.ts` |
 | `view_lines.mbt`, `view_line.mbt`, `dom_reading_context.mbt`, `range_util.mbt` | `viewParts/viewLines/{viewLines,viewLine,domReadingContext,rangeUtil}.ts` |
 | `view_zones.mbt` | `viewParts/viewZones/viewZones.ts` |
+| `js_math.mbt` | none — a package-local JavaScript numeric shim shared by the view parts, deliberately owned by no source unit so it does not acquire a second copy |
 
 CSS stays at its established asset paths so the assembly order and emitted
 provenance remain byte-for-byte stable. The
