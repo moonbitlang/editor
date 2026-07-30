@@ -49,10 +49,6 @@ pub let hover_sticky_debug : Bool
 
 pub fn is_trigger_modifier_pressed(MultiCursorModifier, EventModifiers) -> Bool
 
-pub fn max_hover_double(Double, Double) -> Double
-
-pub fn min_hover_double(Double, Double) -> Double
-
 pub fn mouse_within_element(Double, Double, Double, Double, Double, Double) -> Bool
 
 pub fn register_default_hover_participants(HoverParticipantRegistry) -> Unit

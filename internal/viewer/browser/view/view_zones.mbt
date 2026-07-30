@@ -752,7 +752,7 @@ fn ViewZones::render(
 
   if has_visible_zone {
     self.dom_node_cache.set_width(
-      css_pixels_double(view_zone_double_max(scroll_width, self.content_width)),
+      css_pixels_double(scroll_width.max(self.content_width)),
     )
     self.margin_dom_node_cache.set_width(css_pixels_double(self.content_left))
   }
@@ -768,15 +768,6 @@ fn ViewZones::render(
 
 ///|
 let offscreen_absolute_top : Double = -1000000.0
-
-///|
-fn view_zone_double_max(left : Double, right : Double) -> Double {
-  if left > right {
-    left
-  } else {
-    right
-  }
-}
 
 ///|
 fn css_pixels(value : Int) -> String {

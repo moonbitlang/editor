@@ -965,15 +965,6 @@ fn truncate_double(value : Double) -> Double {
 }
 
 ///|
-fn max_double(left : Double, right : Double) -> Double {
-  if left > right {
-    left
-  } else {
-    right
-  }
-}
-
-///|
 fn no_animation_scheduler(_callback : () -> Unit) -> @base_common.Disposable {
   @base_common.Disposable::from(() => ())
 }

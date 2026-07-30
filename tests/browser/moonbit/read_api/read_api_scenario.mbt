@@ -7,15 +7,6 @@
 // view-axis pixel math is caught only by the browser suite).
 
 ///|
-fn dabs(value : Double) -> Double {
-  if value < 0.0 {
-    -value
-  } else {
-    value
-  }
-}
-
-///|
 fn run_read_api_test() -> Unit {
   let ctx = @support.BrowserTestContext("read_api")
   let done = Ref(false)
@@ -115,7 +106,7 @@ fn assert_read_api(
     "scrolled height is not the line height (\{svp1.height})",
   )
   ctx.assert_true(
-    dabs(svp1.left - layout.content_left) < 1.0,
+    (svp1.left - layout.content_left).abs() < 1.0,
     "scrolled left (\{svp1.left}) is not the content-left gutter (\{layout.content_left})",
   )
   let svp2 = viewer.get_scrolled_visible_position(Position(2, 1)).unwrap()
@@ -143,7 +134,7 @@ fn assert_read_api(
   viewer.set_scroll_position(scroll_top=0.0, scroll_left=20.0)
   let left_after = viewer.get_scrolled_visible_position(Position(1, 5)).unwrap().left
   ctx.assert_true(
-    dabs(left_before - left_after - 20.0) < 0.1,
+    (left_before - left_after - 20.0).abs() < 0.1,
     "horizontal scroll did not shift the scrolled left by 20 (\{left_before} -> \{left_after})",
   )
 

@@ -237,11 +237,11 @@ fn DragScrollingOperation::get_scroll_speed(
     }
   }
   if outside_distance_in_units <= 1.5 {
-    double_max(30.0, viewport_in_units * (1.0 + outside_distance_in_units))
+    30.0.max(viewport_in_units * (1.0 + outside_distance_in_units))
   } else if outside_distance_in_units <= 3.0 {
-    double_max(60.0, viewport_in_units * (2.0 + outside_distance_in_units))
+    60.0.max(viewport_in_units * (2.0 + outside_distance_in_units))
   } else {
-    double_max(200.0, viewport_in_units * (7.0 + outside_distance_in_units))
+    200.0.max(viewport_in_units * (7.0 + outside_distance_in_units))
   }
 }
 

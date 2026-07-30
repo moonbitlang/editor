@@ -591,10 +591,8 @@ fn MouseDownOperation::get_position_outside_editor(
   )
   if e.posy < editor_content.y {
     let outside_distance = editor_content.y - e.posy
-    let vertical_offset = controller_double_max(
-      view_layout.get_current_scroll_top() - outside_distance,
-      0.0,
-    )
+    let scrolled_above = view_layout.get_current_scroll_top() - outside_distance
+    let vertical_offset = scrolled_above.max(0.0)
     match hit_test_get_zone_at_coord(view_model, vertical_offset) {
       Some(view_zone_data) =>
         match self.help_position_jump_over_view_zone(view_zone_data) {
@@ -922,19 +920,9 @@ pub fn MouseDownState::try_set_count(
   self.last_mouse_down_position = Some(new_mouse_down_position)
 
   // Finally set the lastMouseDownCount
-  self.last_mouse_down_count = int_min(
-    set_mouse_down_count,
+  self.last_mouse_down_count = set_mouse_down_count.min(
     self.last_mouse_down_position_equal_count,
   )
-}
-
-///|
-fn controller_double_max(a : Double, b : Double) -> Double {
-  if a > b {
-    a
-  } else {
-    b
-  }
 }
 
 ///|

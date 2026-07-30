@@ -678,8 +678,7 @@ fn ViewLayout::compute_content_width(self : ViewLayout) -> Double {
   // right padding. Do not invent a scrollBeyondLastColumn option or add that
   // padding twice. The vertical scrollbar and whitespace minimum remain the
   // two source-owned extent candidates available in this product.
-  max_double(
-    self.max_line_width + self.vertical_scrollbar_width,
+  (self.max_line_width + self.vertical_scrollbar_width).max(
     self.lines.get_whitespace_min_width().to_double(),
   )
 }
