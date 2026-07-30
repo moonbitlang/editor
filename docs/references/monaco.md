@@ -116,15 +116,23 @@ Peek request/resource lifetime use algorithm-fidelity ports for the selected
 observable invariants below.
 
 - `src/vs/editor/contrib/gotoSymbol/browser/goToCommands.ts:105-167,177-248`
-  owns request cancellation, no-result feedback, ordinary first-result opening
-  through `ICodeEditorService.openCodeEditor`, and Peek delegation through
-  `ReferencesController`. `DefinitionAction` and the F12/Web CtrlCmd+F12 and
-  Alt+F12 registrations are at `:253-312,343-374`.
+  owns request cancellation, no-result feedback, one-result opening through
+  `ICodeEditorService.openCodeEditor`, the default multiple-result Peek policy,
+  and delegation through `ReferencesController`; zero results stop before Peek.
+  `DefinitionAction` and the F12/Web CtrlCmd+F12 and Alt+F12 registrations are
+  at `:253-312,343-374`.
+- `src/vs/editor/common/languageFeatureRegistry.ts:171-212` and
+  `languageSelector.ts:29-111` order matching providers by selector score
+  descending and registration time descending. The local selector surface
+  ports exact and wildcard language/scheme scoring, path-match scoring, list
+  maxima, zero-score empty filters, and newer-first tie-breaking; definition
+  results retain that priority regardless of concurrent completion order.
 - `src/vs/editor/contrib/gotoSymbol/browser/link/goToDefinitionAtPosition.ts:
   47-79,111-224,266-315` resolves only eligible content-text targets, cancels
   prior work, validates position/value/selection/scroll freshness, decorates
-  only a non-empty result, clears on cancel, and reuses the definition action
-  on execution. The down-before-modifier and mouseup execution state belongs to
+  only a non-empty result, clears on cancel, and launches a fresh definition
+  action on execution rather than consuming the preview result. The
+  down-before-modifier and mouseup execution state belongs to
   `link/clickLinkGesture.ts:122-235`.
 - `src/vs/editor/contrib/gotoSymbol/browser/peek/referencesController.ts:
   77-187,201-304,330-405` owns the per-editor Peek request, stale-result
@@ -156,11 +164,18 @@ Intentional local differences and exclusions:
   binding; VS Code overrides Peek to CtrlCmd+Shift+F10 on Linux.
 - The local link trigger is exact platform Ctrl/Command. VS Code can remap it
   from `multiCursorModifier` and also supports side/middle-click variants.
-  Local down/up identity is stricter: model identity, attachment generation,
-  content version, position, word range, and exact target must all match;
-  upstream records the mouse-down line and rechecks eligibility on mouseup.
+  Local preview caching requires the same model identity, attachment
+  generation, content version, and word range; execution records the
+  mouse-down line and rechecks current target eligibility on mouseup, matching
+  the upstream gesture boundary.
 - Link hover source previews, `originSelectionRange`/`targetSelectionRange`,
-  middle-click, definition-link-opens-in-Peek, and link open-to-side are N-A.
+  multi-definition hover-count text, middle-click,
+  definition-link-opens-in-Peek, and link open-to-side are N-A.
+- Local selector patterns intentionally support only exact paths or one `*`
+  prefix/suffix wildcard. Monaco's full glob surface (`**`, `?`, braces,
+  character ranges, and relative-pattern bases) remains deferred.
+- The upstream 350 ms `symbolHighlight` is deferred: the current host opener
+  cannot provide consistent target-model decoration for cross-resource opens.
 - Workbench navigation history, alternative commands, `gotoAndPeek`, stable
   Peek, editor-group migration, grouped resource tree, drag-and-drop, sash and
   persisted Peek layout, and preview reference decorations are N-A.
@@ -169,11 +184,21 @@ Intentional local differences and exclusions:
   contract is request generation/cancellation, stale-reference release,
   preview replacement, child teardown, close/focus ordering, and recursive
   Peek suppression; Monaco's default 18-line/split-layout presentation is not
-  part of that contract.
+  part of that contract. Upstream unavailable preview uses a fallback text
+  model, while the local shell removes its child/reference and shows an
+  unavailable state. Upstream same-Peek toggle accepts a range containing the
+  widget position; the local readonly anchor is exact
+  model/generation/version/position.
 - `IModelService`, `ITextModelContentProvider`, filesystem/network loading, tab
   policy, and HTTP window fallback are N-A. The host resolver owns all loading
   and model lifetime policy. Opener rejection and unavailable preview produce
   local non-destructive feedback.
+- Same-resource goto reveals in the center only when outside the viewport;
+  upstream uses `NearTopIfOutsideViewport`. Upstream word-specific no-result
+  text, reference ARIA announcement, and 250 ms action progress are not
+  reproduced by the local generic feedback surface. VS Code internal-scheme
+  filtering in `getLocationLinks` is N-A because local locations have no
+  editor-internal scheme contract.
 
 ## Public editor API ownership
 

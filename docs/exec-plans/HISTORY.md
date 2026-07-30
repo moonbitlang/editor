@@ -12,9 +12,91 @@ Current behavior and ownership live in `docs/architecture.md`, `docs/harness.md`
 `docs/quality.md`, package READMEs, generated interfaces, source, and tests.
 Historical plans are evidence of how a change landed, not current contracts.
 
-As of 2026-07-29 there are no active checked-in execution plans.
+As of 2026-07-30 there are no active checked-in execution plans.
 
 ## Completed Work
+
+### Definition navigation parity remediation
+
+Definition navigation now uses the `vscode` gitlink at
+`b18492a288de038fbc7643aae6de8247029d11bd` as its pinned behavioral oracle.
+Provider/result dispatch and user-visible feedback were reviewed as a behavior
+port; modifier gestures, request generations, Peek replacement, and teardown
+ordering received algorithm-fidelity review. This was not a full source-unit
+port of VS Code's editor services.
+
+Language-provider snapshots now follow the represented Monaco selector
+priority: exact language, scheme, and supported pattern matches score above
+wildcards, selector arrays take their best score, and newer registrations win
+ties. Definition requests create one wait-all task per matching live provider
+and concatenate successful results in that stable snapshot order, independently
+of completion order. The common package keeps a sequential default task runner
+for target portability, while the browser Viewer injects a concurrent JS
+runner; cancellation, disposed registrations, and individual provider failures
+cannot strand the aggregate request. Hover and document-symbol consumers share
+the same ordered snapshots, and the public optional `run_tasks` hook records the
+scheduling boundary without exposing browser policy to the registry.
+
+F12 and definition-link execution now share one resolved-result dispatcher.
+They run a fresh action request, open one definition directly, put multiple
+definitions into Peek when that host is mounted, and retain provider-first
+direct opening as the deterministic headless fallback. Ordinary F12 reports an
+empty result; modifier hover stays silent. Link preview is cached by
+model/version/word, while execution is line-scoped and independent of preview
+completion. Trigger-key identity and edge, mouse detail, scroll, blur, drag
+selection, unrelated modifier chords, model/content changes, Markdown source
+anchors, and post-execution cleanup are all explicit gesture-state boundaries.
+
+Peek now captures its source model, version, projection generation, position,
+and focus state. An exact repeated anchor toggles it closed; an already-resolved
+multi-result action populates it without querying providers again. Display
+locations sort by URI and range, the nearest source location is selected for
+the preview, and zero results close the loading shell. Replacement is staged so
+the installed child and model reference remain usable until the current
+replacement can commit. Focus is sampled at commit time, Code focus waits for
+the ViewZone to become visible, Enter is scoped to the active Peek, and confirm
+tasks carry an opener generation so stale work cannot overwrite newer
+navigation intent.
+
+Preview replacement and session close now atomically detach every request,
+child Viewer, model reference, widget, and zone from the owning state before
+invoking synchronous cancellation or disposal callbacks. Child-before-
+reference-before-shell teardown is therefore safe even when those callbacks
+close Peek or start a new one reentrantly. The outer workbench Viewer likewise
+enters a `Closing` phase and releases its definition leases before the preview
+cache retires remaining entries. Late opener feedback is rejected after a new
+navigation, cursor move, or plain Markdown click.
+
+The browser scenario builder now writes only to `_build/browser-tests`, removes
+the exact stale candidate bundle before compiling, and accepts both plain and
+module-qualified Moon build paths. The component fixture covers direct,
+multiple-result, F4, link, empty-result, and Markdown navigation behavior.
+
+Intentional exclusions remain explicit. `LocationLink` origin and target
+selection ranges, source-preview hover content, multiple-definition hover
+counts, configurable `multiCursorModifier`, middle/side/open-to-side gestures,
+`definitionLinkOpensInPeek`, alternative commands, history, stable Peek,
+groups/tree/sash/cross-editor behavior, and the 350 ms symbol highlight are
+deferred or N-A for this readonly Viewer. The local selector pattern contract
+supports exact paths and one `*`, not Monaco's full `**`, `?`, brace, range, or
+relative-base glob syntax. Same-resource direct navigation still centers an
+off-screen target instead of using upstream `NearTopIfOutsideViewport`; exact
+anchor equality replaces upstream range containment for Peek toggle; an
+unavailable preview uses the shell instead of a fallback text model; and the
+upstream word-specific no-result text, reference ARIA announcement, 250 ms
+progress indication, and internal scheme filtering are absent or N-A.
+
+Final validation passed 1,663 JS and 1,104 native MoonBit tests (the wasm and
+wasm-gc targets currently have no test entry), all 6 focused definition
+component cases, and 110 of 111 full browser-smoke cases with the existing
+opt-in live-network Mermaid case skipped. The focused definition suites passed
+18 Viewer cases, 29 common-language cases, and 17 language-registry cases.
+`moon info --target all`, `moon fmt --check`, `just check`, `just test`,
+`just build`, `just test-browser-smoke`, and `git diff --check` passed. The
+remaining warning output is the repository's pre-existing inexhaustive-test-
+guard set.
+
+Former artifact: `definition-navigation-parity-remediation.md`.
 
 ### Readonly Markdown document presentation
 
