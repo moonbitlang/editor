@@ -411,6 +411,23 @@ shared here so higher layers do not duplicate coordinate-sensitive logic.
 `split_lines` accepts all three line terminators; the model normalizes to `\n`
 before storage, but this helper is used on raw host input.
 
+There are two HTML escapers, and the difference is `"`. `escape` leaves it
+alone, matching Monaco's `_tokenizeToString`, which only ever emits element
+content. `escape_html` also escapes it, for text that can land in an attribute
+value.
+
+```mbt check
+///|
+test "the two escapers differ only on the quote character" {
+  debug_inspect(
+    (@common.escape("<a href=\"x\">"), @common.escape_html("<a href=\"x\">")),
+    content=(
+      #|("&lt;a href=\"x\"&gt;", "&lt;a href=&quot;x&quot;&gt;")
+    ),
+  )
+}
+```
+
 ```mbt check
 ///|
 test "line splitting and whitespace scanning use UTF-16 indices" {

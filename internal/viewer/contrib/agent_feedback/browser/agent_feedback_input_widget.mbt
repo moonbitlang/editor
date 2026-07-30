@@ -328,7 +328,7 @@ pub fn AgentFeedbackInputWidget::auto_size(
   } else {
     value
   }
-  self.measure.set_inner_html(input_escape_html(text))
+  self.measure.set_inner_html(@base_common.escape_html(text))
   let text_width = input_scroll_width(self.measure)
   let max_width_cap = (self.host.content_width)() *
     input_max_width_editor_fraction
@@ -365,21 +365,6 @@ fn is_blank(text : String) -> Bool {
     }
   }
   true
-}
-
-///|
-fn input_escape_html(text : String) -> String {
-  let out = StringBuilder::new()
-  for ch in text {
-    match ch {
-      '&' => out.write_string("&amp;")
-      '<' => out.write_string("&lt;")
-      '>' => out.write_string("&gt;")
-      '"' => out.write_string("&quot;")
-      _ => out.write_char(ch)
-    }
-  }
-  out.to_string()
 }
 
 ///|

@@ -27,7 +27,9 @@ presentation.
   `view_layout.LineDecoration[]` to the DOM-free Monaco-shaped view-line renderer
 
 `escape_html` covers exactly the characters that would otherwise change the
-parse of the emitted markup.
+parse of the emitted markup. It forwards to `base/common`'s escaper of the same
+name, which owns the one implementation shared with the Markdown renderer and
+the agent-feedback widgets.
 
 ```mbt check
 ///|

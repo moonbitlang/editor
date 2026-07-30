@@ -32,6 +32,8 @@ pub fn equals_ignore_case(String, String) -> Bool
 
 pub fn escape(String) -> String
 
+pub fn escape_html(String) -> String
+
 pub let ext_uri : ExtUri
 
 pub let ext_uri_biased_ignore_path_case : ExtUri
