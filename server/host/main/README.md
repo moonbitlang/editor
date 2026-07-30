@@ -24,9 +24,9 @@ The recipe in the `justfile` is the supported entry point; it resolves the
 asset directory and defaults before invoking this package.
 
 ```sh
-just dev ROOT=. PORT=5173      # build, serve, print Local/Network URLs
-just dev HOST=127.0.0.1        # restrict the listener to loopback
-just serve ROOT=. PORT=5173    # serve without rebuilding assets
+just ROOT=. PORT=5173 dev      # build, serve, print Local/Network URLs
+just HOST=127.0.0.1 dev        # restrict the listener to loopback
+just ROOT=. PORT=5173 serve    # serve without rebuilding assets
 ```
 
 **Warning:** the reference server has no authentication and exposes workspace

@@ -26,8 +26,9 @@ just build-browser-tests         # browser-correctness scenario bundles
 just build-browser-perf-tests    # perf scenarios + pinned Monaco oracle
 just                             # check, build, and serve with repository defaults
 just test-browser-component      # direct Viewer subset of browser correctness
-just dev ROOT=. PORT=5173        # build, serve, and print Local/Network URLs
-just dev HOST=127.0.0.1          # explicitly restrict access to loopback
+just ROOT=. PORT=5173 dev        # build, serve, and print Local/Network URLs
+just HOST=127.0.0.1 dev          # explicitly restrict access to loopback
+just ROOT=~/git/other-repo dev   # browse another MoonBit repo with this viewer
 just list                        # list every available recipe
 ```
 
@@ -39,8 +40,10 @@ and assumes the matching browser-build profile has already run; use the
 `just test-browser-*` recipes when bundle freshness matters.
 
 `just dev` defaults to `HOST=0.0.0.0`: it binds every IPv4 interface and prints
-reachable Local and detected Network URLs. Set `HOST=127.0.0.1` to restrict the
-listener and startup output to the Local URL. The reusable server API, direct
+reachable Local and detected Network URLs. Set `HOST=127.0.0.1` (before the
+recipe name: `just HOST=127.0.0.1 dev`) to restrict the listener and startup
+output to the Local URL. `ROOT` may point at any other MoonBit repository to
+browse it readonly with hover and diagnostics from that root. The reusable server API, direct
 CLI, and lower-level `just serve` recipe remain loopback-only by default.
 
 **Warning:** the reference server has no authentication and exposes workspace

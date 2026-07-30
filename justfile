@@ -24,11 +24,41 @@ build-browser-perf-tests: build-moon-web
 build: check build-moon-web
     moon build
 
-serve *args:
-    sh -c 'ROOT=.; HOST=127.0.0.1; PORT=5173; ASSET_DIR=web/dist; MOON_COMMAND=moon; for arg do case "$arg" in ROOT=*) ROOT="${arg#ROOT=}";; HOST=*) HOST="${arg#HOST=}";; PORT=*) PORT="${arg#PORT=}";; ASSET_DIR=*) ASSET_DIR="${arg#ASSET_DIR=}";; MOON_COMMAND=*) MOON_COMMAND="${arg#MOON_COMMAND=}";; esac; done; case "$ROOT" in /*) ;; *) ROOT="$(cd "$ROOT" && pwd)" || exit 1;; esac; case "$ASSET_DIR" in /*) ;; *) ASSET_DIR="$(cd "$ASSET_DIR" && pwd)" || exit 1;; esac; moon run server/host/main -- --root "$ROOT" --host "$HOST" --port "$PORT" --asset-dir "$ASSET_DIR" --moon-command "$MOON_COMMAND"' sh {{ args }}
+# ---------------------------------------------------------------------------
+# Serving. Override any variable by listing it BEFORE the recipe name
+# (just's native override syntax):
+#
+#   just dev                            # build, then serve this repo on the LAN
+#   just HOST=127.0.0.1 dev             # loopback only
+#   just PORT=8080 serve                # serve without rebuilding
+#   just ROOT=~/git/other-repo dev      # browse ANOTHER MoonBit repo with this
+#                                       # viewer: readonly file tree, syntax
+#                                       # highlighting, and `moon ide` hover /
+#                                       # `moon check` diagnostics run in that
+#                                       # repo's root (via MOON_COMMAND)
+#
+# `serve` defaults to loopback; `dev` defaults to 0.0.0.0 for trusted LANs.
+# The reference server has no authentication and exposes ROOT's source files.
+# ---------------------------------------------------------------------------
 
-dev *args: build
-    just serve HOST=0.0.0.0 {{ args }}
+ROOT := "."
+HOST := ""
+PORT := "5173"
+ASSET_DIR := "web/dist"
+MOON_COMMAND := "moon"
+
+serve:
+    moon run server/host/main -- \
+      --root "$(cd '{{ ROOT }}' && pwd)" \
+      --host "{{ if HOST == '' { '127.0.0.1' } else { HOST } }}" \
+      --port {{ PORT }} \
+      --asset-dir "$(cd '{{ ASSET_DIR }}' && pwd)" \
+      --moon-command "{{ MOON_COMMAND }}"
+
+dev: build
+    just ROOT='{{ ROOT }}' PORT='{{ PORT }}' ASSET_DIR='{{ ASSET_DIR }}' \
+      MOON_COMMAND='{{ MOON_COMMAND }}' \
+      HOST='{{ if HOST == '' { '0.0.0.0' } else { HOST } }}' serve
 
 test-browser: test-browser-smoke
 
