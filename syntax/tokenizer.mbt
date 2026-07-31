@@ -295,10 +295,16 @@ pub fn push_token(
 /// copies. Inverse of `encode_mode_stack`.
 pub fn decode_mode_stack(state : TokenizerState) -> Array[Char] {
   if state.0 is "" {
-    ['n']
-  } else {
-    state.0.to_array()
+    return ['n']
   }
+  // Decoded once per tokenized line: the direct char loop lowers to a plain
+  // string scan, where `String::to_array` would allocate an iterator chain
+  // on the JS target.
+  let stack : Array[Char] = []
+  for mode in state.0 {
+    stack.push(mode)
+  }
+  stack
 }
 
 ///|
