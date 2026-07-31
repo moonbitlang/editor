@@ -334,16 +334,45 @@ test "folding: trivia gaps defer run decisions until the continuation" {
     #|noraise { 3 }
     #|// second a
     #|// second b
-    #|
+    #|/* spacer */
+    #|is Some(_)
     #|// third a
     #|// third b
+    #|
+    #|// fourth a
+    #|// fourth b
   let model = test_model(text, language_id="moonbit")
   let runs = moonbit_source_folds(model.snapshot).comment_runs
   assert_eq(runs.length(), 2)
-  assert_eq(runs[0].start_line_number, 10)
-  assert_eq(runs[0].end_line_number, 11)
-  assert_eq(runs[1].start_line_number, 13)
-  assert_eq(runs[1].end_line_number, 14)
+  assert_eq(runs[0].start_line_number, 14)
+  assert_eq(runs[0].end_line_number, 15)
+  assert_eq(runs[1].start_line_number, 17)
+  assert_eq(runs[1].end_line_number, 18)
+}
+
+///|
+test "folding: same-start provider ranges yield to the comment run" {
+  let text =
+    #|// zero
+    #|  // one
+    #|  two
+    #|tail
+  let viewer = Viewer::Viewer()
+  viewer.set_model(Some(test_model(text, language_id="moonbit")))
+  viewer.fold_top_level()
+  guard viewer.folding_controller() is Some(controller) else {
+    fail("expected a folding controller")
+  }
+  guard controller.folding_model is Some(folding_model) else {
+    fail("expected an attached folding model")
+  }
+  let regions = folding_model.regions()
+  assert_eq(regions.length(), 1)
+  assert_eq(regions.get_start_line_number(0), 1)
+  assert_eq(regions.get_end_line_number(0), 2)
+  assert_eq(regions.get_type(0), Some(COMMENT_RUN_FOLDING_RANGE_TYPE))
+  assert_true(regions.is_collapsed(0))
+  viewer.dispose()
 }
 
 ///|
