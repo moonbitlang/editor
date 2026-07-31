@@ -48,9 +48,11 @@ fn is_moonbit_outline_identifier_continue(code : Int) -> Bool {
 ///|
 /// Whether a top-level line ending in `code` leaves a binding lexically
 /// unfinished — `let header =` or a trailing binary operator — so following
-/// lines continue the same construct. A continuation line that instead
-/// begins with its operator (a leading-dot method chain) is not detectable
-/// from the previous line's tail and stays out of this heuristic.
+/// lines continue the same construct. Postfix markers (`?` in `-> Item?`,
+/// `~` labels) end a construct and are not continuations. A continuation
+/// line that instead begins with its operator (a leading-dot method chain)
+/// is not detectable from the previous line's tail and stays out of this
+/// heuristic.
 fn is_moonbit_expression_continuation_code(code : Int) -> Bool {
   code == '=' ||
   code == '+' ||
@@ -63,11 +65,9 @@ fn is_moonbit_expression_continuation_code(code : Int) -> Bool {
   code == '&' ||
   code == '|' ||
   code == '^' ||
-  code == '?' ||
   code == ':' ||
   code == ',' ||
-  code == '.' ||
-  code == '~'
+  code == '.'
 }
 
 ///|
@@ -133,6 +133,7 @@ fn moonbit_source_folds(snapshot : @model.TextSnapshot) -> MoonbitSourceFolds {
       function_keyword_line == 0 &&
       pending_function_prefix_line == 0 &&
       pending_impl_start_line == 0 &&
+      !pending_bodyless_declaration &&
       is_moonbit_plain_comment_line(line) {
       if comment_run_start_line == 0 {
         comment_run_start_line = line_number
@@ -233,6 +234,11 @@ fn moonbit_source_folds(snapshot : @model.TextSnapshot) -> MoonbitSourceFolds {
         pending_function_prefix_paren_depth = 0
         pending_impl_start_line = 0
         pending_impl_saw_with = false
+        // A raw `#|`/`$|` line can validly end its multi-line literal, so it
+        // completes any unfinished top-level binding.
+        if brace_depth == 0 && expression_nesting_depth == 0 {
+          pending_expression_continuation = false
+        }
         break
       } else if code == '/' && next == '*' {
         block_comment_depth = 1
