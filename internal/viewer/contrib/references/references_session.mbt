@@ -12,6 +12,7 @@ pub(all) enum ReferencesPeekMode {
 pub(all) enum ReferencesPeekPhase {
   PeekClosed
   PeekLoadingDefinitions(Int)
+  PeekLoadingReferences(Int)
   PeekLoadingPreview(Int, Int)
   PeekShown(Int, Int)
   PeekUnavailable(Int, Int)

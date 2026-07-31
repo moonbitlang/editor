@@ -275,7 +275,12 @@ fn Viewer::handle_markdown_definition_key_down(
     ((key == "F10" && shift) || (key == "ContextMenu" && !shift)) {
     return self.show_markdown_context_menu_from_keyboard()
   }
-  guard key == "F12" && !shift else { return false }
+  guard key == "F12" else { return false }
+  if shift && !alt && !ctrl_cmd && self.references_action_available() {
+    self.start_peek_references()
+    return true
+  }
+  guard !shift else { return false }
   if alt && !ctrl_cmd && self.definition_peek_available() {
     self.start_peek_definition()
     return true
@@ -332,7 +337,7 @@ fn Viewer::on_definition_cursor_selection_changed(
   match self.references_contribution() {
     Some(references) =>
       match references.phase {
-        PeekLoadingDefinitions(_) =>
+        PeekLoadingDefinitions(_) | PeekLoadingReferences(_) =>
           self.close_references_peek(restore_focus=false)
         _ => ()
       }
@@ -396,7 +401,7 @@ fn Viewer::start_goto_definition_at(
   match self.references_contribution() {
     Some(references) =>
       match references.phase {
-        PeekLoadingDefinitions(_) =>
+        PeekLoadingDefinitions(_) | PeekLoadingReferences(_) =>
           self.close_references_peek(restore_focus=false)
         _ => ()
       }
@@ -580,7 +585,7 @@ fn Viewer::commit_plain_definition_pointer_target(
   match self.references_contribution() {
     Some(references) =>
       match references.phase {
-        PeekLoadingDefinitions(_) =>
+        PeekLoadingDefinitions(_) | PeekLoadingReferences(_) =>
           self.close_references_peek(restore_focus=false)
         _ => ()
       }

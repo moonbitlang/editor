@@ -145,6 +145,8 @@ without changing scope, public Viewer API, or host ownership.
 
 ### 1. Language registry and root action
 
+Status: complete
+
 - add References registration, presence, query, handle callbacks, docs, and
   generated interfaces;
 - add provider query ownership to the shared References contribution;
@@ -162,6 +164,17 @@ moon fmt --check
 ```
 
 Commit the coherent green milestone.
+
+Evidence:
+
+- `viewer/common/languages` passed 43/43 tests independently on js, native,
+  and wasm. Moon's `--target all` test invocation first ran the wasm cases
+  green, then rejected the package for unsupported `wasm-gc`; the explicit
+  declared targets are the authoritative focused gate.
+- root `viewer` passed 289/289 js tests, including Shift+F12 registration,
+  provider loading/results/empty states, cancellation on cursor movement, and
+  precomputed-intent supersession.
+- `moon check --target all --warn-list +73` and `moon fmt --check` passed.
 
 ### 2. Remote and native provider integration
 

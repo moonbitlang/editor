@@ -37,6 +37,25 @@ impl @language.DefinitionProvider for PendingReferencesPeekDefinitionProvider wi
 }
 
 ///|
+priv struct ReferencesPeekQueryProvider {
+  calls : Ref[Int]
+  locations : Array[@language.Location]
+  observed_tokens : Array[@language.CancellationToken]
+}
+
+///|
+impl @language.ReferencesProvider for ReferencesPeekQueryProvider with fn provide_references(
+  self,
+  _model,
+  _position,
+  token,
+) {
+  self.calls.val += 1
+  self.observed_tokens.push(token)
+  self.locations.copy()
+}
+
+///|
 priv struct ManualReferencesPeekTasks {
   tasks : Array[async () -> Unit noraise]
 }
@@ -91,6 +110,7 @@ fn references_peek_test_services(
   opener? : @navigation_api.LocationOpenerHandle,
   resolver? : @navigation_api.TextModelResolverHandle,
   definition_provider_calls? : Ref[Int],
+  references_provider? : &@language.ReferencesProvider,
 ) -> ViewerServices {
   let languages = @languages.Languages()
   match definition_provider_calls {
@@ -98,6 +118,12 @@ fn references_peek_test_services(
       languages.register_definition_provider(LanguageId("moonbit"), ReferencesPeekGuardDefinitionProvider::{
         calls,
       })
+      |> ignore
+    None => ()
+  }
+  match references_provider {
+    Some(provider) =>
+      languages.register_references_provider(LanguageId("moonbit"), provider)
       |> ignore
     None => ()
   }
@@ -1737,6 +1763,119 @@ async fn run_references_peek_cancels_definition_intent_test() -> Unit {
 }
 
 ///|
+async fn run_references_peek_provider_action_test() -> Unit {
+  let source = references_peek_test_model(
+    "file:///workspace/provider-source.mbt",
+    text="let first = target\nlet second = target\n",
+  )
+  let calls = Ref(0)
+  let locations : Array[@language.Location] = [
+    { uri: source.uri, range: Range(1, 13, 1, 19) },
+    { uri: source.uri, range: Range(2, 14, 2, 20) },
+  ]
+  let observed_tokens : Array[@language.CancellationToken] = []
+  let provider = ReferencesPeekQueryProvider::{
+    calls,
+    locations,
+    observed_tokens,
+  }
+  let services = references_peek_test_services(references_provider=provider)
+  let viewer = references_peek_test_viewer(services, source)
+  let tasks = ManualReferencesPeekTasks()
+  viewer.set_definition_host_for_test(task => tasks.schedule(task))
+  viewer.set_position(Position(1, 13))
+  let state = viewer.references_contribution().unwrap()
+
+  assert_true(viewer.references_action_available())
+  assert_true(
+    viewer.handle_editor_key_down("F12", alt=false, ctrl_cmd=false, shift=true),
+  )
+  match state.phase {
+    PeekLoadingReferences(_) => ()
+    _ => fail("Shift F12 did not open the references loading shell")
+  }
+  guard state.widget is Some(loading_widget) else {
+    fail("provider-backed references did not publish its loading shell")
+  }
+  assert_true(
+    references_peek_root_test_text(loading_widget.get_dom_node()).contains(
+      "Loading references",
+    ),
+  )
+  guard state.query_source is Some(first_source) else {
+    fail("provider-backed references did not retain its query source")
+  }
+  assert_eq(calls.val, 0)
+  assert_eq(tasks.tasks.length(), 1)
+  tasks.run_next()
+  assert_eq(calls.val, 1)
+  assert_eq(observed_tokens.length(), 1)
+  assert_true(physical_equal(observed_tokens[0], first_source.token()))
+  assert_true(state.query_source is None)
+  assert_eq(state.model.unwrap().references.length(), 2)
+  tasks.run_all()
+  match state.phase {
+    PeekShown(_, _) => ()
+    _ => fail("provider-backed references did not install its preview")
+  }
+
+  // The exact same provider action toggles its populated session closed.
+  assert_true(
+    viewer.handle_editor_key_down("F12", alt=false, ctrl_cmd=false, shift=true),
+  )
+  assert_eq(state.phase, PeekClosed)
+
+  // An authoritative empty provider result keeps the accessible shell.
+  locations.clear()
+  assert_true(
+    viewer.handle_editor_key_down("F12", alt=false, ctrl_cmd=false, shift=true),
+  )
+  tasks.run_all()
+  assert_eq(calls.val, 2)
+  guard state.widget is Some(empty_widget) else {
+    fail("empty provider result did not retain the references shell")
+  }
+  assert_true(
+    references_peek_root_test_text(empty_widget.get_dom_node()).contains(
+      "No references found",
+    ),
+  )
+
+  // Toggle the empty shell closed, then prove a cursor change cancels a
+  // pending query before it can invoke the provider.
+  viewer.start_peek_references()
+  assert_eq(state.phase, PeekClosed)
+  viewer.start_peek_references()
+  guard state.query_source is Some(cancelled_source) else {
+    fail("second provider query did not retain its source")
+  }
+  viewer.set_position(Position(2, 14))
+  assert_eq(state.phase, PeekClosed)
+  assert_true(cancelled_source.token().is_cancellation_requested())
+  tasks.run_all()
+  assert_eq(calls.val, 2)
+
+  // A newer precomputed References intent also cancels the provider query and
+  // owns the resulting shared session.
+  viewer.start_peek_references()
+  guard state.query_source is Some(superseded_source) else {
+    fail("provider query was not pending before precomputed replacement")
+  }
+  viewer.show_references(Position(2, 15), [
+    { uri: source.uri, range: Range(2, 14, 2, 20) },
+  ])
+  assert_true(superseded_source.token().is_cancellation_requested())
+  assert_eq(state.mode, Some(References))
+  assert_eq(state.model.unwrap().references.length(), 1)
+  tasks.run_all()
+  assert_eq(calls.val, 2)
+
+  viewer.dispose()
+  services.dispose()
+  source.dispose()
+}
+
+///|
 async test "Peek References public entry, snippets, ownership, navigation, and freshness" {
   install_mounted_test_browser()
   defer restore_mounted_test_browser()
@@ -1754,4 +1893,5 @@ async test "Peek References public entry, snippets, ownership, navigation, and f
   run_references_peek_reentrant_view_zone_test()
   run_definition_peek_reentrant_view_zone_test()
   run_references_peek_cancels_definition_intent_test()
+  run_references_peek_provider_action_test()
 }

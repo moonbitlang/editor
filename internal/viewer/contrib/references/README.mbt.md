@@ -45,9 +45,15 @@ The selected algorithms are traceable to the checked-in VS Code revision
 break normalization, and invalid-range rejection are documented representation
 choices.
 
-Provider discovery, query cancellation, Shift+F12 commands, CodeLens, document
-highlights, the Workbench References View, filtering, virtualization, history,
-and copy actions are outside this package.
+The root Viewer registers the provider-backed `Peek References` action,
+Shift+F12, and context-menu placement. This package's session phase identifies
+Definition versus References query loading, while the root controller owns the
+query cancellation source and freshness stamp. Provider registration and
+aggregation remain in `viewer/common/languages`; native and remote adapters
+remain host responsibilities.
+
+Go to References, CodeLens, document highlights, the Workbench References View,
+filtering, virtualization, history, and copy actions are outside this package.
 
 Exact callable types are in `pkg.generated.mbti`. Focused coverage is:
 

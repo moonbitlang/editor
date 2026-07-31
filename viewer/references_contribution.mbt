@@ -5,6 +5,17 @@
 let references_contribution_id : String = "editor.contrib.referencesController"
 
 ///|
+/// Exact provider-query owner stamp. The session generation identifies both
+/// the mounted shell and the query intent; model fields reject results after
+/// replacement, reattachment, or content changes.
+priv struct ReferencesQueryStamp {
+  generation : Int
+  model_identity : Int
+  model_generation : Int
+  model_version_id : Int
+}
+
+///|
 /// One root-owned lazy snippet-resolution slot. The group index is immutable;
 /// each request bumps `generation`, and the optional source/reference are
 /// detached before cancellation or lease-release callbacks can re-enter.
@@ -30,6 +41,7 @@ fn ReferencesGroupPreviewOwner::ReferencesGroupPreviewOwner(
 priv struct ReferencesContributionState {
   mut disposed : Bool
   mut generation : Int
+  mut query_source : @language.CancellationTokenSource?
   mut mode : @references.ReferencesPeekMode?
   mut phase : @references.ReferencesPeekPhase
   mut preview_generation : Int
@@ -56,6 +68,7 @@ fn ReferencesContributionState::ReferencesContributionState() -> ReferencesContr
   {
     disposed: false,
     generation: 0,
+    query_source: None,
     mode: None,
     phase: PeekClosed,
     preview_generation: 0,
@@ -94,6 +107,24 @@ fn ReferencesContributionState::dispose(
 }
 
 ///|
+/// Retires a completed or stale provider query only when it is still the exact
+/// source owned by this state. An older continuation therefore cannot cancel
+/// a newer References session.
+fn ReferencesContributionState::retire_query_source(
+  self : ReferencesContributionState,
+  source : @language.CancellationTokenSource,
+  cancel~ : Bool,
+) -> Unit {
+  match self.query_source {
+    Some(current) if physical_equal(current, source) => {
+      self.query_source = None
+      source.dispose(cancel~)
+    }
+    _ => ()
+  }
+}
+
+///|
 fn register_references_contribution(
   registry : EditorContributionRegistry,
 ) -> Unit {
@@ -103,6 +134,27 @@ fn register_references_contribution(
     _viewer => References(ReferencesContributionState()),
     _viewer => [],
   )
+  registry.register_editor_command(
+    "editor.action.referenceSearch.trigger",
+    viewer => viewer.references_action_available(),
+    viewer => viewer.start_peek_references(),
+    [],
+    shift_keybindings=[("F12", false, false)],
+    title="Peek References",
+    menu_keybinding_label=references_menu_keybinding_label(),
+    menu_placements=[
+      { menu_id: EditorContext, group: "navigation", order: 1.3 },
+    ],
+  )
+}
+
+///|
+fn references_menu_keybinding_label() -> String {
+  if @base_common.is_macintosh {
+    "\u{21e7}F12"
+  } else {
+    "Shift+F12"
+  }
 }
 
 ///|

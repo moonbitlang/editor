@@ -3,6 +3,19 @@
 // dispose with it; the keybinding table gates on live preconditions.
 
 ///|
+priv struct EditorExtensionsReferencesProvider {}
+
+///|
+impl @language.ReferencesProvider for EditorExtensionsReferencesProvider with fn provide_references(
+  _self,
+  _model,
+  _position,
+  _token,
+) {
+  []
+}
+
+///|
 test "contributions instantiate centrally in the reviewed order and expose every typed variant" {
   let viewer = Viewer::Viewer()
   let expected = [
@@ -695,6 +708,75 @@ test "definition context menu resolves both definition actions at the top level"
     peek_keybinding,
     definition_menu_keybinding_label(alt=true, ctrl_cmd=false),
   )
+}
+
+///|
+test "Peek References registers Shift F12 and follows definition menu actions" {
+  install_mounted_test_browser()
+  defer restore_mounted_test_browser()
+  let languages = @languages.Languages()
+  languages.register_definition_provider(LanguageId("moonbit"), DefinitionNavigationTestProvider::{
+    locations: [],
+  })
+  |> ignore
+  languages.register_references_provider(LanguageId("moonbit"), EditorExtensionsReferencesProvider::{
+
+  })
+  |> ignore
+  let log_service = @log.LogService()
+  let services = ViewerServices(
+    languages=languages.language_handle(log_service.log_handle()),
+    log_service=log_service.log_handle(),
+  )
+  defer services.dispose()
+  let viewer = Viewer::Viewer(services~)
+  defer viewer.dispose()
+  let model = definition_navigation_test_model(
+    "file:///references-context-menu.mbt",
+  )
+  defer model.dispose()
+  let host = @rdom.document().create_element("div")
+  viewer.attach(host)
+  viewer.set_model(Some(model))
+  viewer.set_position(Position(1, 5))
+
+  let rules = editor_registry().keybindings.filter(rule => {
+    rule.command_id == "editor.action.referenceSearch.trigger"
+  })
+  assert_eq(rules.length(), 1)
+  assert_eq(rules[0].key, "F12")
+  assert_false(rules[0].alt)
+  assert_false(rules[0].ctrl_cmd)
+  assert_true(rules[0].shift)
+
+  let entries = editor_registry().resolve_editor_menu(viewer, EditorContext)
+  assert_eq(entries.length(), 3)
+  guard entries[2]
+    is ContextMenuAction(
+      id="editor.action.referenceSearch.trigger",
+      label="Peek References",
+      keybinding_label=Some(keybinding)
+    ) else {
+    fail("expected Peek References after the two definition actions")
+  }
+  assert_eq(keybinding, references_menu_keybinding_label())
+
+  let tasks = ManualDefinitionTasks()
+  viewer.set_definition_host_for_test(task => tasks.schedule(task))
+  assert_true(
+    editor_registry().dispatch_keybinding(
+      viewer,
+      "F12",
+      alt=false,
+      ctrl_cmd=false,
+      shift=true,
+    ),
+  )
+  match viewer.definition_peek_phase_for_test() {
+    PeekLoadingReferences(_) => ()
+    _ => fail("registered Shift F12 did not start Peek References")
+  }
+  viewer.close_references_peek(restore_focus=false)
 }
 
 ///|

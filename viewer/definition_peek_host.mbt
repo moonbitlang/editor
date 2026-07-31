@@ -174,6 +174,15 @@ fn Viewer::definition_peek_available(self : Viewer) -> Bool {
 }
 
 ///|
+fn Viewer::references_action_available(self : Viewer) -> Bool {
+  guard self.references_peek_available() else { return false }
+  match self.get_model() {
+    Some(model) => self.services.languages.has_references_provider(model)
+    None => false
+  }
+}
+
+///|
 fn Viewer::references_peek_available(self : Viewer) -> Bool {
   !self.disposed &&
   self.role == OuterViewer &&
@@ -277,6 +286,75 @@ fn Viewer::open_definition_peek_with_locations(
 }
 
 ///|
+/// Starts the provider-backed References action and immediately installs the
+/// shared loading shell. Shift+F12 and the context-menu command both enter
+/// here; the public `show_references` seam remains provider-free.
+fn Viewer::start_peek_references(self : Viewer) -> Unit {
+  guard self.references_action_available() else { return }
+  guard self.references_contribution() is Some(references) else { return }
+  guard self.get_model() is Some(model) else { return }
+  guard self.definition_command_position() is Some(position) else { return }
+  let position = model.validate_position(position)
+  let session_key = @references.ReferencesSessionKey::from_model(
+    model,
+    self.model_slot.generation,
+    position,
+  )
+  if self.references_peek_session_is_open(session_key, References) {
+    self.close_references_peek(restore_focus=true)
+    return
+  }
+  let expected_closed_generation = references.generation + 1
+  self.close_references_peek(restore_focus=false)
+  guard self.references_peek_closed_generation_is_current(
+    expected_closed_generation,
+  ) else {
+    return
+  }
+  self.prepare_definition_intent_for_peek()
+  guard self.references_peek_closed_generation_is_current(
+    expected_closed_generation,
+  ) else {
+    return
+  }
+  guard self.begin_references_peek_session(
+      position,
+      session_key,
+      References,
+      expected_closed_generation,
+    )
+    is Some(generation) else {
+    return
+  }
+  let source = @language.CancellationTokenSource()
+  references.query_source = Some(source)
+  references.phase = PeekLoadingReferences(generation)
+  let stamp : ReferencesQueryStamp = {
+    generation,
+    model_identity: model.identity(),
+    model_generation: self.model_slot.generation,
+    model_version_id: model.get_version_id(),
+  }
+  let offset = model.get_offset_at(position)
+  let task = references.launch_async_task
+  task(async fn() noraise {
+    let locations = self.services.languages.references_at(
+      model,
+      offset,
+      token=source.token(),
+      run_tasks=run_async_tasks_concurrently,
+    )
+    if !self.references_query_is_current(stamp, source) {
+      references.retire_query_source(source, cancel=true)
+      return
+    }
+    source.dispose()
+    references.query_source = None
+    self.install_references_peek_locations(generation, position, locations)
+  })
+}
+
+///|
 /// Displays an already-computed reference set without invoking a language
 /// provider. The caller's array is copied before the shared model normalizes
 /// it, so the Peek never retains or mutates caller-owned collection state.
@@ -349,6 +427,7 @@ fn Viewer::references_peek_closed_generation_is_current(
     Some(state) =>
       state.generation == generation &&
       state.phase == PeekClosed &&
+      state.query_source is None &&
       state.mode is None &&
       state.session_key is None &&
       state.model is None &&
@@ -824,6 +903,28 @@ fn Viewer::definition_peek_request_is_current(
   guard references.generation == stamp.generation else { return false }
   guard definition.peek_source is Some(current_source) else { return false }
   guard physical_equal(current_source, source) else { return false }
+  guard self.get_model() is Some(model) else { return false }
+  model.identity() == stamp.model_identity &&
+  self.model_slot.generation == stamp.model_generation &&
+  model.get_version_id() == stamp.model_version_id
+}
+
+///|
+fn Viewer::references_query_is_current(
+  self : Viewer,
+  stamp : ReferencesQueryStamp,
+  source : @language.CancellationTokenSource,
+) -> Bool {
+  guard !self.disposed && !source.token().is_cancellation_requested() else {
+    return false
+  }
+  guard self.references_contribution() is Some(references) else { return false }
+  guard references.generation == stamp.generation &&
+    references.phase == PeekLoadingReferences(stamp.generation) &&
+    references.query_source is Some(current_source) &&
+    physical_equal(current_source, source) else {
+    return false
+  }
   guard self.get_model() is Some(model) else { return false }
   model.identity() == stamp.model_identity &&
   self.model_slot.generation == stamp.model_generation &&
@@ -1806,6 +1907,8 @@ fn Viewer::close_references_peek(self : Viewer, restore_focus~ : Bool) -> Unit {
     }
     None => None
   }
+  let query_source = state.query_source
+  state.query_source = None
   let preview_source = state.preview_source
   state.preview_source = None
   let focus_frame = state.focus_frame
@@ -1837,6 +1940,10 @@ fn Viewer::close_references_peek(self : Viewer, restore_focus~ : Bool) -> Unit {
   state.session_key = None
 
   match definition_source {
+    Some(source) => source.dispose(cancel=true)
+    None => ()
+  }
+  match query_source {
     Some(source) => source.dispose(cancel=true)
     None => ()
   }
