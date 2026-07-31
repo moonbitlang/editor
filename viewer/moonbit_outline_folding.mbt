@@ -68,7 +68,8 @@ fn is_moonbit_expression_continuation_code(code : Int) -> Bool {
   code == '^' ||
   code == ':' ||
   code == ',' ||
-  code == '.'
+  code == '.' ||
+  code == '!'
 }
 
 ///|
@@ -81,9 +82,45 @@ fn is_moonbit_expression_continuation_code(code : Int) -> Bool {
 /// that construct rather than at the top level. Leading `//` and `/*` are
 /// comments, and `*/` closes one; none of those continue an expression.
 fn is_moonbit_leading_continuation_line(line : String) -> Bool {
-  for index in 0..<line.length() {
+  let mut index = 0
+  while index < line.length() {
     let code = line[index].to_int()
     if code == ' ' || code == '\t' || code == 0xFEFF {
+      index += 1
+      continue
+    }
+    let next = if index + 1 < line.length() {
+      line[index + 1].to_int()
+    } else {
+      0
+    }
+    if code == '/' && next == '*' {
+      // A closed block-comment prefix (`/* rationale */ else`) is trivia
+      // before the first real token; an unclosed one makes the whole line
+      // trivia and never reaches this classifier.
+      let mut scan = index + 2
+      let mut depth = 1
+      while scan < line.length() && depth > 0 {
+        let scan_code = line[scan].to_int()
+        let scan_next = if scan + 1 < line.length() {
+          line[scan + 1].to_int()
+        } else {
+          0
+        }
+        if scan_code == '/' && scan_next == '*' {
+          depth += 1
+          scan += 2
+        } else if scan_code == '*' && scan_next == '/' {
+          depth -= 1
+          scan += 2
+        } else {
+          scan += 1
+        }
+      }
+      if depth > 0 {
+        return false
+      }
+      index = scan
       continue
     }
     if is_moonbit_outline_identifier_start(code) {
@@ -102,13 +139,8 @@ fn is_moonbit_leading_continuation_line(line : String) -> Bool {
         word == "with" ||
         word == "derive"
     }
-    let next = if index + 1 < line.length() {
-      line[index + 1].to_int()
-    } else {
-      0
-    }
     return match code {
-      '/' => next != '/' && next != '*'
+      '/' => next != '/'
       '*' => next != '/'
       '(' | '[' | '{' => true
       '=' | '+' | '-' | '%' | '<' | '>' | '&' | '|' | '^' | ':' | ',' | '.' =>
@@ -146,6 +178,7 @@ fn moonbit_line_ends_with_continuation_word(
   word == "try" ||
   word == "match" ||
   word == "if" ||
+  word == "in" ||
   word == "catch"
 }
 
@@ -197,6 +230,7 @@ fn moonbit_source_folds(snapshot : @model.TextSnapshot) -> MoonbitSourceFolds {
   let mut pending_bodyless_declaration = false
   let mut pending_bodyless_saw_fn = false
   let mut pending_binding_declaration = false
+  let mut pending_extern_declaration = false
   let mut declaration_start_line = 0
   let mut body_start_line = 0
   let mut paren_depth = 0
@@ -222,6 +256,7 @@ fn moonbit_source_folds(snapshot : @model.TextSnapshot) -> MoonbitSourceFolds {
       pending_impl_start_line == 0 &&
       !pending_bodyless_declaration &&
       !pending_binding_declaration &&
+      !pending_extern_declaration &&
       is_moonbit_plain_comment_line(line)
     let mut index = 0
     let mut quote = 0
@@ -339,7 +374,13 @@ fn moonbit_source_folds(snapshot : @model.TextSnapshot) -> MoonbitSourceFolds {
         }
         let word = line[start:index].to_owned()
         if brace_depth == 0 && declaration_start_line == 0 {
-          if word == "declare" {
+          if word == "extern" {
+            // An `extern "abi"` prefix may be split from its `fn`; the
+            // state survives the quoted ABI and the next word releases it.
+            pending_extern_declaration = true
+            pending_function_prefix_line = 0
+            pending_function_prefix_paren_depth = 0
+          } else if word == "declare" {
             pending_bodyless_declaration = true
             pending_bodyless_saw_fn = false
             pending_function_prefix_line = 0
@@ -351,7 +392,9 @@ fn moonbit_source_folds(snapshot : @model.TextSnapshot) -> MoonbitSourceFolds {
             word == "fn" {
             // Keep the bodyless state through `fn` so comments split from
             // the declared name stay inside the declaration; the word after
-            // `fn` — the name — releases it below.
+            // `fn` — the name — releases it below. Words inside a generic
+            // parameter list (`fn[T]`) are skipped, so the release happens
+            // at the declared name itself.
             pending_bodyless_saw_fn = true
           } else if pending_bodyless_declaration &&
             !pending_bodyless_saw_fn &&
@@ -363,9 +406,12 @@ fn moonbit_source_folds(snapshot : @model.TextSnapshot) -> MoonbitSourceFolds {
               word == "async"
             ) {
             ()
-          } else if pending_bodyless_declaration {
+          } else if pending_bodyless_declaration &&
+            expression_nesting_depth == 0 {
             pending_bodyless_declaration = false
             pending_bodyless_saw_fn = false
+          } else if pending_bodyless_declaration {
+            ()
           } else if function_keyword_line > 0 &&
             function_keyword_bracket_depth == 0 {
             declaration_start_line = function_keyword_line
@@ -427,6 +473,9 @@ fn moonbit_source_folds(snapshot : @model.TextSnapshot) -> MoonbitSourceFolds {
             pending_function_prefix_line = 0
             pending_function_prefix_paren_depth = 0
           }
+        }
+        if word != "extern" {
+          pending_extern_declaration = false
         }
       } else {
         if function_keyword_line > 0 {
@@ -509,6 +558,7 @@ fn moonbit_source_folds(snapshot : @model.TextSnapshot) -> MoonbitSourceFolds {
             pending_bodyless_declaration = false
             pending_bodyless_saw_fn = false
             pending_binding_declaration = false
+            pending_extern_declaration = false
             pending_function_prefix_line = 0
             pending_function_prefix_paren_depth = 0
             pending_impl_start_line = 0

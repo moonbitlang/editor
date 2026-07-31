@@ -376,6 +376,36 @@ test "folding: queued gap runs and keyword tails stay with their construct" {
 }
 
 ///|
+test "folding: prefixed continuations and split declarations keep comments" {
+  let text =
+    #|let v : Int = if c { 1 }
+    #|// gap a
+    #|// gap b
+    #|/* rationale */ else { 2 }
+    #|declare pub fn[T]
+    #|// generic a
+    #|// generic b
+    #|lookup(value : T) -> T
+    #|extern "js"
+    #|// abi a
+    #|// abi b
+    #|fn foreign() -> Int = "() => 1"
+    #|let d : Bool = !
+    #|// not a
+    #|// not b
+    #|false
+    #|// tail a
+    #|// tail b
+  let model = test_model(text, language_id="moonbit")
+  let source_folds = moonbit_source_folds(model.snapshot)
+  assert_eq(source_folds.function_bodies.length(), 0)
+  let runs = source_folds.comment_runs
+  assert_eq(runs.length(), 1)
+  assert_eq(runs[0].start_line_number, 17)
+  assert_eq(runs[0].end_line_number, 18)
+}
+
+///|
 test "folding: same-start provider ranges yield to the comment run" {
   let text =
     #|// zero
