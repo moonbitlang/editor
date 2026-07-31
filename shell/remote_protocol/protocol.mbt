@@ -604,9 +604,8 @@ fn decode_definition_result_payload(
       match json_field(packet, "locations") {
         Some(Array(items)) =>
           for item in items {
-            match parse_location(item) {
-              Some(location) => locations.push(location)
-              None => ()
+            if parse_location(item) is Some(location) {
+              locations.push(location)
             }
           }
         _ => ()
