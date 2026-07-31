@@ -229,6 +229,32 @@ test "folding: comments inside binding continuations never form a run" {
 }
 
 ///|
+test "folding: bodyless declarations and raw literals release comment runs" {
+  let text =
+    #|declare
+    #|// pending a
+    #|// pending b
+    #|pub fn declared() -> Int
+    #|let raw : String =
+    #|  #| body one
+    #|  #| body two
+    #|// after raw a
+    #|// after raw b
+    #|declare fn lookup() -> Item?
+    #|// optional a
+    #|// optional b
+  let model = test_model(text, language_id="moonbit")
+  let source_folds = moonbit_source_folds(model.snapshot)
+  assert_eq(source_folds.function_bodies.length(), 0)
+  let runs = source_folds.comment_runs
+  assert_eq(runs.length(), 2)
+  assert_eq(runs[0].start_line_number, 8)
+  assert_eq(runs[0].end_line_number, 9)
+  assert_eq(runs[1].start_line_number, 11)
+  assert_eq(runs[1].end_line_number, 12)
+}
+
+///|
 test "folding: MoonBit outline collapses a copyright header to its first line" {
   let text =
     #|// Copyright 2026 Example Authors.
