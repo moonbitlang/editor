@@ -46,6 +46,31 @@ fn is_moonbit_outline_identifier_continue(code : Int) -> Bool {
 }
 
 ///|
+/// Whether a top-level line ending in `code` leaves a binding lexically
+/// unfinished — `let header =` or a trailing binary operator — so following
+/// lines continue the same construct. A continuation line that instead
+/// begins with its operator (a leading-dot method chain) is not detectable
+/// from the previous line's tail and stays out of this heuristic.
+fn is_moonbit_expression_continuation_code(code : Int) -> Bool {
+  code == '=' ||
+  code == '+' ||
+  code == '-' ||
+  code == '*' ||
+  code == '/' ||
+  code == '%' ||
+  code == '<' ||
+  code == '>' ||
+  code == '&' ||
+  code == '|' ||
+  code == '^' ||
+  code == '?' ||
+  code == ':' ||
+  code == ',' ||
+  code == '.' ||
+  code == '~'
+}
+
+///|
 /// Whether a line's first token is a plain `//` line comment. Doc comments
 /// (`///`, including the `///|` block delimiter) document the adjacent
 /// declaration and never join a comment run.
@@ -70,8 +95,8 @@ fn is_moonbit_plain_comment_line(line : String) -> Bool {
 /// declaration-specific: `declare` and `=`-backed functions have no MoonBit
 /// body, while qualified methods and formatted `impl ... with fn ...`
 /// declarations are included. Comment runs require the line-start lexical
-/// state to be top level, so lines inside block comments or brace-delimited
-/// constructs never join a run.
+/// state to be top level, so lines inside block comments, brace/paren/bracket
+/// constructs, or unfinished binding continuations never join a run.
 fn moonbit_source_folds(snapshot : @model.TextSnapshot) -> MoonbitSourceFolds {
   let folds : Array[MoonbitFunctionBodyFold] = []
   let comment_runs : Array[MoonbitCommentRunFold] = []
@@ -90,17 +115,20 @@ fn moonbit_source_folds(snapshot : @model.TextSnapshot) -> MoonbitSourceFolds {
   let mut paren_depth = 0
   let mut bracket_depth = 0
   let mut expression_nesting_depth = 0
+  let mut pending_expression_continuation = false
   for line_number in 1..<=snapshot.line_count() {
     let line = snapshot.get_line_content(line_number)
     // Comment lines inside an in-progress declaration (between a formatted
-    // signature's lines, or between `pub`/`impl` prefixes and their `fn`)
-    // or inside an unclosed paren/bracket continuation (a multi-line array
-    // or argument list) stay with their construct: folding them would nest
-    // a comment run inside another fold's span and break the disjoint
-    // document-order invariant of the host-fold list.
+    // signature's lines, or between `pub`/`impl` prefixes and their `fn`),
+    // inside an unclosed paren/bracket continuation (a multi-line array or
+    // argument list), or after a line that leaves a binding unfinished
+    // (`let header =`, a trailing `+`) stay with their construct: folding
+    // them would nest a comment run inside another fold's span and break
+    // the disjoint document-order invariant of the host-fold list.
     if block_comment_depth == 0 &&
       brace_depth == 0 &&
       expression_nesting_depth == 0 &&
+      !pending_expression_continuation &&
       declaration_start_line == 0 &&
       function_keyword_line == 0 &&
       pending_function_prefix_line == 0 &&
@@ -124,12 +152,23 @@ fn moonbit_source_folds(snapshot : @model.TextSnapshot) -> MoonbitSourceFolds {
     let mut interpolation_depth = 0
     let interpolation_resume_depths : Array[Int] = []
     let mut line_saw_equals = false
+    let mut line_last_code = 0
     while index < line.length() {
       let code = line[index].to_int()
       let next = if index + 1 < line.length() {
         line[index + 1].to_int()
       } else {
         0
+      }
+      // The line's last meaningful character, ignoring whitespace, block
+      // comments, trailing `//` comments, and raw-line markers, feeds the
+      // binding-continuation heuristic below.
+      if block_comment_depth == 0 &&
+        code != ' ' &&
+        code != '\t' &&
+        !(quote == 0 && code == '/' && (next == '/' || next == '*')) &&
+        !(quote == 0 && (code == '#' || code == '$') && next == '|') {
+        line_last_code = code
       }
       if block_comment_depth > 0 {
         if code == '/' && next == '*' {
@@ -393,6 +432,17 @@ fn moonbit_source_folds(snapshot : @model.TextSnapshot) -> MoonbitSourceFolds {
         }
         index += 1
       }
+    }
+    // Only a line that ends at the top level updates the continuation
+    // state; lines ending inside braces, brackets, or block comments leave
+    // it untouched, and blank or comment-only lines carry it forward.
+    if line_last_code != 0 &&
+      block_comment_depth == 0 &&
+      brace_depth == 0 &&
+      expression_nesting_depth == 0 {
+      pending_expression_continuation = is_moonbit_expression_continuation_code(
+        line_last_code,
+      )
     }
   }
   if comment_run_start_line > 0 &&
