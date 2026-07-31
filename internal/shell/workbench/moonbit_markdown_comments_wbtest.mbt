@@ -22,9 +22,26 @@ test "MoonBit Markdown comments render separators and ignore detached groups" {
   )
   assert_eq(blocks, [
     { line_range: LineRange(1, 2), markdown: "---" },
+    { line_range: LineRange(4, 5), markdown: "---\n\nshadow" },
     { line_range: LineRange(5, 6), markdown: "---" },
     { line_range: LineRange(8, 10), markdown: "---\n\nValid docs" },
     { line_range: LineRange(11, 13), markdown: "---\n\nSecond docs" },
+  ])
+}
+
+///|
+test "MoonBit Markdown comments anchor a file header with marker-line text" {
+  let blocks = moonbit_markdown_comments_in_snapshot(
+    TextSnapshot(
+      "///| Port of `uri.ts`: the `URI` class.\n///\n/// Reviewed deviations:\n/// - D3: hand-rolled scanners.\n\n///|\n/// Item docs\npub fn item() -> Unit {}",
+    ),
+  )
+  assert_eq(blocks, [
+    {
+      line_range: LineRange(1, 5),
+      markdown: "---\n\nPort of `uri.ts`: the `URI` class.\n\nReviewed deviations:\n- D3: hand-rolled scanners.",
+    },
+    { line_range: LineRange(6, 8), markdown: "---\n\nItem docs" },
   ])
 }
 

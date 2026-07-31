@@ -45,9 +45,11 @@ if accepts(payload, current_model_identity) {
   reuses JavaScript), remote hover/definition/document-symbol providers, the
   location opener and Peek model resolver, the private MoonBit
   Markdown-comment provider, and agent-feedback persistence; then it calls
-  `mount_app`. The MoonBit adapter treats an exact `///|` line as an item
-  anchor and always renders it as a horizontal separator. Immediately following
-  `///` lines render as that item's documentation below the separator.
+  `mount_app`. The MoonBit adapter treats a `///|` marker line — bare, or
+  carrying file-header text (`///| Summary …`) — as an item anchor and always
+  renders it as a horizontal separator. Marker-line text and immediately
+  following `///` lines render as that item's documentation below the
+  separator.
 - Rabbita owns topbar/sidebar/status/diagnostics/theme state and renders one
   stable, childless `.viewer-host`. After the first paint `Viewer::create`
   mounts the imperative editor into that element.
