@@ -321,6 +321,32 @@ test "folding: keyword-led continuations swallow their comment runs" {
 }
 
 ///|
+test "folding: trivia gaps defer run decisions until the continuation" {
+  let text =
+    #|let v : Int = if c { 1 }
+    #|// gap a
+    #|// gap b
+    #|
+    #|else { 2 }
+    #|// first a
+    #|// first b
+    #|
+    #|noraise { 3 }
+    #|// second a
+    #|// second b
+    #|
+    #|// third a
+    #|// third b
+  let model = test_model(text, language_id="moonbit")
+  let runs = moonbit_source_folds(model.snapshot).comment_runs
+  assert_eq(runs.length(), 2)
+  assert_eq(runs[0].start_line_number, 10)
+  assert_eq(runs[0].end_line_number, 11)
+  assert_eq(runs[1].start_line_number, 13)
+  assert_eq(runs[1].end_line_number, 14)
+}
+
+///|
 test "folding: provider ranges containing a comment run are retained" {
   let text =
     #|zero
