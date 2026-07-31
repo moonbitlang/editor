@@ -25,15 +25,10 @@ pub fn viewport_data_from_view_model(
     Some(partial) => partial.line_height
     None => line_height
   }
-  let start_line = @base_common.clamp_int(
-    source_window.start,
-    1,
-    view_model.line_count(),
-  )
-  let end_line = @base_common.clamp_int(
-    source_window.end,
-    start_line + 1,
-    view_model.line_count() + 1,
+  let start_line = source_window.start.clamp(min=1, max=view_model.line_count())
+  let end_line = source_window.end.clamp(
+    min=start_line + 1,
+    max=view_model.line_count() + 1,
   )
   let lines : Array[@view_layout.ViewLineRenderingData] = []
   let line_decorations : Array[Array[@view_layout.LineDecoration]] = []

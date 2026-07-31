@@ -85,11 +85,7 @@ pub fn ProjectedTextLine::from_injected_text(
   let mut source_cursor = 0
   let mut view_cursor = 0
   for item in normalized {
-    let column = @base_common.clamp_int(
-      item.position.column,
-      0,
-      line_text.length(),
-    )
+    let column = item.position.column.clamp(min=0, max=line_text.length())
     if column > source_cursor {
       append_source_text(
         builder, line_text, source_cursor, column, model_columns, injected_text_indices,
@@ -141,7 +137,7 @@ pub fn ProjectedTextLine::model_column_to_projected_column(
   model_column : Int,
   affinity? : @model.PositionAffinity,
 ) -> Int {
-  let column = @base_common.clamp_int(model_column, 0, self.model_line_length)
+  let column = model_column.clamp(min=0, max=self.model_line_length)
   // Deliberately not `unwrap_or`: the clamped column always hits the lookup
   // table, so the fallback must stay off the hot path of this mapping method.
   let projected = match self.model_to_projected_columns.get(column) {
@@ -250,7 +246,7 @@ pub fn ProjectedTextLine::projected_column_to_model_column(
   self : ProjectedTextLine,
   projected_column : Int,
 ) -> Int {
-  let column = @base_common.clamp_int(projected_column, 0, self.text.length())
+  let column = projected_column.clamp(min=0, max=self.text.length())
   self.model_columns.get(column).unwrap_or(self.model_line_length)
 }
 
@@ -261,7 +257,7 @@ pub fn ProjectedTextLine::injected_text_index_at_projected_column(
   self : ProjectedTextLine,
   projected_column : Int,
 ) -> Int {
-  let column = @base_common.clamp_int(projected_column, 0, self.text.length())
+  let column = projected_column.clamp(min=0, max=self.text.length())
   self.injected_text_indices.get(column).unwrap_or(-1)
 }
 
@@ -303,11 +299,7 @@ fn normalize_injected_text(
   let normalized : Array[InjectedText] = []
   for item in injected_text {
     if item.text.length() > 0 {
-      let column = @base_common.clamp_int(
-        item.position.column,
-        0,
-        line_text.length(),
-      )
+      let column = item.position.column.clamp(min=0, max=line_text.length())
       normalized.push({ ..item, position: { ..item.position, column, } })
     }
   }

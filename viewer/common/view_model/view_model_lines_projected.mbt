@@ -431,7 +431,7 @@ fn ViewModelLinesFromProjectedModel::to_valid_view_line_number(
   self : ViewModelLinesFromProjectedModel,
   view_line_number : Int,
 ) -> Int {
-  @base_common.clamp_int(view_line_number, 1, self.get_view_line_count())
+  view_line_number.clamp(min=1, max=self.get_view_line_count())
 }
 
 ///|
@@ -703,10 +703,9 @@ pub fn ViewModelLinesFromProjectedModel::convert_model_position_to_view_position
   // current whole-document tokenizer can synchronously expose that narrow
   // window. Keep the source validation above, and address only projections
   // that are committed so an early observer cannot index past the old array.
-  let input_line_number = @base_common.clamp_int(
-    valid_position.line_number,
-    1,
-    self.model_line_projections.length(),
+  let input_line_number = valid_position.line_number.clamp(
+    min=1,
+    max=self.model_line_projections.length(),
   )
   let input_column = valid_position.column
   let mut line_index = input_line_number - 1
@@ -844,13 +843,9 @@ fn line_injected_text_from_decorations(
   })
   for entry in entries {
     let (line_number, column, _, options) = entry
-    let line = @base_common.clamp_int(
-      line_number - 1,
-      0,
-      snapshot.line_count() - 1,
-    )
+    let line = (line_number - 1).clamp(min=0, max=snapshot.line_count() - 1)
     let line_text = snapshot.line_text(line)
-    let column0 = @base_common.clamp_int(column - 1, 0, line_text.length())
+    let column0 = (column - 1).clamp(min=0, max=line_text.length())
     buckets[line].push(
       InjectedText(
         Position(line, column0),
@@ -875,20 +870,18 @@ fn injected_text_for_model_line(
   if snapshot.line_count() == 0 {
     return []
   }
-  let target_line0 = @base_common.clamp_int(
-    model_line_number - 1,
-    0,
-    snapshot.line_count() - 1,
+  let target_line0 = (model_line_number - 1).clamp(
+    min=0,
+    max=snapshot.line_count() - 1,
   )
   let entries : Array[(Int, Int, @model.InjectedTextOptions)] = []
   for decoration in model.get_injected_text_decorations() {
     match decoration.options.before {
       Some(before) =>
         if before.content.length() > 0 &&
-          @base_common.clamp_int(
-            decoration.range.start_line_number - 1,
-            0,
-            snapshot.line_count() - 1,
+          (decoration.range.start_line_number - 1).clamp(
+            min=0,
+            max=snapshot.line_count() - 1,
           ) ==
           target_line0 {
           entries.push((decoration.range.start_column, 0, before))
@@ -898,10 +891,9 @@ fn injected_text_for_model_line(
     match decoration.options.after {
       Some(after) =>
         if after.content.length() > 0 &&
-          @base_common.clamp_int(
-            decoration.range.end_line_number - 1,
-            0,
-            snapshot.line_count() - 1,
+          (decoration.range.end_line_number - 1).clamp(
+            min=0,
+            max=snapshot.line_count() - 1,
           ) ==
           target_line0 {
           entries.push((decoration.range.end_column, 1, after))
@@ -922,7 +914,7 @@ fn injected_text_for_model_line(
   let out : Array[InjectedText] = []
   for entry in entries {
     let (column, _, options) = entry
-    let column0 = @base_common.clamp_int(column - 1, 0, line_text.length())
+    let column0 = (column - 1).clamp(min=0, max=line_text.length())
     out.push(
       InjectedText(
         Position(target_line0, column0),

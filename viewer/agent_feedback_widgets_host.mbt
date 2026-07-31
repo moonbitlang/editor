@@ -294,16 +294,8 @@ fn Viewer::highlight_agent_feedback_range(
 ) -> Unit {
   guard self.get_model() is Some(model) else { return }
   let line_count = model.snapshot.line_count()
-  let end_line = @base_common.clamp_int(
-    comment.range.end_line_number,
-    1,
-    line_count,
-  )
-  let start_line = @base_common.clamp_int(
-    comment.range.start_line_number,
-    1,
-    end_line,
-  )
+  let end_line = comment.range.end_line_number.clamp(min=1, max=line_count)
+  let start_line = comment.range.start_line_number.clamp(min=1, max=end_line)
   guard self.agent_feedback_widget_contribution() is Some(wc) else { return }
   let max_column = model.snapshot.line_text(end_line - 1).length() + 1
   wc.highlight_decoration_ids = model.delta_decorations(

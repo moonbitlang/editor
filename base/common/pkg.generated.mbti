@@ -12,8 +12,6 @@ pub fn basename(Uri) -> String
 
 pub fn basename_or_authority(Uri) -> String
 
-pub fn clamp_int(Int, Int, Int) -> Int
-
 pub fn compare(String, String) -> Int
 
 pub fn compare_substring(String, String, a_start? : Int, a_end? : Int, b_start? : Int, b_end? : Int) -> Int

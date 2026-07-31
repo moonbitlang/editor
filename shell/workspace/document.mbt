@@ -142,7 +142,7 @@ pub fn DocumentSnapshot::line_start_offset(
   self : DocumentSnapshot,
   line : Int,
 ) -> Int {
-  let line = @base_common.clamp_int(line, 0, self.line_count() - 1)
+  let line = line.clamp(min=0, max=self.line_count() - 1)
   self.line_starts[line]
 }
 
@@ -153,7 +153,7 @@ pub fn DocumentSnapshot::line_end_offset(
   self : DocumentSnapshot,
   line : Int,
 ) -> Int {
-  let line = @base_common.clamp_int(line, 0, self.line_count() - 1)
+  let line = line.clamp(min=0, max=self.line_count() - 1)
   let raw_end = if line + 1 < self.line_count() {
     self.line_starts[line + 1] - 1
   } else {
@@ -183,8 +183,8 @@ pub fn DocumentSnapshot::slice(
   self : DocumentSnapshot,
   range : @base_common.OffsetRange,
 ) -> String {
-  let start = @base_common.clamp_int(range.start, 0, self.length())
-  let end = @base_common.clamp_int(range.end_exclusive, start, self.length())
+  let start = range.start.clamp(min=0, max=self.length())
+  let end = range.end_exclusive.clamp(min=start, max=self.length())
   self.text[start:end].to_owned()
 }
 
@@ -195,7 +195,7 @@ pub fn DocumentSnapshot::line_at_offset(
   self : DocumentSnapshot,
   offset : Int,
 ) -> Int {
-  let offset = @base_common.clamp_int(offset, 0, self.length())
+  let offset = offset.clamp(min=0, max=self.length())
   let mut found = 0
   for i in 0..<self.line_starts.length() {
     if self.line_starts[i] <= offset {
@@ -212,7 +212,7 @@ pub fn DocumentSnapshot::position_at_offset(
   self : DocumentSnapshot,
   offset : Int,
 ) -> @base_common.Position {
-  let offset = @base_common.clamp_int(offset, 0, self.length())
+  let offset = offset.clamp(min=0, max=self.length())
   let line = self.line_at_offset(offset)
   { line_number: line + 1, column: offset - self.line_starts[line] + 1 }
 }
@@ -224,14 +224,10 @@ pub fn DocumentSnapshot::offset_at_position(
   self : DocumentSnapshot,
   position : @base_common.Position,
 ) -> Int {
-  let line = @base_common.clamp_int(
-    position.line_number - 1,
-    0,
-    self.line_count() - 1,
-  )
+  let line = (position.line_number - 1).clamp(min=0, max=self.line_count() - 1)
   let start = self.line_start_offset(line)
   let end = self.line_end_offset(line)
-  @base_common.clamp_int(start + position.column - 1, start, end)
+  (start + position.column - 1).clamp(min=start, max=end)
 }
 
 ///|

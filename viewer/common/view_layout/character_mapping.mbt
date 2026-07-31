@@ -56,7 +56,7 @@ pub fn CharacterMapping::get_dom_position(
   if self.length == 0 {
     return { part_index: 0, char_index: 0 }
   }
-  let index = @base_common.clamp_int(column - 1, 0, self.length - 1)
+  let index = (column - 1).clamp(min=0, max=self.length - 1)
   let entry = self.entries[index]
   { part_index: entry.part_index, char_index: entry.char_index }
 }
@@ -142,7 +142,7 @@ pub fn CharacterMapping::get_horizontal_offset(
   if self.length == 0 {
     return 0
   }
-  let index = @base_common.clamp_int(column - 1, 0, self.length - 1)
+  let index = (column - 1).clamp(min=0, max=self.length - 1)
   self.entries[index].visible_column
 }
 
