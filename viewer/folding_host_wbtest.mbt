@@ -351,6 +351,31 @@ test "folding: trivia gaps defer run decisions until the continuation" {
 }
 
 ///|
+test "folding: queued gap runs and keyword tails stay with their construct" {
+  let text =
+    #|let v : Int = if c { 1 }
+    #|// gap one a
+    #|// gap one b
+    #|
+    #|// gap two a
+    #|// gap two b
+    #|else { 2 }
+    #|let b : Bool = value is
+    #|// tail a
+    #|// tail b
+    #|Some(_)
+    #|// final a
+    #|// final b
+  let model = test_model(text, language_id="moonbit")
+  let source_folds = moonbit_source_folds(model.snapshot)
+  assert_eq(source_folds.function_bodies.length(), 0)
+  let runs = source_folds.comment_runs
+  assert_eq(runs.length(), 1)
+  assert_eq(runs[0].start_line_number, 12)
+  assert_eq(runs[0].end_line_number, 13)
+}
+
+///|
 test "folding: same-start provider ranges yield to the comment run" {
   let text =
     #|// zero
