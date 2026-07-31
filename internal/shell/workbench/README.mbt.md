@@ -64,8 +64,9 @@ if accepts(payload, current_model_identity) {
   the Viewer's explicit `fold_top_level` action for ordinary MoonBit `.mbt`
   models, presenting their declarations as an initial outline. Function folds
   retain every source-formatted signature line plus the opening brace while
-  hiding later body lines and the closing brace. This is a reference-host
-  policy: `.mbt.md` documents, extensionless sources, other languages, and
+  hiding later body lines and the closing brace, and top-level plain `//`
+  comment runs (typically copyright headers) collapse to their first line.
+  This is a reference-host policy: `.mbt.md` documents, extensionless sources, other languages, and
   external Viewer embedders remain expanded by default.
   Watched-file replacements install a fresh model and therefore reapply the
   policy; subsequent folding interactions on that model remain user-controlled.
