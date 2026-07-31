@@ -48,8 +48,9 @@ lang -> mk: Diagnostic is a shared shape only
 
 `Diagnostic` is only a shared data shape; diagnostics enter the viewer through
 `viewer/common/markers`. There is currently no diagnostic-provider or
-semantic-token contract. Definition providers are registered and queried by
-`viewer/common/languages`; references remain a host/protocol-only contract.
+semantic-token contract. Definition and References providers are registered
+and queried by `viewer/common/languages` through the same ordered, disposable
+registry and cooperative cancellation boundary.
 
 Severity and tag values carry their own stable labels, so a host does not invent
 a second naming scheme when it renders or serializes them.

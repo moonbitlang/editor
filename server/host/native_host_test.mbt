@@ -293,6 +293,57 @@ async test "moon definition provider invokes exact peek-def command" {
 }
 
 ///|
+async test "moon references provider invokes exact find-references command" {
+  @async.with_task_group() <| group => {
+    let root = @fs.tmpdir(prefix="openseek-native-references")
+    group.add_defer() <| () => {
+      @async.protect_from_cancel(() => @fs.rmdir(root, recursive=true))
+    }
+    @fs.mkdir(root + "/src", recursive=true)
+    let command = root + "/moon-probe"
+    let script =
+      #|#!/bin/sh
+      #|test "$#" -eq 5 || exit 41
+      #|test "$1" = "ide" || exit 42
+      #|test "$2" = "find-references" || exit 43
+      #|test "$3" = "--loc" || exit 44
+      #|test "$4" = "src/main.mbt:2:5" || exit 45
+      #|test "$5" = "--json" || exit 46
+      #|printf '[{"path":"src/target.mbt","range":"3:2-3:8"},{"path":"src/main.mbt","range":"2:5-2:11"}]\n'
+      #|
+    @fs.write_file(command, script, create_mode=CreateOrTruncate)
+    @fs.chmod(command, 0o755)
+    let uri = match @server.remote_document_uri("src/main.mbt") {
+      Some(uri) => uri
+      None => fail("expected remote document uri")
+    }
+    let model = @model.TextModel(
+      uri, "src/main.mbt", "moonbit", 1, "rev-1", "fn main {}\n",
+    )
+    let provider : &@language.ReferencesProvider = @host.MoonWorkspaceLanguageProvider(
+      Ref(root),
+      moon_command=command,
+    )
+    let locations = provider.provide_references(
+      model,
+      Position(2, 5),
+      @language.CancellationToken::none(),
+    )
+    assert_eq(locations.length(), 2)
+    assert_eq(
+      locations[0].uri.to_string(),
+      "readonly-remote://workspace/src/target.mbt",
+    )
+    assert_true(locations[0].range == Range(3, 2, 3, 8))
+    assert_eq(
+      locations[1].uri.to_string(),
+      "readonly-remote://workspace/src/main.mbt",
+    )
+    assert_true(locations[1].range == Range(2, 5, 2, 11))
+  }
+}
+
+///|
 test "parses moon check json diagnostics grouped by workspace uri" {
   let raw =
     #|{"$message_type":"diagnostic","level":"warning","error_code":1,"path":"/workspace/demo/src/bad.mbt","loc":"2:4-2:17","message":"Warning (unused_value): Unused function 'unused_helper'","context":"1 |///|\n"}

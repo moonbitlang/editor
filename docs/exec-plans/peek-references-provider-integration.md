@@ -178,6 +178,8 @@ Evidence:
 
 ### 2. Remote and native provider integration
 
+Status: complete
+
 - implement/register the workbench ReferencesProvider;
 - adapt existing ReferencesResult payloads to locations;
 - replace the native stub with the exact Moon command and shared parser;
@@ -194,6 +196,21 @@ moon fmt --check
 ```
 
 Commit the coherent green milestone.
+
+Evidence:
+
+- `internal/shell/workbench` passed 22/22 js tests, including ordered
+  `ReferencesResult` to `Location` adaptation and cancellation tombstones.
+- `server/host` passed 26/26 native tests, including an argv probe for exactly
+  `ide find-references --loc src/main.mbt:2:5 --json`.
+- `server/server` passed 12/12 tests for the existing References protocol
+  route and preview enrichment.
+- A live
+  `moon ide find-references --loc viewer/references_contribution.mbt:5:5
+  --json` invocation returned eight absolute-path/range objects, including the
+  declaration, and confirmed the parser's current CLI shape.
+- `moon check --target all --warn-list +73` passed after the complete adapter
+  wiring.
 
 ### 3. Browser proof and final contracts
 

@@ -331,7 +331,7 @@ fn references_peek_decoration_ranges(
   class_name : String,
 ) -> Array[@base_common.Range] {
   model
-  .get_all_decorations()
+  .get_decorations_in_range(model.get_full_model_range())
   .filter_map(decoration => {
     if decoration.options.class_name == class_name {
       Some(decoration.range)
@@ -503,7 +503,7 @@ async fn run_references_peek_same_resource_test() -> Unit {
   assert_eq(selected_before.length(), 1)
   assert_eq(
     source
-    .get_all_decorations()
+    .get_decorations_in_range(source.get_full_model_range())
     .filter(decoration => {
       decoration.options.class_name.has_prefix(
         "moonbit-viewer-references-peek-reference-match",
@@ -1482,7 +1482,7 @@ async fn run_references_peek_reentrant_preview_commit_test() -> Unit {
   )
   let decoration_listener = target.on_did_change_decorations(_event => {
     let has_preview_match = target
-      .get_all_decorations()
+      .get_decorations_in_range(target.get_full_model_range())
       .any(decoration => {
         decoration.options.class_name.has_prefix(
           "moonbit-viewer-references-peek-reference-match",
@@ -1525,7 +1525,7 @@ async fn run_references_peek_reentrant_preview_commit_test() -> Unit {
   )
   assert_eq(
     target
-    .get_all_decorations()
+    .get_decorations_in_range(target.get_full_model_range())
     .filter(decoration => {
       decoration.options.class_name.has_prefix(
         "moonbit-viewer-references-peek-reference-match",
