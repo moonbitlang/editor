@@ -91,8 +91,17 @@ fn moonbit_source_folds(snapshot : @model.TextSnapshot) -> MoonbitSourceFolds {
   let mut bracket_depth = 0
   for line_number in 1..<=snapshot.line_count() {
     let line = snapshot.get_line_content(line_number)
+    // Comment lines inside an in-progress declaration (between a formatted
+    // signature's lines, or between `pub`/`impl` prefixes and their `fn`)
+    // stay with the declaration: folding them would nest a comment run
+    // inside the body fold's protected span and break the disjoint
+    // document-order invariant of the host-fold list.
     if block_comment_depth == 0 &&
       brace_depth == 0 &&
+      declaration_start_line == 0 &&
+      function_keyword_line == 0 &&
+      pending_function_prefix_line == 0 &&
+      pending_impl_start_line == 0 &&
       is_moonbit_plain_comment_line(line) {
       if comment_run_start_line == 0 {
         comment_run_start_line = line_number
