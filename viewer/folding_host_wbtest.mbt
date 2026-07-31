@@ -277,6 +277,30 @@ test "folding: split bindings and declare signatures keep their comments" {
 }
 
 ///|
+test "folding: aliases release runs while split constructs keep theirs" {
+  let text =
+    #|pub typealias Int as Id
+    #|// alias a
+    #|// alias b
+    #|let value = /* explanation
+    #|*/
+    #|// note a
+    #|// note b
+    #|1 + 1
+    #|declare fn lookup()
+    #|// ret a
+    #|// ret b
+    #|-> Int
+  let model = test_model(text, language_id="moonbit")
+  let source_folds = moonbit_source_folds(model.snapshot)
+  assert_eq(source_folds.function_bodies.length(), 0)
+  let runs = source_folds.comment_runs
+  assert_eq(runs.length(), 1)
+  assert_eq(runs[0].start_line_number, 2)
+  assert_eq(runs[0].end_line_number, 3)
+}
+
+///|
 test "folding: a BOM-prefixed header folds from its first line" {
   let model = test_model(
     "\u{FEFF}// bom a\n// bom b\n// bom c",

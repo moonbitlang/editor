@@ -50,9 +50,10 @@ fn is_moonbit_outline_identifier_continue(code : Int) -> Bool {
 /// unfinished — `let header =` or a trailing binary operator — so following
 /// lines continue the same construct. Postfix markers (`?` in `-> Item?`,
 /// `~` labels) end a construct and are not continuations. A continuation
-/// line that instead begins with its operator (a leading-dot method chain)
-/// is not detectable from the previous line's tail and stays out of this
-/// heuristic.
+/// line that instead begins with its operator (a leading-dot method chain,
+/// a split `-> Int` return clause) is invisible to this tail check;
+/// `is_moonbit_leading_continuation_line` catches those when a run is
+/// flushed.
 fn is_moonbit_expression_continuation_code(code : Int) -> Bool {
   code == '=' ||
   code == '+' ||
@@ -68,6 +69,35 @@ fn is_moonbit_expression_continuation_code(code : Int) -> Bool {
   code == ':' ||
   code == ',' ||
   code == '.'
+}
+
+///|
+/// Whether a line's first token continues the construct above it — a
+/// leading binary operator, `->` return clause, `.` method chain, or a
+/// deferred initializer `=`. A comment run terminated by such a line sits
+/// inside that construct rather than at the top level. Leading `//` and
+/// `/*` are comments, and `*/` closes one; none of those continue an
+/// expression.
+fn is_moonbit_leading_continuation_line(line : String) -> Bool {
+  for index in 0..<line.length() {
+    let code = line[index].to_int()
+    if code == ' ' || code == '\t' || code == 0xFEFF {
+      continue
+    }
+    let next = if index + 1 < line.length() {
+      line[index + 1].to_int()
+    } else {
+      0
+    }
+    return match code {
+      '/' => next != '/' && next != '*'
+      '*' => next != '/'
+      '=' | '+' | '-' | '%' | '<' | '>' | '&' | '|' | '^' | ':' | ',' | '.' =>
+        true
+      _ => false
+    }
+  }
+  false
 }
 
 ///|
@@ -143,7 +173,12 @@ fn moonbit_source_folds(snapshot : @model.TextSnapshot) -> MoonbitSourceFolds {
         comment_run_start_line = line_number
       }
     } else {
-      if comment_run_start_line > 0 && line_number - 1 > comment_run_start_line {
+      // A run terminated by a leading-operator line (`-> Int`, `.chain()`,
+      // `= 1`) sits inside that continued construct and is discarded — the
+      // previous line's tail cannot reveal this kind of split.
+      if comment_run_start_line > 0 &&
+        line_number - 1 > comment_run_start_line &&
+        !is_moonbit_leading_continuation_line(line) {
         comment_runs.push({
           start_line_number: comment_run_start_line,
           end_line_number: line_number - 1,
@@ -339,12 +374,13 @@ fn moonbit_source_folds(snapshot : @model.TextSnapshot) -> MoonbitSourceFolds {
             function_keyword_bracket_depth = 0
             pending_function_prefix_line = 0
             pending_function_prefix_paren_depth = 0
-          } else if word == "let" || word == "const" || word == "typealias" {
+          } else if word == "let" || word == "const" {
             // These declarations always take an initializer, so they stay
             // pending — keeping split forms like `let x` + later `= 1` out
             // of comment runs — until their `=` is reached. Bare-completable
-            // forms (`type X`, `struct Point(Int, Int)`) are excluded: with
-            // no `=` or `{` to release them the state would never clear.
+            // forms (`type X`, `typealias Int as Id`, tuple structs) are
+            // excluded: with no `=` or `{` to release them the state would
+            // never clear.
             pending_binding_declaration = true
             pending_function_prefix_line = 0
             pending_function_prefix_paren_depth = 0
@@ -464,12 +500,11 @@ fn moonbit_source_folds(snapshot : @model.TextSnapshot) -> MoonbitSourceFolds {
       }
     }
     // Only a line that ends at the top level updates the continuation
-    // state; lines ending inside braces, brackets, or block comments leave
-    // it untouched, and blank or comment-only lines carry it forward.
-    if line_last_code != 0 &&
-      block_comment_depth == 0 &&
-      brace_depth == 0 &&
-      expression_nesting_depth == 0 {
+    // state; lines ending inside braces or brackets leave it untouched, and
+    // blank or comment-only lines carry it forward. A line ending inside a
+    // block comment still updates from its pre-comment tail — in
+    // `let value = /* explanation` the `=` is the meaningful signal.
+    if line_last_code != 0 && brace_depth == 0 && expression_nesting_depth == 0 {
       pending_expression_continuation = is_moonbit_expression_continuation_code(
         line_last_code,
       )
