@@ -227,11 +227,11 @@ pub fn Win32::resolve(path_segments : Array[String]) -> String {
     if i >= 0 {
       path = path_segments[i]
       // Skip empty entries
-      if path.length() == 0 {
+      if path is "" {
         i -= 1
         continue
       }
-    } else if resolved_device.length() == 0 {
+    } else if resolved_device is "" {
       path = cwd()
     } else {
       // Windows has the concept of drive-specific current working
@@ -444,7 +444,7 @@ pub fn Win32::normalize(path : String) -> String {
   } else {
     ""
   }
-  if tail.length() == 0 && !is_abs {
+  if tail is "" && !is_abs {
     tail = "."
   }
   if tail.length() > 0 && is_path_separator(char_code_at(path, len - 1)) {
@@ -496,7 +496,7 @@ pub fn Win32::is_absolute(path : String) -> Bool {
 /// `path.ts:469 win32.join` (incl. UNC double-slash preservation,
 /// path.ts:506-534).
 pub fn Win32::join(paths : Array[String]) -> String {
-  if paths.length() == 0 {
+  if paths is [] {
     return "."
   }
   let mut joined : String? = None
@@ -696,7 +696,7 @@ pub fn Win32::relative(from : String, to : String) -> String {
   let mut i2 = from_start + last_common_sep + 1
   while i2 <= from_end {
     if i2 == from_end || char_code_at(from, i2) == char_backward_slash {
-      out = out + (if out.length() == 0 { ".." } else { "\\.." })
+      out = out + (if out is "" { ".." } else { "\\.." })
     }
     i2 += 1
   }
@@ -1010,7 +1010,7 @@ pub fn Posix::resolve(path_segments : Array[String]) -> String {
   while i >= 0 && !resolved_absolute {
     let path = path_segments[i]
     // Skip empty entries
-    if path.length() == 0 {
+    if path is "" {
       i -= 1
       continue
     }
@@ -1047,7 +1047,7 @@ pub fn Posix::resolve(path_segments : Array[String]) -> String {
 ///|
 /// `path.ts:1189 posix.normalize`.
 pub fn Posix::normalize(path : String) -> String {
-  if path.length() == 0 {
+  if path is "" {
     return "."
   }
   let is_abs = char_code_at(path, 0) == char_forward_slash
@@ -1056,7 +1056,7 @@ pub fn Posix::normalize(path : String) -> String {
 
   // Normalize the path
   let mut path = normalize_string(path, !is_abs, "/", is_posix_path_separator)
-  if path.length() == 0 {
+  if path is "" {
     if is_abs {
       return "/"
     }
@@ -1081,16 +1081,11 @@ pub fn Posix::is_absolute(path : String) -> Bool {
 ///|
 /// `path.ts:1221 posix.join`.
 pub fn Posix::join(paths : Array[String]) -> String {
-  if paths.length() == 0 {
+  if paths is [] {
     return "."
   }
-  let path : Array[String] = []
-  for arg in paths {
-    if arg.length() > 0 {
-      path.push(arg)
-    }
-  }
-  if path.length() == 0 {
+  let path = [ for arg in paths if arg != "" => arg ]
+  if path is [] {
     return "."
   }
   Posix::normalize(join_range(path[:], 0, "/"))
@@ -1158,7 +1153,7 @@ pub fn Posix::relative(from : String, to : String) -> String {
   let mut i2 = from_start + last_common_sep + 1
   while i2 <= from_end {
     if i2 == from_end || char_code_at(from, i2) == char_forward_slash {
-      out = out + (if out.length() == 0 { ".." } else { "/.." })
+      out = out + (if out is "" { ".." } else { "/.." })
     }
     i2 += 1
   }
@@ -1171,7 +1166,7 @@ pub fn Posix::relative(from : String, to : String) -> String {
 ///|
 /// `path.ts:1320 posix.dirname`.
 pub fn Posix::dirname(path : String) -> String {
-  if path.length() == 0 {
+  if path is "" {
     return "."
   }
   let has_root = char_code_at(path, 0) == char_forward_slash
