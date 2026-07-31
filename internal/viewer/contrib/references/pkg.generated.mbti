@@ -83,4 +83,3 @@ pub fn ReferencesSessionKey::is_current(Self, @model.TextModel, Int) -> Bool
 // Type aliases
 
 // Traits
-

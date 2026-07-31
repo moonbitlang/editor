@@ -275,7 +275,7 @@ fn valid_snippet_range(
     return false
   }
   let start = range.get_start_position()
-  let end = range.get_end_position()
+  let end = @base_common.Position(range.end_line_number, range.end_column)
   start.is_before_or_equal(end)
 }
 
@@ -293,12 +293,16 @@ pub fn reference_snippet(
     range.start_line_number,
     (range.start_column - 8).max(1),
   )
-  let context_word = model.get_word_until_position(context_position)
+  let context_start_column = match
+    model.get_word_at_position(context_position) {
+    Some(word) => word.start_column
+    None => context_position.column
+  }
   let before = normalize_snippet_line_breaks(
       model.get_value_in_range(
         Range(
           range.start_line_number,
-          context_word.start_column,
+          context_start_column,
           range.start_line_number,
           range.start_column,
         ),

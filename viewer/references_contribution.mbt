@@ -19,7 +19,7 @@ priv struct ReferencesContributionState {
   mut model : @references.ReferencesModel?
   mut selected_index : Int
   mut session_key : @references.ReferencesSessionKey?
-  mut widget : @definition_browser.DefinitionPeekWidget?
+  mut widget : @references_browser.ReferencesPeekWidget?
   mut zone_id : String?
   mut overlay_widget : @editor_browser.OverlayWidget?
   mut markdown_projection_generation : Int?

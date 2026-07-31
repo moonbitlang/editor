@@ -147,6 +147,7 @@ fn css_sources() -> Array[String] {
     "viewer/contrib/folding/browser/folding.css",
     "viewer/contrib/contextmenu/browser/contextmenu.css",
     "viewer/contrib/definition/browser/definition.css",
+    "viewer/contrib/references/browser/references.css",
     "viewer/contrib/hover/hover.css",
     "viewer/contrib/quick_diff/browser/quick_diff.css",
     "viewer/contrib/agent_feedback/browser/agent_feedback.css",

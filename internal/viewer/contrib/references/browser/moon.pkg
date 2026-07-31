@@ -1,0 +1,12 @@
+import {
+  "moonbitlang/editor/base/browser" @base_browser,
+  "moonbitlang/editor/base/common" @base_common,
+  "moonbitlang/editor/internal/viewer/contrib/references",
+  "moonbit-community/rabbita/dom" @rdom,
+}
+
+import {
+  "moonbitlang/editor/language",
+} for "wbtest"
+
+supported_targets = "js"

@@ -235,13 +235,9 @@ fn Viewer::install_definition_peek_locations(
   }
   let selected_index = selected.flat_index
   state.selected_index = selected_index
-  let display_locations : Array[@language.Location] = []
-  for reference in result_model.references {
-    display_locations.push(reference.location())
-  }
   match state.widget {
     Some(widget) => {
-      widget.set_locations(display_locations, selected_index)
+      widget.set_results(result_model, Some(selected))
       widget.show_preview_loading()
     }
     None => return
@@ -256,18 +252,24 @@ fn Viewer::open_definition_peek_shell(
   generation : Int,
 ) -> Bool {
   guard self.references_contribution() is Some(state) else { return false }
-  let widget = @definition_browser.DefinitionPeekWidget({
+  let widget = @references_browser.ReferencesPeekWidget(Definitions, {
     on_close: () => self.close_references_peek(restore_focus=true),
-    on_select: index => self.select_definition_peek_result(index),
-    on_confirm: index => self.confirm_definition_peek_result(index),
+    on_select: item => self.select_definition_peek_item(item),
+    on_confirm: item => {
+      if self.references_peek_item_is_current(item) {
+        self.confirm_definition_peek_result(item.flat_index)
+      }
+    },
+    on_open_side: item => self.confirm_definition_peek_item(item, Side),
     on_next: () => self.move_definition_peek_result(1),
     on_previous: () => self.move_definition_peek_result(-1),
+    on_expand_group: _group => (),
   })
   match self.current_code_browser_data() {
     Some(_) => {
       let zone_dom_node = @rdom.document().create_element("div")
       zone_dom_node.set_attribute(
-        "class", "moonbit-viewer-definition-peek-zone",
+        "class", "moonbit-viewer-references-peek-zone",
       )
       let widget_dom_node = widget.get_dom_node()
       let layout = self.get_layout_info()
@@ -285,7 +287,7 @@ fn Viewer::open_definition_peek_shell(
         zone_dom_node,
         after_column=position.column,
         suppress_mouse_down=true,
-        height_in_lines=self.definition_peek_height_in_lines(),
+        height_in_lines=self.references_peek_height_in_lines(),
         on_dom_node_top=top => {
           @base_browser.set_style_property(
             widget_dom_node,
@@ -309,7 +311,7 @@ fn Viewer::open_definition_peek_shell(
       }
       state.zone_id = Some(added_id.val)
       let overlay = overlay_widget(
-        "moonbit.viewer.definitionPeek.\{self.get_id()}",
+        "moonbit.viewer.referencesPeek.\{self.get_id()}",
         widget_dom_node,
       )
       self.add_overlay_widget(overlay)
@@ -322,7 +324,7 @@ fn Viewer::open_definition_peek_shell(
           widget
           .get_dom_node()
           .set_attribute(
-            "class", "moonbit-viewer-definition-peek moonbit-viewer-definition-peek-overlay",
+            "class", "moonbit-viewer-references-peek moonbit-viewer-references-peek-overlay",
           )
           markdown.overlay_mount().append_child(widget.get_dom_node().as_node())
           state.markdown_projection_generation = Some(
@@ -372,9 +374,9 @@ fn Viewer::reveal_definition_peek_zone(
 }
 
 ///|
-fn Viewer::definition_peek_height_in_lines(self : Viewer) -> Double {
+fn Viewer::references_peek_height_in_lines(self : Viewer) -> Double {
   let snapshot = self.configuration.snapshot()
-  let requested = @definition_browser.definition_peek_height_in_lines.to_double()
+  let requested = @references_browser.references_peek_height_in_lines.to_double()
   let line_height = snapshot.font_info.line_height.to_double()
   if snapshot.height <= 0.0 || line_height <= 0.0 {
     return requested
@@ -491,7 +493,7 @@ fn Viewer::load_definition_peek_preview(
   state.selected_index = index
   match state.widget {
     Some(widget) => {
-      widget.set_selected_index(index)
+      widget.set_selected(result_model.references[index])
       widget.show_preview_loading()
     }
     None => return
@@ -648,7 +650,7 @@ fn Viewer::schedule_definition_peek_preview(
       {
         range,
         options: ModelDecorationOptions(
-          "moonbit-viewer-definition-peek-match",
+          "moonbit-viewer-references-peek-reference-match-selected",
           description="peek-definition-match",
         ),
       },
@@ -728,6 +730,34 @@ fn Viewer::show_definition_peek_preview_unavailable(
 }
 
 ///|
+fn Viewer::references_peek_item_is_current(
+  self : Viewer,
+  item : @references.ReferenceItem,
+) -> Bool {
+  match self.references_contribution() {
+    Some(state) =>
+      match state.model {
+        Some(model) =>
+          item.flat_index >= 0 &&
+          item.flat_index < model.references.length() &&
+          model.references[item.flat_index] == item
+        None => false
+      }
+    None => false
+  }
+}
+
+///|
+fn Viewer::select_definition_peek_item(
+  self : Viewer,
+  item : @references.ReferenceItem,
+) -> Unit {
+  if self.references_peek_item_is_current(item) {
+    self.select_definition_peek_result(item.flat_index)
+  }
+}
+
+///|
 fn Viewer::select_definition_peek_result(self : Viewer, index : Int) -> Unit {
   guard self.references_contribution() is Some(state) else { return }
   guard state.model is Some(result_model) else { return }
@@ -744,35 +774,42 @@ fn Viewer::select_definition_peek_result(self : Viewer, index : Int) -> Unit {
 fn Viewer::move_definition_peek_result(self : Viewer, delta : Int) -> Unit {
   guard self.references_contribution() is Some(state) else { return }
   guard state.model is Some(result_model) else { return }
-  let length = result_model.references.length()
-  guard length > 0 else { return }
-  let current = if state.selected_index >= 0 && state.selected_index < length {
-    state.selected_index
+  guard result_model.references.length() > 0 else { return }
+  let current = if state.selected_index >= 0 &&
+    state.selected_index < result_model.references.length() {
+    result_model.references[state.selected_index]
   } else {
-    0
+    result_model.references[0]
   }
   let next = if delta < 0 {
-    if current == 0 {
-      length - 1
-    } else {
-      current - 1
-    }
-  } else if current + 1 >= length {
-    0
+    result_model.previous_reference(current)
   } else {
-    current + 1
+    result_model.next_reference(current)
   }
-  self.select_definition_peek_result(next)
+  match next {
+    Some(item) => self.select_definition_peek_item(item)
+    None => ()
+  }
 }
 
 ///|
 fn Viewer::confirm_definition_peek_result(self : Viewer, index : Int) -> Unit {
-  guard self.definition_contribution() is Some(definition) else { return }
   guard self.references_contribution() is Some(references) else { return }
   guard references.model is Some(result_model) else { return }
   guard index >= 0 && index < result_model.references.length() else { return }
+  self.confirm_definition_peek_item(result_model.references[index], Current)
+}
+
+///|
+fn Viewer::confirm_definition_peek_item(
+  self : Viewer,
+  item : @references.ReferenceItem,
+  mode : @navigation_api.OpenLocationMode,
+) -> Unit {
+  guard self.references_peek_item_is_current(item) else { return }
+  guard self.definition_contribution() is Some(definition) else { return }
   guard self.get_model() is Some(model) else { return }
-  let location = result_model.references[index].location()
+  let location = item.location()
   let model_identity = model.identity()
   let model_generation = self.model_slot.generation
   let model_version_id = model.get_version_id()
@@ -789,7 +826,7 @@ fn Viewer::confirm_definition_peek_result(self : Viewer, index : Int) -> Unit {
       current_model.get_version_id() == model_version_id else {
       return
     }
-    self.open_definition_location(location, Current) |> ignore
+    self.open_definition_location(location, mode) |> ignore
   })
 }
 
