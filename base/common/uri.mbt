@@ -623,10 +623,9 @@ fn encode_uri_component_fast(
       (is_authority && code == char_colon) {
       // check if we are delaying native encode
       if native_encode_pos != -1 {
-        match res {
-          Some(sb) =>
-            write_native_encoded(sb, uri_component, native_encode_pos, pos)
-          None => () // unreachable: a delayed span implies an allocation
+        // `None` is unreachable: a delayed span implies an allocation.
+        if res is Some(sb) {
+          write_native_encoded(sb, uri_component, native_encode_pos, pos)
         }
         native_encode_pos = -1
       }
@@ -700,9 +699,9 @@ fn encode_uri_component_minimal(path : String) -> String {
         Some(sb) => sb
       }
       sb.write_string(js_slice(path, chunk_start, end=pos))
-      match encode_table(code) {
-        Some(escaped) => sb.write_string(escaped)
-        None => () // unreachable: `#` and `?` are in the table
+      // `None` is unreachable: `#` and `?` are in the table.
+      if encode_table(code) is Some(escaped) {
+        sb.write_string(escaped)
       }
       chunk_start = pos + 1
     }
