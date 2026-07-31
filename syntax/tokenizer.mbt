@@ -165,13 +165,11 @@ pub fn TokenizationRegistry::register(
   // immediately when a newer registration owns the key.
   self.handle_change([language_id])
   @base_common.Disposable::from(() => {
-    match self.tokenizers.get(language_id) {
-      Some(entry) =>
-        if entry.id == id {
-          self.tokenizers.remove(language_id)
-          self.handle_change([language_id])
-        }
-      None => ()
+    if self.tokenizers.get(language_id) is Some(entry) {
+      if entry.id == id {
+        self.tokenizers.remove(language_id)
+        self.handle_change([language_id])
+      }
     }
   })
 }

@@ -551,9 +551,8 @@ fn decode_diagnostics_payload(packet : Json) -> ServerPacketDecodeResult {
       match json_field(packet, "diagnostics") {
         Some(Array(items)) =>
           for item in items {
-            match parse_diagnostic(item) {
-              Some(diagnostic) => diagnostics.push(diagnostic)
-              None => ()
+            if parse_diagnostic(item) is Some(diagnostic) {
+              diagnostics.push(diagnostic)
             }
           }
         _ => ()
@@ -636,9 +635,8 @@ fn decode_references_result_payload(
       match json_field(packet, "references") {
         Some(Array(items)) =>
           for item in items {
-            match parse_reference_item(item) {
-              Some(reference) => references.push(reference)
-              None => ()
+            if parse_reference_item(item) is Some(reference) {
+              references.push(reference)
             }
           }
         _ => ()
@@ -667,9 +665,8 @@ fn decode_document_symbols_result_payload(
       match json_field(packet, "symbols") {
         Some(Array(items)) =>
           for item in items {
-            match parse_document_symbol(item) {
-              Some(symbol) => symbols.push(symbol)
-              None => ()
+            if parse_document_symbol(item) is Some(symbol) {
+              symbols.push(symbol)
             }
           }
         _ => ()
@@ -895,10 +892,8 @@ fn workspace_stat_json(stat : @workspace.WorkspaceStat) -> Json {
     "name": stat.name.to_json(),
     "kind": stat.kind.to_string().to_json(),
   }
-  match stat.children {
-    Some(children) =>
-      fields["children"] = Json::array(children.map(workspace_stat_json))
-    None => ()
+  if stat.children is Some(children) {
+    fields["children"] = Json::array(children.map(workspace_stat_json))
   }
   Json::object(fields)
 }
@@ -916,9 +911,8 @@ fn parse_workspace_stat(value : Json) -> @workspace.WorkspaceStat? {
     Some(Array(items)) => {
       let resolved = []
       for item in items {
-        match parse_workspace_stat(item) {
-          Some(stat) => resolved.push(stat)
-          None => ()
+        if parse_workspace_stat(item) is Some(stat) {
+          resolved.push(stat)
         }
       }
       Some(resolved)
@@ -1036,10 +1030,8 @@ fn diagnostic_json(diagnostic : @language.Diagnostic) -> Json {
     "severity": diagnostic.severity.label().to_json(),
     "message": diagnostic.message.to_json(),
   }
-  match diagnostic.tags {
-    Some(tags) =>
-      fields["tags"] = Json::array(tags.map(tag => tag.label().to_json()))
-    None => ()
+  if diagnostic.tags is Some(tags) {
+    fields["tags"] = Json::array(tags.map(tag => tag.label().to_json()))
   }
   Json::object(fields)
 }

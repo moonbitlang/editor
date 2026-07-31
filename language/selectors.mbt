@@ -84,41 +84,35 @@ pub fn LanguageFilter::score(
   model : @model.TextModel,
 ) -> Int {
   let mut result = 0
-  match self.language {
-    Some(language) =>
-      if language == model.language_id {
-        result = 10
-      } else if language == "*" {
+  if self.language is Some(language) {
+    if language == model.language_id {
+      result = 10
+    } else if language == "*" {
+      result = 5
+    } else {
+      return 0
+    }
+  }
+  if self.scheme is Some(scheme) {
+    if scheme == model.uri.scheme {
+      result = 10
+    } else if scheme == "*" {
+      if result < 5 {
         result = 5
-      } else {
-        return 0
       }
-    None => ()
+    } else {
+      return 0
+    }
   }
-  match self.scheme {
-    Some(scheme) =>
-      if scheme == model.uri.scheme {
-        result = 10
-      } else if scheme == "*" {
-        if result < 5 {
-          result = 5
-        }
-      } else {
-        return 0
-      }
-    None => ()
-  }
-  match self.pattern {
-    // Monaco's `score()` matches globs against `uri.path` (leading slash
-    // included); `path_pattern_matches` strips that slash so the relative
-    // patterns hosts register keep matching.
-    Some(pattern) =>
-      if path_pattern_matches(pattern, model.uri.path) {
-        result = 10
-      } else {
-        return 0
-      }
-    None => ()
+  // Monaco's `score()` matches globs against `uri.path` (leading slash
+  // included); `path_pattern_matches` strips that slash so the relative
+  // patterns hosts register keep matching.
+  if self.pattern is Some(pattern) {
+    if path_pattern_matches(pattern, model.uri.path) {
+      result = 10
+    } else {
+      return 0
+    }
   }
   result
 }

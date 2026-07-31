@@ -261,12 +261,9 @@ pub impl ToJson for DocumentError with fn to_json(self) {
     "message": self.message.to_json(),
     "status": self.status().to_json(),
   }
-  match self.uri {
-    Some(uri) => {
-      fields["uri"] = uri.to_string().to_json()
-      fields["displayName"] = @base_common.basename_or_authority(uri).to_json()
-    }
-    None => ()
+  if self.uri is Some(uri) {
+    fields["uri"] = uri.to_string().to_json()
+    fields["displayName"] = @base_common.basename_or_authority(uri).to_json()
   }
   Json::object(fields)
 }

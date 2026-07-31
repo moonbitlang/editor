@@ -42,19 +42,17 @@ fn set_component_diagnostics(
   model : @model.TextModel,
 ) -> Unit {
   let needle = "keeps"
-  match model.snapshot.text.find(needle) {
-    Some(start) =>
-      markers.set_diagnostics("lsp", model.uri, [
-        {
-          range: model.snapshot.range_of(
-            OffsetRange(start, start + needle.length()),
-          ),
-          severity: Warning,
-          message: "wrapped component diagnostic",
-          tags: None,
-        },
-      ])
-    None => ()
+  if model.snapshot.text.find(needle) is Some(start) {
+    markers.set_diagnostics("lsp", model.uri, [
+      {
+        range: model.snapshot.range_of(
+          OffsetRange(start, start + needle.length()),
+        ),
+        severity: Warning,
+        message: "wrapped component diagnostic",
+        tags: None,
+      },
+    ])
   }
 }
 

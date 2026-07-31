@@ -98,13 +98,10 @@ pub fn MoonCheckDiagnostics::note_document(
   if self.running.val {
     self.dirty.val = true
   }
-  match self.published.val.get(key) {
-    Some(published) =>
-      if published.revision == stamp.revision &&
-        published.normalized_text == stamp.normalized_text {
-        self.emit(key, published.revision, published.diagnostics)
-      }
-    None => ()
+  if self.published.val.get(key) is Some(published) &&
+    published.revision == stamp.revision &&
+    published.normalized_text == stamp.normalized_text {
+    self.emit(key, published.revision, published.diagnostics)
   }
 }
 
@@ -186,9 +183,8 @@ fn MoonCheckDiagnostics::emit(
   diagnostics : Array[@language.Diagnostic],
 ) -> Unit {
   let uri = Some(@base_common.Uri::parse(uri_key)) catch { _ => None }
-  match uri {
-    Some(uri) => (self.publish)(uri, revision, diagnostics)
-    None => ()
+  if uri is Some(uri) {
+    (self.publish)(uri, revision, diagnostics)
   }
 }
 
@@ -222,17 +218,14 @@ async fn capture_native_disk_snapshots(
   let snapshots : Map[String, NativeDiskSnapshot] = Map([])
   for key, _document in documents {
     let uri = Some(@base_common.Uri::parse(key)) catch { _ => None }
-    match uri {
-      Some(uri) =>
-        match @server.resolve_remote_document_uri(uri) {
-          ParsedRemotePath(path) =>
-            match read_native_disk_snapshot(root, path) {
-              Some(snapshot) => snapshots.set(key, snapshot)
-              None => ()
-            }
-          RemotePathError(_) => ()
-        }
-      None => ()
+    if uri is Some(uri) {
+      match @server.resolve_remote_document_uri(uri) {
+        ParsedRemotePath(path) =>
+          if read_native_disk_snapshot(root, path) is Some(snapshot) {
+            snapshots.set(key, snapshot)
+          }
+        RemotePathError(_) => ()
+      }
     }
   }
   snapshots

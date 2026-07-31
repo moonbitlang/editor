@@ -148,9 +148,8 @@ fn RemoteServer::notify_document_cached(
   self : RemoteServer,
   document : @workspace.DocumentSnapshot,
 ) -> Unit {
-  match self.document_sync_listener.val {
-    Some(listener) => listener(document)
-    None => ()
+  if self.document_sync_listener.val is Some(listener) {
+    listener(document)
   }
 }
 
@@ -361,9 +360,8 @@ pub async fn RemoteServer::watch_document(
   match resolve_remote_document_uri(request.uri, request_id=request.id) {
     ParsedRemotePath(path) => {
       let key = request.uri.to_string()
-      match self.watches.get(key) {
-        Some(existing) => existing.dispose()
-        None => ()
+      if self.watches.get(key) is Some(existing) {
+        existing.dispose()
       }
       let watch = self.host.watch_text_file(
         self.workspace_root.val,
@@ -387,12 +385,9 @@ pub fn RemoteServer::close_document(
   request : @remote_protocol.DocumentRequest,
 ) -> Unit {
   let key = request.uri.to_string()
-  match self.watches.get(key) {
-    Some(watch) => {
-      watch.dispose()
-      self.watches.remove(key)
-    }
-    None => ()
+  if self.watches.get(key) is Some(watch) {
+    watch.dispose()
+    self.watches.remove(key)
   }
   self.documents.remove(key)
 }
@@ -405,9 +400,8 @@ pub fn RemoteServer::dispose_watches(self : RemoteServer) -> Unit {
     keys.push(key)
   }
   for key in keys {
-    match self.watches.get(key) {
-      Some(watch) => watch.dispose()
-      None => ()
+    if self.watches.get(key) is Some(watch) {
+      watch.dispose()
     }
     self.watches.remove(key)
   }

@@ -112,9 +112,8 @@ pub fn CancellationToken::on_cancellation_requested(
     CompatibilityMutable(token) | SourceMutable(token) =>
       token.on_cancellation_requested(listener)
   }
-  match disposables {
-    Some(bucket) => bucket.push(subscription)
-    None => ()
+  if disposables is Some(bucket) {
+    bucket.push(subscription)
   }
   subscription
 }
@@ -127,13 +126,10 @@ fn MutableCancellationToken::cancel(self : MutableCancellationToken) -> Unit {
   // The flag changes before notification so every listener observes the
   // one-way state transition.
   self.cancelled = true
-  match self.emitter {
-    Some(emitter) => {
-      emitter.fire(())
-      emitter.dispose()
-      self.emitter = None
-    }
-    None => ()
+  if self.emitter is Some(emitter) {
+    emitter.fire(())
+    emitter.dispose()
+    self.emitter = None
   }
 }
 
@@ -159,12 +155,9 @@ fn MutableCancellationToken::on_cancellation_requested(
 ///|
 /// Retires listener state without changing the cancellation flag.
 fn MutableCancellationToken::dispose(self : MutableCancellationToken) -> Unit {
-  match self.emitter {
-    Some(emitter) => {
-      emitter.dispose()
-      self.emitter = None
-    }
-    None => ()
+  if self.emitter is Some(emitter) {
+    emitter.dispose()
+    self.emitter = None
   }
 }
 
@@ -193,12 +186,10 @@ pub fn CancellationTokenSource::CancellationTokenSource(
     parent_listener: None,
     schedule,
   }
-  match parent {
-    Some(parent) =>
-      source.parent_listener = Some(
-        parent.on_cancellation_requested(() => source.cancel()),
-      )
-    None => ()
+  if parent is Some(parent) {
+    source.parent_listener = Some(
+      parent.on_cancellation_requested(() => source.cancel()),
+    )
   }
   source
 }
@@ -246,9 +237,8 @@ pub fn CancellationTokenSource::dispose(
   if cancel {
     self.cancel()
   }
-  match self.parent_listener {
-    Some(listener) => listener.dispose()
-    None => ()
+  if self.parent_listener is Some(listener) {
+    listener.dispose()
   }
   match self.token_value {
     None => self.token_value = Some(cancellation_none)
