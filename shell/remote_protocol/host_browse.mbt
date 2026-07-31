@@ -78,9 +78,8 @@ fn decode_host_path_client(
 fn host_directory_listed_json(payload : HostDirectoryListedPayload) -> Json {
   let fields = packet_fields("HostDirectoryListed", payload.id)
   fields["path"] = payload.listing.path.to_json()
-  match payload.listing.parent {
-    Some(parent) => fields["parent"] = parent.to_json()
-    None => ()
+  if payload.listing.parent is Some(parent) {
+    fields["parent"] = parent.to_json()
   }
   fields["entries"] = Json::array(
     payload.listing.entries.map(host_directory_entry_json),
@@ -108,9 +107,8 @@ fn decode_host_directory_listed_payload(
       match json_field(packet, "entries") {
         Some(Array(items)) =>
           for item in items {
-            match parse_host_directory_entry(item) {
-              Some(entry) => entries.push(entry)
-              None => ()
+            if parse_host_directory_entry(item) is Some(entry) {
+              entries.push(entry)
             }
           }
         _ => ()
