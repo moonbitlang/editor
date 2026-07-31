@@ -200,7 +200,7 @@ test "folding: comments inside an in-progress declaration never form a run" {
 }
 
 ///|
-test "folding: comments inside paren/bracket continuations never form a run" {
+test "folding: comments inside binding continuations never form a run" {
   let text =
     #|let xs : Array[Int] = [
     #|  // element a
@@ -212,6 +212,11 @@ test "folding: comments inside paren/bracket continuations never form a run" {
     #|  // argument b
     #|  3,
     #|)
+    #|pub let header : String =
+    #|  // continuation a
+    #|  // continuation b
+    #|  "line one\n" +
+    #|  "line two\n"
     #|// trailing a
     #|// trailing b
   let model = test_model(text, language_id="moonbit")
@@ -219,8 +224,8 @@ test "folding: comments inside paren/bracket continuations never form a run" {
   assert_eq(source_folds.function_bodies.length(), 0)
   let runs = source_folds.comment_runs
   assert_eq(runs.length(), 1)
-  assert_eq(runs[0].start_line_number, 11)
-  assert_eq(runs[0].end_line_number, 12)
+  assert_eq(runs[0].start_line_number, 16)
+  assert_eq(runs[0].end_line_number, 17)
 }
 
 ///|
