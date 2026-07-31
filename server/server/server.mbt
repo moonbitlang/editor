@@ -46,7 +46,9 @@ pub(open) trait ServerHost {
 /// Reference remote workspace server: protocol policy, document cache, watches,
 /// and language-provider routing without direct native effects.
 pub struct RemoteServer {
-  priv workspace_root : String
+  /// Shared by every session of this server so a host-level workspace switch
+  /// redirects all connections at once.
+  priv workspace_root : Ref[String]
   priv host : &ServerHost
   priv hover_provider : &@language.HoverProvider
   priv definition_provider : &@language.DefinitionProvider
@@ -80,7 +82,7 @@ pub fn RemoteServer::with_language_providers(
   document_symbol_provider : &@language.DocumentSymbolProvider,
 ) -> RemoteServer {
   {
-    workspace_root: normalize_workspace_root(workspace_root),
+    workspace_root: Ref(normalize_workspace_root(workspace_root)),
     host,
     hover_provider,
     definition_provider,
@@ -93,9 +95,10 @@ pub fn RemoteServer::with_language_providers(
 }
 
 ///|
-/// Creates one connection-scoped server session. Host/provider services and
-/// document-sync delivery remain server-scoped, while cached documents and
-/// watches are owned exclusively by the new connection.
+/// Creates one connection-scoped server session. Host/provider services,
+/// document-sync delivery, and the mutable workspace root remain
+/// server-scoped, while cached documents and watches are owned exclusively by
+/// the new connection.
 pub fn RemoteServer::new_session(self : RemoteServer) -> RemoteServer {
   {
     workspace_root: self.workspace_root,
@@ -108,6 +111,24 @@ pub fn RemoteServer::new_session(self : RemoteServer) -> RemoteServer {
     watches: {},
     document_sync_listener: self.document_sync_listener,
   }
+}
+
+///|
+/// The workspace root currently served to clients.
+pub fn RemoteServer::current_workspace_root(self : RemoteServer) -> String {
+  self.workspace_root.val
+}
+
+///|
+/// Redirects this server — and every session sharing it — to a new workspace
+/// root. The caller owns validation (existence, realpath) and client
+/// notification; cached documents keep their per-session lifecycle and are
+/// closed by clients reacting to the switch.
+pub fn RemoteServer::set_workspace_root(
+  self : RemoteServer,
+  root : String,
+) -> Unit {
+  self.workspace_root.val = normalize_workspace_root(root)
 }
 
 ///|
@@ -240,7 +261,25 @@ pub async fn RemoteServer::handle_client_packet(
     Definition(request) => [self.definition(request)]
     References(request) => [self.references(request)]
     DocumentSymbols(request) => [self.document_symbols(request)]
+    // Host filesystem packets are answered by the embedding host (the native
+    // host intercepts them before this dispatcher); a bare policy server has
+    // no host filesystem to browse.
+    ListHostDirectory(request) => [host_packet_unsupported_error(request.id)]
+    SwitchWorkspace(request) => [host_packet_unsupported_error(request.id)]
   }
+}
+
+///|
+fn host_packet_unsupported_error(
+  request_id : String,
+) -> @remote_protocol.ServerPacket {
+  RemoteError(
+    ProtocolError(
+      ProtocolInvalidPacket,
+      "This server does not support host workspace browsing.",
+      request_id~,
+    ),
+  )
 }
 
 ///|
@@ -253,7 +292,7 @@ pub async fn RemoteServer::resolve_directory(
 ) -> @remote_protocol.ServerPacket {
   match resolve_remote_directory_uri(request.uri, request_id=request.id) {
     ParsedRemoteDirectory(relative, name) =>
-      match self.host.read_directory(self.workspace_root, relative) {
+      match self.host.read_directory(self.workspace_root.val, relative) {
         ServerHostResolveOk(children) =>
           DirectoryResolved({
             id: request.id,
@@ -327,7 +366,7 @@ pub async fn RemoteServer::watch_document(
         None => ()
       }
       let watch = self.host.watch_text_file(
-        self.workspace_root,
+        self.workspace_root.val,
         path,
         change_type => {
           self.handle_watch_event(request.id, request.uri, change_type, emit)
@@ -476,7 +515,7 @@ async fn RemoteServer::enrich_reference(
   } else {
     match resolve_remote_document_uri(location.uri) {
       ParsedRemotePath(path) =>
-        match self.host.read_text_file(self.workspace_root, path) {
+        match self.host.read_text_file(self.workspace_root.val, path) {
           ServerHostReadOk(content) =>
             Some(
               @workspace.DocumentSnapshot::from_content(location.uri, content),
@@ -540,7 +579,7 @@ async fn RemoteServer::read_remote_document(
 ) -> @workspace.DocumentReadResult {
   match resolve_remote_document_uri(uri, request_id~) {
     ParsedRemotePath(path) =>
-      match self.host.read_text_file(self.workspace_root, path) {
+      match self.host.read_text_file(self.workspace_root.val, path) {
         ServerHostReadOk(content) =>
           DocumentLoaded(
             @workspace.DocumentSnapshot::from_content(uri, content),

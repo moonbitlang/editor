@@ -38,7 +38,12 @@ build: dist-front-end
 #                                       # viewer: readonly file tree, syntax
 #                                       # highlighting, and `moon ide` hover /
 #                                       # `moon check` diagnostics run in that
-#                                       # repo's root (via MOON_COMMAND)
+#                                       # repo's root (via MOON_COMMAND).
+#                                       # ROOT only picks the STARTING repo:
+#                                       # the sidebar's "Open Repository..."
+#                                       # picker browses the host filesystem
+#                                       # and re-roots the running server
+#                                       # without a restart.
 #   just TARGET=native dev              # run the server on the native backend
 #                                       # (default is wasm: ~3x faster
 #                                       # incremental rebuilds, no C link step)

@@ -29,6 +29,8 @@ pub(all) enum ClientPacket {
   Definition(DocumentPositionRequest)
   References(DocumentPositionRequest)
   DocumentSymbols(DocumentRevisionRequest)
+  ListHostDirectory(HostPathRequest)
+  SwitchWorkspace(HostPathRequest)
 } derive(@debug.Debug)
 pub impl ToJson for ClientPacket
 
@@ -83,6 +85,28 @@ pub(all) struct DocumentSymbolsResultPayload {
   uri : @common.Uri
   revision : String
   symbols : Array[@language.DocumentSymbol]
+} derive(@debug.Debug)
+
+pub(all) struct HostDirectoryEntry {
+  name : String
+  path : String
+  is_workspace : Bool
+} derive(Eq, @debug.Debug)
+
+pub(all) struct HostDirectoryListedPayload {
+  id : String
+  listing : HostDirectoryListing
+} derive(@debug.Debug)
+
+pub(all) struct HostDirectoryListing {
+  path : String
+  parent : String?
+  entries : Array[HostDirectoryEntry]
+} derive(Eq, @debug.Debug)
+
+pub(all) struct HostPathRequest {
+  id : String
+  path : String
 } derive(@debug.Debug)
 
 pub(all) struct HoverResultPayload {
@@ -143,6 +167,8 @@ pub(all) enum ServerPacket {
   DefinitionResult(DefinitionResultPayload)
   ReferencesResult(ReferencesResultPayload)
   DocumentSymbolsResult(DocumentSymbolsResultPayload)
+  HostDirectoryListed(HostDirectoryListedPayload)
+  WorkspaceSwitched(WorkspaceSwitchedPayload)
   RemoteError(ProtocolError)
 } derive(@debug.Debug)
 pub impl ToJson for ServerPacket
@@ -150,6 +176,12 @@ pub impl ToJson for ServerPacket
 pub enum ServerPacketDecodeResult {
   DecodedServerPacket(ServerPacket)
   ServerPacketDecodeError(ProtocolError)
+} derive(@debug.Debug)
+
+pub(all) struct WorkspaceSwitchedPayload {
+  id : String
+  root : String
+  name : String
 } derive(@debug.Debug)
 
 // Type aliases

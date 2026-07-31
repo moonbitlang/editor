@@ -6,17 +6,28 @@
 /// Remaining semantic features without a machine-readable `moon` query return
 /// empty results.
 pub(all) struct MoonWorkspaceLanguageProvider {
-  root : String
+  /// Shared with the host's workspace switching, so every request runs
+  /// against the currently served root.
+  root : Ref[String]
   moon_command : String
 }
 
 ///|
-/// Creates a moon-command language provider rooted at `root`.
+/// Creates a moon-command language provider over a shared workspace root.
 pub fn MoonWorkspaceLanguageProvider::MoonWorkspaceLanguageProvider(
-  root : String,
+  root : Ref[String],
   moon_command? : String = "moon",
 ) -> MoonWorkspaceLanguageProvider {
-  { root: normalize_host_path(root), moon_command }
+  { root, moon_command }
+}
+
+///|
+/// The root a request runs against, captured once per request so a
+/// concurrent switch cannot mix two roots inside one query.
+fn MoonWorkspaceLanguageProvider::current_root(
+  self : MoonWorkspaceLanguageProvider,
+) -> String {
+  normalize_host_path(self.root.val)
 }
 
 ///|
@@ -31,7 +42,7 @@ pub impl @language.HoverProvider for MoonWorkspaceLanguageProvider with fn provi
 ) {
   self.provide_hover_with_runner(model, position, args => {
     let output = Some(
-      @process.collect_stdout(self.moon_command, args, cwd=self.root),
+      @process.collect_stdout(self.moon_command, args, cwd=self.current_root()),
     ) catch {
       _ => None
     }
@@ -55,13 +66,14 @@ async fn MoonWorkspaceLanguageProvider::provide_hover_with_runner(
 ) -> @language.Hover? {
   match @server.resolve_remote_document_uri(model.uri) {
     ParsedRemotePath(path) => {
+      let root = self.current_root()
       let model_identity = model.identity()
       let model_version = model.version
       let content_version = model.get_version_id()
       let model_uri = model.uri.to_string()
       let model_revision = model.revision
       let model_text = model.snapshot.get_value()
-      guard read_native_disk_snapshot(self.root, path) is Some(before) else {
+      guard read_native_disk_snapshot(root, path) is Some(before) else {
         return None
       }
       guard before.signature == model_revision &&
@@ -79,7 +91,7 @@ async fn MoonWorkspaceLanguageProvider::provide_hover_with_runner(
       }
       let loc = "\{path.to_string()}:\{position.line_number}:\{position.column}"
       let output = run(["ide", "hover", "--loc", loc, "--output-json"])
-      guard read_native_disk_snapshot(self.root, path) is Some(after) &&
+      guard read_native_disk_snapshot(root, path) is Some(after) &&
         after == before &&
         !model.is_disposed() &&
         model.identity() == model_identity &&
@@ -117,12 +129,13 @@ pub impl @language.DefinitionProvider for MoonWorkspaceLanguageProvider with fn 
   }
   match @server.resolve_remote_document_uri(model.uri) {
     ParsedRemotePath(path) => {
+      let root = self.current_root()
       let loc = "\{path.to_string()}:\{position.line_number}:\{position.column}"
       let output = Some(
         @process.collect_stdout(
           self.moon_command,
           ["ide", "peek-def", "--loc", loc, "--json"],
-          cwd=self.root,
+          cwd=root,
         ),
       ) catch {
         _ => None
@@ -133,7 +146,7 @@ pub impl @language.DefinitionProvider for MoonWorkspaceLanguageProvider with fn 
       match output {
         Some((0, data)) =>
           match (Some(data.text()) catch { _ => None }) {
-            Some(raw) => parse_moon_definition_output(self.root, raw)
+            Some(raw) => parse_moon_definition_output(root, raw)
             None => []
           }
         _ => []

@@ -2,7 +2,7 @@
 /// Current client/server protocol version. Both sides reject packets carrying a
 /// different version.
 pub fn protocol_version() -> Int {
-  5
+  6
 }
 
 ///|
@@ -77,6 +77,8 @@ pub(all) enum ClientPacket {
   Definition(DocumentPositionRequest)
   References(DocumentPositionRequest)
   DocumentSymbols(DocumentRevisionRequest)
+  ListHostDirectory(HostPathRequest)
+  SwitchWorkspace(HostPathRequest)
 } derive(Debug)
 
 ///|
@@ -163,6 +165,8 @@ pub(all) enum ServerPacket {
   DefinitionResult(DefinitionResultPayload)
   ReferencesResult(ReferencesResultPayload)
   DocumentSymbolsResult(DocumentSymbolsResultPayload)
+  HostDirectoryListed(HostDirectoryListedPayload)
+  WorkspaceSwitched(WorkspaceSwitchedPayload)
   RemoteError(ProtocolError)
 } derive(Debug)
 
@@ -271,6 +275,10 @@ pub impl ToJson for ClientPacket with fn to_json(self) {
     References(request) => position_request_json("References", request)
     DocumentSymbols(request) =>
       revision_request_json("DocumentSymbols", request)
+    ListHostDirectory(request) =>
+      host_path_request_json("ListHostDirectory", request)
+    SwitchWorkspace(request) =>
+      host_path_request_json("SwitchWorkspace", request)
   }
 }
 
@@ -287,6 +295,8 @@ pub impl ToJson for ServerPacket with fn to_json(self) {
     DefinitionResult(payload) => definition_result_json(payload)
     ReferencesResult(payload) => references_result_json(payload)
     DocumentSymbolsResult(payload) => document_symbols_result_json(payload)
+    HostDirectoryListed(payload) => host_directory_listed_json(payload)
+    WorkspaceSwitched(payload) => workspace_switched_json(payload)
     RemoteError(error) => error_packet_json(error)
   }
 }
@@ -332,6 +342,14 @@ pub fn decode_client_packet(raw : String) -> ClientPacketDecodeResult {
             Some("DocumentSymbols") =>
               decode_version_client(packet, request_id(packet), request => {
                 DocumentSymbols(request)
+              })
+            Some("ListHostDirectory") =>
+              decode_host_path_client(packet, request_id(packet), request => {
+                ListHostDirectory(request)
+              })
+            Some("SwitchWorkspace") =>
+              decode_host_path_client(packet, request_id(packet), request => {
+                SwitchWorkspace(request)
               })
             Some(kind) =>
               ClientPacketDecodeError(
@@ -387,6 +405,10 @@ pub fn decode_server_packet(raw : String) -> ServerPacketDecodeResult {
               decode_references_result_payload(packet, request_id(packet))
             Some("DocumentSymbolsResult") =>
               decode_document_symbols_result_payload(packet, request_id(packet))
+            Some("HostDirectoryListed") =>
+              decode_host_directory_listed_payload(packet, request_id(packet))
+            Some("WorkspaceSwitched") =>
+              decode_workspace_switched_payload(packet, request_id(packet))
             Some("Error") => decode_error_payload(packet, request_id(packet))
             Some(kind) =>
               ServerPacketDecodeError(

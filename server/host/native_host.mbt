@@ -337,6 +337,21 @@ fn ProtocolSessions::broadcast(self : ProtocolSessions, raw : String) -> Unit {
 }
 
 ///|
+/// Broadcasts to every session except one — used for events whose triggering
+/// session already received a correlated response.
+fn ProtocolSessions::broadcast_except(
+  self : ProtocolSessions,
+  excluded : Int,
+  raw : String,
+) -> Unit {
+  for session, outbox in self.outboxes {
+    if session != excluded {
+      enqueue(outbox, raw)
+    }
+  }
+}
+
+///|
 /// Enqueues without suspending: the transport and session queues are all
 /// unbounded, so `try_put` only fails when a queue was closed at teardown.
 fn enqueue(queue : @aqueue.Queue[String], message : String) -> Unit {
@@ -356,7 +371,7 @@ pub async fn run_native_editor_server(
   log? : (String) -> Unit = println,
 ) -> Unit {
   let server_host = NativeServerHost::NativeServerHost()
-  let root = realpath_or_normalized(root)
+  let root : Ref[String] = Ref(realpath_or_normalized(root))
   let addr = @socket.Addr::parse("\{host}:\{port}")
   let http_server = @http.Server(addr, reuse_addr=true)
   // The diagnostics check runs outlive any single protocol connection, so
@@ -366,7 +381,7 @@ pub async fn run_native_editor_server(
       group.spawn_bg(task, no_wait=true, allow_failure=true)
     }
     let sessions = ProtocolSessions::new()
-    let remote_server = moon_backed_remote_server(
+    let workspace = moon_backed_native_workspace(
       root, server_host, moon_command, spawn_task, sessions,
     )
     let network_host = if host == "0.0.0.0" {
@@ -378,11 +393,34 @@ pub async fn run_native_editor_server(
       log(message)
     }
     http_server.run_forever() <| ((request, _body, conn) => {
-      handle_native_editor_request(
-        remote_server, sessions, asset_dir, request, conn,
-      )
+      handle_native_editor_request(workspace, asset_dir, request, conn)
     })
   }
+}
+
+///|
+/// Mutable native workspace state shared by every protocol session: the
+/// served root, the base remote server whose sessions share that root, the
+/// diagnostics runner, and the live session outboxes.
+priv struct NativeWorkspace {
+  root : Ref[String]
+  remote_server : @server.RemoteServer
+  diagnostics : MoonCheckDiagnostics
+  sessions : ProtocolSessions
+}
+
+///|
+/// Points every consumer of the served root — sessions, language provider,
+/// diagnostics — at `real_root` and drops diagnostics state produced for the
+/// previous root. Clients react to the `WorkspaceSwitched` packets by closing
+/// their documents, which retires the old root's watches.
+fn NativeWorkspace::switch_root(
+  self : NativeWorkspace,
+  real_root : String,
+) -> Unit {
+  self.root.val = real_root
+  self.remote_server.set_workspace_root(real_root)
+  self.diagnostics.reset()
 }
 
 ///|
@@ -392,16 +430,21 @@ pub async fn run_native_editor_server(
 /// watch update) schedules a `moon check` run, and each run broadcasts its
 /// per-file diagnostics to every connected session as `Diagnostics` push
 /// packets.
-fn moon_backed_remote_server(
-  root : String,
+fn moon_backed_native_workspace(
+  root : Ref[String],
   host : &@server.ServerHost,
   moon_command : String,
   spawn_task : (async () -> Unit) -> Unit,
   sessions : ProtocolSessions,
-) -> @server.RemoteServer {
+) -> NativeWorkspace {
   let provider = MoonWorkspaceLanguageProvider(root, moon_command~)
   let remote_server = @server.RemoteServer::with_language_providers(
-    root, host, provider, provider, provider, provider,
+    root.val,
+    host,
+    provider,
+    provider,
+    provider,
+    provider,
   )
   let diagnostics = MoonCheckDiagnostics(
     root,
@@ -418,7 +461,7 @@ fn moon_backed_remote_server(
       diagnostics.schedule(spawn_task)
     }),
   )
-  remote_server
+  { root, remote_server, diagnostics, sessions }
 }
 
 ///|
@@ -434,14 +477,13 @@ fn diagnostics_push_packet(
 
 ///|
 async fn handle_native_editor_request(
-  remote_server : @server.RemoteServer,
-  sessions : ProtocolSessions,
+  workspace : NativeWorkspace,
   asset_dir : String,
   request : @http.Request,
   conn : @http.ServerConnection,
 ) -> Unit {
   if request.path == "/protocol" {
-    handle_protocol_connection(remote_server, sessions, request, conn)
+    handle_protocol_connection(workspace, request, conn)
   } else {
     serve_static_route(asset_dir, request, conn)
   }
@@ -449,20 +491,19 @@ async fn handle_native_editor_request(
 
 ///|
 async fn handle_protocol_connection(
-  remote_server : @server.RemoteServer,
-  sessions : ProtocolSessions,
+  workspace : NativeWorkspace,
   request : @http.Request,
   conn : @http.ServerConnection,
 ) -> Unit {
-  let remote_server = remote_server.new_session()
+  let session_server = workspace.remote_server.new_session()
   let ws = @websocket.from_http_server(request, conn)
   defer ws.close()
   // Watch tasks emit packets concurrently with request handling, and the
   // websocket connection rejects interleaved sends; one writer task owns
   // the socket and everything else enqueues outbound frames.
   let outbox : @aqueue.Queue[String] = Queue(kind=Unbounded)
-  let session = sessions.attach(outbox)
-  defer sessions.detach(session)
+  let session = workspace.sessions.attach(outbox)
+  defer workspace.sessions.detach(session)
   @async.with_task_group() <| group => {
     group.spawn_bg(no_wait=true, allow_failure=true, () => {
       for ;; {
@@ -478,7 +519,9 @@ async fn handle_protocol_connection(
         match message.kind {
           Text => {
             let raw = message.read_all().text()
-            handle_protocol_message(remote_server, outbox, raw, spawn_watch)
+            handle_protocol_message(
+              workspace, session_server, session, outbox, raw, spawn_watch,
+            )
           }
           Binary => ignore(message.read_all().binary())
         }
@@ -487,20 +530,29 @@ async fn handle_protocol_connection(
       @websocket.ConnectionClosed(_, _) => ()
       _ => ()
     }
-    remote_server.dispose_watches()
+    session_server.dispose_watches()
   }
 }
 
 ///|
+/// Dispatches one wire message. Host filesystem packets (repository browsing
+/// and workspace switching) are host-level state changes and never reach the
+/// per-session policy server.
 async fn handle_protocol_message(
-  remote_server : @server.RemoteServer,
+  workspace : NativeWorkspace,
+  session_server : @server.RemoteServer,
+  session : Int,
   outbox : @aqueue.Queue[String],
   raw : String,
   spawn_watch : (async () -> Unit) -> Unit,
 ) -> Unit {
   match @remote_protocol.decode_client_packet(raw) {
+    DecodedClientPacket(ListHostDirectory(request)) =>
+      outbox.put(list_host_directory_packet(workspace, request))
+    DecodedClientPacket(SwitchWorkspace(request)) =>
+      switch_workspace_packets(workspace, session, outbox, request)
     DecodedClientPacket(packet) => {
-      let responses = remote_server.handle_client_packet(
+      let responses = session_server.handle_client_packet(
         packet,
         packet => outbox.put(packet.to_json().stringify()),
         spawn_watch,

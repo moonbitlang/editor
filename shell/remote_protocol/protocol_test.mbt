@@ -6,7 +6,7 @@ test "encodes and decodes document client packets" {
   let packet = @remote_protocol.OpenDocument({ id: "open-1", uri })
   let encoded = packet.to_json().stringify()
   assert_true(encoded.contains("\"type\":\"OpenDocument\""))
-  assert_true(encoded.contains("\"version\":5"))
+  assert_true(encoded.contains("\"version\":6"))
 
   match @remote_protocol.decode_client_packet(encoded) {
     DecodedClientPacket(OpenDocument(request)) => {
@@ -408,7 +408,7 @@ test "reports protocol decode errors" {
 
   match
     @remote_protocol.decode_client_packet(
-      "{\"version\":5,\"type\":\"OpenDocument\",\"id\":\"x\",\"uri\":\"bad\"}",
+      "{\"version\":6,\"type\":\"OpenDocument\",\"id\":\"x\",\"uri\":\"bad\"}",
     ) {
     ClientPacketDecodeError(error) =>
       assert_true(error.code == ProtocolInvalidUri)
@@ -418,15 +418,120 @@ test "reports protocol decode errors" {
 
 ///|
 test "negotiates protocol versions" {
-  match @remote_protocol.negotiate_protocol_version(5) {
-    ProtocolAccepted(version) => assert_eq(version, 5)
+  match @remote_protocol.negotiate_protocol_version(6) {
+    ProtocolAccepted(version) => assert_eq(version, 6)
     ProtocolRejected(error) => fail(error.message)
   }
 
-  match @remote_protocol.negotiate_protocol_version(4) {
+  match @remote_protocol.negotiate_protocol_version(5) {
     ProtocolRejected(error) =>
       assert_true(error.code == ProtocolUnsupportedVersion)
     ProtocolAccepted(_) => fail("expected rejected protocol")
+  }
+}
+
+///|
+test "encodes and decodes host browse client packets" {
+  let list = @remote_protocol.ListHostDirectory({ id: "list-1", path: "/repos" })
+  let encoded = list.to_json().stringify()
+  assert_true(encoded.contains("\"type\":\"ListHostDirectory\""))
+  match @remote_protocol.decode_client_packet(encoded) {
+    DecodedClientPacket(ListHostDirectory(request)) => {
+      assert_eq(request.id, "list-1")
+      assert_eq(request.path, "/repos")
+    }
+    DecodedClientPacket(_) => fail("unexpected client packet")
+    ClientPacketDecodeError(error) => fail(error.message)
+  }
+
+  // An empty path means "start from the current workspace root".
+  let start = @remote_protocol.ListHostDirectory({ id: "list-2", path: "" })
+  match @remote_protocol.decode_client_packet(start.to_json().stringify()) {
+    DecodedClientPacket(ListHostDirectory(request)) =>
+      assert_eq(request.path, "")
+    DecodedClientPacket(_) => fail("unexpected client packet")
+    ClientPacketDecodeError(error) => fail(error.message)
+  }
+  let switch = @remote_protocol.SwitchWorkspace({
+    id: "switch-1",
+    path: "/repos/demo",
+  })
+  match @remote_protocol.decode_client_packet(switch.to_json().stringify()) {
+    DecodedClientPacket(SwitchWorkspace(request)) => {
+      assert_eq(request.id, "switch-1")
+      assert_eq(request.path, "/repos/demo")
+    }
+    DecodedClientPacket(_) => fail("unexpected client packet")
+    ClientPacketDecodeError(error) => fail(error.message)
+  }
+}
+
+///|
+test "encodes and decodes host browse server packets" {
+  let listed = @remote_protocol.HostDirectoryListed({
+    id: "list-1",
+    listing: {
+      path: "/repos",
+      parent: Some("/"),
+      entries: [
+        { name: "demo", path: "/repos/demo", is_workspace: true },
+        { name: "notes", path: "/repos/notes", is_workspace: false },
+      ],
+    },
+  })
+  let encoded = listed.to_json().stringify()
+  assert_true(encoded.contains("\"isWorkspace\":true"))
+  match @remote_protocol.decode_server_packet(encoded) {
+    DecodedServerPacket(HostDirectoryListed(payload)) => {
+      assert_eq(payload.id, "list-1")
+      assert_eq(payload.listing.path, "/repos")
+      assert_eq(payload.listing.parent, Some("/"))
+      assert_eq(payload.listing.entries.length(), 2)
+      assert_eq(payload.listing.entries[0].name, "demo")
+      assert_eq(payload.listing.entries[0].path, "/repos/demo")
+      assert_true(payload.listing.entries[0].is_workspace)
+      assert_true(!payload.listing.entries[1].is_workspace)
+    }
+    DecodedServerPacket(_) => fail("unexpected server packet")
+    ServerPacketDecodeError(error) => fail(error.message)
+  }
+
+  // The filesystem root omits `parent`.
+  let rooted = @remote_protocol.HostDirectoryListed({
+    id: "list-2",
+    listing: { path: "/", parent: None, entries: [] },
+  })
+  match @remote_protocol.decode_server_packet(rooted.to_json().stringify()) {
+    DecodedServerPacket(HostDirectoryListed(payload)) =>
+      assert_true(payload.listing.parent is None)
+    DecodedServerPacket(_) => fail("unexpected server packet")
+    ServerPacketDecodeError(error) => fail(error.message)
+  }
+  let switched = @remote_protocol.WorkspaceSwitched({
+    id: "switch-1",
+    root: "/repos/demo",
+    name: "demo",
+  })
+  match @remote_protocol.decode_server_packet(switched.to_json().stringify()) {
+    DecodedServerPacket(WorkspaceSwitched(payload)) => {
+      assert_eq(payload.id, "switch-1")
+      assert_eq(payload.root, "/repos/demo")
+      assert_eq(payload.name, "demo")
+    }
+    DecodedServerPacket(_) => fail("unexpected server packet")
+    ServerPacketDecodeError(error) => fail(error.message)
+  }
+
+  // A broadcast push carries no id and never resolves a pending request.
+  let push = @remote_protocol.WorkspaceSwitched({
+    id: "",
+    root: "/repos/demo",
+    name: "demo",
+  })
+  match @remote_protocol.decode_server_packet(push.to_json().stringify()) {
+    DecodedServerPacket(WorkspaceSwitched(payload)) => assert_eq(payload.id, "")
+    DecodedServerPacket(_) => fail("unexpected server packet")
+    ServerPacketDecodeError(error) => fail(error.message)
   }
 }
 
