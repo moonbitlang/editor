@@ -631,9 +631,8 @@ fn encode_uri_component_fast(
         native_encode_pos = -1
       }
       // check if we write into a new string (by default we try to return the param)
-      match res {
-        Some(sb) => sb.write_char(Int::unsafe_to_char(code))
-        None => ()
+      if res is Some(sb) {
+        sb.write_char(Int::unsafe_to_char(code))
       }
     } else {
       // encoding needed, we need to allocate a new string
@@ -648,17 +647,14 @@ fn encode_uri_component_fast(
         Some(escaped) => {
           // check if we are delaying native encode
           if native_encode_pos != -1 {
-            match res {
-              Some(sb) =>
-                write_native_encoded(sb, uri_component, native_encode_pos, pos)
-              None => ()
+            if res is Some(sb) {
+              write_native_encoded(sb, uri_component, native_encode_pos, pos)
             }
             native_encode_pos = -1
           }
           // append escaped variant to result
-          match res {
-            Some(sb) => sb.write_string(escaped)
-            None => ()
+          if res is Some(sb) {
+            sb.write_string(escaped)
           }
         }
         None =>
@@ -670,15 +666,13 @@ fn encode_uri_component_fast(
     }
   }
   if native_encode_pos != -1 {
-    match res {
-      Some(sb) =>
-        write_native_encoded(
-          sb,
-          uri_component,
-          native_encode_pos,
-          uri_component.length(),
-        )
-      None => ()
+    if res is Some(sb) {
+      write_native_encoded(
+        sb,
+        uri_component,
+        native_encode_pos,
+        uri_component.length(),
+      )
     }
   }
   match res {

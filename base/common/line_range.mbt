@@ -255,9 +255,8 @@ pub fn LineRangeSet::get_union(
         }
     }
   }
-  match current {
-    Some(cur) => result.push(cur)
-    None => ()
+  if current is Some(cur) {
+    result.push(cur)
   }
   LineRangeSet(normalized_ranges=result)
 }

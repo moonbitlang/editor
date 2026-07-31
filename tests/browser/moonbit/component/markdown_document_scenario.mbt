@@ -355,18 +355,15 @@ fn run_markdown_document_test() -> Unit {
     () => hover_harness.calls_json(),
     (call_id, outcome) => hover_harness.release(call_id, outcome),
     message => {
-      match viewer.get_model() {
-        Some(model) => {
-          let symbol = if model.get_value().contains("replacement_answer") {
-            "replacement_answer"
-          } else if model.get_value().contains("same_uri_answer") {
-            "same_uri_answer"
-          } else {
-            "markdown_answer"
-          }
-          set_markdown_document_diagnostic(markers, model, symbol, message)
+      if viewer.get_model() is Some(model) {
+        let symbol = if model.get_value().contains("replacement_answer") {
+          "replacement_answer"
+        } else if model.get_value().contains("same_uri_answer") {
+          "same_uri_answer"
+        } else {
+          "markdown_answer"
         }
-        None => ()
+        set_markdown_document_diagnostic(markers, model, symbol, message)
       }
     },
     () => set_markdown_document_marker_policy_fixture(markers, markdown_model),

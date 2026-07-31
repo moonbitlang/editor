@@ -44,17 +44,15 @@ impl @language.HoverProvider for RenderInvalidationHoverProvider with fn provide
 ) {
   let offset = model.get_offset_at(position)
   for needle in ["anchor", "mapping-target"] {
-    match model.snapshot.text.find(needle) {
-      Some(start) =>
-        if offset >= start && offset < start + needle.length() {
-          return Some({
-            range: model.snapshot.range_of(
-              OffsetRange(start, start + needle.length()),
-            ),
-            contents: [PlainText("render invalidation hover")],
-          })
-        }
-      None => ()
+    if model.snapshot.text.find(needle) is Some(start) {
+      if offset >= start && offset < start + needle.length() {
+        return Some({
+          range: model.snapshot.range_of(
+            OffsetRange(start, start + needle.length()),
+          ),
+          contents: [PlainText("render invalidation hover")],
+        })
+      }
     }
   }
   None
@@ -339,9 +337,8 @@ fn run_render_invalidation_test() -> Unit {
       "{\"first\":\{first_zone_top_count.val},\"second\":\{second_zone_top_count.val}}"
     },
     () => {
-      match token_registration.val {
-        Some(registration) => registration.dispose()
-        None => ()
+      if token_registration.val is Some(registration) {
+        registration.dispose()
       }
       token_registration.val = Some(
         languages.set_tokens_provider("plaintext", RenderInvalidationTokenizer::{

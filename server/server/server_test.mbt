@@ -410,14 +410,12 @@ async fn FakeServerHost::emit(
   path : String,
   change_type : @workspace.FileChangeType,
 ) -> Unit {
-  match self.listeners.get(path) {
-    Some(listeners) =>
-      for watch in listeners {
-        if watch.active.val {
-          (watch.listener)(change_type)
-        }
+  if self.listeners.get(path) is Some(listeners) {
+    for watch in listeners {
+      if watch.active.val {
+        (watch.listener)(change_type)
       }
-    None => ()
+    }
   }
 }
 

@@ -323,12 +323,7 @@ fn run_async_model_features_test() -> Unit {
       viewer.set_model(Some(async_feature_model(value)))
       viewer.handle_initialized()
     },
-    () => {
-      match viewer.get_model() {
-        Some(model) => model.dispose()
-        None => ()
-      }
-    },
+    () => if viewer.get_model() is Some(model) { model.dispose() },
     () => viewer.set_model(None),
     () => {
       viewer.dispose()

@@ -102,19 +102,16 @@ pub fn GlobalPointerMoveMonitor::start_monitoring(
     owning_window_event_target(initial_element)
   }
   let pointer_move = (event : @rdom.Event) => {
-    match event.to_mouse_event() {
-      Some(e) =>
-        if e.get_buttons() != initial_buttons {
-          // Buttons state has changed in the meantime
-          self.stop_monitoring(true)
-        } else {
-          e.prevent_default()
-          match self.pointer_move_callback {
-            Some(callback) => callback(e)
-            None => ()
-          }
+    if event.to_mouse_event() is Some(e) {
+      if e.get_buttons() != initial_buttons {
+        // Buttons state has changed in the meantime
+        self.stop_monitoring(true)
+      } else {
+        e.prevent_default()
+        if self.pointer_move_callback is Some(callback) {
+          callback(e)
         }
-      None => ()
+      }
     }
   }
   let pointer_up = (_event : @rdom.Event) => self.stop_monitoring(true)

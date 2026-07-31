@@ -479,42 +479,12 @@ fn run_view_zones_test() -> Unit {
         primary_id.val = accessor.add_zone(primary)
       })
     },
-    () => {
-      match retained_normal_add.val {
-        Some(operation) => operation()
-        None => ()
-      }
-    },
-    () => {
-      match retained_normal_remove.val {
-        Some(operation) => operation()
-        None => ()
-      }
-    },
-    () => {
-      match retained_normal_layout.val {
-        Some(operation) => operation()
-        None => ()
-      }
-    },
-    () => {
-      match retained_throwing_add.val {
-        Some(operation) => operation()
-        None => ()
-      }
-    },
-    () => {
-      match retained_throwing_remove.val {
-        Some(operation) => operation()
-        None => ()
-      }
-    },
-    () => {
-      match retained_throwing_layout.val {
-        Some(operation) => operation()
-        None => ()
-      }
-    },
+    () => if retained_normal_add.val is Some(operation) { operation() },
+    () => if retained_normal_remove.val is Some(operation) { operation() },
+    () => if retained_normal_layout.val is Some(operation) { operation() },
+    () => if retained_throwing_add.val is Some(operation) { operation() },
+    () => if retained_throwing_remove.val is Some(operation) { operation() },
+    () => if retained_throwing_layout.val is Some(operation) { operation() },
     () => {
       viewer.change_view_zones(accessor => {
         retained_throwing_add.val = Some(() => {
