@@ -38,7 +38,16 @@ build: dist-front-end
 #                                       # viewer: readonly file tree, syntax
 #                                       # highlighting, and `moon ide` hover /
 #                                       # `moon check` diagnostics run in that
-#                                       # repo's root (via MOON_COMMAND)
+#                                       # repo's root (via MOON_COMMAND).
+#                                       # ROOT only picks the STARTING repo:
+#                                       # the sidebar's "Open Repository..."
+#                                       # picker browses the host filesystem
+#                                       # and re-roots the running server
+#                                       # without a restart. On loopback the
+#                                       # picker may browse anywhere; on any
+#                                       # other bind it is DISABLED unless
+#                                       # BROWSE_ROOT grants a subtree:
+#   just HOST=0.0.0.0 BROWSE_ROOT=~/git dev
 #   just TARGET=native dev              # run the server on the native backend
 #                                       # (default is wasm: ~3x faster
 #                                       # incremental rebuilds, no C link step)
@@ -52,6 +61,7 @@ HOST := ""
 PORT := "5173"
 ASSET_DIR := "web/dist"
 MOON_COMMAND := "moon"
+BROWSE_ROOT := ""
 TARGET := "wasm"
 
 serve:
@@ -60,11 +70,13 @@ serve:
       --host "{{ if HOST == '' { '127.0.0.1' } else { HOST } }}" \
       --port {{ PORT }} \
       --asset-dir "$(cd '{{ ASSET_DIR }}' && pwd)" \
-      --moon-command "{{ MOON_COMMAND }}"
+      --moon-command "{{ MOON_COMMAND }}" \
+      --browse-root "{{ BROWSE_ROOT }}"
 
 dev: build
     just ROOT='{{ ROOT }}' PORT='{{ PORT }}' ASSET_DIR='{{ ASSET_DIR }}' \
       MOON_COMMAND='{{ MOON_COMMAND }}' TARGET='{{ TARGET }}' \
+      BROWSE_ROOT='{{ BROWSE_ROOT }}' \
       HOST='{{ if HOST == '' { '0.0.0.0' } else { HOST } }}' serve
 
 test-browser: test-browser-smoke

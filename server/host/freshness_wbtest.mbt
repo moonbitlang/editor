@@ -74,9 +74,15 @@ async test "native hover requires exact disk state and runs ordinary moon ide ho
     )
     let model = freshness_test_model(root, "main.mbt", "pub fn old {}\n")
     defer model.dispose()
-    let provider = MoonWorkspaceLanguageProvider(root, moon_command="unused")
+    let provider = MoonWorkspaceLanguageProvider(
+      Ref(root),
+      moon_command="unused",
+    )
     let seen : Ref[Array[String]] = Ref([])
-    let hover = provider.provide_hover_with_runner(model, Position(1, 8), args => {
+    let hover = provider.provide_hover_with_runner(model, Position(1, 8), (
+      _root,
+      args,
+    ) => {
       seen.val = args
       Some((0, hover_test_output()))
     })
@@ -110,8 +116,14 @@ async test "native hover skips command for a mismatched request revision" {
     )
     defer model.dispose()
     let calls = Ref(0)
-    let provider = MoonWorkspaceLanguageProvider(root, moon_command="unused")
-    let hover = provider.provide_hover_with_runner(model, Position(1, 8), _args => {
+    let provider = MoonWorkspaceLanguageProvider(
+      Ref(root),
+      moon_command="unused",
+    )
+    let hover = provider.provide_hover_with_runner(model, Position(1, 8), (
+      _root,
+      _args,
+    ) => {
       calls.val += 1
       Some((0, hover_test_output()))
     })
@@ -136,9 +148,12 @@ async test "native hover drops a disk change during the command" {
     defer model.dispose()
     let started = @async.Semaphore(1, initial_value=0)
     let release_gate = @async.Semaphore(1, initial_value=0)
-    let provider = MoonWorkspaceLanguageProvider(root, moon_command="unused")
+    let provider = MoonWorkspaceLanguageProvider(
+      Ref(root),
+      moon_command="unused",
+    )
     let request = group.spawn(() => {
-      provider.provide_hover_with_runner(model, Position(1, 8), _args => {
+      provider.provide_hover_with_runner(model, Position(1, 8), (_root, _args) => {
         started.release()
         release_gate.acquire()
         Some((0, hover_test_output()))
@@ -252,7 +267,7 @@ fn controlled_diagnostics(
   events : Array[CheckPublishEvent],
 ) -> MoonCheckDiagnostics {
   new_moon_check_diagnostics(
-    root,
+    Ref(root),
     (uri, revision, diagnostics) => {
       events.push({ uri: uri.to_string(), revision, diagnostics })
     },
@@ -586,7 +601,7 @@ priv suberror CheckCollectorFailure {
 ///|
 async test "moon check schedule restores running after collector failure" {
   let diagnostics = new_moon_check_diagnostics(
-    "/workspace",
+    Ref("/workspace"),
     (_uri, _revision, _diagnostics) => (),
     () => raise CheckCollectorFailure,
   )
@@ -612,7 +627,7 @@ async test "moon check schedule restores running after cancellation" {
   let started = @aqueue.Queue(kind=Unbounded)
   let release_gate = @aqueue.Queue(kind=Unbounded)
   let diagnostics = new_moon_check_diagnostics(
-    "/workspace",
+    Ref("/workspace"),
     (_uri, _revision, _diagnostics) => (),
     () => {
       started.put(())

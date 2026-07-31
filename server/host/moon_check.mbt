@@ -4,7 +4,8 @@
 /// single-flight — document syncs arriving while a check is in flight
 /// collapse into one follow-up run.
 pub struct MoonCheckDiagnostics {
-  priv root : String
+  /// Shared with the host's workspace switching; each run captures one value.
+  priv root : Ref[String]
   priv publish : (@base_common.Uri, String, Array[@language.Diagnostic]) -> Unit
   priv collect_check : async () -> String?
   priv running : Ref[Bool]
@@ -30,13 +31,12 @@ priv struct PublishedDiagnosticSet {
 }
 
 ///|
-/// Creates a diagnostics runner for the workspace rooted at `root`.
+/// Creates a diagnostics runner over a shared workspace root.
 pub fn MoonCheckDiagnostics::MoonCheckDiagnostics(
-  root : String,
+  root : Ref[String],
   publish : (@base_common.Uri, String, Array[@language.Diagnostic]) -> Unit,
   moon_command? : String = "moon",
 ) -> MoonCheckDiagnostics {
-  let root = normalize_host_path(root)
   new_moon_check_diagnostics(root, publish, () => {
     // `moon check` exits nonzero whenever errors exist, so the exit code is
     // ignored and stdout is parsed unconditionally.
@@ -44,7 +44,7 @@ pub fn MoonCheckDiagnostics::MoonCheckDiagnostics(
       @process.collect_stdout(
         moon_command,
         ["check", "--output-json"],
-        cwd=root,
+        cwd=normalize_host_path(root.val),
       ).1.text(),
     ) catch {
       _ => None
@@ -54,12 +54,12 @@ pub fn MoonCheckDiagnostics::MoonCheckDiagnostics(
 
 ///|
 fn new_moon_check_diagnostics(
-  root : String,
+  root : Ref[String],
   publish : (@base_common.Uri, String, Array[@language.Diagnostic]) -> Unit,
   collect_check : async () -> String?,
 ) -> MoonCheckDiagnostics {
   {
-    root: normalize_host_path(root),
+    root,
     publish,
     collect_check,
     running: Ref(false),
@@ -68,6 +68,17 @@ fn new_moon_check_diagnostics(
     documents: {},
     published: Ref({}),
   }
+}
+
+///|
+/// Forgets every synced document and published diagnostic set. The host calls
+/// this when the served workspace root changes: the generation bump makes any
+/// in-flight `moon check` run discard its results, and no stale-root
+/// diagnostics can replay onto same-named files of the new workspace.
+pub fn MoonCheckDiagnostics::reset(self : MoonCheckDiagnostics) -> Unit {
+  self.sync_generation.val += 1
+  self.documents.clear()
+  self.published.val = {}
 }
 
 ///|
@@ -127,18 +138,21 @@ pub fn MoonCheckDiagnostics::schedule(
 
 ///|
 async fn MoonCheckDiagnostics::run_once(self : MoonCheckDiagnostics) -> Unit {
+  // One root per run; a workspace switch bumps the generation, so a run that
+  // raced the switch discards its results below.
+  let root = normalize_host_path(self.root.val)
   let generation = self.sync_generation.val
   let documents = copy_synced_documents(self.documents)
-  let before = capture_native_disk_snapshots(self.root, documents)
+  let before = capture_native_disk_snapshots(root, documents)
   let raw = (self.collect_check)()
-  let after = capture_native_disk_snapshots(self.root, documents)
+  let after = capture_native_disk_snapshots(root, documents)
   if self.sync_generation.val != generation ||
     !same_native_disk_snapshot_map(before, after) {
     self.dirty.val = true
     return
   }
   guard raw is Some(raw) else { return }
-  let next = parse_moon_check_diagnostics(self.root, raw)
+  let next = parse_moon_check_diagnostics(root, raw)
   let accepted = copy_published_diagnostic_sets(self.published.val)
   for key, document in documents {
     // A stable disk/model mismatch is not a clear for the last accepted model.

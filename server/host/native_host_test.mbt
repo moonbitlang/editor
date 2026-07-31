@@ -271,7 +271,7 @@ async test "moon definition provider invokes exact peek-def command" {
       uri, "src/main.mbt", "moonbit", 1, "rev-1", "fn main {}\n",
     )
     let provider : &@language.DefinitionProvider = @host.MoonWorkspaceLanguageProvider(
-      root,
+      Ref(root),
       moon_command=command,
     )
     let locations = provider.provide_definition(

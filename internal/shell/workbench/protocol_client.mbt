@@ -196,6 +196,9 @@ fn server_packet_request_id(packet : @remote_protocol.ServerPacket) -> String {
     DefinitionResult(payload) => payload.id
     ReferencesResult(payload) => payload.id
     DocumentSymbolsResult(payload) => payload.id
+    HostDirectoryListed(payload) => payload.id
+    // Broadcast switches carry an empty id and route as pushes.
+    WorkspaceSwitched(payload) => payload.id
     RemoteError(error) => error.request_id
   }
 }

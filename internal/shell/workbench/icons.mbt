@@ -14,6 +14,18 @@ fn icon_svg(class : String, children : Array[@svg.Svg]) -> @html.Html {
 }
 
 ///|
+/// Folder outline used by the repository picker.
+fn icon_folder() -> @html.Html {
+  icon_svg("icon-folder", [
+    @svg.path(
+      d="M1 3.5 A1.5 1.5 0 0 1 2.5 2 H6 L7.5 3.5 H13.5 A1.5 1.5 0 0 1 15 5 V12.5 A1.5 1.5 0 0 1 13.5 14 H2.5 A1.5 1.5 0 0 1 1 12.5 Z M2.5 3 A0.5 0.5 0 0 0 2 3.5 V12.5 A0.5 0.5 0 0 0 2.5 13 H13.5 A0.5 0.5 0 0 0 14 12.5 V5 A0.5 0.5 0 0 0 13.5 4.5 H7.1 L5.6 3 Z",
+      fill="currentColor",
+      attrs=@svg.Attrs::build().fill_rule("evenodd"),
+    ),
+  ])
+}
+
+///|
 /// Half-filled disc representing the light/dark color-mode toggle.
 fn icon_color_mode() -> @html.Html {
   icon_svg("icon-color-mode", [

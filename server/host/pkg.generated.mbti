@@ -2,6 +2,7 @@
 package "moonbitlang/editor-server/host"
 
 import {
+  "moonbitlang/core/ref",
   "moonbitlang/editor-server/server",
   "moonbitlang/editor/base/common",
   "moonbitlang/editor/language",
@@ -18,7 +19,7 @@ pub fn parse_moon_definition_output(String, String) -> Array[@language.Location]
 
 pub fn parse_moon_hover_output(String, @common.Position) -> @language.Hover?
 
-pub async fn run_native_editor_server(String, host? : String, port? : Int, asset_dir? : String, moon_command? : String, log? : (String) -> Unit) -> Unit
+pub async fn run_native_editor_server(String, host? : String, port? : Int, asset_dir? : String, moon_command? : String, browse_root? : String, log? : (String) -> Unit) -> Unit
 
 // Errors
 
@@ -26,15 +27,16 @@ pub async fn run_native_editor_server(String, host? : String, port? : Int, asset
 pub struct MoonCheckDiagnostics {
   // private fields
 }
-pub fn MoonCheckDiagnostics::MoonCheckDiagnostics(String, (@common.Uri, String, Array[@language.Diagnostic]) -> Unit, moon_command? : String) -> Self
+pub fn MoonCheckDiagnostics::MoonCheckDiagnostics(@ref.Ref[String], (@common.Uri, String, Array[@language.Diagnostic]) -> Unit, moon_command? : String) -> Self
 pub fn MoonCheckDiagnostics::note_document(Self, @workspace.DocumentSnapshot) -> Unit
+pub fn MoonCheckDiagnostics::reset(Self) -> Unit
 pub fn MoonCheckDiagnostics::schedule(Self, (async () -> Unit) -> Unit) -> Unit
 
 pub(all) struct MoonWorkspaceLanguageProvider {
-  root : String
+  root : @ref.Ref[String]
   moon_command : String
 }
-pub fn MoonWorkspaceLanguageProvider::MoonWorkspaceLanguageProvider(String, moon_command? : String) -> Self
+pub fn MoonWorkspaceLanguageProvider::MoonWorkspaceLanguageProvider(@ref.Ref[String], moon_command? : String) -> Self
 pub impl @language.DefinitionProvider for MoonWorkspaceLanguageProvider
 pub impl @language.DocumentSymbolProvider for MoonWorkspaceLanguageProvider
 pub impl @language.HoverProvider for MoonWorkspaceLanguageProvider
@@ -50,4 +52,3 @@ pub impl @server.ServerHost for NativeServerHost
 // Type aliases
 
 // Traits
-

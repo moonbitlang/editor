@@ -21,6 +21,12 @@ priv struct WorkbenchModel {
   /// Mirrors whether the viewer holds a rendered frame; while it does not,
   /// the shell renders its own status placeholder instead of the viewer.
   viewer_has_frame : Bool
+  /// The modal repository picker; `None` while closed.
+  repo_picker : RepoPickerModel?
+  /// The served workspace root as last announced by the server; empty until
+  /// the first connection announce. A differing announce (reconnect across a
+  /// switch, another session switching) triggers the full switch cleanup.
+  workspace_root : String
 } derive(Eq)
 
 ///|
@@ -47,6 +53,18 @@ priv enum WorkbenchMsg {
   ViewerEvent(WorkbenchViewerEvent)
   ToggleTheme
   WindowResized
+  OpenRepoPicker
+  CloseRepoPicker
+  BrowseRepoDirectory(String)
+  /// Carries the picker request generation that produced the listing so
+  /// superseded responses are dropped instead of applied.
+  RepoDirectoryListed(
+    Int,
+    Result[@remote_protocol.HostDirectoryListing, String]
+  )
+  ConfirmRepoPicker
+  RepoSwitchFailed(Int, String)
+  WorkspaceRootSwitched(String)
 }
 
 ///|
@@ -301,6 +319,8 @@ fn initial_workbench_model() -> WorkbenchModel {
     line_count: 0,
     diagnostics: [],
     viewer_has_frame: false,
+    repo_picker: None,
+    workspace_root: "",
   }
 }
 
@@ -387,6 +407,16 @@ fn workbench_update(
       )
     }
     WindowResized => (viewer_cmd(() => workbench_viewer().layout()), model)
+    OpenRepoPicker => open_repo_picker_update(emit, model)
+    CloseRepoPicker => (@rabbita.none, { ..model, repo_picker: None })
+    BrowseRepoDirectory(path) => browse_repo_directory_update(emit, model, path)
+    RepoDirectoryListed(generation, result) =>
+      repo_directory_listed_update(model, generation, result)
+    ConfirmRepoPicker => confirm_repo_picker_update(emit, model)
+    RepoSwitchFailed(generation, message) =>
+      repo_switch_failed_update(model, generation, message)
+    WorkspaceRootSwitched(root) =>
+      workspace_root_switched_update(emit, model, root)
   }
 }
 
@@ -663,7 +693,7 @@ fn protocol_event_update(
       }
       (@rabbita.batch(commands), { ..model, status_message: "" })
     }
-    Message(raw) => protocol_message_update(model, raw)
+    Message(raw) => protocol_message_update(emit, model, raw)
     Closed(_) => {
       fail_pending_requests("Connection lost.")
       (
@@ -691,6 +721,7 @@ fn protocol_event_update(
 
 ///|
 fn protocol_message_update(
+  emit : @rabbita.Emit[WorkbenchMsg],
   model : WorkbenchModel,
   raw : String,
 ) -> (@rabbita.Cmd, WorkbenchModel) {
@@ -701,7 +732,7 @@ fn protocol_message_update(
       if resolve_pending_response(packet) {
         (@rabbita.none, model)
       } else {
-        server_packet_update(model, packet)
+        server_packet_update(emit, model, packet)
       }
     ServerPacketDecodeError(error) => protocol_error_update(model, error)
   }
@@ -709,6 +740,7 @@ fn protocol_message_update(
 
 ///|
 fn server_packet_update(
+  emit : @rabbita.Emit[WorkbenchMsg],
   model : WorkbenchModel,
   packet : @remote_protocol.ServerPacket,
 ) -> (@rabbita.Cmd, WorkbenchModel) {
@@ -720,6 +752,11 @@ fn server_packet_update(
     // Diagnostics are always a server push (relayed from backend `moon check`
     // runs); they land in the marker service keyed by resource.
     Diagnostics(payload) => (apply_remote_diagnostics_cmd(payload), model)
+    // The server's workspace announcement: the connection-attach greeting,
+    // or another session switching the root. The handler no-ops when the
+    // announced root matches what this client already shows.
+    WorkspaceSwitched(payload) =>
+      workspace_announce_update(emit, model, payload.root)
     // Feature results without a waiting request are unsolicited; provider
     // commands consume theirs through the pending table.
     DirectoryResolved(_) => (@rabbita.none, model)
@@ -727,6 +764,7 @@ fn server_packet_update(
     DefinitionResult(_) => (@rabbita.none, model)
     ReferencesResult(_) => (@rabbita.none, model)
     DocumentSymbolsResult(_) => (@rabbita.none, model)
+    HostDirectoryListed(_) => (@rabbita.none, model)
     RemoteError(error) =>
       match watched_uri_for_error(error) {
         Some(uri_key) => (route_watched_error_cmd(uri_key, error), model)
@@ -803,7 +841,7 @@ fn view_workbench(
   model : WorkbenchModel,
   tree_html : @html.Html,
 ) -> @html.Html {
-  @html.main_(class="editor-shell", attrs=shell_attrs(model), [
+  let children : Array[@html.Html] = [
     view_topbar(model),
     @html.div(class="editor-main", [
       view_sidebar(emit, model, tree_html),
@@ -813,7 +851,12 @@ fn view_workbench(
       @html.div(class="viewer-host", ([] : Array[@html.Html])),
     ]),
     view_diagnostics(model),
-  ])
+  ]
+  match model.repo_picker {
+    Some(picker) => children.push(view_repo_picker(emit, picker))
+    None => ()
+  }
+  @html.main_(class="editor-shell", attrs=shell_attrs(model), children)
 }
 
 ///|
@@ -857,16 +900,28 @@ fn view_sidebar(
     [
       @html.div(class="workspace-title", [
         @html.span(class="workspace-title-label", "Explorer"),
-        @html.button(
-          type_="button",
-          class="sidebar-action",
-          title="Toggle Color Theme",
-          on_click=emit(ToggleTheme),
-          attrs=@html.Attrs::build()
-            .data_set("action", "toggle-theme")
-            .aria_label("Toggle color theme"),
-          icon_color_mode(),
-        ),
+        @html.span(class="workspace-title-actions", [
+          @html.button(
+            type_="button",
+            class="sidebar-action",
+            title="Open Repository...",
+            on_click=emit(OpenRepoPicker),
+            attrs=@html.Attrs::build()
+              .data_set("action", "open-repository")
+              .aria_label("Open repository"),
+            icon_folder(),
+          ),
+          @html.button(
+            type_="button",
+            class="sidebar-action",
+            title="Toggle Color Theme",
+            on_click=emit(ToggleTheme),
+            attrs=@html.Attrs::build()
+              .data_set("action", "toggle-theme")
+              .aria_label("Toggle color theme"),
+            icon_color_mode(),
+          ),
+        ]),
       ]),
       tree_html,
     ],

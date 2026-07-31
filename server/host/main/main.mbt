@@ -5,6 +5,10 @@ struct DevServerConfig {
   port : Int
   asset_dir : String
   moon_command : String
+  /// Directory subtree the repository picker may browse and switch to.
+  /// Empty means automatic: unrestricted on loopback binds, disabled on
+  /// every other bind.
+  browse_root : String
 }
 
 ///|
@@ -16,6 +20,7 @@ async fn main {
     port=config.port,
     asset_dir=config.asset_dir,
     moon_command=config.moon_command,
+    browse_root=config.browse_root,
   ) catch {
     error => abort("Readonly editor native server failed: " + error.to_string())
   }
@@ -28,6 +33,7 @@ fn parse_args(args : ArrayView[String]) -> DevServerConfig {
   let mut port = 5173
   let mut asset_dir = "web/dist"
   let mut moon_command = "moon"
+  let mut browse_root = ""
   let mut i = 0
   while i < args.length() {
     match args[i] {
@@ -56,11 +62,16 @@ fn parse_args(args : ArrayView[String]) -> DevServerConfig {
           moon_command = args[i + 1]
           i = i + 1
         }
+      "--browse-root" =>
+        if i + 1 < args.length() {
+          browse_root = args[i + 1]
+          i = i + 1
+        }
       _ => ()
     }
     i = i + 1
   }
-  { root, host, port, asset_dir, moon_command }
+  { root, host, port, asset_dir, moon_command, browse_root }
 }
 
 ///|

@@ -33,6 +33,7 @@ pub struct RemoteServer {
   // private fields
 }
 pub fn RemoteServer::close_document(Self, @remote_protocol.DocumentRequest) -> Unit
+pub fn RemoteServer::current_workspace_root(Self) -> String
 pub async fn RemoteServer::definition(Self, @remote_protocol.DocumentPositionRequest) -> @remote_protocol.ServerPacket
 pub fn RemoteServer::dispose_watches(Self) -> Unit
 pub async fn RemoteServer::document_symbols(Self, @remote_protocol.DocumentRevisionRequest) -> @remote_protocol.ServerPacket
@@ -43,6 +44,7 @@ pub async fn RemoteServer::open_document(Self, @remote_protocol.DocumentRequest)
 pub async fn RemoteServer::references(Self, @remote_protocol.DocumentPositionRequest) -> @remote_protocol.ServerPacket
 pub async fn RemoteServer::resolve_directory(Self, @remote_protocol.DocumentRequest) -> @remote_protocol.ServerPacket
 pub fn RemoteServer::set_document_sync_listener(Self, ((@workspace.DocumentSnapshot) -> Unit)?) -> Unit
+pub fn RemoteServer::set_workspace_root(Self, String) -> Unit
 pub async fn RemoteServer::watch_document(Self, @remote_protocol.DocumentRequest, async (@remote_protocol.ServerPacket) -> Unit, (async () -> Unit) -> Unit) -> @remote_protocol.ServerPacket
 pub fn RemoteServer::with_language_providers(String, &ServerHost, &@language.HoverProvider, &@language.DefinitionProvider, &@language.ReferencesProvider, &@language.DocumentSymbolProvider) -> Self
 

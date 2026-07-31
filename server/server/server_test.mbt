@@ -587,3 +587,87 @@ impl @language.DocumentSymbolProvider for FakeLanguageProvider with fn provide_d
 ) {
   [{ name: "configured", kind: "function", range: Range(1, 8, 1, 18) }]
 }
+
+///|
+/// Records the root each host call receives, so tests can observe a workspace
+/// switch through an already-created session.
+struct RootRecordingHost {
+  roots : Array[String]
+}
+
+///|
+impl @server.ServerHost for RootRecordingHost with fn read_directory(
+  self,
+  root,
+  _relative,
+) {
+  self.roots.push(root)
+  ServerHostResolveOk([])
+}
+
+///|
+impl @server.ServerHost for RootRecordingHost with fn read_text_file(
+  self,
+  root,
+  _path,
+) {
+  self.roots.push(root)
+  ServerHostReadError(FileNotFound, "missing file")
+}
+
+///|
+impl @server.ServerHost for RootRecordingHost with fn watch_text_file(
+  self,
+  root,
+  _path,
+  _listener,
+  _spawn_watch,
+) {
+  self.roots.push(root)
+  ServerWatch(() => ())
+}
+
+///|
+async test "workspace root switch redirects existing sessions" {
+  let host = RootRecordingHost::{ roots: [] }
+  let server = test_remote_server("/old-root/", host)
+  assert_eq(server.current_workspace_root(), "/old-root")
+  let session = server.new_session()
+  let root_uri = expect_uri("readonly-remote://workspace")
+  ignore(session.resolve_directory({ id: "switch-r1", uri: root_uri }))
+  server.set_workspace_root("/new-root/")
+  // The session created before the switch shares the mutable root.
+  assert_eq(session.current_workspace_root(), "/new-root")
+  ignore(session.resolve_directory({ id: "switch-r2", uri: root_uri }))
+  assert_eq(host.roots, ["/old-root", "/new-root"])
+}
+
+///|
+async test "policy server rejects host browse packets" {
+  let host = FakeServerHost::new()
+  let server = test_remote_server("/workspace", host)
+  let listed = server.handle_client_packet(
+    ListHostDirectory({ id: "list-1", path: "/" }),
+    _packet => (),
+    noop_watch_spawner,
+  )
+  match listed {
+    [RemoteError(error)] => {
+      assert_eq(error.request_id, "list-1")
+      assert_true(error.code == ProtocolInvalidPacket)
+    }
+    _ => fail("expected host browse rejection")
+  }
+  let switched = server.handle_client_packet(
+    SwitchWorkspace({ id: "switch-1", path: "/elsewhere" }),
+    _packet => (),
+    noop_watch_spawner,
+  )
+  match switched {
+    [RemoteError(error)] => {
+      assert_eq(error.request_id, "switch-1")
+      assert_true(error.code == ProtocolInvalidPacket)
+    }
+    _ => fail("expected workspace switch rejection")
+  }
+}
