@@ -6,6 +6,9 @@
 
 ///|
 priv struct RepoPickerModel {
+  /// The request generation this picker is waiting on; results stamped with
+  /// an older generation are superseded and dropped.
+  generation : Int
   /// Absolute host path currently listed; empty until the first listing
   /// (the server starts from the current workspace root).
   path : String
@@ -16,8 +19,15 @@ priv struct RepoPickerModel {
 } derive(Eq)
 
 ///|
-fn opening_repo_picker() -> RepoPickerModel {
-  { path: "", parent: None, entries: [], loading: true, error: "" }
+/// Monotonic stamp for picker requests, module-level like the protocol
+/// request counter: reopening the picker also advances it, so a listing from
+/// a previous picker instance can never land in the current one.
+let repo_picker_generation : Ref[Int] = Ref(0)
+
+///|
+fn next_repo_picker_generation() -> Int {
+  repo_picker_generation.val = repo_picker_generation.val + 1
+  repo_picker_generation.val
 }
 
 ///|
@@ -25,9 +35,20 @@ fn open_repo_picker_update(
   emit : @rabbita.Emit[WorkbenchMsg],
   model : WorkbenchModel,
 ) -> (@rabbita.Cmd, WorkbenchModel) {
+  let generation = next_repo_picker_generation()
   (
-    list_host_directory_cmd(emit, ""),
-    { ..model, repo_picker: Some(opening_repo_picker()) },
+    list_host_directory_cmd(emit, generation, ""),
+    {
+      ..model,
+      repo_picker: Some({
+        generation,
+        path: "",
+        parent: None,
+        entries: [],
+        loading: true,
+        error: "",
+      }),
+    },
   )
 }
 
@@ -38,26 +59,36 @@ fn browse_repo_directory_update(
   path : String,
 ) -> (@rabbita.Cmd, WorkbenchModel) {
   match model.repo_picker {
-    Some(picker) =>
+    Some(picker) => {
+      let generation = next_repo_picker_generation()
       (
-        list_host_directory_cmd(emit, path),
-        { ..model, repo_picker: Some({ ..picker, loading: true, error: "" }) },
+        list_host_directory_cmd(emit, generation, path),
+        {
+          ..model,
+          repo_picker: Some({ ..picker, generation, loading: true, error: "" }),
+        },
       )
+    }
     None => (@rabbita.none, model)
   }
 }
 
 ///|
-/// A listing landing after the picker was cancelled is dropped.
+/// A listing is applied only when it answers the picker's current request
+/// generation; results from a cancelled picker or a superseded navigation
+/// are dropped, so a stale listing can never clear `loading` while a newer
+/// request is still pending.
 fn repo_directory_listed_update(
   model : WorkbenchModel,
+  generation : Int,
   result : Result[@remote_protocol.HostDirectoryListing, String],
 ) -> (@rabbita.Cmd, WorkbenchModel) {
   match model.repo_picker {
-    Some(picker) => {
+    Some(picker) if picker.generation == generation => {
       let picker = match result {
         Ok(listing) =>
           {
+            generation,
             path: listing.path,
             parent: listing.parent,
             entries: listing.entries,
@@ -68,7 +99,7 @@ fn repo_directory_listed_update(
       }
       (@rabbita.none, { ..model, repo_picker: Some(picker) })
     }
-    None => (@rabbita.none, model)
+    _ => (@rabbita.none, model)
   }
 }
 
@@ -82,9 +113,13 @@ fn confirm_repo_picker_update(
       if picker.loading || picker.path == "" {
         (@rabbita.none, model)
       } else {
+        let generation = next_repo_picker_generation()
         (
-          switch_workspace_cmd(emit, picker.path),
-          { ..model, repo_picker: Some({ ..picker, loading: true, error: "" }) },
+          switch_workspace_cmd(emit, generation, picker.path),
+          {
+            ..model,
+            repo_picker: Some({ ..picker, generation, loading: true, error: "" }),
+          },
         )
       }
     None => (@rabbita.none, model)
@@ -94,10 +129,11 @@ fn confirm_repo_picker_update(
 ///|
 fn repo_switch_failed_update(
   model : WorkbenchModel,
+  generation : Int,
   message : String,
 ) -> (@rabbita.Cmd, WorkbenchModel) {
   match model.repo_picker {
-    Some(picker) =>
+    Some(picker) if picker.generation == generation =>
       (
         @rabbita.none,
         {
@@ -105,7 +141,28 @@ fn repo_switch_failed_update(
           repo_picker: Some({ ..picker, loading: false, error: message }),
         },
       )
-    None => (@rabbita.none, model)
+    _ => (@rabbita.none, model)
+  }
+}
+
+///|
+/// The server announced its served workspace root: the connection-attach
+/// greeting, or a broadcast from another session's switch. Matching roots are
+/// a no-op; a first announce only records the root (the `Opened` flow already
+/// populated the workbench); a differing root on a client that already had
+/// one — reconnect across a switch, another tab switching — runs the full
+/// switch cleanup.
+fn workspace_announce_update(
+  emit : @rabbita.Emit[WorkbenchMsg],
+  model : WorkbenchModel,
+  root : String,
+) -> (@rabbita.Cmd, WorkbenchModel) {
+  if root == model.workspace_root {
+    (@rabbita.none, model)
+  } else if model.workspace_root == "" {
+    (@rabbita.none, { ..model, workspace_root: root })
+  } else {
+    workspace_root_switched_update(emit, model, root)
   }
 }
 
@@ -117,6 +174,7 @@ fn repo_switch_failed_update(
 fn workspace_root_switched_update(
   emit : @rabbita.Emit[WorkbenchMsg],
   model : WorkbenchModel,
+  root : String,
 ) -> (@rabbita.Cmd, WorkbenchModel) {
   (
     @rabbita.batch([
@@ -132,6 +190,7 @@ fn workspace_root_switched_update(
     {
       ..model,
       repo_picker: None,
+      workspace_root: root,
       status: "loading",
       status_message: "",
       document: None,
@@ -145,9 +204,10 @@ fn workspace_root_switched_update(
 ///|
 fn list_host_directory_cmd(
   emit : @rabbita.Emit[WorkbenchMsg],
+  generation : Int,
   path : String,
 ) -> @rabbita.Cmd {
-  @cmd.perform(result => emit(RepoDirectoryListed(result)), async fn() noraise {
+  @cmd.perform(result => emit(RepoDirectoryListed(generation, result)), async fn() noraise {
     let response = protocol_request("list-dir", id => {
       ListHostDirectory({ id, path })
     })
@@ -162,13 +222,14 @@ fn list_host_directory_cmd(
 ///|
 fn switch_workspace_cmd(
   emit : @rabbita.Emit[WorkbenchMsg],
+  generation : Int,
   path : String,
 ) -> @rabbita.Cmd {
   @cmd.perform(
     result => {
       match result {
-        Ok(_) => emit(WorkspaceRootSwitched)
-        Err(message) => emit(RepoSwitchFailed(message))
+        Ok(root) => emit(WorkspaceRootSwitched(root))
+        Err(message) => emit(RepoSwitchFailed(generation, message))
       }
     },
     async fn() noraise {

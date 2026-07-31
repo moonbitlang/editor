@@ -40,9 +40,12 @@ pub impl @language.HoverProvider for MoonWorkspaceLanguageProvider with fn provi
   position,
   _token,
 ) {
-  self.provide_hover_with_runner(model, position, args => {
+  // The runner receives the root captured by `provide_hover_with_runner` so
+  // the command cwd and the pre/post disk snapshots always agree, even when a
+  // workspace switch lands mid-request.
+  self.provide_hover_with_runner(model, position, (root, args) => {
     let output = Some(
-      @process.collect_stdout(self.moon_command, args, cwd=self.current_root()),
+      @process.collect_stdout(self.moon_command, args, cwd=root),
     ) catch {
       _ => None
     }
@@ -62,7 +65,7 @@ async fn MoonWorkspaceLanguageProvider::provide_hover_with_runner(
   self : MoonWorkspaceLanguageProvider,
   model : @model.TextModel,
   position : @base_common.Position,
-  run : async (Array[String]) -> (Int, String)?,
+  run : async (String, Array[String]) -> (Int, String)?,
 ) -> @language.Hover? {
   match @server.resolve_remote_document_uri(model.uri) {
     ParsedRemotePath(path) => {
@@ -90,7 +93,7 @@ async fn MoonWorkspaceLanguageProvider::provide_hover_with_runner(
         return None
       }
       let loc = "\{path.to_string()}:\{position.line_number}:\{position.column}"
-      let output = run(["ide", "hover", "--loc", loc, "--output-json"])
+      let output = run(root, ["ide", "hover", "--loc", loc, "--output-json"])
       guard read_native_disk_snapshot(root, path) is Some(after) &&
         after == before &&
         !model.is_disposed() &&

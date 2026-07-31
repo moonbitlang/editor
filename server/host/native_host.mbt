@@ -368,10 +368,12 @@ pub async fn run_native_editor_server(
   port? : Int = 5173,
   asset_dir? : String = "web/dist",
   moon_command? : String = "moon",
+  browse_root? : String = "",
   log? : (String) -> Unit = println,
 ) -> Unit {
   let server_host = NativeServerHost::NativeServerHost()
   let root : Ref[String] = Ref(realpath_or_normalized(root))
+  let browse_scope = resolve_browse_scope(browse_root, host)
   let addr = @socket.Addr::parse("\{host}:\{port}")
   let http_server = @http.Server(addr, reuse_addr=true)
   // The diagnostics check runs outlive any single protocol connection, so
@@ -382,7 +384,7 @@ pub async fn run_native_editor_server(
     }
     let sessions = ProtocolSessions::new()
     let workspace = moon_backed_native_workspace(
-      root, server_host, moon_command, spawn_task, sessions,
+      root, browse_scope, server_host, moon_command, spawn_task, sessions,
     )
     let network_host = if host == "0.0.0.0" {
       default_route_ipv4_address()
@@ -399,11 +401,34 @@ pub async fn run_native_editor_server(
 }
 
 ///|
+/// An explicit `--browse-root` always wins; otherwise unrestricted browsing
+/// is reserved for loopback listeners and disabled on every other bind, so
+/// the unauthenticated LAN posture of `just dev` cannot be re-rooted.
+async fn resolve_browse_scope(
+  browse_root : String,
+  host : String,
+) -> HostBrowseScope {
+  if browse_root != "" {
+    BrowseWithin(realpath_or_normalized(browse_root))
+  } else if is_loopback_host(host) {
+    BrowseHost
+  } else {
+    BrowseDisabled
+  }
+}
+
+///|
+fn is_loopback_host(host : String) -> Bool {
+  host == "localhost" || host == "::1" || host.has_prefix("127.")
+}
+
+///|
 /// Mutable native workspace state shared by every protocol session: the
-/// served root, the base remote server whose sessions share that root, the
-/// diagnostics runner, and the live session outboxes.
+/// served root, the browse scope, the base remote server whose sessions
+/// share that root, the diagnostics runner, and the live session outboxes.
 priv struct NativeWorkspace {
   root : Ref[String]
+  browse_scope : HostBrowseScope
   remote_server : @server.RemoteServer
   diagnostics : MoonCheckDiagnostics
   sessions : ProtocolSessions
@@ -432,6 +457,7 @@ fn NativeWorkspace::switch_root(
 /// packets.
 fn moon_backed_native_workspace(
   root : Ref[String],
+  browse_scope : HostBrowseScope,
   host : &@server.ServerHost,
   moon_command : String,
   spawn_task : (async () -> Unit) -> Unit,
@@ -461,7 +487,7 @@ fn moon_backed_native_workspace(
       diagnostics.schedule(spawn_task)
     }),
   )
-  { root, remote_server, diagnostics, sessions }
+  { root, browse_scope, remote_server, diagnostics, sessions }
 }
 
 ///|
@@ -504,6 +530,10 @@ async fn handle_protocol_connection(
   let outbox : @aqueue.Queue[String] = Queue(kind=Unbounded)
   let session = workspace.sessions.attach(outbox)
   defer workspace.sessions.detach(session)
+  // Announce the served workspace first: a client that reconnected across a
+  // switch reconciles against this instead of keeping the old root's editor
+  // state; clients already on this root treat it as a no-op.
+  enqueue(outbox, workspace_announce_packet(workspace))
   @async.with_task_group() <| group => {
     group.spawn_bg(no_wait=true, allow_failure=true, () => {
       for ;; {

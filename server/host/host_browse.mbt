@@ -1,8 +1,53 @@
 // Host filesystem browsing for the repository picker: listing absolute host
 // directories and switching the served workspace root. These are host-level
-// packets handled outside the per-session policy server; anyone who can reach
-// the protocol socket can browse directory names and re-root the server, which
-// matches the loopback-by-default posture of this dev server.
+// packets handled outside the per-session policy server. What they may reach
+// is bounded by the server's `HostBrowseScope`: unrestricted browsing is
+// reserved for loopback listeners unless the operator grants an explicit
+// `--browse-root` scope, so an unauthenticated LAN-bound server cannot be
+// re-rooted onto arbitrary readable directories.
+
+///|
+/// Where host browsing and workspace switching may reach.
+priv enum HostBrowseScope {
+  /// The whole host filesystem — the loopback default.
+  BrowseHost
+  /// Only the given realpathed directory and its descendants.
+  BrowseWithin(String)
+  /// Browsing rejected entirely — the non-loopback default.
+  BrowseDisabled
+}
+
+///|
+fn HostBrowseScope::allows(self : HostBrowseScope, real : String) -> Bool {
+  match self {
+    BrowseHost => true
+    BrowseWithin(scope) =>
+      scope == "/" || real == scope || real.has_prefix(scope + "/")
+    BrowseDisabled => false
+  }
+}
+
+///|
+/// The parent offered in listings; `None` at the scope boundary so clients
+/// cannot navigate above it.
+fn HostBrowseScope::visible_parent(
+  self : HostBrowseScope,
+  real : String,
+) -> String? {
+  match self {
+    BrowseWithin(scope) if real == scope => None
+    _ => parent_host_path(real)
+  }
+}
+
+///|
+fn browse_disabled_error(request_id : String) -> @remote_protocol.ServerPacket {
+  host_browse_error(
+    request_id,
+    InvalidUri,
+    "Workspace browsing is disabled on this server. Restart it with --browse-root to allow switching repositories.",
+  )
+}
 
 ///|
 /// One resolved host directory level or a filesystem-shaped failure.
@@ -14,18 +59,32 @@ priv enum HostDirectoryListResult {
 ///|
 /// Answers `ListHostDirectory`: child directories of one absolute host path
 /// (the current workspace root when the path is empty), dot-entries skipped,
-/// repository-looking children flagged.
+/// repository-looking children flagged. Listing never leaves the browse
+/// scope — an out-of-scope path is rejected before any filesystem probe, so
+/// even existence outside the scope is not disclosed.
 async fn list_host_directory_packet(
   workspace : NativeWorkspace,
   request : @remote_protocol.HostPathRequest,
 ) -> String {
+  guard !(workspace.browse_scope is BrowseDisabled) else {
+    return browse_disabled_error(request.id).to_json().stringify()
+  }
   let target = if request.path == "" {
-    workspace.root.val
+    // Start at the served root; fall back to the scope root when the served
+    // root itself lies outside an explicit --browse-root scope.
+    if workspace.browse_scope.allows(workspace.root.val) {
+      workspace.root.val
+    } else {
+      match workspace.browse_scope {
+        BrowseWithin(scope) => scope
+        BrowseHost | BrowseDisabled => workspace.root.val
+      }
+    }
   } else {
     request.path
   }
   let packet : @remote_protocol.ServerPacket = match
-    resolve_host_directory_listing(target) {
+    resolve_host_directory_listing(workspace.browse_scope, target) {
     HostDirectoryListOk(listing) =>
       HostDirectoryListed({ id: request.id, listing })
     HostDirectoryListError(code, message) =>
@@ -36,12 +95,19 @@ async fn list_host_directory_packet(
 
 ///|
 async fn resolve_host_directory_listing(
+  scope : HostBrowseScope,
   target : String,
 ) -> HostDirectoryListResult {
-  if (Some(@fs.exists(target)) catch { _ => None }) != Some(true) {
+  let real = realpath_or_normalized(target)
+  if !scope.allows(real) {
+    return HostDirectoryListError(
+      InvalidUri,
+      "Path is outside the allowed browse scope.",
+    )
+  }
+  if (Some(@fs.exists(real)) catch { _ => None }) != Some(true) {
     return HostDirectoryListError(FileNotFound, "Directory does not exist.")
   }
-  let real = realpath_or_normalized(target)
   match (Some(@fs.kind(real)) catch { _ => None }) {
     Some(Directory) => ()
     _ =>
@@ -74,7 +140,11 @@ async fn resolve_host_directory_listing(
       _ => ()
     }
   }
-  HostDirectoryListOk({ path: real, parent: parent_host_path(real), entries })
+  HostDirectoryListOk({
+    path: real,
+    parent: scope.visible_parent(real),
+    entries,
+  })
 }
 
 ///|
@@ -88,7 +158,11 @@ async fn switch_workspace_packets(
   outbox : @aqueue.Queue[String],
   request : @remote_protocol.HostPathRequest,
 ) -> Unit {
-  match resolve_switch_target(request.path) {
+  guard !(workspace.browse_scope is BrowseDisabled) else {
+    outbox.put(browse_disabled_error(request.id).to_json().stringify())
+    return
+  }
+  match resolve_switch_target(workspace.browse_scope, request.path) {
     HostSwitchTarget(real) => {
       workspace.switch_root(real)
       let name = host_basename(real)
@@ -123,19 +197,42 @@ priv enum HostSwitchResult {
 }
 
 ///|
-async fn resolve_switch_target(path : String) -> HostSwitchResult {
+async fn resolve_switch_target(
+  scope : HostBrowseScope,
+  path : String,
+) -> HostSwitchResult {
   if path == "" {
     return HostSwitchError(InvalidUri, "Workspace path is required.")
   }
-  if (Some(@fs.exists(path)) catch { _ => None }) != Some(true) {
+  let real = realpath_or_normalized(path)
+  if !scope.allows(real) {
+    return HostSwitchError(
+      InvalidUri,
+      "Path is outside the allowed browse scope.",
+    )
+  }
+  if (Some(@fs.exists(real)) catch { _ => None }) != Some(true) {
     return HostSwitchError(FileNotFound, "Workspace directory does not exist.")
   }
-  let real = realpath_or_normalized(path)
   match (Some(@fs.kind(real)) catch { _ => None }) {
     Some(Directory) => HostSwitchTarget(real)
     _ =>
       HostSwitchError(FileNotADirectory, "Workspace path is not a directory.")
   }
+}
+
+///|
+/// Uncorrelated announcement of the currently served workspace, enqueued to
+/// every newly attached session so a client that reconnected across a switch
+/// can reconcile stale editor state against the live root.
+fn workspace_announce_packet(workspace : NativeWorkspace) -> String {
+  let root = workspace.root.val
+  let packet : @remote_protocol.ServerPacket = WorkspaceSwitched({
+    id: "",
+    root,
+    name: host_basename(root),
+  })
+  packet.to_json().stringify()
 }
 
 ///|

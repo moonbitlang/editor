@@ -79,7 +79,10 @@ async test "native hover requires exact disk state and runs ordinary moon ide ho
       moon_command="unused",
     )
     let seen : Ref[Array[String]] = Ref([])
-    let hover = provider.provide_hover_with_runner(model, Position(1, 8), args => {
+    let hover = provider.provide_hover_with_runner(model, Position(1, 8), (
+      _root,
+      args,
+    ) => {
       seen.val = args
       Some((0, hover_test_output()))
     })
@@ -117,7 +120,10 @@ async test "native hover skips command for a mismatched request revision" {
       Ref(root),
       moon_command="unused",
     )
-    let hover = provider.provide_hover_with_runner(model, Position(1, 8), _args => {
+    let hover = provider.provide_hover_with_runner(model, Position(1, 8), (
+      _root,
+      _args,
+    ) => {
       calls.val += 1
       Some((0, hover_test_output()))
     })
@@ -147,7 +153,7 @@ async test "native hover drops a disk change during the command" {
       moon_command="unused",
     )
     let request = group.spawn(() => {
-      provider.provide_hover_with_runner(model, Position(1, 8), _args => {
+      provider.provide_hover_with_runner(model, Position(1, 8), (_root, _args) => {
         started.release()
         release_gate.acquire()
         Some((0, hover_test_output()))

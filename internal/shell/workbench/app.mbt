@@ -23,6 +23,10 @@ priv struct WorkbenchModel {
   viewer_has_frame : Bool
   /// The modal repository picker; `None` while closed.
   repo_picker : RepoPickerModel?
+  /// The served workspace root as last announced by the server; empty until
+  /// the first connection announce. A differing announce (reconnect across a
+  /// switch, another session switching) triggers the full switch cleanup.
+  workspace_root : String
 } derive(Eq)
 
 ///|
@@ -52,10 +56,15 @@ priv enum WorkbenchMsg {
   OpenRepoPicker
   CloseRepoPicker
   BrowseRepoDirectory(String)
-  RepoDirectoryListed(Result[@remote_protocol.HostDirectoryListing, String])
+  /// Carries the picker request generation that produced the listing so
+  /// superseded responses are dropped instead of applied.
+  RepoDirectoryListed(
+    Int,
+    Result[@remote_protocol.HostDirectoryListing, String]
+  )
   ConfirmRepoPicker
-  RepoSwitchFailed(String)
-  WorkspaceRootSwitched
+  RepoSwitchFailed(Int, String)
+  WorkspaceRootSwitched(String)
 }
 
 ///|
@@ -311,6 +320,7 @@ fn initial_workbench_model() -> WorkbenchModel {
     diagnostics: [],
     viewer_has_frame: false,
     repo_picker: None,
+    workspace_root: "",
   }
 }
 
@@ -400,10 +410,13 @@ fn workbench_update(
     OpenRepoPicker => open_repo_picker_update(emit, model)
     CloseRepoPicker => (@rabbita.none, { ..model, repo_picker: None })
     BrowseRepoDirectory(path) => browse_repo_directory_update(emit, model, path)
-    RepoDirectoryListed(result) => repo_directory_listed_update(model, result)
+    RepoDirectoryListed(generation, result) =>
+      repo_directory_listed_update(model, generation, result)
     ConfirmRepoPicker => confirm_repo_picker_update(emit, model)
-    RepoSwitchFailed(message) => repo_switch_failed_update(model, message)
-    WorkspaceRootSwitched => workspace_root_switched_update(emit, model)
+    RepoSwitchFailed(generation, message) =>
+      repo_switch_failed_update(model, generation, message)
+    WorkspaceRootSwitched(root) =>
+      workspace_root_switched_update(emit, model, root)
   }
 }
 
@@ -739,8 +752,11 @@ fn server_packet_update(
     // Diagnostics are always a server push (relayed from backend `moon check`
     // runs); they land in the marker service keyed by resource.
     Diagnostics(payload) => (apply_remote_diagnostics_cmd(payload), model)
-    // Another session switched the served workspace root; follow it.
-    WorkspaceSwitched(_) => workspace_root_switched_update(emit, model)
+    // The server's workspace announcement: the connection-attach greeting,
+    // or another session switching the root. The handler no-ops when the
+    // announced root matches what this client already shows.
+    WorkspaceSwitched(payload) =>
+      workspace_announce_update(emit, model, payload.root)
     // Feature results without a waiting request are unsolicited; provider
     // commands consume theirs through the pending table.
     DirectoryResolved(_) => (@rabbita.none, model)
