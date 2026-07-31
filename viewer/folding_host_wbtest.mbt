@@ -200,6 +200,30 @@ test "folding: comments inside an in-progress declaration never form a run" {
 }
 
 ///|
+test "folding: comments inside paren/bracket continuations never form a run" {
+  let text =
+    #|let xs : Array[Int] = [
+    #|  // element a
+    #|  // element b
+    #|  1, 2,
+    #|]
+    #|let ys : Int = make(
+    #|  // argument a
+    #|  // argument b
+    #|  3,
+    #|)
+    #|// trailing a
+    #|// trailing b
+  let model = test_model(text, language_id="moonbit")
+  let source_folds = moonbit_source_folds(model.snapshot)
+  assert_eq(source_folds.function_bodies.length(), 0)
+  let runs = source_folds.comment_runs
+  assert_eq(runs.length(), 1)
+  assert_eq(runs[0].start_line_number, 11)
+  assert_eq(runs[0].end_line_number, 12)
+}
+
+///|
 test "folding: MoonBit outline collapses a copyright header to its first line" {
   let text =
     #|// Copyright 2026 Example Authors.

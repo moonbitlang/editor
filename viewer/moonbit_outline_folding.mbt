@@ -89,15 +89,18 @@ fn moonbit_source_folds(snapshot : @model.TextSnapshot) -> MoonbitSourceFolds {
   let mut body_start_line = 0
   let mut paren_depth = 0
   let mut bracket_depth = 0
+  let mut expression_nesting_depth = 0
   for line_number in 1..<=snapshot.line_count() {
     let line = snapshot.get_line_content(line_number)
     // Comment lines inside an in-progress declaration (between a formatted
     // signature's lines, or between `pub`/`impl` prefixes and their `fn`)
-    // stay with the declaration: folding them would nest a comment run
-    // inside the body fold's protected span and break the disjoint
+    // or inside an unclosed paren/bracket continuation (a multi-line array
+    // or argument list) stay with their construct: folding them would nest
+    // a comment run inside another fold's span and break the disjoint
     // document-order invariant of the host-fold list.
     if block_comment_depth == 0 &&
       brace_depth == 0 &&
+      expression_nesting_depth == 0 &&
       declaration_start_line == 0 &&
       function_keyword_line == 0 &&
       pending_function_prefix_line == 0 &&
@@ -339,6 +342,18 @@ fn moonbit_source_folds(snapshot : @model.TextSnapshot) -> MoonbitSourceFolds {
           }
         } else if code == '=' && brace_depth == 0 {
           line_saw_equals = true
+        }
+        // Unlike `paren_depth`/`bracket_depth`, which only track an
+        // in-progress function signature, this counts every lexical
+        // paren/bracket so comment-run detection can see multi-line
+        // continuations of non-function declarations.
+        match code {
+          '(' | '[' => expression_nesting_depth += 1
+          ')' | ']' =>
+            if expression_nesting_depth > 0 {
+              expression_nesting_depth -= 1
+            }
+          _ => ()
         }
         if code == '{' {
           if brace_depth == 0 &&
