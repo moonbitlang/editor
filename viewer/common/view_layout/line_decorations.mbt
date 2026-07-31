@@ -93,7 +93,7 @@ pub fn LineDecorationsNormalizer::normalize(
       @base_common.is_high_surrogate(line_content[end_column - 2].to_int()) {
       end_column = end_column - 1
     }
-    let start_offset = @base_common.clamp_int(start_column - 1, 0, line_length)
+    let start_offset = (start_column - 1).clamp(min=0, max=line_length)
     let max_end_offset = if line_length == 0 {
       start_offset - 1
     } else {
@@ -104,10 +104,9 @@ pub fn LineDecorationsNormalizer::normalize(
     } else {
       max_end_offset
     }
-    let end_offset = @base_common.clamp_int(
-      end_column - 2,
-      start_offset - 1,
-      end_offset_high,
+    let end_offset = (end_column - 2).clamp(
+      min=start_offset - 1,
+      max=end_offset_high,
     )
     next_start_offset = stack.consume_lower_than(
       start_offset, next_start_offset, result,

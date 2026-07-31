@@ -54,8 +54,11 @@ pub fn Position::delta(
   delta_column? : Int = 0,
 ) -> Position {
   self.with_(
-    line_number=clamp_int(self.line_number + delta_line_number, 1, 2147483647),
-    column=clamp_int(self.column + delta_column, 1, 2147483647),
+    line_number=(self.line_number + delta_line_number).clamp(
+      min=1,
+      max=2147483647,
+    ),
+    column=(self.column + delta_column).clamp(min=1, max=2147483647),
   )
 }
 
@@ -332,23 +335,5 @@ pub fn OffsetRange::add_range(
       sorted_ranges.remove(i) |> ignore
     }
     sorted_ranges.insert(i, OffsetRange(start, end))
-  }
-}
-
-///|
-/// Clamps an integer to an inclusive range.
-///
-/// Deliberately retained instead of std `Int::clamp(min~, max~)`: many callers
-/// pass bounds like `(x, 0, line_count - 1)` where the high bound can fall
-/// below the low bound for an empty model, and this helper tolerates that
-/// (returning a bound) where std `Int::clamp` would `guard min <= max` and
-/// panic. See std-dedup-and-divergence-review.md Step 2.
-pub fn clamp_int(value : Int, low : Int, high : Int) -> Int {
-  if value < low {
-    low
-  } else if value > high {
-    high
-  } else {
-    value
   }
 }

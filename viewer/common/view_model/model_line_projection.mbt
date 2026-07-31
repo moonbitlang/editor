@@ -314,10 +314,9 @@ pub fn ModelLineProjection::get_model_column_of_view_position(
       let segment = data.segment_at_view_line_index(output_line_index)
       let width = segment.end_offset - segment.start_offset
       let projected_column = segment.start_offset +
-        @base_common.clamp_int(
-          output_column - 1 - segment.wrapped_text_indent_length,
-          0,
-          width,
+        (output_column - 1 - segment.wrapped_text_indent_length).clamp(
+          min=0,
+          max=width,
         )
       data.projected_line.projected_column_to_model_column(projected_column) + 1
     }
@@ -343,11 +342,7 @@ pub fn ModelLineProjection::get_view_position_of_model_position(
     }
     Hidden => abort("Not supported")
     Projected(data, ..) => {
-      let model_column = @base_common.clamp_int(
-        input_column - 1,
-        0,
-        data.line_length,
-      )
+      let model_column = (input_column - 1).clamp(min=0, max=data.line_length)
       let projected_column = data.projected_line.model_column_to_projected_column(
         model_column,
         affinity?,
@@ -386,11 +381,9 @@ pub fn ModelLineProjection::normalize_position(
       let width = segment.end_offset - segment.start_offset
       // `outputPositionToOffsetInInputWithInjections`: undo the continuation
       // indent and clamp into the segment.
-      let output_offset = @base_common.clamp_int(
-        position.column - 1 - segment.wrapped_text_indent_length,
-        0,
-        width,
-      )
+      let output_offset = (position.column -
+      1 -
+      segment.wrapped_text_indent_length).clamp(min=0, max=width)
       let projected = segment.start_offset + output_offset
       let normalized = data.projected_line.normalize_projected_column_around_injections(
         projected, affinity,

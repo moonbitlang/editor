@@ -11,7 +11,7 @@ test "range normalizes endpoints and tests offsets" {
 
 ///|
 test "clamps ints" {
-  assert_eq(clamp_int(-1, 0, 10), 0)
-  assert_eq(clamp_int(4, 0, 10), 4)
-  assert_eq(clamp_int(99, 0, 10), 10)
+  assert_eq((-1).clamp(min=0, max=10), 0)
+  assert_eq((4).clamp(min=0, max=10), 4)
+  assert_eq((99).clamp(min=0, max=10), 10)
 }

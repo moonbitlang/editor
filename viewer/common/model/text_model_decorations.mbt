@@ -696,10 +696,8 @@ pub fn TextModel::get_lines_decorations(
   only_margin_decorations? : Bool = false,
 ) -> Array[ModelDecoration] {
   let line_count = self.snapshot.line_count()
-  let start_line_number = @base_common.clamp_int(
-    start_line_number, 1, line_count,
-  )
-  let end_line_number = @base_common.clamp_int(end_line_number, 1, line_count)
+  let start_line_number = start_line_number.clamp(min=1, max=line_count)
+  let end_line_number = end_line_number.clamp(min=1, max=line_count)
   let end_column = self.snapshot.get_line_max_column(end_line_number)
   let range : @base_common.Range = Range(
     start_line_number, 1, end_line_number, end_column,

@@ -350,7 +350,7 @@ pub fn ViewLayout::vertical_offset_for_line(
   self : ViewLayout,
   line : Int,
 ) -> Double {
-  let line = @base_common.clamp_int(line, 1, self.line_count + 1)
+  let line = line.clamp(min=1, max=self.line_count + 1)
   self.lines.get_vertical_offset_for_line_number(line)
 }
 

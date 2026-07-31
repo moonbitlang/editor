@@ -414,7 +414,7 @@ pub fn TextModel::get_position_at(
   self : TextModel,
   offset : Int,
 ) -> @base_common.Position {
-  let offset = @base_common.clamp_int(offset, 0, self.snapshot.get_length())
+  let offset = offset.clamp(min=0, max=self.snapshot.get_length())
   self.snapshot.get_position_at(offset)
 }
 
@@ -693,7 +693,7 @@ pub fn TextModel::modify_position(
   )
   let candidate = self.snapshot.get_offset_at(valid.line_number, valid.column) +
     offset
-  let clamped = @base_common.clamp_int(candidate, 0, self.snapshot.get_length())
+  let clamped = candidate.clamp(min=0, max=self.snapshot.get_length())
   self.snapshot.get_position_at(clamped)
 }
 

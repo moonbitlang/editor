@@ -136,14 +136,10 @@ fn ViewModel::validate_cursor_move_view_position(
   self : ViewModel,
   position : @base_common.Position,
 ) -> @base_common.Position {
-  let line_number = @base_common.clamp_int(
-    position.line_number,
-    1,
-    self.line_count(),
-  )
+  let line_number = position.line_number.clamp(min=1, max=self.line_count())
   let min_column = self.get_line_min_column(line_number)
   let max_column = self.get_line_max_column(line_number)
-  let column = @base_common.clamp_int(position.column, min_column, max_column)
+  let column = position.column.clamp(min=min_column, max=max_column)
   Position(line_number, column)
 }
 

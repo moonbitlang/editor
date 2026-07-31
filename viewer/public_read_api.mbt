@@ -90,15 +90,13 @@ fn Viewer::get_visible_ranges_plus_viewport_above_below(
   let rounded = (height / line_height + 0.5).to_int()
   let lines_around = rounded.max(20)
   let (completely_start, completely_end) = view_model.view_layout.completely_visible_line_range()
-  let start_view_line = @base_common.clamp_int(
-    completely_start - lines_around,
-    1,
-    view_model.line_count(),
+  let start_view_line = (completely_start - lines_around).clamp(
+    min=1,
+    max=view_model.line_count(),
   )
-  let end_view_line = @base_common.clamp_int(
-    completely_end + lines_around,
-    start_view_line,
-    view_model.line_count(),
+  let end_view_line = (completely_end + lines_around).clamp(
+    min=start_view_line,
+    max=view_model.line_count(),
   )
   view_model.to_model_visible_ranges({
     start_line_number: start_view_line,
@@ -422,7 +420,7 @@ pub fn Viewer::get_width_of_line(self : Viewer, line_number : Int) -> Double {
     return -1.0
   }
   let line_count = model.get_line_count()
-  let clamped_line = @base_common.clamp_int(line_number, 1, line_count)
+  let clamped_line = line_number.clamp(min=1, max=line_count)
   let max_column = model.get_line_max_column(clamped_line)
   let view_position = view_model
     .coordinates_converter()
