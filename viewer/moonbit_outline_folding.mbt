@@ -75,8 +75,9 @@ fn is_moonbit_expression_continuation_code(code : Int) -> Bool {
 /// Whether a line's first token continues the construct above it — a
 /// leading binary operator, `->` return clause, `.` method chain, a
 /// deferred initializer `=`, an opening delimiter (`(`, `[`, `{` never
-/// start a top-level construct), or a continuation keyword (`else`,
-/// `catch`, `noraise`, `derive`). A comment run terminated by such a line sits inside
+/// start a top-level construct), or a continuation keyword (`else`, `catch`,
+/// `noraise`, `raise`, `is`, `as`, `derive` — none of which can start a
+/// top-level construct). A comment run terminated by such a line sits inside
 /// that construct rather than at the top level. Leading `//` and `/*` are
 /// comments, and `*/` closes one; none of those continue an expression.
 fn is_moonbit_leading_continuation_line(line : String) -> Bool {
@@ -95,6 +96,9 @@ fn is_moonbit_leading_continuation_line(line : String) -> Bool {
       return word == "else" ||
         word == "catch" ||
         word == "noraise" ||
+        word == "raise" ||
+        word == "is" ||
+        word == "as" ||
         word == "derive"
     }
     let next = if index + 1 < line.length() {
@@ -112,18 +116,6 @@ fn is_moonbit_leading_continuation_line(line : String) -> Bool {
     }
   }
   false
-}
-
-///|
-/// Whether a line contains nothing but whitespace (and an ignorable BOM).
-fn is_moonbit_blank_line(line : String) -> Bool {
-  for index in 0..<line.length() {
-    let code = line[index].to_int()
-    if code != ' ' && code != '\t' && code != 0xFEFF {
-      return false
-    }
-  }
-  true
 }
 
 ///|
@@ -190,7 +182,7 @@ fn moonbit_source_folds(snapshot : @model.TextSnapshot) -> MoonbitSourceFolds {
     // (`let header =`, a trailing `+`) stay with their construct: folding
     // them would nest a comment run inside another fold's span and break
     // the disjoint document-order invariant of the host-fold list.
-    if block_comment_depth == 0 &&
+    let joins_comment_run = block_comment_depth == 0 &&
       brace_depth == 0 &&
       expression_nesting_depth == 0 &&
       !pending_expression_continuation &&
@@ -200,54 +192,7 @@ fn moonbit_source_folds(snapshot : @model.TextSnapshot) -> MoonbitSourceFolds {
       pending_impl_start_line == 0 &&
       !pending_bodyless_declaration &&
       !pending_binding_declaration &&
-      is_moonbit_plain_comment_line(line) {
-      if deferred_run_start_line > 0 {
-        // A fresh comment line proves the deferred run below was not part
-        // of a continued construct.
-        comment_runs.push({
-          start_line_number: deferred_run_start_line,
-          end_line_number: deferred_run_end_line,
-        })
-        deferred_run_start_line = 0
-        deferred_run_end_line = 0
-      }
-      if comment_run_start_line == 0 {
-        comment_run_start_line = line_number
-      }
-    } else if is_moonbit_blank_line(line) {
-      // A blank line ends the run but defers the accept/discard decision to
-      // the next meaningful line, which may still continue the construct
-      // above the run (an `else` arm after a commented gap).
-      if comment_run_start_line > 0 && line_number - 1 > comment_run_start_line {
-        deferred_run_start_line = comment_run_start_line
-        deferred_run_end_line = line_number - 1
-      }
-      comment_run_start_line = 0
-    } else {
-      // A run terminated by a leading-operator line (`-> Int`, `.chain()`,
-      // `= 1`) sits inside that continued construct and is discarded — the
-      // previous line's tail cannot reveal this kind of split.
-      let continues_construct = is_moonbit_leading_continuation_line(line)
-      if deferred_run_start_line > 0 {
-        if !continues_construct {
-          comment_runs.push({
-            start_line_number: deferred_run_start_line,
-            end_line_number: deferred_run_end_line,
-          })
-        }
-        deferred_run_start_line = 0
-        deferred_run_end_line = 0
-      }
-      if comment_run_start_line > 0 &&
-        line_number - 1 > comment_run_start_line &&
-        !continues_construct {
-        comment_runs.push({
-          start_line_number: comment_run_start_line,
-          end_line_number: line_number - 1,
-        })
-      }
-      comment_run_start_line = 0
-    }
+      is_moonbit_plain_comment_line(line)
     let mut index = 0
     let mut quote = 0
     let mut escaped = false
@@ -561,6 +506,55 @@ fn moonbit_source_folds(snapshot : @model.TextSnapshot) -> MoonbitSourceFolds {
         index += 1
       }
     }
+    if joins_comment_run {
+      if deferred_run_start_line > 0 {
+        // A fresh comment line proves the deferred run below was not part
+        // of a continued construct.
+        comment_runs.push({
+          start_line_number: deferred_run_start_line,
+          end_line_number: deferred_run_end_line,
+        })
+        deferred_run_start_line = 0
+        deferred_run_end_line = 0
+      }
+      if comment_run_start_line == 0 {
+        comment_run_start_line = line_number
+      }
+    } else if line_last_code == 0 {
+      // A trivia line — blank, doc-comment-only, or block-comment-only —
+      // ends the run but defers the accept/discard decision to the next
+      // meaningful line, which may still continue the construct above the
+      // run (an `else` arm after a commented gap).
+      if comment_run_start_line > 0 && line_number - 1 > comment_run_start_line {
+        deferred_run_start_line = comment_run_start_line
+        deferred_run_end_line = line_number - 1
+      }
+      comment_run_start_line = 0
+    } else {
+      // A run terminated by a leading-operator line (`-> Int`, `.chain()`,
+      // `= 1`) sits inside that continued construct and is discarded — the
+      // previous line's tail cannot reveal this kind of split.
+      let continues_construct = is_moonbit_leading_continuation_line(line)
+      if deferred_run_start_line > 0 {
+        if !continues_construct {
+          comment_runs.push({
+            start_line_number: deferred_run_start_line,
+            end_line_number: deferred_run_end_line,
+          })
+        }
+        deferred_run_start_line = 0
+        deferred_run_end_line = 0
+      }
+      if comment_run_start_line > 0 &&
+        line_number - 1 > comment_run_start_line &&
+        !continues_construct {
+        comment_runs.push({
+          start_line_number: comment_run_start_line,
+          end_line_number: line_number - 1,
+        })
+      }
+      comment_run_start_line = 0
+    }
     // Only a line that ends at the top level updates the continuation
     // state; lines ending inside braces or brackets leave it untouched, and
     // blank or comment-only lines carry it forward. A line ending inside a
@@ -710,12 +704,13 @@ fn moonbit_outline_folding_regions(
         range.end_line_number <= outline_fold.fold_end_line_number {
         break
       }
+      // Containment requires a strictly earlier start: a provider range
+      // sharing the run's first line would pair two folds on one start
+      // line, and `sanitize_and_merge` matches prior state by start line.
       let contains_comment_run = outline_fold.range_type ==
         COMMENT_RUN_FOLDING_RANGE_TYPE &&
-        range.start_line_number <= outline_fold.protected_start_line_number &&
-        range.end_line_number >= outline_fold.fold_end_line_number &&
-        !(range.start_line_number == outline_fold.fold_start_line_number &&
-        range.end_line_number == outline_fold.fold_end_line_number)
+        range.start_line_number < outline_fold.protected_start_line_number &&
+        range.end_line_number >= outline_fold.fold_end_line_number
       if !contains_comment_run {
         retain = false
         break
