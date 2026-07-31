@@ -126,19 +126,15 @@ async fn read_native_directory(
   }
   let children : Array[@workspace.WorkspaceStat] = []
   for name in names {
-    let path = if relative == "" { name } else { relative + "/" + name }
-    if !skip_workspace_entry(path~, name~) {
-      let kind : @workspace.WorkspaceEntryKind? = match
-        (Some(@fs.kind(dir_path + "/" + name)) catch { _ => None }) {
-        Some(Directory) => Some(Directory)
-        Some(Regular) => Some(File)
-        _ => None
-      }
-      match (kind, @server.remote_document_uri(path)) {
-        (Some(kind), Some(uri)) =>
-          children.push({ uri, name, kind, children: None })
-        _ => ()
-      }
+    let path = if relative is "" { name } else { relative + "/" + name }
+    guard !skip_workspace_entry(path~, name~) else { continue }
+    let disk_kind = Some(@fs.kind(dir_path + "/" + name)) catch { _ => None }
+    match (disk_kind, @server.remote_document_uri(path)) {
+      (Some(Directory), Some(uri)) =>
+        children.push({ uri, name, kind: Directory, children: None })
+      (Some(Regular), Some(uri)) =>
+        children.push({ uri, name, kind: File, children: None })
+      _ => ()
     }
   }
   ServerHostResolveOk(children)
