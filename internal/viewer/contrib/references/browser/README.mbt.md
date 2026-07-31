@@ -30,6 +30,10 @@ visible rows. Arrow, Home, End, Left, and Right keys move or expand the tree;
 Enter confirms the current reference and Ctrl+Enter or Meta+Enter requests a
 side open. Escape and F4/Shift+F4 remain available from both the tree and a
 nested preview, while Enter inside the preview keeps its native editor meaning.
+The tree is the native content of the shared Viewer `ScrollableElementDom`, so
+Definition and References modes use the same overlay rails, thumb/track input,
+visibility lifecycle, and resize synchronization as other Viewer surfaces;
+the ARIA tree remains the focus and keyboard owner.
 
 The mode changes only labels and accessible messages: `Peek Definition` /
 `Definitions` or `Peek References` / `References`. Empty References results use

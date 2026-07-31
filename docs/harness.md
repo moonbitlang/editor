@@ -205,7 +205,8 @@ Markdown, and resolved target models plus opener/resolver handles. Real browser
 assertions cover the ARIA group/reference tree, lazy snippets and lease reuse,
 all-reference plus selected preview decorations, F4 focus preservation,
 Current/Side opening, exact-anchor toggle/replacement, accessible empty state,
-bounded Markdown overlay, and Definition's shared-shell regression.
+bounded Markdown overlay, native wheel and thumb-drag input through the shared
+custom result scrollbar, and Definition's shared-shell regression.
 
 Use the routine component gate for this fixture:
 

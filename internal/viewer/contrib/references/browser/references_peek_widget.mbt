@@ -27,6 +27,8 @@ pub struct ReferencesPeekWidget {
   priv title_meta : @rdom.Element
   priv preview_host : @rdom.Element
   priv status : @rdom.Element
+  priv results_scrollable : @scrollbar.ScrollableElementDom
+  priv results_scrollbar_input : @scrollbar.NativeScrollableElementInput
   priv tree : ReferenceResultsTree
   priv callbacks : ReferencesPeekWidgetCallbacks
   priv listeners : Array[@base_common.Disposable]
@@ -78,13 +80,25 @@ pub fn ReferencesPeekWidget::ReferencesPeekWidget(
   preview_host.set_attribute("class", "moonbit-viewer-references-peek-preview")
   preview_host.set_attribute("aria-label", references_peek_preview_label(mode))
   let tree_node = document.create_element("div")
-  let tree = ReferenceResultsTree(tree_node, callbacks)
+  let results_scrollable = @scrollbar.ScrollableElementDom(
+    "moonbit-viewer-reference-results-tree",
+    content=tree_node,
+  )
+  results_scrollable.set_wrapper_class(
+    "monaco-scrollable-element moonbit-viewer-reference-results-scrollable",
+  )
+  let results_scrollbar_input = @scrollbar.NativeScrollableElementInput(
+    results_scrollable,
+  )
+  let tree = ReferenceResultsTree(tree_node, callbacks, () => {
+    results_scrollbar_input.refresh()
+  })
   let status = document.create_element("div")
   status.set_attribute("class", "moonbit-viewer-references-peek-status")
   status.set_attribute("role", "status")
   status.set_attribute("aria-live", "polite")
   body.append_child(preview_host.as_node())
-  body.append_child(tree_node.as_node())
+  body.append_child(results_scrollable.wrapper().as_node())
   body.append_child(status.as_node())
   root.append_child(body.as_node())
 
@@ -94,6 +108,8 @@ pub fn ReferencesPeekWidget::ReferencesPeekWidget(
     title_meta,
     preview_host,
     status,
+    results_scrollable,
+    results_scrollbar_input,
     tree,
     callbacks,
     listeners: [],
@@ -139,7 +155,7 @@ fn ReferencesPeekWidget::show_loading(self : ReferencesPeekWidget) -> Unit {
     return
   }
   self.tree.clear()
-  self.tree.get_dom_node().set_attribute("hidden", "")
+  self.hide_results()
   self.show_status(
     "moonbit-viewer-references-peek-loading",
     references_peek_loading_message(self.mode),
@@ -155,7 +171,7 @@ pub fn ReferencesPeekWidget::show_empty(self : ReferencesPeekWidget) -> Unit {
     return
   }
   self.tree.clear()
-  self.tree.get_dom_node().set_attribute("hidden", "")
+  self.hide_results()
   self.show_status(
     "moonbit-viewer-references-peek-empty",
     references_peek_empty_message(self.mode),
@@ -180,7 +196,7 @@ pub fn ReferencesPeekWidget::set_results(
     return
   }
   self.tree.set_results(model, selected)
-  self.tree.get_dom_node().remove_attribute("hidden")
+  self.show_results()
   self.status.set_attribute("hidden", "")
   self.status.set_inner_html("")
   self.preview_host.remove_attribute("aria-busy")
@@ -203,6 +219,7 @@ pub fn ReferencesPeekWidget::set_group_previews(
 ) -> Unit {
   if !self.disposed {
     self.tree.set_group_previews(group_index, previews)
+    self.results_scrollbar_input.refresh()
   }
 }
 
@@ -215,6 +232,7 @@ pub fn ReferencesPeekWidget::set_selected(
 ) -> Unit {
   if !self.disposed {
     self.tree.set_selected(selected)
+    self.results_scrollbar_input.refresh()
   }
 }
 
@@ -267,9 +285,23 @@ pub fn ReferencesPeekWidget::dispose(self : ReferencesPeekWidget) -> Unit {
   }
   self.disposed = true
   self.tree.dispose()
+  self.results_scrollbar_input.dispose()
   while self.listeners.length() > 0 {
     self.listeners.remove(self.listeners.length() - 1).dispose()
   }
+}
+
+///|
+fn ReferencesPeekWidget::hide_results(self : ReferencesPeekWidget) -> Unit {
+  self.tree.get_dom_node().set_attribute("hidden", "")
+  self.results_scrollable.wrapper().set_attribute("hidden", "")
+}
+
+///|
+fn ReferencesPeekWidget::show_results(self : ReferencesPeekWidget) -> Unit {
+  self.tree.get_dom_node().remove_attribute("hidden")
+  self.results_scrollable.wrapper().remove_attribute("hidden")
+  self.results_scrollbar_input.refresh()
 }
 
 ///|

@@ -84,6 +84,12 @@ extern "js" fn install_references_peek_test_browser() -> ReferencesPeekBrowserTe
   #|       this.children = [];
   #|       this.attributes = new Map();
   #|       this.listeners = new Map();
+  #|       this.clientWidth = 0;
+  #|       this.clientHeight = 0;
+  #|       this.scrollWidth = 0;
+  #|       this.scrollHeight = 0;
+  #|       this.scrollLeft = 0;
+  #|       this.scrollTop = 0;
   #|       this.scrollIntoViewCount = 0;
   #|       this.lastScrollIntoView = null;
   #|     }
@@ -173,6 +179,18 @@ extern "js" fn install_references_peek_test_browser() -> ReferencesPeekBrowserTe
   #|       return !event.defaultPrevented;
   #|     }
   #|     focus(_options) { this.ownerDocument.activeElement = this; }
+  #|     getBoundingClientRect() {
+  #|       return {
+  #|         x: 0,
+  #|         y: 0,
+  #|         width: this.clientWidth,
+  #|         height: this.clientHeight,
+  #|         top: 0,
+  #|         right: this.clientWidth,
+  #|         bottom: this.clientHeight,
+  #|         left: 0,
+  #|       };
+  #|     }
   #|     scrollIntoView(options) {
   #|       this.scrollIntoViewCount += 1;
   #|       this.lastScrollIntoView = options ?? null;
@@ -511,6 +529,20 @@ test "mode-labelled shell exposes loading empty and stable hosts" {
     "Peek Definition",
   )
   assert_eq(
+    references_peek_test_class_count(
+      definition.get_dom_node(),
+      "moonbit-viewer-reference-results-scrollable",
+    ),
+    1,
+  )
+  assert_eq(
+    references_peek_test_class_count(
+      definition.get_dom_node(),
+      "monaco-scrollable-element",
+    ),
+    1,
+  )
+  assert_eq(
     references_peek_test_attribute(
       references_peek_test_class_descendant(
         definition.get_dom_node(),
@@ -547,6 +579,13 @@ test "mode-labelled shell exposes loading empty and stable hosts" {
   assert_eq(
     references_peek_test_attribute(references.get_dom_node(), "aria-label"),
     "Peek References",
+  )
+  assert_eq(
+    references_peek_test_class_count(
+      references.get_dom_node(),
+      "moonbit-viewer-reference-results-scrollable",
+    ),
+    1,
   )
   assert_true(
     references_peek_test_text_content(references.get_dom_node()).contains(

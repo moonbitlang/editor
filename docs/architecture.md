@@ -299,7 +299,9 @@ editor common/browser layers; editor common never depends on them.
 - `internal/viewer/contrib/references` owns the DOM-free grouped result,
   snippet, navigation, mode, phase, and exact source-session values shared by
   Definition and References Peek. Its browser sibling owns only the detached
-  mode-labelled shell and feature-local ARIA tree. Root `viewer` owns the one
+  mode-labelled shell and feature-local ARIA tree. The tree is native content
+  inside the shared `internal/viewer/ui/scrollbar` DOM/input lifetime, while
+  retaining tree focus and keyboard ownership. Root `viewer` owns the one
   shared per-Viewer controller, the Shift+F12/context-menu provider action,
   provider-query cancellation and freshness, `Viewer::show_references`,
   per-group lazy cancellation/reference slots, the selected nested

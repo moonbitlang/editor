@@ -14,6 +14,7 @@ priv enum ReferenceResultsTreeRow {
 priv struct ReferenceResultsTree {
   node : @rdom.Element
   callbacks : ReferencesPeekWidgetCallbacks
+  layout_changed : () -> Unit
   listeners : Array[@base_common.Disposable]
   mut model : @references.ReferencesModel?
   mut previews : Array[Array[@references.ReferenceRowPreview]]
@@ -31,6 +32,7 @@ priv struct ReferenceResultsTree {
 fn ReferenceResultsTree::ReferenceResultsTree(
   node : @rdom.Element,
   callbacks : ReferencesPeekWidgetCallbacks,
+  layout_changed : () -> Unit,
 ) -> ReferenceResultsTree {
   node.set_attribute("class", "moonbit-viewer-reference-results-tree")
   node.set_attribute("role", "tree")
@@ -39,6 +41,7 @@ fn ReferenceResultsTree::ReferenceResultsTree(
   let tree : ReferenceResultsTree = {
     node,
     callbacks,
+    layout_changed,
     listeners: [],
     model: None,
     previews: [],
@@ -258,6 +261,7 @@ fn ReferenceResultsTree::render(self : ReferenceResultsTree) -> Unit {
   }
   self.ensure_roving_visible()
   self.update_row_states()
+  (self.layout_changed)()
 }
 
 ///|
@@ -714,6 +718,7 @@ fn ReferenceResultsTree::set_group_expanded(
   }
   self.ensure_roving_visible()
   self.update_row_states()
+  (self.layout_changed)()
 }
 
 ///|

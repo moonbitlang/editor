@@ -11,6 +11,8 @@ const codePreview =
   `${codePeek} .moonbit-viewer-references-peek-preview > ` +
   '.monaco-editor.readonly-editor';
 const resultTree = '.moonbit-viewer-reference-results-tree';
+const resultsScrollable =
+  '.monaco-scrollable-element.moonbit-viewer-reference-results-scrollable';
 const groupRow = '[data-reference-row-kind="group"]';
 const referenceRow = '[data-reference-row-kind="reference"]';
 const markdownEditor =
@@ -265,6 +267,77 @@ test('F4 and Shift+F4 cycle across resources while preview focus stays inside Pe
   }
 });
 
+test('Peek References results reuse the shared custom scrollbar', async ({
+  page,
+}, testInfo) => {
+  const reporter = await mountPeekReferencesFixture(page, testInfo);
+  try {
+    await control(page, 'show_code_overflow');
+    await settle(page);
+
+    const dialog = page.locator(codePeek);
+    const scrollable = dialog.locator(resultsScrollable);
+    const tree = scrollable.locator(resultTree);
+    const verticalTrack = scrollable.locator(
+      ':scope > .scrollbar.vertical',
+    );
+    const verticalSlider = verticalTrack.locator(':scope > .slider');
+
+    await expect(scrollable).toHaveCount(1);
+    await expect(tree).toHaveAttribute('role', 'tree');
+    await expect(verticalTrack).toHaveClass(/\binvisible\b/);
+    const geometry = await tree.evaluate((node) => ({
+      clientHeight: node.clientHeight,
+      scrollHeight: node.scrollHeight,
+      nativeScrollbarWidth: node.offsetWidth - node.clientWidth,
+    }));
+    expect(geometry.scrollHeight).toBeGreaterThan(geometry.clientHeight);
+    expect(geometry.nativeScrollbarWidth).toBe(0);
+
+    await scrollable.hover();
+    await expect(verticalTrack).toHaveClass(/\bvisible\b/);
+    const sliderGeometry = await verticalSlider.evaluate((node) => {
+      const rect = node.getBoundingClientRect();
+      return { height: rect.height };
+    });
+    expect(sliderGeometry.height).toBeGreaterThan(0);
+    expect(sliderGeometry.height).toBeLessThan(geometry.clientHeight);
+
+    await tree.hover();
+    await page.mouse.wheel(0, 180);
+    await expect
+      .poll(() => tree.evaluate((node) => node.scrollTop))
+      .toBeGreaterThan(0);
+    const beforeDrag = await tree.evaluate((node) => node.scrollTop);
+
+    await scrollable.hover();
+    const sliderBox = await verticalSlider.boundingBox();
+    const scrollableBox = await scrollable.boundingBox();
+    expect(sliderBox).not.toBeNull();
+    expect(scrollableBox).not.toBeNull();
+    const startX = sliderBox.x + sliderBox.width / 2;
+    const startY = sliderBox.y + sliderBox.height / 2;
+    const endY = Math.min(
+      startY + 60,
+      scrollableBox.y + scrollableBox.height - 2,
+    );
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await expect(verticalSlider).toHaveClass(/\bactive\b/);
+    await page.mouse.move(startX, endY, { steps: 4 });
+    await page.mouse.up();
+    await expect
+      .poll(() => tree.evaluate((node) => node.scrollTop))
+      .toBeGreaterThan(beforeDrag);
+    await expect(verticalSlider).not.toHaveClass(/\bactive\b/);
+
+    await control(page, 'show_code_overflow');
+    await expect(dialog).toHaveCount(0);
+  } finally {
+    reporter.dispose();
+  }
+});
+
 test('Enter uses Current and Ctrl+Enter uses Side before closing Peek', async ({
   page,
 }, testInfo) => {
@@ -432,6 +505,10 @@ test('Definition still opens through the shared Peek dialog and result tree', as
     await page.keyboard.press('Alt+F12');
     const dialog = page.locator(definitionPeek);
     await expect(dialog).toHaveAttribute('aria-label', 'Peek Definition');
+    await expect(dialog.locator(resultsScrollable)).toHaveCount(1);
+    await expect(
+      dialog.locator(`${resultsScrollable} > .scrollbar.vertical`),
+    ).toHaveCount(1);
     await expect(dialog.locator(resultTree)).toHaveAttribute('role', 'tree');
     await expect(dialog.locator(referenceRow)).toHaveCount(1);
     await expect(

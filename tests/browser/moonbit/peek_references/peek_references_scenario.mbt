@@ -33,6 +33,25 @@ fn peek_references_code_source() -> String {
     #|target again
     #|anchor here
     #|tail
+    #|overflow target 06
+    #|overflow target 07
+    #|overflow target 08
+    #|overflow target 09
+    #|overflow target 10
+    #|overflow target 11
+    #|overflow target 12
+    #|overflow target 13
+    #|overflow target 14
+    #|overflow target 15
+    #|overflow target 16
+    #|overflow target 17
+    #|overflow target 18
+    #|overflow target 19
+    #|overflow target 20
+    #|overflow target 21
+    #|overflow target 22
+    #|overflow target 23
+    #|overflow target 24
   )
 }
 
@@ -255,6 +274,10 @@ fn run_peek_references_browser_test() -> Unit {
     peek_references_location(markdown_uri, 4, 5, 11),
     peek_references_location(markdown_uri, 5, 11, 17),
   ]
+  let overflow_locations : Array[@language.Location] = []
+  for line = 1; line <= 24; line = line + 1 {
+    overflow_locations.push(peek_references_location(source_uri, line, 1, 2))
+  }
   guard code_viewer.get_dom_node() is Some(code_root) else {
     ctx.fail("mounted Code Viewer did not expose its root")
     ctx.finish()
@@ -275,6 +298,7 @@ fn run_peek_references_browser_test() -> Unit {
     },
     () => code_viewer.show_references(Position(4, 2), code_locations),
     () => code_viewer.show_references(Position(4, 1), []),
+    () => code_viewer.show_references(Position(4, 1), overflow_locations),
     () => markdown_viewer.show_references(Position(5, 11), markdown_locations),
     () => code_viewer.focus(),
     () => markdown_viewer.focus(),
@@ -337,6 +361,7 @@ extern "js" fn install_peek_references_controls(
   show_code : () -> Unit,
   show_code_other_anchor : () -> Unit,
   show_code_empty : () -> Unit,
+  show_code_overflow : () -> Unit,
   show_markdown : () -> Unit,
   focus_code : () -> Unit,
   focus_markdown : () -> Unit,
@@ -349,6 +374,7 @@ extern "js" fn install_peek_references_controls(
   #|   showCode,
   #|   showCodeOtherAnchor,
   #|   showCodeEmpty,
+  #|   showCodeOverflow,
   #|   showMarkdown,
   #|   focusCode,
   #|   focusMarkdown,
@@ -361,6 +387,7 @@ extern "js" fn install_peek_references_controls(
   #|     show_code: showCode,
   #|     show_code_other_anchor: showCodeOtherAnchor,
   #|     show_code_empty: showCodeEmpty,
+  #|     show_code_overflow: showCodeOverflow,
   #|     show_markdown: showMarkdown,
   #|     focus_code: focusCode,
   #|     focus_markdown: focusMarkdown,

@@ -2,6 +2,7 @@ import {
   "moonbitlang/editor/base/browser" @base_browser,
   "moonbitlang/editor/base/common" @base_common,
   "moonbitlang/editor/internal/viewer/contrib/references",
+  "moonbitlang/editor/internal/viewer/ui/scrollbar",
   "moonbit-community/rabbita/dom" @rdom,
 }
 

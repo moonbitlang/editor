@@ -272,9 +272,10 @@ Intentional local differences and exclusions:
   previewed resource plus a distinct selected decoration, post-insertion
   anchor-to-next-line reveal, request generation/cancellation, stale-reference
   release, preview replacement, child/group teardown, close/focus ordering,
-  and recursive Peek suppression. Upstream unavailable preview uses a fallback
-  text model, while the local shell removes its child/reference and shows an
-  unavailable state.
+  recursive Peek suppression, and the shared Viewer custom scrollbar around
+  the result tree's native scrolling content. Upstream unavailable preview
+  uses a fallback text model, while the local shell removes its child/reference
+  and shows an unavailable state.
   Upstream same-Peek toggle accepts a range containing the widget position; the
   local readonly anchor is exact model/generation/version/position. Empty
   precomputed or provider-backed References locations retain an accessible
