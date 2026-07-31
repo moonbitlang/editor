@@ -1,6 +1,6 @@
 # Peek References UI
 
-Status: proposed
+Status: active
 Date: 2026-07-31
 Oracle: VS Code gitlink `b18492a288de038fbc7643aae6de8247029d11bd`
 
@@ -32,20 +32,27 @@ CodeLens work without changing the Peek UI contract.
 
 The pinned behavioral source is:
 
-- `vscode/src/vs/editor/contrib/gotoSymbol/browser/goToCommands.ts:784-859`
-  for the precomputed-locations `peekLocations` / `showReferences` entry;
-- `vscode/src/vs/editor/contrib/gotoSymbol/browser/referencesModel.ts:147-297`
-  for grouping, sorting, exact deduplication, nearest selection, and circular
-  next/previous navigation;
+- `vscode/src/vs/editor/contrib/gotoSymbol/browser/goToCommands.ts:105-199,
+  241-256,343-374,735-825,858-859` for shared result handling, Definition's
+  reuse of the References controller, and the precomputed-locations
+  `peekLocations` / `showReferences` entry;
+- `vscode/src/vs/editor/contrib/gotoSymbol/browser/referencesModel.ts:22-297`
+  for grouping, sorting, exact deduplication, source previews, nearest
+  selection, and circular next/previous navigation;
 - `vscode/src/vs/editor/contrib/gotoSymbol/browser/peek/referencesController.ts:
-  77-304,318-420` for one controller per outer editor, replacement, focus,
+  36-304,318-420` for one controller per outer editor, replacement, focus,
   selection, close, and navigation behavior;
 - `vscode/src/vs/editor/contrib/gotoSymbol/browser/peek/referencesWidget.ts:
-  243-608` for the 18-line Peek shell, preview, result pane, title, model
-  replacement, and unavailable-preview behavior;
+  42-183,243-608` for reference decorations, the 18-line Peek shell, preview,
+  result pane, title, model replacement, and unavailable-preview behavior;
 - `vscode/src/vs/editor/contrib/gotoSymbol/browser/peek/referencesTree.ts:
-  107-223` for file groups, count badges, source snippets, match highlighting,
-  keyboard labels, and accessible descriptions;
+  29-61,65-103,107-223` for lazy model resolution, file groups, count badges,
+  source snippets, match highlighting, keyboard labels, and accessible
+  descriptions;
+- `vscode/src/vs/base/browser/ui/tree/abstractTree.ts:182-210,481-489` and
+  `vscode/src/vs/base/browser/ui/list/listWidget.ts:203-219,1303-1335,
+  1502-1575,2052-2071` for the generic upstream tree/list ARIA and focus
+  mechanics that `referencesTree.ts` consumes;
 - `vscode/src/vs/editor/contrib/gotoSymbol/browser/peek/referencesWidget.css:
   7-85` for the selected presentation roles and theme tokens.
 
@@ -366,6 +373,45 @@ every changed `pkg.generated.mbti` only with `moon info`.
 Exit: scope, port mode, package ownership, public API, and evidence denominator
 are current and recorded in this plan.
 
+#### Gate A record (2026-07-31)
+
+- The worktree was clean at plan commit `79f990e` before implementation and
+  moved to `codex/peek-references-ui`; the pre-existing commit remains
+  untouched.
+- The `vscode` gitlink is exactly
+  `b18492a288de038fbc7643aae6de8247029d11bd` and its worktree is clean and
+  detached at that revision.
+- The live toolchain is Moon `0.1.20260730 (7611a39)`, moonc
+  `v0.10.5+8d79ef683-nightly`, and moonrun `0.1.20260730 (7611a39)`.
+- The affected existing dependency manifests and generated interfaces are
+  `viewer/{moon.pkg,pkg.generated.mbti}`,
+  `internal/viewer/contrib/definition/{moon.pkg,pkg.generated.mbti}`, and
+  `internal/viewer/contrib/definition/browser/{moon.pkg,pkg.generated.mbti}`.
+  The implementation adds owner-adjacent `references` and
+  `references/browser` manifests and interfaces; only root `viewer` imports
+  both, while `references/browser` imports the DOM-free `references` package.
+  No new edge points into `internal/shell/**`.
+- The public signature remains D1 exactly. `Position` and `Location` already
+  live in lower foundation packages, so the new method does not expose an
+  internal contribution type.
+- The current Definition state has one embedded `DefinitionPeekState`; its
+  provider/link/message behavior is separable from the generic shell,
+  preview, mount, and lease fields. The central closed contribution registry
+  can own the extracted state without a cycle. D1-D8 are therefore
+  implementable without changing scope or the public API.
+- The corrected upstream denominator is the expanded source list above.
+  Review also established the local deviations recorded below: exact-anchor
+  toggle, copied input, `References` naming, selection-only F4 behavior,
+  roving-row accessibility, stronger stale-result/teardown ordering, a
+  distinct selected decoration, and non-incremented 1-based fallback
+  coordinates.
+- Baseline focused suites were green on their supported targets: Definition
+  core JS and native (2 tests each) and Definition browser JS (5 tests).
+  With this Moon version, `moon test <js+native-package> --target all`
+  incorrectly requests unsupported Wasm and exits before running tests.
+  Milestone package gates therefore run explicit JS and native invocations;
+  repository-wide `moon check --target all` remains unchanged.
+
 ### 1. DOM-free result model and shared-controller extraction
 
 - Add the references core package and focused reference tests for normalization,
@@ -514,6 +560,34 @@ Commit the validation/history milestone.
 
 ## Behavioral Deviations and Deferrals
 
+- The aliased upstream `editor.action.showReferences` constructs a model titled
+  `Locations`; the provider-backed action uses `References`. The local public
+  entry deliberately uses the product-facing `References` title.
+- Upstream toggles when its existing widget range contains the new position
+  and sorts the caller-provided array in place. The local entry uses the
+  exact model/generation/version/anchor identity and copies caller input.
+- Upstream groups resources by URI while ignoring fragments but deduplicates
+  with the full URI. The local DOM-free model deliberately uses one canonical
+  full URI string for sorting, grouping, and exact identity.
+- Upstream F4 selects a result and immediately performs its Peek-mode goto,
+  moving and re-anchoring the outer editor. The local F4/Shift+F4 contract
+  changes only tree selection and the nested preview because the host-neutral
+  opener does not expose same-Viewer model transfer.
+- Upstream's generic tree focuses one container with active-descendant state,
+  and the Peek shell does not expose the local mode-labelled dialog role. The
+  feature-local tree intentionally uses roving row `tabindex` plus explicit
+  dialog/tree/treeitem ARIA.
+- Local request identities, stale checks, atomic owner-slot detachment, and
+  child-before-lease teardown are stronger than the pinned implementation,
+  whose selected-preview and lazy-group completions do not carry the complete
+  local freshness denominator.
+- Upstream gives every active-resource reference the same decoration. The
+  local preview adds a distinct selected-reference decoration so selection
+  remains perceivable within the all-reference set.
+- The upstream fallback renderer adds one to already 1-based line/column
+  values while its accessible message does not. The local
+  `filename:line:column` fallback consistently preserves the repository's
+  1-based `Range` coordinates.
 - The local fixed 72%/28% split and viewport-capped 18-line height remain;
   draggable/persisted SplitView and Sash behavior is
   `DEFERRED (no reusable Viewer primitive and not required by this UI slice)`.
