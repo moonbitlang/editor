@@ -36,8 +36,9 @@ fn Viewer::folding_controller(
 /// `editor.foldLevel1` action, so the region containing the current selection
 /// is folded as well. MoonBit function bodies use their opening-brace line as
 /// the folded header, keeping every source-formatted signature line and the
-/// delimiter visible. The call does nothing when folding is disabled or no
-/// folding model is attached.
+/// delimiter visible. Top-level runs of plain `//` comment lines — typically
+/// copyright headers — collapse to their first line. The call does nothing
+/// when folding is disabled or no folding model is attached.
 pub fn Viewer::fold_top_level(self : Viewer) -> Unit {
   guard self.is_code_presentation() else { return }
   guard self.get_options().folding else { return }
@@ -160,7 +161,7 @@ fn Viewer::trigger_folding_model_changed(self : Viewer) -> Unit {
   let provider_ranges = provider.compute()
   let folding_ranges = if folding_model.text_model().get_language_id() ==
     "moonbit" &&
-    has_outline_body_folding_ranges(folding_model.regions()) {
+    has_moonbit_outline_folding_ranges(folding_model.regions()) {
     moonbit_outline_folding_regions(
       folding_model.text_model().snapshot,
       provider_ranges,

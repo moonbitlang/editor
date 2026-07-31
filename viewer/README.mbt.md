@@ -484,8 +484,11 @@ ellipsis. The fold is therefore anchored on the final signature line, an
 intentional interaction trade-off that avoids partial-line projection and its
 cursor/wrapping coordinate machinery. `declare` and `=`-backed bodyless
 functions are ignored, and comments and strings do not participate in brace
-matching. Other languages and MoonBit declaration kinds retain ordinary
-level-one folding.
+matching. Top-level runs of two or more plain `//` comment lines — typically
+the copyright/file header — fold from their first line and keep the ordinary
+collapsed ellipsis; doc comments (`///`, including `///|`) never join a run.
+Other languages and MoonBit declaration kinds retain ordinary level-one
+folding.
 
 Each hover request
 captures the physical `TextModel`, its internal content version, a

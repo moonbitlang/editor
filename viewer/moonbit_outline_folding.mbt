@@ -9,6 +9,30 @@ priv struct MoonbitFunctionBodyFold {
 }
 
 ///|
+/// A run of two or more consecutive top-level plain `//` comment lines —
+/// typically a copyright or file-header block. The first line stays visible
+/// when the run is collapsed; the fold hides the continuation lines.
+priv struct MoonbitCommentRunFold {
+  start_line_number : Int
+  end_line_number : Int
+}
+
+///|
+/// The lexical scan's combined result over one snapshot: brace-bodied
+/// top-level function bodies and top-level plain-comment runs, each array in
+/// document order and every construct mutually disjoint.
+priv struct MoonbitSourceFolds {
+  function_bodies : Array[MoonbitFunctionBodyFold]
+  comment_runs : Array[MoonbitCommentRunFold]
+}
+
+///|
+/// Marks a host-computed fold over a run of plain `//` comment lines. Unlike
+/// `OUTLINE_BODY_FOLDING_RANGE_TYPE`, a collapsed comment run keeps the
+/// ordinary trailing ellipsis after its first line.
+const COMMENT_RUN_FOLDING_RANGE_TYPE : String = "editor.commentRun"
+
+///|
 fn is_moonbit_outline_identifier_start(code : Int) -> Bool {
   (code >= 'a' && code <= 'z') ||
   (code >= 'A' && code <= 'Z') ||
@@ -22,15 +46,36 @@ fn is_moonbit_outline_identifier_continue(code : Int) -> Bool {
 }
 
 ///|
-/// Finds brace-bodied top-level MoonBit functions without treating braces in
-/// comments, strings, interpolations, or raw lines as source delimiters. The
-/// scan is intentionally declaration-specific: `declare` and `=`-backed
-/// functions have no MoonBit body, while qualified methods and formatted
-/// `impl ... with fn ...` declarations are included.
-fn moonbit_function_body_folds(
-  snapshot : @model.TextSnapshot,
-) -> Array[MoonbitFunctionBodyFold] {
+/// Whether a line's first token is a plain `//` line comment. Doc comments
+/// (`///`, including the `///|` block delimiter) document the adjacent
+/// declaration and never join a comment run.
+fn is_moonbit_plain_comment_line(line : String) -> Bool {
+  for index in 0..<line.length() {
+    let code = line[index].to_int()
+    if code == ' ' || code == '\t' {
+      continue
+    }
+    return code == '/' &&
+      index + 1 < line.length() &&
+      line[index + 1].to_int() == '/' &&
+      !(index + 2 < line.length() && line[index + 2].to_int() == '/')
+  }
+  false
+}
+
+///|
+/// Finds brace-bodied top-level MoonBit functions and top-level plain-comment
+/// runs without treating braces in comments, strings, interpolations, or raw
+/// lines as source delimiters. The function scan is intentionally
+/// declaration-specific: `declare` and `=`-backed functions have no MoonBit
+/// body, while qualified methods and formatted `impl ... with fn ...`
+/// declarations are included. Comment runs require the line-start lexical
+/// state to be top level, so lines inside block comments or brace-delimited
+/// constructs never join a run.
+fn moonbit_source_folds(snapshot : @model.TextSnapshot) -> MoonbitSourceFolds {
   let folds : Array[MoonbitFunctionBodyFold] = []
+  let comment_runs : Array[MoonbitCommentRunFold] = []
+  let mut comment_run_start_line = 0
   let mut block_comment_depth = 0
   let mut brace_depth = 0
   let mut function_keyword_line = 0
@@ -46,6 +91,21 @@ fn moonbit_function_body_folds(
   let mut bracket_depth = 0
   for line_number in 1..<=snapshot.line_count() {
     let line = snapshot.get_line_content(line_number)
+    if block_comment_depth == 0 &&
+      brace_depth == 0 &&
+      is_moonbit_plain_comment_line(line) {
+      if comment_run_start_line == 0 {
+        comment_run_start_line = line_number
+      }
+    } else {
+      if comment_run_start_line > 0 && line_number - 1 > comment_run_start_line {
+        comment_runs.push({
+          start_line_number: comment_run_start_line,
+          end_line_number: line_number - 1,
+        })
+      }
+      comment_run_start_line = 0
+    }
     let mut index = 0
     let mut quote = 0
     let mut escaped = false
@@ -311,16 +371,29 @@ fn moonbit_function_body_folds(
       }
     }
   }
-  folds
+  if comment_run_start_line > 0 &&
+    snapshot.line_count() > comment_run_start_line {
+    comment_runs.push({
+      start_line_number: comment_run_start_line,
+      end_line_number: snapshot.line_count(),
+    })
+  }
+  { function_bodies: folds, comment_runs }
 }
 
 ///|
-fn has_outline_body_folding_ranges(
+/// Whether the regions already carry host-computed MoonBit outline folds —
+/// function bodies or comment runs — meaning the outline transform has been
+/// applied to this generation of ranges.
+fn has_moonbit_outline_folding_ranges(
   regions : @folding_browser.FoldingRegions,
 ) -> Bool {
   for index in 0..<regions.length() {
-    if regions.get_type(index) ==
-      Some(@folding_browser.OUTLINE_BODY_FOLDING_RANGE_TYPE) {
+    if regions.get_type(index) is Some(range_type) &&
+      (
+        range_type == @folding_browser.OUTLINE_BODY_FOLDING_RANGE_TYPE ||
+        range_type == COMMENT_RUN_FOLDING_RANGE_TYPE
+      ) {
       return true
     }
   }
@@ -328,16 +401,77 @@ fn has_outline_body_folding_ranges(
 }
 
 ///|
-/// Replaces provider folds that would hide a function header with one fold
-/// beginning on the opening-brace line. Ordinary ranges outside each function
-/// and nested ranges strictly inside its body retain their current state.
+/// One host-computed outline fold in document order. Function bodies protect
+/// their declaration lines and fold from the opening-brace line; comment runs
+/// protect only their own span and fold from their first line.
+priv struct MoonbitOutlineFold {
+  /// First line of the protected construct. Provider ranges reaching into
+  /// `protected_start_line_number..=fold_end_line_number` are replaced by the
+  /// host fold unless they sit strictly inside the folded span.
+  protected_start_line_number : Int
+  fold_start_line_number : Int
+  fold_end_line_number : Int
+  range_type : String
+}
+
+///|
+fn MoonbitCommentRunFold::to_outline_fold(
+  self : MoonbitCommentRunFold,
+) -> MoonbitOutlineFold {
+  {
+    protected_start_line_number: self.start_line_number,
+    fold_start_line_number: self.start_line_number,
+    fold_end_line_number: self.end_line_number,
+    range_type: COMMENT_RUN_FOLDING_RANGE_TYPE,
+  }
+}
+
+///|
+/// Merges the two document-ordered, mutually disjoint scan results into one
+/// document-ordered host-fold list.
+fn moonbit_outline_folds(
+  source_folds : MoonbitSourceFolds,
+) -> Array[MoonbitOutlineFold] {
+  let outline_folds : Array[MoonbitOutlineFold] = []
+  let mut comment_index = 0
+  for body_fold in source_folds.function_bodies {
+    while comment_index < source_folds.comment_runs.length() &&
+          source_folds.comment_runs[comment_index].start_line_number <
+          body_fold.declaration_start_line_number {
+      outline_folds.push(
+        source_folds.comment_runs[comment_index].to_outline_fold(),
+      )
+      comment_index += 1
+    }
+    outline_folds.push({
+      protected_start_line_number: body_fold.declaration_start_line_number,
+      fold_start_line_number: body_fold.body_start_line_number,
+      fold_end_line_number: body_fold.body_end_line_number,
+      range_type: @folding_browser.OUTLINE_BODY_FOLDING_RANGE_TYPE,
+    })
+  }
+  while comment_index < source_folds.comment_runs.length() {
+    outline_folds.push(
+      source_folds.comment_runs[comment_index].to_outline_fold(),
+    )
+    comment_index += 1
+  }
+  outline_folds
+}
+
+///|
+/// Replaces provider folds that would hide a function header or split a
+/// plain-comment run with host folds: bodies fold from the opening-brace
+/// line, comment runs from their first comment line. Ordinary ranges outside
+/// each construct and nested ranges strictly inside a folded span retain
+/// their current state.
 fn moonbit_outline_folding_regions(
   snapshot : @model.TextSnapshot,
   regions : @folding_browser.FoldingRegions,
   limit : Int,
 ) -> @folding_browser.FoldingRegions {
-  let body_folds = moonbit_function_body_folds(snapshot)
-  if body_folds.length() == 0 || has_outline_body_folding_ranges(regions) {
+  let outline_folds = moonbit_outline_folds(moonbit_source_folds(snapshot))
+  if outline_folds.length() == 0 || has_moonbit_outline_folding_ranges(regions) {
     return regions
   }
   let capped_limit = limit.max(0).min(@folding_browser.MAX_FOLDING_REGIONS)
@@ -345,30 +479,31 @@ fn moonbit_outline_folding_regions(
     return regions
   }
   let retained_ranges : Array[@folding_browser.FoldRange] = []
-  let mut body_index = 0
+  let mut outline_index = 0
   for index in 0..<regions.length() {
     let range = regions.to_fold_range(index)
-    while body_index < body_folds.length() &&
-          body_folds[body_index].body_end_line_number < range.start_line_number {
-      body_index += 1
+    while outline_index < outline_folds.length() &&
+          outline_folds[outline_index].fold_end_line_number <
+          range.start_line_number {
+      outline_index += 1
     }
-    if body_index == body_folds.length() ||
+    if outline_index == outline_folds.length() ||
       range.end_line_number <
-      body_folds[body_index].declaration_start_line_number {
+      outline_folds[outline_index].protected_start_line_number {
       retained_ranges.push(range)
     } else {
-      let body_fold = body_folds[body_index]
-      if range.start_line_number > body_fold.body_start_line_number &&
-        range.end_line_number <= body_fold.body_end_line_number {
+      let outline_fold = outline_folds[outline_index]
+      if range.start_line_number > outline_fold.fold_start_line_number &&
+        range.end_line_number <= outline_fold.fold_end_line_number {
         retained_ranges.push(range)
       }
     }
   }
 
-  let foldable_body_folds : Array[MoonbitFunctionBodyFold] = []
-  for body_fold in body_folds {
-    if body_fold.body_end_line_number > body_fold.body_start_line_number {
-      foldable_body_folds.push(body_fold)
+  let foldable_outline_folds : Array[MoonbitOutlineFold] = []
+  for outline_fold in outline_folds {
+    if outline_fold.fold_end_line_number > outline_fold.fold_start_line_number {
+      foldable_outline_folds.push(outline_fold)
     }
   }
   // Both inputs are already in document order. Merge them directly and stop
@@ -378,35 +513,35 @@ fn moonbit_outline_folding_regions(
   // contributes no zero-height replacement range here.
   let ranges : Array[@folding_browser.FoldRange] = []
   let mut retained_index = 0
-  body_index = 0
+  outline_index = 0
   while ranges.length() < capped_limit &&
         (
           retained_index < retained_ranges.length() ||
-          body_index < foldable_body_folds.length()
+          outline_index < foldable_outline_folds.length()
         ) {
-    let take_body = if body_index == foldable_body_folds.length() {
+    let take_outline = if outline_index == foldable_outline_folds.length() {
       false
     } else if retained_index == retained_ranges.length() {
       true
     } else {
-      let body_fold = foldable_body_folds[body_index]
+      let outline_fold = foldable_outline_folds[outline_index]
       let retained = retained_ranges[retained_index]
-      body_fold.body_start_line_number < retained.start_line_number ||
+      outline_fold.fold_start_line_number < retained.start_line_number ||
       (
-        body_fold.body_start_line_number == retained.start_line_number &&
-        body_fold.body_end_line_number >= retained.end_line_number
+        outline_fold.fold_start_line_number == retained.start_line_number &&
+        outline_fold.fold_end_line_number >= retained.end_line_number
       )
     }
-    if take_body {
-      let body_fold = foldable_body_folds[body_index]
+    if take_outline {
+      let outline_fold = foldable_outline_folds[outline_index]
       ranges.push(
         FoldRange(
-          body_fold.body_start_line_number,
-          body_fold.body_end_line_number,
-          type_=@folding_browser.OUTLINE_BODY_FOLDING_RANGE_TYPE,
+          outline_fold.fold_start_line_number,
+          outline_fold.fold_end_line_number,
+          type_=outline_fold.range_type,
         ),
       )
-      body_index += 1
+      outline_index += 1
     } else {
       ranges.push(retained_ranges[retained_index])
       retained_index += 1

@@ -132,11 +132,121 @@ test "folding: MoonBit outline scan ignores bodyless functions and literal brace
     #|  block
     #|}
   let model = test_model(text, language_id="moonbit")
-  let folds = moonbit_function_body_folds(model.snapshot)
+  let source_folds = moonbit_source_folds(model.snapshot)
+  let folds = source_folds.function_bodies
   assert_eq(folds.length(), 1)
   assert_eq(folds[0].declaration_start_line_number, 7)
   assert_eq(folds[0].body_start_line_number, 7)
   assert_eq(folds[0].body_end_line_number, 15)
+  assert_eq(source_folds.comment_runs.length(), 0)
+}
+
+///|
+test "folding: MoonBit comment-run scan finds only top-level plain runs" {
+  let text =
+    #|// header a
+    #|// header b
+    #|///|
+    #|/// doc line one
+    #|/// doc line two
+    #|fn f() -> Int {
+    #|  // inner a
+    #|  // inner b
+    #|  1
+    #|}
+    #|/* block
+    #|// inside block comment
+    #|// inside block comment
+    #|*/
+    #|// solo
+    #|
+    #|// tail a
+    #|// tail b
+  let model = test_model(text, language_id="moonbit")
+  let runs = moonbit_source_folds(model.snapshot).comment_runs
+  assert_eq(runs.length(), 2)
+  assert_eq(runs[0].start_line_number, 1)
+  assert_eq(runs[0].end_line_number, 2)
+  assert_eq(runs[1].start_line_number, 17)
+  assert_eq(runs[1].end_line_number, 18)
+}
+
+///|
+test "folding: MoonBit outline collapses a copyright header to its first line" {
+  let text =
+    #|// Copyright 2026 Example Authors.
+    #|// Licensed under Apache-2.0.
+    #|// See LICENSE for details.
+    #|
+    #|fn f() -> Int {
+    #|  1
+    #|}
+  let viewer = Viewer::Viewer()
+  viewer.set_model(Some(test_model(text, language_id="moonbit")))
+  viewer.fold_top_level()
+  let view_model = viewer.test_view_model()
+  assert_eq(view_model.line_count(), 3)
+  assert_eq(
+    view_model.lines().get_view_line_content(1),
+    "// Copyright 2026 Example Authors.",
+  )
+  assert_eq(view_model.lines().get_view_line_content(2), "")
+  assert_eq(view_model.lines().get_view_line_content(3), "fn f() -> Int {")
+  guard viewer.folding_controller() is Some(controller) else {
+    fail("expected a folding controller")
+  }
+  guard controller.folding_model is Some(folding_model) else {
+    fail("expected an attached folding model")
+  }
+  let regions = folding_model.regions()
+  assert_eq(regions.length(), 2)
+  assert_eq(regions.get_start_line_number(0), 1)
+  assert_eq(regions.get_end_line_number(0), 3)
+  assert_eq(regions.get_type(0), Some(COMMENT_RUN_FOLDING_RANGE_TYPE))
+  assert_true(regions.is_collapsed(0))
+  // Unlike outline bodies, the collapsed comment run keeps the ordinary
+  // trailing ellipsis after its visible first line.
+  let mut saw_comment_header = false
+  for decoration in folding_model.text_model().get_all_decorations() {
+    if decoration.range.start_line_number == 1 &&
+      decoration.options.first_line_decoration_class_name
+      is Some("codicon codicon-folding-collapsed") {
+      saw_comment_header = true
+      assert_true(
+        decoration.options.after_content_class_name is Some("inline-folded"),
+      )
+    }
+  }
+  assert_true(saw_comment_header)
+  viewer.dispose()
+}
+
+///|
+test "folding: comment-only MoonBit file folds and survives option updates" {
+  let viewer = Viewer::Viewer()
+  viewer.set_model(Some(test_model("// a\n// b\n// c", language_id="moonbit")))
+  viewer.fold_top_level()
+  assert_eq(viewer.test_view_model().line_count(), 1)
+  // Reapplying the policy is a no-op...
+  viewer.fold_top_level()
+  assert_eq(viewer.test_view_model().line_count(), 1)
+  // ...and provider recomputation (an option change) retains the host fold
+  // even though the file contributes no outline function bodies.
+  viewer.update_options(ViewerOptions(show_folding_controls=Never))
+  guard viewer.folding_controller() is Some(controller) else {
+    fail("expected a folding controller")
+  }
+  guard controller.folding_model is Some(folding_model) else {
+    fail("expected an attached folding model")
+  }
+  let regions = folding_model.regions()
+  assert_eq(regions.length(), 1)
+  assert_eq(regions.get_start_line_number(0), 1)
+  assert_eq(regions.get_end_line_number(0), 3)
+  assert_eq(regions.get_type(0), Some(COMMENT_RUN_FOLDING_RANGE_TYPE))
+  assert_true(regions.is_collapsed(0))
+  assert_eq(viewer.test_view_model().line_count(), 1)
+  viewer.dispose()
 }
 
 ///|
