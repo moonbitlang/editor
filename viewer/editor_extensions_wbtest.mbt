@@ -74,7 +74,6 @@ test "duplicate contribution ids are first-wins before later side effects" {
     contributions: [],
     commands: Map([]),
     keybindings: [],
-    submenus: [],
   }
   registry.register_editor_contribution(
     "test.duplicate",
@@ -626,7 +625,7 @@ test "cursor navigation registers exactly 16 primary rules after contributions" 
 }
 
 ///|
-test "definition context menu resolves live top-level and Peek submenu actions" {
+test "definition context menu resolves both definition actions at the top level" {
   install_mounted_test_browser()
   defer restore_mounted_test_browser()
   let services = definition_navigation_services([])
@@ -654,17 +653,13 @@ test "definition context menu resolves live top-level and Peek submenu actions" 
     go_to_keybinding,
     definition_menu_keybinding_label(alt=false, ctrl_cmd=false),
   )
-  guard entries[1] is ContextMenuSubmenu(label="Peek", entries=peek_entries) else {
-    fail("expected a nonempty Peek submenu")
-  }
-  assert_eq(peek_entries.length(), 1)
-  guard peek_entries[0]
+  guard entries[1]
     is ContextMenuAction(
       id=peek_definition_id,
       label="Peek Definition",
       keybinding_label=Some(peek_keybinding)
     ) else {
-    fail("expected Peek Definition in the Peek submenu")
+    fail("expected Peek Definition as the second context-menu action")
   }
   assert_eq(peek_definition_id, "editor.action.peekDefinition")
   assert_eq(
@@ -674,7 +669,7 @@ test "definition context menu resolves live top-level and Peek submenu actions" 
 }
 
 ///|
-test "definition context menu suppresses unavailable actions and empty submenus" {
+test "definition context menu suppresses unavailable actions" {
   let services = definition_navigation_services([])
   defer services.dispose()
   let viewer = Viewer::Viewer(services~)
@@ -686,7 +681,7 @@ test "definition context menu suppresses unavailable actions and empty submenus"
   viewer.set_model(Some(model))
 
   // A provider makes Go to Definition available, but a headless Viewer cannot
-  // own Peek UI, so the now-empty Peek submenu is omitted.
+  // own Peek UI, so only the available top-level action remains.
   let headless_entries = editor_registry().resolve_editor_menu(
     viewer,
     EditorContext,
@@ -711,20 +706,12 @@ test "definition context menu suppresses unavailable actions and empty submenus"
 }
 
 ///|
-test "menu resolution orders groups and inserts separators only between nonempty groups" {
+test "menu resolution orders groups and inserts separators only between visible groups" {
   let registry : EditorContributionRegistry = {
     contributions: [],
     commands: Map([]),
     keybindings: [],
-    submenus: [],
   }
-  registry.register_editor_submenu(
-    EditorContextPeek,
-    "Empty",
-    EditorContext,
-    "02_navigation",
-    1.0,
-  )
   registry.register_editor_command(
     "test.second",
     _viewer => true,
@@ -751,7 +738,7 @@ test "menu resolution orders groups and inserts separators only between nonempty
     _viewer => (),
     [],
     title="Hidden",
-    menu_placements=[{ menu_id: EditorContextPeek, group: "peek", order: 1.0 }],
+    menu_placements=[{ menu_id: EditorContext, group: "00_hidden", order: 1.0 }],
   )
   let viewer = Viewer::Viewer()
   defer viewer.dispose()
@@ -815,7 +802,12 @@ test "semantic Markdown uses the shared menu and ordinary command dispatcher" {
     )
     is Some(_),
   )
-  assert_true(menu_root.query_selector("[aria-haspopup=\"menu\"]") is Some(_))
+  assert_true(
+    menu_root.query_selector(
+      "[data-context-menu-command=\"editor.action.peekDefinition\"]",
+    )
+    is Some(_),
+  )
 
   assert_false(
     widget.show(
@@ -832,7 +824,6 @@ test "semantic Markdown uses the shared menu and ordinary command dispatcher" {
     contributions: [],
     commands: Map([]),
     keybindings: [],
-    submenus: [],
   }
   markdown_registry.register_editor_command(
     "test.markdown-command",

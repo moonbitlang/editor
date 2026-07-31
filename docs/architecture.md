@@ -338,8 +338,8 @@ while unrelated ViewZones and the margin container retain their hidden default.
 Removal restores the caller node's original `aria-hidden` presence and value.
 
 The root editor registry has two distinct ownership layers. Its process-wide
-contribution-description table contains constructors only; the adjacent command
-and keybinding tables plus closed menu/submenu descriptions likewise contain no
+contribution-description table contains constructors only; the adjacent
+command, keybinding, and closed menu-placement tables likewise contain no
 per-Viewer state.
 `Viewer.contributions` is an `EditorContributions` owner whose `instances` map
 is the sole lookup table for that Viewer's eight concrete contribution entries;

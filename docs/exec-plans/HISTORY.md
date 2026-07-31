@@ -73,6 +73,11 @@ warnings remain unchanged. Milestones were `f3c9876` (plan), `6e6bc15`
 
 Former artifact: `html-context-menu-behavior-port.md`.
 
+On 2026-07-31, a follow-up product simplification flattened
+`Peek Definition` beside `Go to Definition` in the root menu. The reusable
+browser shell retains its optional one-level submenu support, while the closed
+definition command registry now needs only root-menu placements.
+
 ### Definition navigation parity remediation
 
 Definition navigation now uses the `vscode` gitlink at

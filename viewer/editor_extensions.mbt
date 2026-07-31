@@ -335,11 +335,9 @@ fn EditorContributionDescription::EditorContributionDescription(
 }
 
 ///|
-/// The two closed menu ids used by the selected editor-context behavior port.
-/// They correspond to `MenuId.EditorContext` and `MenuId.EditorContextPeek`.
+/// The closed editor-context menu id supported by the command registry.
 priv enum EditorMenuId {
   EditorContext
-  EditorContextPeek
 } derive(Eq)
 
 ///|
@@ -349,16 +347,6 @@ priv struct EditorMenuPlacement {
   menu_id : EditorMenuId
   group : String
   order : Double
-}
-
-///|
-priv struct EditorSubmenuDescription {
-  id : EditorMenuId
-  label : String
-  parent_menu_id : EditorMenuId
-  group : String
-  order : Double
-  registration_order : Int
 }
 
 ///|
@@ -435,7 +423,6 @@ priv struct EditorContributionRegistry {
   contributions : Array[EditorContributionDescription]
   commands : Map[String, RegisteredEditorCommand]
   keybindings : Array[KeybindingRule]
-  submenus : Array[EditorSubmenuDescription]
 }
 
 ///|
@@ -508,52 +495,13 @@ fn EditorContributionRegistry::register_editor_command(
 }
 
 ///|
-/// Registers one closed submenu placement. Duplicate submenu ids are
-/// first-wins, matching the contribution/command registration policy.
-fn EditorContributionRegistry::register_editor_submenu(
-  self : EditorContributionRegistry,
-  id : EditorMenuId,
-  label : String,
-  parent_menu_id : EditorMenuId,
-  group : String,
-  order : Double,
-) -> Unit {
-  for submenu in self.submenus {
-    if submenu.id == id {
-      return
-    }
-  }
-  self.submenus.push({
-    id,
-    label,
-    parent_menu_id,
-    group,
-    order,
-    registration_order: self.submenus.length(),
-  })
-}
-
-///|
-/// Resolves live command preconditions and recursively expands nonempty
-/// submenus. Separators are inserted only between nonempty groups.
+/// Resolves live command preconditions. Separators are inserted only between
+/// nonempty groups.
 fn EditorContributionRegistry::resolve_editor_menu(
   self : EditorContributionRegistry,
   viewer : Viewer,
   menu_id : EditorMenuId,
 ) -> Array[@contextmenu_browser.ContextMenuEntry] {
-  self.resolve_editor_menu_at_depth(viewer, menu_id, 0)
-}
-
-///|
-fn EditorContributionRegistry::resolve_editor_menu_at_depth(
-  self : EditorContributionRegistry,
-  viewer : Viewer,
-  menu_id : EditorMenuId,
-  depth : Int,
-) -> Array[@contextmenu_browser.ContextMenuEntry] {
-  // Closed registration currently reaches depth one. The defensive bound
-  // keeps an accidental submenu cycle from recursing forever.
-  guard depth <= 8 else { return [] }
   let candidates : Array[ResolvedEditorMenuCandidate] = []
   for _, registered in self.commands {
     match registered {
@@ -573,24 +521,6 @@ fn EditorContributionRegistry::resolve_editor_menu_at_depth(
           }
         }
       _ => ()
-    }
-  }
-  for submenu in self.submenus {
-    if submenu.parent_menu_id == menu_id {
-      let children = self.resolve_editor_menu_at_depth(
-        viewer,
-        submenu.id,
-        depth + 1,
-      )
-      if children.length() > 0 {
-        candidates.push({
-          group: submenu.group,
-          order: submenu.order,
-          registration_order: self.commands.length() +
-          submenu.registration_order,
-          entry: ContextMenuSubmenu(label=submenu.label, entries=children),
-        })
-      }
     }
   }
   candidates.sort_by(compare_resolved_editor_menu_candidate)
@@ -814,7 +744,6 @@ fn editor_registry() -> EditorContributionRegistry {
         contributions: [],
         commands: Map([]),
         keybindings: [],
-        submenus: [],
       }
       register_agent_feedback_contribution(registry)
       register_folding_contribution(registry)

@@ -12,11 +12,11 @@ outside primary mousedown, focus leaving the menu, and window blur cancel it.
 An unhandled `contextmenu` outside the shell also retires the stale custom menu
 before the browser-native surface opens.
 
-The root menu and one selected submenu are fixed-position overlays. They
-prefer right/down placement, flip at visual-viewport edges, and clamp when the
-menu is larger than the viewport. The selected editor menu currently has one
-submenu level (`Peek`); deeper menu data is intentionally not rendered as
-another flyout.
+The root menu and an optional selected submenu are fixed-position overlays.
+They prefer right/down placement, flip at visual-viewport edges, and clamp when
+the menu is larger than the viewport. The current definition menu uses only
+top-level actions; if another caller supplies a submenu, deeper menu data is
+intentionally not rendered as another flyout.
 
 Rows expose `menu`/`menuitem`, `aria-haspopup`, and `aria-expanded` semantics.
 Up/Down/Home/End/PageUp/PageDown move among non-separator rows, Enter/Space

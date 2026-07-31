@@ -173,13 +173,6 @@ fn DefinitionContributionState::dispose(
 fn register_definition_contribution(
   registry : EditorContributionRegistry,
 ) -> Unit {
-  registry.register_editor_submenu(
-    EditorContextPeek,
-    "Peek",
-    EditorContext,
-    "navigation",
-    100.0,
-  )
   registry.register_editor_contribution(
     definition_contribution_id,
     BeforeFirstInteraction,
@@ -214,7 +207,9 @@ fn register_definition_contribution(
       alt=true,
       ctrl_cmd=false,
     ),
-    menu_placements=[{ menu_id: EditorContextPeek, group: "peek", order: 2.0 }],
+    menu_placements=[
+      { menu_id: EditorContext, group: "navigation", order: 1.2 },
+    ],
   )
 }
 

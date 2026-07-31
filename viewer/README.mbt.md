@@ -315,28 +315,28 @@ commands. A right click on Code content text or empty content focuses the
 Viewer and moves the cursor only when the hit is outside the current selection.
 A right click on an exact semantic `.mbt.md` source row anchors the same
 original-model definition position. The live menu contains
-`Go to Definition` and `Peek > Peek Definition`; unavailable actions and empty
-submenus disappear. Ordinary Markdown, synthetic padding, injected text,
-margins, widgets, scrollbars, stale projections, and a Viewer with no available
-definition command retain the browser-native menu.
+`Go to Definition` and `Peek Definition` as adjacent top-level actions;
+unavailable actions disappear. Ordinary Markdown, synthetic padding, injected
+text, margins, widgets, scrollbars, stale projections, and a Viewer with no
+available definition command retain the browser-native menu.
 
 The context-menu contribution owns one lazy browser widget per Viewer. Showing
 again replaces its transient DOM; running an action hides first. Escape, Tab,
 outside primary pointer input, focus/window blur, model/content change, scroll,
 and disposal dismiss it. Shift+F10 or the Context Menu key opens at the Code
 cursor, or at Markdown's most recent still-valid semantic pointer anchor.
-Keyboard navigation supports Up/Down/Home/End/PageUp/PageDown, Enter/Space, and
-Right/Left for the `Peek` submenu. Root and submenu overlays prefer
-right/down placement, flip at viewport edges, expose `menu`/`menuitem` and
-submenu ARIA state, and restore the prior focused element when focus still
-belongs to the menu.
+Keyboard navigation supports Up/Down/Home/End/PageUp/PageDown and Enter/Space.
+The root overlay prefers right/down placement, flips at viewport edges, exposes
+`menu`/`menuitem`, and restores the prior focused element when focus still
+belongs to the menu. The reusable browser shell can render one submenu level,
+but this definition menu does not instantiate one.
 
-This is the selected Monaco/VS Code Web behavior, not a desktop-native menu or
-a public extension surface. Clipboard/edit/refactor/source/history entries,
-scrollbar actions, touch long press, visible disabled actions, icons,
-mnemonics, and deeper submenus remain outside this first surface. Independent
-Viewers each own their menu rather than sharing a process-global context-menu
-service.
+This is a Monaco-shaped VS Code Web behavior port with the flattened definition
+command layout as a local product choice, not a desktop-native menu or a public
+extension surface. Clipboard/edit/refactor/source/history entries, scrollbar
+actions, touch long press, visible disabled actions, icons, mnemonics, and
+deeper submenus remain outside this first surface. Independent Viewers each own
+their menu rather than sharing a process-global context-menu service.
 
 ## Definition navigation
 

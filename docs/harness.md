@@ -172,7 +172,7 @@ The definition and HTML-context-menu proof is the direct public-Viewer scenario
 keyboard gestures cover selection-preserving Code anchoring, the shared
 semantic Markdown command path, native fallback on ordinary Markdown and the
 Code scrollbar, live definition actions, ARIA and 24px-row styling,
-hide-before-run/focus restoration, submenu keyboard navigation, and
+hide-before-run/focus restoration, top-level keyboard navigation, and
 bottom-right viewport fitting. Command grouping/preconditions and lifecycle
 stay in Viewer white-box tests; pure placement boundaries stay in the
 context-menu browser package.

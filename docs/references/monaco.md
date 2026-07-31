@@ -132,7 +132,9 @@ Web's HTML surface, not Electron's optional native desktop menu.
   HTML styling.
 - `src/vs/editor/contrib/gotoSymbol/browser/goToCommands.ts:44-49,274-312,
   343-374` supplies top-level `Go to Definition` and
-  `Peek > Peek Definition`. The local closed command registry owns their
+  `Peek > Peek Definition`. As a deliberate local product choice, the Viewer
+  flattens those into adjacent top-level `Go to Definition` and
+  `Peek Definition` actions. The local closed command registry owns their
   labels, keybinding hints, ordering, and live preconditions; the browser
   widget receives only an immutable entry tree and opaque command ids.
 
@@ -149,10 +151,11 @@ The first surface intentionally omits Electron/native integration,
 clipboard/edit/refactor/source/history and extension-contributed actions,
 scrollbar-specific commands, touch long press, mnemonics/icons/check states,
 visible disabled rows, and a public menu-extension API. The browser shell
-supports the one selected `Peek` submenu level; this is not a general port of
-`IContextMenuService`, `Menu`, `ActionBar`, or workbench menu services. In
-particular, replacement is per independent Viewer rather than serialized by a
-process-global context-menu service.
+supports one optional submenu level, although the current definition menu does
+not use it; this is not a general port of `IContextMenuService`, `Menu`,
+`ActionBar`, or workbench menu services. In particular, replacement is per
+independent Viewer rather than serialized by a process-global context-menu
+service.
 
 ## Definition navigation
 

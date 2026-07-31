@@ -23,13 +23,11 @@ const markdownPreview =
   '.moonbit-viewer-markdown-document';
 const contextMenu =
   'body > .moonbit-context-menu:not(.moonbit-context-submenu)';
-const contextSubmenu = 'body > .moonbit-context-submenu';
 const goToDefinitionAction =
   `${contextMenu} ` +
   '[data-context-menu-command="editor.action.revealDefinition"]';
-const peekSubmenuAction = `${contextMenu} [aria-haspopup="menu"]`;
 const peekDefinitionAction =
-  `${contextSubmenu} ` +
+  `${contextMenu} ` +
   '[data-context-menu-command="editor.action.peekDefinition"]';
 const platformModifier = process.platform === 'darwin' ? 'Meta' : 'Control';
 
@@ -219,7 +217,9 @@ test('HTML context menu preserves an enclosing selection and runs Go to Definiti
     await expect(page.locator(goToDefinitionAction)).toContainText(
       'Go to Definition',
     );
-    await expect(page.locator(peekSubmenuAction)).toContainText('Peek');
+    await expect(page.locator(peekDefinitionAction)).toContainText(
+      'Peek Definition',
+    );
     const menuState = await page.locator(contextMenu).evaluate((root) => {
       const item = root.querySelector('.action-menu-item');
       const menu = root.querySelector('.monaco-menu');
@@ -405,7 +405,7 @@ test('an empty definition result shows a request-anchored inline message', async
   }
 });
 
-test('Shift+F10 fits the menu at a viewport edge and keyboard-opens Peek Definition', async ({
+test('Shift+F10 fits the menu at a viewport edge and keyboard-runs Peek Definition', async ({
   page,
 }, testInfo) => {
   await page.setViewportSize({ width: 800, height: 600 });
@@ -460,31 +460,15 @@ test('Shift+F10 fits the menu at a viewport edge and keyboard-opens Peek Definit
         page.evaluate(
           (selector) =>
             document.activeElement?.matches(selector) ?? false,
-          peekSubmenuAction,
+          peekDefinitionAction,
         ),
       )
       .toBe(true);
-    await page.keyboard.press('ArrowRight');
-    await expect(page.locator(contextSubmenu)).toHaveCount(1);
-    await expect(page.locator(peekDefinitionAction)).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(page.locator(contextMenu)).toHaveCount(0);
-    await expect(page.locator(contextSubmenu)).toHaveCount(0);
     await expect(page.locator(peek)).toHaveCount(1);
     await page.keyboard.press('Escape');
     await expect(page.locator(peek)).toHaveCount(0);
-
-    await page.keyboard.press('Shift+F10');
-    await expect(page.locator(contextMenu)).toHaveCount(1);
-    await page.locator(peekSubmenuAction).hover();
-    await expect(page.locator(contextSubmenu)).toHaveCount(1);
-    await expect(page.locator(peekSubmenuAction)).toHaveAttribute(
-      'aria-expanded',
-      'true',
-    );
-    await page.locator(goToDefinitionAction).hover();
-    await expect(page.locator(contextSubmenu)).toHaveCount(0);
-    await page.keyboard.press('Escape');
   } finally {
     reporter.dispose();
   }
