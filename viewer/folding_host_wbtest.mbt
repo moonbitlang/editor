@@ -301,6 +301,59 @@ test "folding: aliases release runs while split constructs keep theirs" {
 }
 
 ///|
+test "folding: keyword-led continuations swallow their comment runs" {
+  let text =
+    #|let v : Int = if c { 1 }
+    #|// branch a
+    #|// branch b
+    #|else { 2 }
+    #|let w : Unit = f
+    #|// call a
+    #|// call b
+    #|(1)
+    #|// tail a
+    #|// tail b
+  let model = test_model(text, language_id="moonbit")
+  let runs = moonbit_source_folds(model.snapshot).comment_runs
+  assert_eq(runs.length(), 1)
+  assert_eq(runs[0].start_line_number, 9)
+  assert_eq(runs[0].end_line_number, 10)
+}
+
+///|
+test "folding: provider ranges containing a comment run are retained" {
+  let text =
+    #|zero
+    #|  // indent a
+    #|  // indent b
+    #|tail
+  let viewer = Viewer::Viewer()
+  viewer.set_model(Some(test_model(text, language_id="moonbit")))
+  viewer.fold_top_level()
+  guard viewer.folding_controller() is Some(controller) else {
+    fail("expected a folding controller")
+  }
+  guard controller.folding_model is Some(folding_model) else {
+    fail("expected an attached folding model")
+  }
+  let regions = folding_model.regions()
+  assert_eq(regions.length(), 2)
+  assert_eq(regions.get_start_line_number(0), 1)
+  assert_eq(regions.get_end_line_number(0), 3)
+  assert_eq(regions.get_type(0), None)
+  assert_true(regions.is_collapsed(0))
+  assert_eq(regions.get_start_line_number(1), 2)
+  assert_eq(regions.get_end_line_number(1), 3)
+  assert_eq(regions.get_type(1), Some(COMMENT_RUN_FOLDING_RANGE_TYPE))
+  assert_false(regions.is_collapsed(1))
+  let view_model = viewer.test_view_model()
+  assert_eq(view_model.line_count(), 2)
+  assert_eq(view_model.lines().get_view_line_content(1), "zero")
+  assert_eq(view_model.lines().get_view_line_content(2), "tail")
+  viewer.dispose()
+}
+
+///|
 test "folding: a BOM-prefixed header folds from its first line" {
   let model = test_model(
     "\u{FEFF}// bom a\n// bom b\n// bom c",

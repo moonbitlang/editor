@@ -73,16 +73,26 @@ fn is_moonbit_expression_continuation_code(code : Int) -> Bool {
 
 ///|
 /// Whether a line's first token continues the construct above it — a
-/// leading binary operator, `->` return clause, `.` method chain, or a
-/// deferred initializer `=`. A comment run terminated by such a line sits
-/// inside that construct rather than at the top level. Leading `//` and
-/// `/*` are comments, and `*/` closes one; none of those continue an
-/// expression.
+/// leading binary operator, `->` return clause, `.` method chain, a
+/// deferred initializer `=`, an opening delimiter (`(`, `[`, `{` never
+/// start a top-level construct), or a continuation keyword (`else`,
+/// `catch`, `derive`). A comment run terminated by such a line sits inside
+/// that construct rather than at the top level. Leading `//` and `/*` are
+/// comments, and `*/` closes one; none of those continue an expression.
 fn is_moonbit_leading_continuation_line(line : String) -> Bool {
   for index in 0..<line.length() {
     let code = line[index].to_int()
     if code == ' ' || code == '\t' || code == 0xFEFF {
       continue
+    }
+    if is_moonbit_outline_identifier_start(code) {
+      let mut end = index + 1
+      while end < line.length() &&
+            is_moonbit_outline_identifier_continue(line[end].to_int()) {
+        end += 1
+      }
+      let word = line[index:end].to_owned()
+      return word == "else" || word == "catch" || word == "derive"
     }
     let next = if index + 1 < line.length() {
       line[index + 1].to_int()
@@ -92,6 +102,7 @@ fn is_moonbit_leading_continuation_line(line : String) -> Bool {
     return match code {
       '/' => next != '/' && next != '*'
       '*' => next != '/'
+      '(' | '[' | '{' => true
       '=' | '+' | '-' | '%' | '<' | '>' | '&' | '|' | '^' | ':' | ',' | '.' =>
         true
       _ => false
@@ -127,7 +138,11 @@ fn is_moonbit_plain_comment_line(line : String) -> Bool {
 /// body, while qualified methods and formatted `impl ... with fn ...`
 /// declarations are included. Comment runs require the line-start lexical
 /// state to be top level, so lines inside block comments, brace/paren/bracket
-/// constructs, or unfinished binding continuations never join a run.
+/// constructs, or unfinished binding continuations never join a run, and a
+/// run flushed by a leading-operator line is discarded as part of that
+/// construct. One accepted boundary: a declaration keyword split from its
+/// whole body by comments (`typealias` / comments / `Int as Id`) has no
+/// lexical terminator to track, so those comments still fold.
 fn moonbit_source_folds(snapshot : @model.TextSnapshot) -> MoonbitSourceFolds {
   let folds : Array[MoonbitFunctionBodyFold] = []
   let comment_runs : Array[MoonbitCommentRunFold] = []
@@ -626,16 +641,36 @@ fn moonbit_outline_folding_regions(
           range.start_line_number {
       outline_index += 1
     }
-    if outline_index == outline_folds.length() ||
-      range.end_line_number <
-      outline_folds[outline_index].protected_start_line_number {
-      retained_ranges.push(range)
-    } else {
-      let outline_fold = outline_folds[outline_index]
+    // Retain the provider range only when every host fold it overlaps
+    // agrees: nested strictly inside the folded span, or — for comment runs
+    // only — strictly containing the whole run, so a wider provider range
+    // (a region-marker style block) keeps its body with the run nested
+    // beneath it. Ranges that reach into a function's protected span or
+    // cross a fold boundary are replaced by the host folds.
+    let mut retain = true
+    let mut scan_index = outline_index
+    while scan_index < outline_folds.length() &&
+          outline_folds[scan_index].protected_start_line_number <=
+          range.end_line_number {
+      let outline_fold = outline_folds[scan_index]
       if range.start_line_number > outline_fold.fold_start_line_number &&
         range.end_line_number <= outline_fold.fold_end_line_number {
-        retained_ranges.push(range)
+        break
       }
+      let contains_comment_run = outline_fold.range_type ==
+        COMMENT_RUN_FOLDING_RANGE_TYPE &&
+        range.start_line_number <= outline_fold.protected_start_line_number &&
+        range.end_line_number >= outline_fold.fold_end_line_number &&
+        !(range.start_line_number == outline_fold.fold_start_line_number &&
+        range.end_line_number == outline_fold.fold_end_line_number)
+      if !contains_comment_run {
+        retain = false
+        break
+      }
+      scan_index += 1
+    }
+    if retain {
+      retained_ranges.push(range)
     }
   }
 
