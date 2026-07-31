@@ -263,11 +263,7 @@ pub fn LineRangeSet::get_union(
 
 ///|
 pub fn LineRangeSet::to_string(self : LineRangeSet) -> String {
-  let parts = []
-  for r in self.normalized_ranges {
-    parts.push(r.to_string())
-  }
-  parts.join(", ")
+  [ for r in self.normalized_ranges => r.to_string() ].join(", ")
 }
 
 // --- monotonic binary-search helpers (arraysFind.ts) ---
@@ -328,15 +324,10 @@ fn array_splice_replace(
   delete_count : Int,
   item : LineRange,
 ) -> Unit {
-  let rest : Array[LineRange] = []
-  for i in (start + delete_count)..<array.length() {
-    rest.push(array[i])
-  }
+  let rest = [ for i in (start + delete_count)..<array.length() => array[i] ]
   while array.length() > start {
     array.pop() |> ignore
   }
   array.push(item)
-  for r in rest {
-    array.push(r)
-  }
+  array.append(rest)
 }

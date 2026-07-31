@@ -235,13 +235,13 @@ pub fn split_lines(text : String) -> Array[String] {
   let mut i = 0
   while i < len {
     let code = text[i].to_int()
-    if code == 13 { // \r
+    if code == '\r' {
       lines.push(text[line_start:i].to_owned())
-      if i + 1 < len && text[i + 1].to_int() == 10 {
+      if i + 1 < len && text[i + 1].to_int() == '\n' {
         i += 1 // consume the \n of a \r\n pair
       }
       line_start = i + 1
-    } else if code == 10 { // \n
+    } else if code == '\n' {
       lines.push(text[line_start:i].to_owned())
       line_start = i + 1
     }
@@ -254,13 +254,13 @@ pub fn split_lines(text : String) -> Array[String] {
 ///|
 /// Mirrors `strings.isLowerAsciiLetter` (strings.ts:428).
 pub fn is_lower_ascii_letter(code : Int) -> Bool {
-  code >= 'a'.to_int() && code <= 'z'.to_int()
+  code is ('a'..='z')
 }
 
 ///|
 /// Mirrors `strings.isUpperAsciiLetter` (strings.ts:432).
 pub fn is_upper_ascii_letter(code : Int) -> Bool {
-  code >= 'A'.to_int() && code <= 'Z'.to_int()
+  code is ('A'..='Z')
 }
 
 ///|
