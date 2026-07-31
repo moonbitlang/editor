@@ -1,0 +1,86 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitlang/editor/internal/viewer/contrib/references"
+
+import {
+  "moonbitlang/core/debug",
+  "moonbitlang/editor/base/common",
+  "moonbitlang/editor/language",
+  "moonbitlang/editor/viewer/common/model",
+}
+
+// Values
+pub fn normalize_reference_locations(Array[@language.Location]) -> Array[@language.Location]
+
+pub fn reference_snippet(@model.TextModel, @common.Range) -> ReferenceSnippet?
+
+// Errors
+
+// Types and methods
+pub(all) struct ReferenceGroup {
+  group_index : Int
+  uri : @common.Uri
+  uri_string : String
+  references : Array[ReferenceItem]
+} derive(Eq, @debug.Debug)
+
+pub(all) struct ReferenceItem {
+  flat_index : Int
+  group_index : Int
+  index_in_group : Int
+  uri : @common.Uri
+  uri_string : String
+  range : @common.Range
+} derive(Eq, @debug.Debug)
+pub fn ReferenceItem::fallback_label(Self) -> String
+pub fn ReferenceItem::location(Self) -> @language.Location
+pub fn ReferenceItem::row_preview(Self, @model.TextModel?) -> ReferenceRowPreview
+
+pub(all) enum ReferenceRowPreview {
+  Snippet(ReferenceSnippet)
+  LocationFallback(String)
+} derive(Eq, @debug.Debug)
+
+pub(all) struct ReferenceSnippet {
+  before : String
+  matched : String
+  after : String
+} derive(Eq, @debug.Debug)
+pub fn ReferenceSnippet::display_text(Self) -> String
+
+pub(all) struct ReferencesModel {
+  groups : Array[ReferenceGroup]
+  references : Array[ReferenceItem]
+} derive(Eq, @debug.Debug)
+pub fn ReferencesModel::ReferencesModel(Array[@language.Location]) -> Self
+pub fn ReferencesModel::is_empty(Self) -> Bool
+pub fn ReferencesModel::nearest_reference(Self, @common.Uri, @common.Position) -> ReferenceItem?
+pub fn ReferencesModel::next_or_previous_reference(Self, ReferenceItem, Bool) -> ReferenceItem?
+pub fn ReferencesModel::next_reference(Self, ReferenceItem) -> ReferenceItem?
+pub fn ReferencesModel::previous_reference(Self, ReferenceItem) -> ReferenceItem?
+
+pub(all) enum ReferencesPeekMode {
+  Definitions
+  References
+} derive(Eq, @debug.Debug)
+
+pub(all) enum ReferencesPeekPhase {
+  PeekClosed
+  PeekLoadingDefinitions(Int)
+  PeekLoadingPreview(Int, Int)
+  PeekShown(Int, Int)
+  PeekUnavailable(Int, Int)
+} derive(Eq, @debug.Debug)
+
+pub(all) struct ReferencesSessionKey {
+  model_identity : Int
+  model_generation : Int
+  model_version_id : Int
+  anchor : @common.Position
+} derive(Eq, @debug.Debug)
+pub fn ReferencesSessionKey::from_model(@model.TextModel, Int, @common.Position) -> Self
+pub fn ReferencesSessionKey::is_current(Self, @model.TextModel, Int) -> Bool
+
+// Type aliases
+
+// Traits
+

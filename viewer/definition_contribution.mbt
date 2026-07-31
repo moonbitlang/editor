@@ -32,7 +32,7 @@ priv struct DefinitionContributionState {
   mut last_message : String?
   mut message_widget : @definition_browser.DefinitionMessageWidget?
   mut message_hide : @base_common.Disposable?
-  peek : DefinitionPeekState
+  mut peek_source : @language.CancellationTokenSource?
   link_decorations : EditorDecorationsCollection
   mut markdown_link_elements : Array[@rdom.Element]
   mut launch_async_task : (async () -> Unit noraise) -> Unit
@@ -56,7 +56,7 @@ fn DefinitionContributionState::DefinitionContributionState(
     last_message: None,
     message_widget: None,
     message_hide: None,
-    peek: DefinitionPeekState(),
+    peek_source: None,
     link_decorations: viewer.create_decorations_collection(),
     markdown_link_elements: [],
     launch_async_task,
@@ -81,6 +81,23 @@ fn DefinitionContributionState::invalidate_open_feedback(
   self : DefinitionContributionState,
 ) -> Unit {
   self.open_generation += 1
+}
+
+///|
+/// Retires a completed or stale Definition Peek provider request only when it
+/// is still the exact source owned by this state.
+fn DefinitionContributionState::retire_peek_source(
+  self : DefinitionContributionState,
+  source : @language.CancellationTokenSource,
+  cancel~ : Bool,
+) -> Unit {
+  match self.peek_source {
+    Some(current) if physical_equal(current, source) => {
+      self.peek_source = None
+      source.dispose(cancel~)
+    }
+    _ => ()
+  }
 }
 
 ///|
@@ -165,7 +182,7 @@ fn DefinitionContributionState::dispose(
   self.disposed = true
   self.cancel_action()
   self.reset_link_gesture()
-  viewer.close_definition_peek(restore_focus=false)
+  viewer.close_references_peek(restore_focus=false)
   viewer.dispose_definition_message()
 }
 
@@ -312,9 +329,14 @@ fn Viewer::on_definition_cursor_selection_changed(
   } else {
     state.reset_link_gesture()
   }
-  match state.peek.phase {
-    PeekLoadingDefinitions(_) => self.close_definition_peek(restore_focus=false)
-    _ => ()
+  match self.references_contribution() {
+    Some(references) =>
+      match references.phase {
+        PeekLoadingDefinitions(_) =>
+          self.close_references_peek(restore_focus=false)
+        _ => ()
+      }
+    None => ()
   }
   self.clear_definition_message()
 }
@@ -334,7 +356,7 @@ fn Viewer::reset_definition_requests(self : Viewer) -> Unit {
     Some(state) => {
       state.cancel_action()
       state.reset_link_gesture()
-      self.close_definition_peek(restore_focus=false)
+      self.close_references_peek(restore_focus=false)
       self.dispose_definition_message()
     }
     None => ()
@@ -371,9 +393,14 @@ fn Viewer::start_goto_definition_at(
   // An ordinary Definition action is a newer navigation intent than a Peek
   // request that is still resolving its definition list. Retire only that
   // loading shell: an already populated Peek remains independently usable.
-  match state.peek.phase {
-    PeekLoadingDefinitions(_) => self.close_definition_peek(restore_focus=false)
-    _ => ()
+  match self.references_contribution() {
+    Some(references) =>
+      match references.phase {
+        PeekLoadingDefinitions(_) =>
+          self.close_references_peek(restore_focus=false)
+        _ => ()
+      }
+    None => ()
   }
   // A new navigation intent immediately supersedes feedback from any opener
   // that is still awaiting its host, even before this provider request
@@ -550,9 +577,14 @@ fn Viewer::commit_plain_definition_pointer_target(
   guard self.definition_contribution() is Some(state) else { return }
   state.invalidate_open_feedback()
   state.cancel_action()
-  match state.peek.phase {
-    PeekLoadingDefinitions(_) => self.close_definition_peek(restore_focus=false)
-    _ => ()
+  match self.references_contribution() {
+    Some(references) =>
+      match references.phase {
+        PeekLoadingDefinitions(_) =>
+          self.close_references_peek(restore_focus=false)
+        _ => ()
+      }
+    None => ()
   }
   state.last_pointer_target = match target {
     Some(target) if self.definition_link_target_is_current(target) =>
@@ -1107,6 +1139,10 @@ fn Viewer::set_definition_host_for_test(
   launch : (async () -> Unit noraise) -> Unit,
 ) -> Unit {
   match self.definition_contribution() {
+    Some(state) => state.launch_async_task = launch
+    None => ()
+  }
+  match self.references_contribution() {
     Some(state) => state.launch_async_task = launch
     None => ()
   }

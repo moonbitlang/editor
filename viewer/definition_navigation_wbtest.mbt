@@ -103,6 +103,7 @@ test "cancellation callbacks cannot clobber replacement request owners" {
   guard viewer.definition_contribution() is Some(state) else {
     fail("definition contribution was not installed")
   }
+  let references = viewer.references_contribution().unwrap()
 
   let old_action = @language.CancellationTokenSource()
   let new_action = @language.CancellationTokenSource()
@@ -134,11 +135,11 @@ test "cancellation callbacks cannot clobber replacement request owners" {
   let new_preview = @language.CancellationTokenSource()
   old_preview
   .token()
-  .on_cancellation_requested(() => state.peek.preview_source = Some(new_preview))
+  .on_cancellation_requested(() => references.preview_source = Some(new_preview))
   |> ignore
-  state.peek.preview_source = Some(old_preview)
+  references.preview_source = Some(old_preview)
   viewer.cancel_definition_peek_preview_request()
-  guard state.peek.preview_source is Some(current_preview) else {
+  guard references.preview_source is Some(current_preview) else {
     fail("preview cancellation clobbered its replacement owner")
   }
   assert_true(physical_equal(current_preview, new_preview))
@@ -147,13 +148,11 @@ test "cancellation callbacks cannot clobber replacement request owners" {
   let new_definitions = @language.CancellationTokenSource()
   old_definitions
   .token()
-  .on_cancellation_requested(() => {
-    state.peek.definition_source = Some(new_definitions)
-  })
+  .on_cancellation_requested(() => state.peek_source = Some(new_definitions))
   |> ignore
-  state.peek.definition_source = Some(old_definitions)
+  state.peek_source = Some(old_definitions)
   viewer.close_definition_peek(restore_focus=false)
-  guard state.peek.definition_source is Some(current_definitions) else {
+  guard state.peek_source is Some(current_definitions) else {
     fail("Peek cancellation clobbered its replacement owner")
   }
   assert_true(physical_equal(current_definitions, new_definitions))
@@ -164,8 +163,8 @@ test "cancellation callbacks cannot clobber replacement request owners" {
   new_definitions.dispose(cancel=true)
   state.action_source = None
   state.link_source = None
-  state.peek.preview_source = None
-  state.peek.definition_source = None
+  references.preview_source = None
+  state.peek_source = None
   viewer.dispose()
   services.dispose()
 }
@@ -992,11 +991,9 @@ async fn run_same_resource_definition_peek_test() -> Unit {
     PeekLoadingDefinitions(_) => ()
     _ => fail("Alt F12 did not open the loading Peek shell")
   }
-  guard viewer.definition_contribution() is Some(state) else {
-    fail("missing definition contribution")
-  }
-  assert_true(state.peek.zone_id is Some(_))
-  assert_true(state.peek.widget is Some(_))
+  let references = viewer.references_contribution().unwrap()
+  assert_true(references.zone_id is Some(_))
+  assert_true(references.widget is Some(_))
   tasks.run_next()
   assert_eq(tasks.tasks.length(), 1)
   tasks.run_next()
@@ -1004,7 +1001,7 @@ async fn run_same_resource_definition_peek_test() -> Unit {
     PeekShown(_, _) => ()
     _ => fail("same-resource preview did not mount")
   }
-  guard state.peek.preview_viewer is Some(preview) else {
+  guard references.preview_viewer is Some(preview) else {
     fail("nested preview Viewer was not created")
   }
   assert_true(preview.get_model().unwrap().same(source))
@@ -1014,13 +1011,13 @@ async fn run_same_resource_definition_peek_test() -> Unit {
     preview.handle_editor_key_down("F12", alt=true, ctrl_cmd=false, shift=false),
   )
   assert_eq(preview.get_position(), Some(Position(1, 14)))
-  assert_true(state.peek.preview_reference is None)
+  assert_true(references.preview_reference is None)
 
   viewer.close_definition_peek(restore_focus=false)
   assert_eq(viewer.definition_peek_phase_for_test(), PeekClosed)
   assert_true(preview.disposed)
-  assert_true(state.peek.preview_viewer is None)
-  assert_true(state.peek.zone_id is None)
+  assert_true(references.preview_viewer is None)
+  assert_true(references.zone_id is None)
   assert_false(source.is_disposed())
 
   viewer.dispose()
@@ -1049,11 +1046,9 @@ fn run_definition_peek_reveal_test() -> Unit raise {
   assert_eq(viewer.get_scroll_top(), 0.0)
 
   viewer.start_peek_definition()
-  guard viewer.definition_contribution() is Some(state) else {
-    fail("missing definition contribution")
-  }
-  assert_true(state.peek.zone_id is Some(_))
-  assert_true(state.peek.overlay_widget is Some(_))
+  let references = viewer.references_contribution().unwrap()
+  assert_true(references.zone_id is Some(_))
+  assert_true(references.overlay_widget is Some(_))
   assert_true(viewer.get_scroll_top() > 0.0)
 
   viewer.dispose()
@@ -1080,11 +1075,9 @@ async fn run_empty_definition_peek_test() -> Unit {
   }
   tasks.run_next()
   assert_eq(viewer.definition_peek_phase_for_test(), PeekClosed)
-  guard viewer.definition_contribution() is Some(state) else {
-    fail("missing definition contribution")
-  }
-  assert_true(state.peek.widget is None)
-  assert_true(state.peek.zone_id is None)
+  let references = viewer.references_contribution().unwrap()
+  assert_true(references.widget is None)
+  assert_true(references.zone_id is None)
   assert_eq(
     viewer.definition_message_for_test(),
     Some("No definition found for 'source'"),
@@ -1120,18 +1113,23 @@ async fn run_multiple_definition_default_peek_test() -> Unit {
   assert_eq(tasks.tasks.length(), 1)
   tasks.run_next()
   assert_eq(tasks.tasks.length(), 0)
-  guard viewer.definition_contribution() is Some(state) else {
-    fail("missing definition contribution")
-  }
+  let references = viewer.references_contribution().unwrap()
   match viewer.definition_peek_phase_for_test() {
     PeekShown(_, _) => ()
     _ => fail("multiple definitions did not open Peek")
   }
-  assert_eq(state.peek.locations.length(), 2)
-  assert_eq(state.peek.locations[0].uri.to_string(), remote_uri.to_string())
-  assert_eq(state.peek.locations[1].uri.to_string(), source.uri.to_string())
-  assert_eq(state.peek.selected_index, 1)
-  assert_true(state.peek.preview_viewer is Some(_))
+  let model = references.model.unwrap()
+  assert_eq(model.references.length(), 2)
+  assert_eq(
+    model.references[0].location().uri.to_string(),
+    remote_uri.to_string(),
+  )
+  assert_eq(
+    model.references[1].location().uri.to_string(),
+    source.uri.to_string(),
+  )
+  assert_eq(references.selected_index, 1)
+  assert_true(references.preview_viewer is Some(_))
 
   // Alt+F12 at the same model/version/position toggles the existing session
   // closed and does not launch a duplicate provider request.
@@ -1181,9 +1179,10 @@ async fn run_definition_action_replaces_loading_peek_test() -> Unit {
     _ => fail("first request did not open a loading Peek")
   }
   guard viewer.definition_contribution() is Some(state) &&
-    state.peek.definition_source is Some(first_source) else {
+    state.peek_source is Some(first_source) else {
     fail("first Peek request did not retain its source")
   }
+  let references = viewer.references_contribution().unwrap()
   viewer.start_goto_definition_at(position, mute_message=false)
   assert_true(first_source.token().is_cancellation_requested())
   assert_eq(viewer.definition_peek_phase_for_test(), PeekClosed)
@@ -1194,7 +1193,7 @@ async fn run_definition_action_replaces_loading_peek_test() -> Unit {
   tasks.run_next()
   assert_eq(viewer.definition_peek_phase_for_test(), PeekClosed)
   tasks.run_next()
-  assert_eq(state.peek.locations.length(), 2)
+  assert_eq(references.model.unwrap().references.length(), 2)
   match viewer.definition_peek_phase_for_test() {
     PeekUnavailable(_, _) => ()
     _ => fail("replacement action did not populate a fresh Peek")
@@ -1227,8 +1226,8 @@ async fn run_stale_definition_peek_confirm_test() -> Unit {
   viewer.set_position(Position(1, 5))
   viewer.start_peek_definition()
   tasks.run_next()
-  guard viewer.definition_contribution() is Some(state) &&
-    state.peek.locations.length() == 1 else {
+  let references = viewer.references_contribution().unwrap()
+  guard references.model is Some(model) && model.references.length() == 1 else {
     fail("Peek result was not installed")
   }
 
@@ -1262,9 +1261,8 @@ async fn run_definition_peek_model_swap_focus_test() -> Unit {
   viewer.start_peek_definition()
   tasks.run_next()
   assert_eq(tasks.tasks.length(), 1)
-  tasks.run_next()
-  guard viewer.definition_contribution() is Some(state) &&
-    state.peek.widget is Some(widget) else {
+  let references = viewer.references_contribution().unwrap()
+  guard references.widget is Some(widget) else {
     fail("Peek widget was not installed")
   }
   widget.focus()
@@ -1274,6 +1272,11 @@ async fn run_definition_peek_model_swap_focus_test() -> Unit {
   viewer.set_model(Some(replacement))
   assert_eq(viewer.definition_peek_phase_for_test(), PeekClosed)
   assert_true(viewer.has_text_focus())
+  // The deferred same-resource preview completion retains the old session key
+  // and must not mount after attachment identity changes.
+  tasks.run_next()
+  assert_eq(viewer.definition_peek_phase_for_test(), PeekClosed)
+  assert_true(references.preview_viewer is None)
 
   viewer.dispose()
   services.dispose()
@@ -1328,12 +1331,10 @@ async fn run_cross_resource_definition_peek_test() -> Unit {
   tasks.run_next()
   assert_eq(tasks.tasks.length(), 1)
   tasks.run_next()
-  guard viewer.definition_contribution() is Some(state) else {
-    fail("missing definition contribution")
-  }
-  let initial_index = state.peek.selected_index
+  let references = viewer.references_contribution().unwrap()
+  let initial_index = references.selected_index
   assert_true(initial_index == 0 || initial_index == 1)
-  guard state.peek.preview_viewer is Some(first_preview) else {
+  guard references.preview_viewer is Some(first_preview) else {
     fail("first preview was not installed")
   }
   assert_eq(first_releases.val + second_releases.val, 0)
@@ -1344,7 +1345,7 @@ async fn run_cross_resource_definition_peek_test() -> Unit {
   // A pending replacement keeps the installed preview and lease alive.
   assert_eq(first_releases.val + second_releases.val, 0)
   assert_false(first_preview.disposed)
-  assert_true(state.peek.selected_index != initial_index)
+  assert_true(references.selected_index != initial_index)
   assert_eq(tasks.tasks.length(), 1)
   tasks.run_next()
   assert_eq(first_releases.val + second_releases.val, 0)
@@ -1361,14 +1362,14 @@ async fn run_cross_resource_definition_peek_test() -> Unit {
   tasks.run_next()
   assert_eq(first_releases.val + second_releases.val, 1)
   assert_true(first_preview.disposed)
-  guard state.peek.preview_viewer is Some(second_preview) else {
+  guard references.preview_viewer is Some(second_preview) else {
     fail("second preview was not installed")
   }
   assert_false(second_preview.has_text_focus())
   viewer.move_definition_peek_result(1)
   assert_eq(first_releases.val + second_releases.val, 1)
   assert_false(second_preview.disposed)
-  assert_eq(state.peek.selected_index, initial_index)
+  assert_eq(references.selected_index, initial_index)
   tasks.run_next()
   assert_eq(first_releases.val + second_releases.val, 1)
   assert_false(second_preview.disposed)
@@ -1440,8 +1441,8 @@ async fn run_reentrant_definition_peek_release_test() -> Unit {
   tasks.run_next()
   tasks.run_next()
   tasks.run_next()
-  guard viewer.definition_contribution() is Some(state) &&
-    state.peek.preview_reference is Some(_) else {
+  let references = viewer.references_contribution().unwrap()
+  guard references.preview_reference is Some(_) else {
     fail("initial Peek preview reference was not installed")
   }
 
@@ -1452,9 +1453,9 @@ async fn run_reentrant_definition_peek_release_test() -> Unit {
   tasks.run_next()
   assert_eq(viewer.definition_peek_phase_for_test(), PeekClosed)
   assert_eq(releases.val, 2)
-  assert_true(state.peek.preview_reference is None)
-  assert_true(state.peek.preview_viewer is None)
-  assert_true(state.peek.widget is None)
+  assert_true(references.preview_reference is None)
+  assert_true(references.preview_viewer is None)
+  assert_true(references.widget is None)
 
   viewer.dispose()
   services.dispose()
@@ -1503,10 +1504,11 @@ async fn run_reentrant_definition_peek_close_test() -> Unit {
   tasks.run_next()
   tasks.run_next()
   tasks.run_next()
-  guard viewer.definition_contribution() is Some(state) &&
-    state.peek.preview_reference is Some(_) else {
+  let references = viewer.references_contribution().unwrap()
+  guard references.preview_reference is Some(_) else {
     fail("initial Peek preview reference was not installed")
   }
+  let state = viewer.definition_contribution().unwrap()
 
   reopen_once.val = true
   viewer.close_definition_peek(restore_focus=false)
@@ -1514,8 +1516,8 @@ async fn run_reentrant_definition_peek_close_test() -> Unit {
     PeekLoadingDefinitions(_) => ()
     _ => fail("reentrant Peek request was clobbered by old-session teardown")
   }
-  assert_true(state.peek.widget is Some(_))
-  assert_true(state.peek.definition_source is Some(_))
+  assert_true(references.widget is Some(_))
+  assert_true(state.peek_source is Some(_))
   assert_eq(tasks.tasks.length(), 1)
   assert_eq(releases.val, 1)
 
@@ -1588,12 +1590,12 @@ async fn run_stale_definition_peek_request_test() -> Unit {
   guard viewer.definition_contribution() is Some(state) else {
     fail("missing definition contribution")
   }
-  guard state.peek.definition_source is Some(definition_source) else {
+  guard state.peek_source is Some(definition_source) else {
     fail("Peek did not retain its definition cancellation source")
   }
   viewer.set_position(Position(1, 6))
   assert_true(definition_source.token().is_cancellation_requested())
-  assert_true(state.peek.definition_source is None)
+  assert_true(state.peek_source is None)
   assert_eq(viewer.definition_peek_phase_for_test(), PeekClosed)
   tasks.run_next()
   assert_eq(viewer.definition_peek_phase_for_test(), PeekClosed)
@@ -1603,6 +1605,18 @@ async fn run_stale_definition_peek_request_test() -> Unit {
   assert_eq(viewer.definition_peek_phase_for_test(), PeekClosed)
   tasks.run_next()
   assert_eq(viewer.definition_peek_phase_for_test(), PeekClosed)
+
+  viewer.start_peek_definition()
+  tasks.run_next()
+  assert_eq(tasks.tasks.length(), 1)
+  let references = viewer.references_contribution().unwrap()
+  viewer.set_value("let source = changed again\n")
+  assert_eq(viewer.definition_peek_phase_for_test(), PeekClosed)
+  // The deferred same-resource preview completion cannot commit against the
+  // session key's old content version.
+  tasks.run_next()
+  assert_eq(viewer.definition_peek_phase_for_test(), PeekClosed)
+  assert_true(references.preview_viewer is None)
 
   viewer.dispose()
   services.dispose()

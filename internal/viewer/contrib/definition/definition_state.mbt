@@ -116,14 +116,3 @@ pub(all) enum DefinitionLinkState {
   LinkResolvedEmpty(DefinitionRequestStamp)
   LinkArmed(DefinitionRequestStamp, Array[@language.Location])
 }
-
-///|
-/// Logical Peek lifecycle. Browser resources are held by the root Viewer and
-/// keyed by these generations rather than embedded in the state enum.
-pub(all) enum DefinitionPeekPhase {
-  PeekClosed
-  PeekLoadingDefinitions(Int)
-  PeekLoadingPreview(Int, Int)
-  PeekShown(Int, Int)
-  PeekUnavailable(Int, Int)
-} derive(Eq, Debug)

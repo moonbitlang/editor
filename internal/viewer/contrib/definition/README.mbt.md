@@ -12,10 +12,11 @@ captures model identity, attachment generation, content version, position, and
 word range; same-word positions share preview work while mouse execution tracks
 the pressed line independently. `DefinitionLinkState` records resolving and
 armed transitions plus a gesture-scoped resolved-empty cache without owning
-browser resources. `DefinitionPeekPhase` records definition and preview
-generations while root `viewer` owns and tears down their cancellation sources,
-Code decorations or projected Markdown link spans, Code ViewZone or Markdown
-overlay, nested Viewer, scheduled layout, and optional model-reference lease.
+browser resources. The shared References contribution records Peek session and
+preview generations while root `viewer` owns and tears down their cancellation
+sources, Code decorations or projected Markdown link spans, Code ViewZone or
+Markdown overlay, nested Viewer, scheduled layout, and optional model-reference
+lease.
 
 Provider order follows Monaco registry priority: selector score descending,
 then newest registration first. Normalization removes only exact URI/range
@@ -24,7 +25,7 @@ multiple results to Peek when the outer Viewer can host it, and retains the
 first result only as the deterministic headless/nested fallback. Peek display
 sorting does not change provider-first direct-navigation policy.
 
-The JS-only browser sibling supplies the Peek/result-list and message widget
-shells. Host-neutral opening and target-model resolution live in
-`viewer/common/navigation_api`; no shell, filesystem, network, tab, or editor
-group type crosses either boundary.
+The JS-only browser sibling supplies the Definition message widget; the shared
+References browser package owns the Peek shell and result tree. Host-neutral
+opening and target-model resolution live in `viewer/common/navigation_api`; no
+shell, filesystem, network, tab, or editor group type crosses either boundary.
