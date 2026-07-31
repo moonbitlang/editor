@@ -733,6 +733,18 @@ fn static_route(path : String) -> (String, String)? {
       Some(
         ("browser-tests/definition.mjs.map", "application/json; charset=utf-8"),
       )
+    "/browser-tests/peek_references.html" =>
+      Some(("browser-tests/peek_references.html", "text/html; charset=utf-8"))
+    "/browser-tests/peek_references.mjs" =>
+      Some(
+        ("browser-tests/peek_references.mjs", "text/javascript; charset=utf-8"),
+      )
+    "/browser-tests/peek_references.mjs.map" =>
+      Some(
+        (
+          "browser-tests/peek_references.mjs.map", "application/json; charset=utf-8",
+        ),
+      )
     "/browser-tests/folding_nested.mjs.map" =>
       Some(
         (

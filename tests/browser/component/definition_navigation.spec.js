@@ -7,9 +7,9 @@ import {
 const outerEditor =
   '.definition-host > .monaco-editor.readonly-editor';
 const definitionLink = `${outerEditor} .moonbit-viewer-definition-link`;
-const peek = `${outerEditor} .moonbit-viewer-definition-peek`;
+const peek = `${outerEditor} .moonbit-viewer-references-peek`;
 const preview =
-  `${peek} .moonbit-viewer-definition-peek-preview > ` +
+  `${peek} .moonbit-viewer-references-peek-preview > ` +
   '.monaco-editor.readonly-editor';
 const markdownEditor =
   '.definition-markdown-host > .moonbit-viewer-markdown-document';
@@ -17,9 +17,9 @@ const markdownDefinitionLink =
   `${markdownEditor} .moonbit-viewer-markdown-definition-link`;
 const markdownPeek =
   `${markdownEditor} > .moonbit-viewer-markdown-document-overlays > ` +
-  '.moonbit-viewer-definition-peek-overlay';
+  '.moonbit-viewer-references-peek-overlay';
 const markdownPreview =
-  `${markdownPeek} .moonbit-viewer-definition-peek-preview > ` +
+  `${markdownPeek} .moonbit-viewer-references-peek-preview > ` +
   '.moonbit-viewer-markdown-document';
 const contextMenu =
   'body > .moonbit-context-menu:not(.moonbit-context-submenu)';
@@ -703,16 +703,18 @@ test('Alt+F12 mounts one measured Peek preview, blocks recursive Peek, and Escap
     const geometry = await page.locator(peek).evaluate((root) => {
       const editor = root.closest('.monaco-editor');
       const zone = editor?.querySelector(
-        '.moonbit-viewer-definition-peek-zone[monaco-view-zone]',
+        '.moonbit-viewer-references-peek-zone[monaco-view-zone]',
       );
       const header = root.querySelector(
-        '.moonbit-viewer-definition-peek-header',
+        '.moonbit-viewer-references-peek-header',
       );
-      const body = root.querySelector('.moonbit-viewer-definition-peek-body');
+      const body = root.querySelector('.moonbit-viewer-references-peek-body');
       const previewHost = root.querySelector(
-        '.moonbit-viewer-definition-peek-preview',
+        '.moonbit-viewer-references-peek-preview',
       );
-      const list = root.querySelector('.moonbit-viewer-definition-peek-list');
+      const list = root.querySelector(
+        '.moonbit-viewer-reference-results-tree',
+      );
       const nested = previewHost?.firstElementChild;
       const rootRect = root.getBoundingClientRect();
       const editorRect = editor?.getBoundingClientRect();
@@ -777,10 +779,10 @@ test('Alt+F12 mounts one measured Peek preview, blocks recursive Peek, and Escap
     expect(geometry.previewX).toBeLessThan(geometry.listX);
     expect(geometry.visibleLineCount).toBeGreaterThan(4);
     await expect(
-      page.locator(`${peek} .moonbit-viewer-definition-peek-title-filename`),
-    ).toHaveText('definition-fixture.mbt');
+      page.locator(`${peek} .moonbit-viewer-references-peek-title-filename`),
+    ).toHaveText('Definitions');
     await expect(
-      page.locator(`${peek} .moonbit-viewer-definition-peek-title-meta`),
+      page.locator(`${peek} .moonbit-viewer-references-peek-title-meta`),
     ).toHaveText('1 result');
 
     const targetRect = await textRange(
@@ -800,7 +802,7 @@ test('Alt+F12 mounts one measured Peek preview, blocks recursive Peek, and Escap
       previewBox.y + previewBox.height,
     );
     const match = page.locator(
-      `${preview} .moonbit-viewer-definition-peek-match`,
+      `${preview} .moonbit-viewer-references-peek-reference-match-selected`,
     );
     await expect(match).toHaveCount(1);
     const matchRect = await match.boundingBox();
@@ -895,7 +897,7 @@ test('F4 replaces a multi-definition preview without losing preview focus', asyn
     await page.mouse.click(point.x, point.y);
     await page.keyboard.press('Alt+F12');
     await expect(page.locator(peek)).toHaveCount(1);
-    await expect(page.locator(`${peek} [role="option"]`)).toHaveCount(2);
+    await expect(page.locator(`${peek} [role="treeitem"]`)).toHaveCount(2);
     await expect(page.locator(preview)).toHaveCount(1);
     const providerCalls = (await state(page)).providerCalls;
 

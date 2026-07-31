@@ -1327,6 +1327,9 @@ async fn run_cross_resource_definition_peek_test() -> Unit {
   viewer.set_position(Position(1, 5))
   viewer.start_peek_definition()
   tasks.run_next()
+  // Group snippets and the selected preview own distinct resolver tasks.
+  assert_eq(tasks.tasks.length(), 2)
+  tasks.run_next()
   assert_eq(tasks.tasks.length(), 1)
   tasks.run_next()
   assert_eq(tasks.tasks.length(), 1)
@@ -1346,7 +1349,7 @@ async fn run_cross_resource_definition_peek_test() -> Unit {
   assert_eq(first_releases.val + second_releases.val, 0)
   assert_false(first_preview.disposed)
   assert_true(references.selected_index != initial_index)
-  assert_eq(tasks.tasks.length(), 1)
+  assert_eq(tasks.tasks.length(), 2)
   tasks.run_next()
   assert_eq(first_releases.val + second_releases.val, 0)
   assert_false(first_preview.disposed)
@@ -1358,6 +1361,10 @@ async fn run_cross_resource_definition_peek_test() -> Unit {
   }
   viewer.focus()
   assert_false(first_preview.has_text_focus())
+  assert_eq(tasks.tasks.length(), 1)
+  tasks.run_next()
+  assert_eq(first_releases.val + second_releases.val, 0)
+  assert_false(first_preview.disposed)
   assert_eq(tasks.tasks.length(), 1)
   tasks.run_next()
   assert_eq(first_releases.val + second_releases.val, 1)
@@ -1378,7 +1385,9 @@ async fn run_cross_resource_definition_peek_test() -> Unit {
   assert_eq(first_releases.val + second_releases.val, 2)
   assert_true(second_preview.disposed)
   viewer.close_definition_peek(restore_focus=false)
-  assert_eq(first_releases.val + second_releases.val, 3)
+  // Close releases the installed selected-preview lease plus both retained
+  // group-snippet leases.
+  assert_eq(first_releases.val + second_releases.val, 5)
   assert_false(first_model.is_disposed())
   assert_false(second_model.is_disposed())
 
@@ -1441,6 +1450,7 @@ async fn run_reentrant_definition_peek_release_test() -> Unit {
   tasks.run_next()
   tasks.run_next()
   tasks.run_next()
+  tasks.run_next()
   let references = viewer.references_contribution().unwrap()
   guard references.preview_reference is Some(_) else {
     fail("initial Peek preview reference was not installed")
@@ -1449,10 +1459,14 @@ async fn run_reentrant_definition_peek_release_test() -> Unit {
   viewer.move_definition_peek_result(1)
   tasks.run_next()
   assert_eq(tasks.tasks.length(), 1)
+  tasks.run_next()
+  assert_eq(tasks.tasks.length(), 1)
   close_once.val = true
   tasks.run_next()
   assert_eq(viewer.definition_peek_phase_for_test(), PeekClosed)
-  assert_eq(releases.val, 2)
+  // The reentrant close releases the old selected lease and both retained
+  // group leases; the now-stale incoming selected lease releases on return.
+  assert_eq(releases.val, 4)
   assert_true(references.preview_reference is None)
   assert_true(references.preview_viewer is None)
   assert_true(references.widget is None)
@@ -1504,6 +1518,7 @@ async fn run_reentrant_definition_peek_close_test() -> Unit {
   tasks.run_next()
   tasks.run_next()
   tasks.run_next()
+  tasks.run_next()
   let references = viewer.references_contribution().unwrap()
   guard references.preview_reference is Some(_) else {
     fail("initial Peek preview reference was not installed")
@@ -1519,7 +1534,7 @@ async fn run_reentrant_definition_peek_close_test() -> Unit {
   assert_true(references.widget is Some(_))
   assert_true(state.peek_source is Some(_))
   assert_eq(tasks.tasks.length(), 1)
-  assert_eq(releases.val, 1)
+  assert_eq(releases.val, 2)
 
   viewer.dispose()
   services.dispose()
@@ -1552,16 +1567,18 @@ async fn run_stale_definition_peek_reference_test() -> Unit {
   viewer.start_peek_definition()
   tasks.run_next()
   // The resolver task has not run. Closing cancels it; a non-cooperative late
-  // resolver result must still release the returned lease.
+  // group and selected-preview results must still release both returned leases.
   viewer.close_definition_peek(restore_focus=false)
   tasks.run_next()
-  assert_eq(releases.val, 1)
+  tasks.run_next()
+  assert_eq(releases.val, 2)
   assert_eq(viewer.definition_peek_phase_for_test(), PeekClosed)
 
   viewer.start_peek_definition()
   tasks.run_next()
   tasks.run_next()
-  assert_eq(releases.val, 2)
+  tasks.run_next()
+  assert_eq(releases.val, 4)
   match viewer.definition_peek_phase_for_test() {
     PeekUnavailable(_, _) => ()
     _ => fail("wrong-URI resolver result did not become unavailable")

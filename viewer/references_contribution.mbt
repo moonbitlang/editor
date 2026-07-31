@@ -5,6 +5,24 @@
 let references_contribution_id : String = "editor.contrib.referencesController"
 
 ///|
+/// One root-owned lazy snippet-resolution slot. The group index is immutable;
+/// each request bumps `generation`, and the optional source/reference are
+/// detached before cancellation or lease-release callbacks can re-enter.
+priv struct ReferencesGroupPreviewOwner {
+  group_index : Int
+  mut generation : Int
+  mut source : @language.CancellationTokenSource?
+  mut reference : @navigation_api.TextModelReference?
+}
+
+///|
+fn ReferencesGroupPreviewOwner::ReferencesGroupPreviewOwner(
+  group_index : Int,
+) -> ReferencesGroupPreviewOwner {
+  { group_index, generation: 0, source: None, reference: None }
+}
+
+///|
 /// Central per-Viewer owner for the presentation and lifetime shared by
 /// Definition Peek and the precomputed-locations References entry. Definition
 /// provider requests stay in `DefinitionContributionState`; every field here
@@ -25,8 +43,10 @@ priv struct ReferencesContributionState {
   mut markdown_projection_generation : Int?
   mut preview_viewer : Viewer?
   mut preview_reference : @navigation_api.TextModelReference?
+  mut preview_decorations : EditorDecorationsCollection?
   mut preview_layout_frame : @base_common.Disposable?
   mut preview_resize_observer : @base_common.Disposable?
+  mut group_preview_owners : Array[ReferencesGroupPreviewOwner]
   mut focus_frame : @base_common.Disposable?
   mut launch_async_task : (async () -> Unit noraise) -> Unit
 }
@@ -49,8 +69,10 @@ fn ReferencesContributionState::ReferencesContributionState() -> ReferencesContr
     markdown_projection_generation: None,
     preview_viewer: None,
     preview_reference: None,
+    preview_decorations: None,
     preview_layout_frame: None,
     preview_resize_observer: None,
+    group_preview_owners: [],
     focus_frame: None,
     launch_async_task,
   }

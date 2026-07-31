@@ -876,32 +876,7 @@ async fn Viewer::open_definition_location(
     model_generation: self.model_slot.generation,
     model_version_id: source_model.get_version_id(),
   }
-  if mode == Current {
-    match source_model {
-      model if model.uri.to_string() == location.uri.to_string() => {
-        let range = source_model.validate_range(location.range)
-        let start = range.get_start_position()
-        self.set_position(start, source="gotoDefinition")
-        self.reveal_range_in_center_if_outside_viewport(
-          Range(
-            start.line_number,
-            start.column,
-            start.line_number,
-            start.column,
-          ),
-        )
-        self.focus()
-        self.show_definition_target_highlight(source_model, range)
-        return true
-      }
-      _ => ()
-    }
-  }
-  let accepted = match self.services.location_opener {
-    Some(opener) =>
-      opener.open({ source_viewer_id: self.get_id(), location, mode })
-    None => false
-  }
+  let accepted = self.open_peek_location(location, mode, "gotoDefinition")
   if !accepted && self.definition_open_is_current(stamp) {
     self.show_definition_message(
       "Unable to open definition",
@@ -912,10 +887,10 @@ async fn Viewer::open_definition_location(
 }
 
 ///|
-/// VS Code's `_openReference` target feedback: retain the full target range
-/// for 350ms, and clear it only if the Viewer still owns the exact model that
-/// received the decoration.
-fn Viewer::show_definition_target_highlight(
+/// VS Code's `_openReference` target feedback shared by Definition and
+/// References navigation: retain the full target range for 350ms, and clear it
+/// only if the Viewer still owns the exact model that received the decoration.
+fn Viewer::show_navigation_target_highlight(
   self : Viewer,
   target_model : @model.TextModel,
   range : @base_common.Range,

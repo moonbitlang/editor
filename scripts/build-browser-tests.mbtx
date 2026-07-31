@@ -62,6 +62,10 @@ fn smoke_bundles() -> Array[BrowserBundle] {
       name: "definition",
       title: "MoonBit Viewer Definition Navigation Test",
     },
+    BrowserBundle::{
+      name: "peek_references",
+      title: "MoonBit Viewer Peek References Test",
+    },
   ]
 }
 
