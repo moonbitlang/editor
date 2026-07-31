@@ -11,6 +11,8 @@ pub struct ViewerServices {
   priv languages : @languages.LanguageHandle
   priv marker_decorations : @markers.MarkerDecorationsHandle
   priv agent_feedback : @agent_feedback_api.AgentFeedbackHandle
+  priv location_opener : @navigation_api.LocationOpenerHandle?
+  priv text_model_resolver : @navigation_api.TextModelResolverHandle?
   priv quick_diff : @quick_diff_api.QuickDiffHandle
   priv log_service : @log.LogHandle
   /// Concrete defaults owned by this exact bundle. Caller-supplied handles
@@ -32,6 +34,8 @@ pub fn ViewerServices::ViewerServices(
   languages? : @languages.LanguageHandle,
   markers? : @markers.MarkerDecorationsSource,
   agent_feedback? : @agent_feedback_api.AgentFeedbackHandle,
+  location_opener? : @navigation_api.LocationOpenerHandle,
+  text_model_resolver? : @navigation_api.TextModelResolverHandle,
   quick_diff? : @quick_diff_api.QuickDiffHandle,
   log_service? : @log.LogHandle,
 ) -> ViewerServices {
@@ -75,6 +79,8 @@ pub fn ViewerServices::ViewerServices(
     languages,
     marker_decorations,
     agent_feedback,
+    location_opener,
+    text_model_resolver,
     quick_diff,
     log_service,
     owned_marker_decorations,

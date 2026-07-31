@@ -75,6 +75,7 @@ pub struct LanguageFilter {
 } derive(@debug.Debug)
 pub fn LanguageFilter::LanguageFilter(language? : String, scheme? : String, pattern? : String) -> Self
 pub fn LanguageFilter::matches(Self, @model.TextModel) -> Bool
+pub fn LanguageFilter::score(Self, @model.TextModel) -> Int
 
 pub(all) enum LanguageSelector {
   LanguageId(String)
@@ -82,6 +83,7 @@ pub(all) enum LanguageSelector {
   LanguageSelectorList(Array[LanguageSelector])
 } derive(@debug.Debug)
 pub fn LanguageSelector::matches(Self, @model.TextModel) -> Bool
+pub fn LanguageSelector::score(Self, @model.TextModel) -> Int
 
 pub(all) struct Location {
   uri : @common.Uri
@@ -97,7 +99,7 @@ pub(all) struct MarkdownCommentBlock {
 
 // Traits
 pub(open) trait DefinitionProvider {
-  async fn provide_definition(Self, @model.TextModel, @common.Position, CancellationToken) -> Location?
+  async fn provide_definition(Self, @model.TextModel, @common.Position, CancellationToken) -> Array[Location]
 }
 
 pub(open) trait DocumentSymbolProvider {

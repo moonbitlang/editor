@@ -41,7 +41,7 @@ pub(all) struct DefinitionResultPayload {
   id : String
   uri : @common.Uri
   revision : String
-  location : @language.Location?
+  locations : Array[@language.Location]
 } derive(@debug.Debug)
 
 pub(all) struct DiagnosticsPayload {

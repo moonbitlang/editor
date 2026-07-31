@@ -1,8 +1,22 @@
 ///|
 /// In-flight protocol requests awaiting their response packet, keyed by
-/// request id. A module-level registry, like `browser_dispatch`.
-let pending_requests : Map[String, (@remote_protocol.ServerPacket) -> Unit] = Map([],
-)
+/// request id. Each entry owns the caller-token subscription that can retire
+/// the request before a late server response arrives.
+priv struct PendingProtocolRequest {
+  resolve : (@remote_protocol.ServerPacket) -> Unit
+  mut cancellation_subscription : @base_common.Disposable?
+  mut sent : Bool
+}
+
+///|
+/// A module-level registry, like `browser_dispatch`.
+let pending_requests : Map[String, PendingProtocolRequest] = Map([])
+
+///|
+/// Request ids cancelled locally but still capable of receiving a late wire
+/// response. Tombstones consume that response instead of misrouting a late
+/// `DocumentLoaded` packet into the unrelated watch-push path.
+let cancelled_request_ids : Map[String, Unit] = Map([])
 
 ///|
 let request_counter : Ref[Int] = Ref(0)
@@ -34,14 +48,35 @@ fn next_request_id(prefix : String) -> String {
 async fn protocol_request(
   prefix : String,
   make_packet : (String) -> @remote_protocol.ClientPacket,
+  token? : @language.CancellationToken = @language.CancellationToken::none(),
 ) -> @remote_protocol.ServerPacket noraise {
   let id = next_request_id(prefix)
+  if token.is_cancellation_requested() {
+    return cancelled_protocol_response(id)
+  }
   @js.suspend((
     resolve : (@remote_protocol.ServerPacket) -> Unit,
     _reject : (Error) -> Unit,
   ) => {
-    pending_requests[id] = resolve
-    send_protocol_packet(make_packet(id))
+    let pending : PendingProtocolRequest = {
+      resolve,
+      cancellation_subscription: None,
+      sent: false,
+    }
+    pending_requests[id] = pending
+    let subscription = token.on_cancellation_requested(() => {
+      cancel_pending_request(id)
+    })
+    pending.cancellation_subscription = Some(subscription)
+    // Cancellation can be delivered inline while the subscription is being
+    // installed. In that case `cancel_pending_request` has already resumed
+    // the suspension and the wire request must never be sent.
+    if pending_requests.get(id) is Some(_) {
+      pending.sent = true
+      send_protocol_packet(make_packet(id))
+    } else {
+      subscription.dispose()
+    }
   }) catch {
     _ =>
       RemoteError(
@@ -55,6 +90,39 @@ async fn protocol_request(
 }
 
 ///|
+fn cancelled_protocol_response(id : String) -> @remote_protocol.ServerPacket {
+  RemoteError(
+    ProtocolError(
+      ProtocolProviderError,
+      "Protocol request cancelled.",
+      request_id=id,
+      provider_code="Cancelled",
+    ),
+  )
+}
+
+///|
+fn cancel_pending_request(id : String) -> Unit {
+  match pending_requests.get(id) {
+    Some(pending) => {
+      pending_requests.remove(id)
+      if pending.sent {
+        cancelled_request_ids[id] = ()
+      }
+      match pending.cancellation_subscription {
+        Some(subscription) => {
+          pending.cancellation_subscription = None
+          subscription.dispose()
+        }
+        None => ()
+      }
+      (pending.resolve)(cancelled_protocol_response(id))
+    }
+    None => ()
+  }
+}
+
+///|
 /// Routes a decoded server packet to its waiting request, if any. Returns
 /// whether the packet was consumed as a response.
 fn resolve_pending_response(packet : @remote_protocol.ServerPacket) -> Bool {
@@ -63,12 +131,25 @@ fn resolve_pending_response(packet : @remote_protocol.ServerPacket) -> Bool {
     return false
   }
   match pending_requests.get(id) {
-    Some(resolve) => {
+    Some(pending) => {
       pending_requests.remove(id)
-      resolve(packet)
+      match pending.cancellation_subscription {
+        Some(subscription) => {
+          pending.cancellation_subscription = None
+          subscription.dispose()
+        }
+        None => ()
+      }
+      (pending.resolve)(packet)
       true
     }
-    None => false
+    None =>
+      if cancelled_request_ids.contains(id) {
+        cancelled_request_ids.remove(id)
+        true
+      } else {
+        false
+      }
   }
 }
 
@@ -76,15 +157,23 @@ fn resolve_pending_response(packet : @remote_protocol.ServerPacket) -> Bool {
 /// Fails every in-flight request, used when the socket drops so suspended
 /// providers resolve instead of leaking.
 fn fail_pending_requests(message : String) -> Unit {
+  cancelled_request_ids.clear()
   let ids : Array[String] = []
-  for id, _resolve in pending_requests {
+  for id, _pending in pending_requests {
     ids.push(id)
   }
   for id in ids {
     match pending_requests.get(id) {
-      Some(resolve) => {
+      Some(pending) => {
         pending_requests.remove(id)
-        resolve(
+        match pending.cancellation_subscription {
+          Some(subscription) => {
+            pending.cancellation_subscription = None
+            subscription.dispose()
+          }
+          None => ()
+        }
+        (pending.resolve)(
           RemoteError(
             ProtocolError(ProtocolProviderError, message, request_id=id),
           ),

@@ -420,7 +420,7 @@ pub async fn RemoteServer::definition(
         id: request.id,
         uri: request.uri,
         revision: document.revision,
-        location: self.definition_provider.provide_definition(
+        locations: self.definition_provider.provide_definition(
           model,
           model.get_position_at(request.offset),
           @language.CancellationToken::none(),

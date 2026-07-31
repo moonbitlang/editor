@@ -12,6 +12,8 @@ test "contributions instantiate centrally in the reviewed order and expose every
     markdown_comment_contribution_id,
     "editor.contrib.contentHover",
     "quickDiff.decorator",
+    context_menu_contribution_id,
+    definition_contribution_id,
   ]
   let actual : Array[String] = []
   for id, entry in viewer.contributions.instances {
@@ -23,6 +25,8 @@ test "contributions instantiate centrally in the reviewed order and expose every
       ("editor.contrib.markdownComments", MarkdownComments(_)) => ()
       ("editor.contrib.contentHover", ContentHover(_)) => ()
       ("quickDiff.decorator", QuickDiff(_)) => ()
+      ("editor.contrib.contextmenu", ContextMenu(_)) => ()
+      ("editor.contrib.definition", Definition(_)) => ()
       _ => fail("contribution id and concrete variant diverged: " + id)
     }
   }
@@ -39,6 +43,8 @@ test "contributions instantiate centrally in the reviewed order and expose every
   assert_true(viewer.markdown_comment_contribution() is Some(_))
   assert_true(viewer.content_hover_controller() is Some(_))
   assert_true(viewer.quick_diff_contribution() is Some(_))
+  assert_true(viewer.context_menu_contribution() is Some(_))
+  assert_true(viewer.definition_contribution() is Some(_))
 
   // Every typed accessor validates both its fixed id and the enum variant.
   // Temporarily put a valid but mismatched payload under quick diff's id.
@@ -150,7 +156,7 @@ test "direct entry disposal retires typed lookup without removing the row early"
 }
 
 ///|
-test "viewer disposes all six real rows once in order while the map stays installed" {
+test "viewer disposes all eight real rows once in order while the map stays installed" {
   let viewer = Viewer::Viewer()
   let expected_ids = [
     "agentFeedback.editorInputContribution",
@@ -159,6 +165,8 @@ test "viewer disposes all six real rows once in order while the map stays instal
     "editor.contrib.markdownComments",
     "editor.contrib.contentHover",
     "quickDiff.decorator",
+    context_menu_contribution_id,
+    definition_contribution_id,
   ]
   let order : Array[String] = []
   let map_stayed_installed = Ref(true)
@@ -185,6 +193,8 @@ test "viewer disposes all six real rows once in order while the map stays instal
         "markdown" => viewer.markdown_comment_contribution() is Some(_)
         "hover" => viewer.content_hover_controller() is Some(_)
         "quickDiff" => viewer.quick_diff_contribution() is Some(_)
+        "contextMenu" => viewer.context_menu_contribution() is Some(_)
+        "definition" => viewer.definition_contribution() is Some(_)
         _ => false
       }
       if !available {
@@ -206,10 +216,17 @@ test "viewer disposes all six real rows once in order while the map stays instal
   )
   viewer.content_hover_controller().unwrap().install_react_timer(track("hover"))
   viewer.quick_diff_contribution().unwrap().listeners.push(track("quickDiff"))
+  viewer.contributions.instances[context_menu_contribution_id].listeners.push(
+    track("contextMenu"),
+  )
+  viewer.contributions.instances[definition_contribution_id].listeners.push(
+    track("definition"),
+  )
   viewer.dispose()
   viewer.dispose()
   assert_eq(order, [
-    "input", "widget", "folding", "markdown", "hover", "quickDiff",
+    "input", "widget", "folding", "markdown", "hover", "quickDiff", "contextMenu",
+    "definition",
   ])
   assert_true(map_stayed_installed.val)
   assert_true(typed_row_stayed_available.val)
@@ -224,7 +241,7 @@ test "contribution wrapper retires lookup between behavior and retained-resource
   let hover_state = viewer.content_hover_contribution().unwrap()
   viewer.contributions.dispose_behavior(viewer)
   assert_true(viewer.contributions.lifecycle == ContributionsDisposing)
-  assert_eq(viewer.contributions.instances.length(), 6)
+  assert_eq(viewer.contributions.instances.length(), 8)
   assert_true(viewer.content_hover_contribution() is None)
   assert_true(
     viewer.contributions.lookup("editor.contrib.contentHover") is None,
@@ -261,12 +278,18 @@ test "two viewers isolate mutable contribution state and disposal owners" {
   let second_hover = second.content_hover_controller().unwrap()
   let first_quick_diff = first.quick_diff_contribution().unwrap()
   let second_quick_diff = second.quick_diff_contribution().unwrap()
+  let first_context_menu = first.context_menu_contribution().unwrap()
+  let second_context_menu = second.context_menu_contribution().unwrap()
+  let first_definition = first.definition_contribution().unwrap()
+  let second_definition = second.definition_contribution().unwrap()
   assert_false(physical_equal(first_input, second_input))
   assert_false(physical_equal(first_widgets, second_widgets))
   assert_false(physical_equal(first_folding, second_folding))
   assert_false(physical_equal(first_markdown, second_markdown))
   assert_false(physical_equal(first_hover, second_hover))
   assert_false(physical_equal(first_quick_diff, second_quick_diff))
+  assert_false(physical_equal(first_context_menu, second_context_menu))
+  assert_false(physical_equal(first_definition, second_definition))
 
   // Give every concrete controller/state a Viewer-specific mutable witness.
   // These values deliberately differ so an accidental shared carrier or
@@ -324,6 +347,18 @@ test "two viewers isolate mutable contribution state and disposal owners" {
   second_quick_diff.listeners.push(
     @base_common.Disposable::from(() => second_disposals.push("quickDiff")),
   )
+  first.contributions.instances[context_menu_contribution_id].listeners.push(
+    @base_common.Disposable::from(() => first_disposals.push("contextMenu")),
+  )
+  second.contributions.instances[context_menu_contribution_id].listeners.push(
+    @base_common.Disposable::from(() => second_disposals.push("contextMenu")),
+  )
+  first.contributions.instances[definition_contribution_id].listeners.push(
+    @base_common.Disposable::from(() => first_disposals.push("definition")),
+  )
+  second.contributions.instances[definition_contribution_id].listeners.push(
+    @base_common.Disposable::from(() => second_disposals.push("definition")),
+  )
   let second_folding_listener_count = second_folding.local_to_dispose.length()
   let second_markdown_listener_count = second_markdown.listeners.length()
   let second_quick_diff_listener_count = second_quick_diff.listeners.length()
@@ -346,7 +381,8 @@ test "two viewers isolate mutable contribution state and disposal owners" {
   // First's cleanup drains only First-owned stores. Second keeps the exact
   // same typed instances, mutable sentinels, and pending disposal handles.
   assert_eq(first_disposals, [
-    "input", "widget", "folding", "markdown", "hover", "quickDiff",
+    "input", "widget", "folding", "markdown", "hover", "quickDiff", "contextMenu",
+    "definition",
   ])
   assert_eq(second_disposals, [])
   // Markdown teardown advances only First's stale-callback generation.
@@ -357,6 +393,8 @@ test "two viewers isolate mutable contribution state and disposal owners" {
   assert_true(first.markdown_comment_contribution() is None)
   assert_true(first.content_hover_controller() is None)
   assert_true(first.quick_diff_contribution() is None)
+  assert_true(first.context_menu_contribution() is None)
+  assert_true(first.definition_contribution() is None)
   assert_true(
     physical_equal(
       second_input,
@@ -383,6 +421,15 @@ test "two viewers isolate mutable contribution state and disposal owners" {
   )
   assert_true(
     physical_equal(second_quick_diff, second.quick_diff_contribution().unwrap()),
+  )
+  assert_true(
+    physical_equal(
+      second_context_menu,
+      second.context_menu_contribution().unwrap(),
+    ),
+  )
+  assert_true(
+    physical_equal(second_definition, second.definition_contribution().unwrap()),
   )
   assert_false(second_input.visible)
   assert_eq(second_input.hover_line_number, 22)
@@ -415,10 +462,12 @@ test "two viewers isolate mutable contribution state and disposal owners" {
 
   second.dispose()
   assert_eq(second_disposals, [
-    "input", "widget", "folding", "markdown", "hover", "quickDiff",
+    "input", "widget", "folding", "markdown", "hover", "quickDiff", "contextMenu",
+    "definition",
   ])
   assert_eq(first_disposals, [
-    "input", "widget", "folding", "markdown", "hover", "quickDiff",
+    "input", "widget", "folding", "markdown", "hover", "quickDiff", "contextMenu",
+    "definition",
   ])
 }
 
@@ -431,6 +480,8 @@ test "model removal and reattach preserve central contribution identities" {
   let markdown = viewer.markdown_comment_contribution().unwrap()
   let hover = viewer.content_hover_controller().unwrap()
   let quick_diff = viewer.quick_diff_contribution().unwrap()
+  let context_menu = viewer.context_menu_contribution().unwrap()
+  let definition = viewer.definition_contribution().unwrap()
   let markdown_listener_disposed = Ref(false)
   markdown.listeners.push(
     @base_common.Disposable::from(() => markdown_listener_disposed.val = true),
@@ -459,6 +510,12 @@ test "model removal and reattach preserve central contribution identities" {
   assert_true(physical_equal(hover, viewer.content_hover_controller().unwrap()))
   assert_true(
     physical_equal(quick_diff, viewer.quick_diff_contribution().unwrap()),
+  )
+  assert_true(
+    physical_equal(context_menu, viewer.context_menu_contribution().unwrap()),
+  )
+  assert_true(
+    physical_equal(definition, viewer.definition_contribution().unwrap()),
   )
   viewer.dispose()
   assert_true(markdown_listener_disposed.val)
@@ -565,4 +622,253 @@ test "cursor navigation registers exactly 16 primary rules after contributions" 
   assert_eq(cursor_rules, 16)
   assert_true(last_hover_rule >= 0)
   assert_true(first_cursor_rule > last_hover_rule)
+}
+
+///|
+test "definition context menu resolves both definition actions at the top level" {
+  install_mounted_test_browser()
+  defer restore_mounted_test_browser()
+  let services = definition_navigation_services([])
+  defer services.dispose()
+  let viewer = Viewer::Viewer(services~)
+  defer viewer.dispose()
+  let model = definition_navigation_test_model("file:///context-menu.mbt")
+  defer model.dispose()
+  let host = @rdom.document().create_element("div")
+  viewer.attach(host)
+  viewer.set_model(Some(model))
+
+  let entries = editor_registry().resolve_editor_menu(viewer, EditorContext)
+  assert_eq(entries.length(), 2)
+  guard entries[0]
+    is ContextMenuAction(
+      id=go_to_definition_id,
+      label="Go to Definition",
+      keybinding_label=Some(go_to_keybinding)
+    ) else {
+    fail("expected Go to Definition as the first context-menu action")
+  }
+  assert_eq(go_to_definition_id, "editor.action.revealDefinition")
+  assert_eq(
+    go_to_keybinding,
+    definition_menu_keybinding_label(alt=false, ctrl_cmd=false),
+  )
+  guard entries[1]
+    is ContextMenuAction(
+      id=peek_definition_id,
+      label="Peek Definition",
+      keybinding_label=Some(peek_keybinding)
+    ) else {
+    fail("expected Peek Definition as the second context-menu action")
+  }
+  assert_eq(peek_definition_id, "editor.action.peekDefinition")
+  assert_eq(
+    peek_keybinding,
+    definition_menu_keybinding_label(alt=true, ctrl_cmd=false),
+  )
+}
+
+///|
+test "definition context menu suppresses unavailable actions" {
+  let services = definition_navigation_services([])
+  defer services.dispose()
+  let viewer = Viewer::Viewer(services~)
+  defer viewer.dispose()
+  let model = definition_navigation_test_model(
+    "file:///headless-context-menu.mbt",
+  )
+  defer model.dispose()
+  viewer.set_model(Some(model))
+
+  // A provider makes Go to Definition available, but a headless Viewer cannot
+  // own Peek UI, so only the available top-level action remains.
+  let headless_entries = editor_registry().resolve_editor_menu(
+    viewer,
+    EditorContext,
+  )
+  assert_eq(headless_entries.length(), 1)
+  guard headless_entries[0]
+    is ContextMenuAction(id="editor.action.revealDefinition", ..) else {
+    fail("expected only the available Go to Definition action")
+  }
+
+  let unavailable = Viewer::Viewer()
+  defer unavailable.dispose()
+  let unavailable_model = definition_navigation_test_model(
+    "file:///no-provider-context-menu.mbt",
+  )
+  defer unavailable_model.dispose()
+  unavailable.set_model(Some(unavailable_model))
+  assert_eq(
+    editor_registry().resolve_editor_menu(unavailable, EditorContext).length(),
+    0,
+  )
+}
+
+///|
+test "menu resolution orders groups and inserts separators only between visible groups" {
+  let registry : EditorContributionRegistry = {
+    contributions: [],
+    commands: Map([]),
+    keybindings: [],
+  }
+  registry.register_editor_command(
+    "test.second",
+    _viewer => true,
+    _viewer => (),
+    [],
+    title="Second",
+    menu_placements=[
+      { menu_id: EditorContext, group: "02_navigation", order: 2.0 },
+    ],
+  )
+  registry.register_editor_command(
+    "test.first",
+    _viewer => true,
+    _viewer => (),
+    [],
+    title="First",
+    menu_placements=[
+      { menu_id: EditorContext, group: "01_primary", order: 9.0 },
+    ],
+  )
+  registry.register_editor_command(
+    "test.hidden",
+    _viewer => false,
+    _viewer => (),
+    [],
+    title="Hidden",
+    menu_placements=[{ menu_id: EditorContext, group: "00_hidden", order: 1.0 }],
+  )
+  let viewer = Viewer::Viewer()
+  defer viewer.dispose()
+  let entries = registry.resolve_editor_menu(viewer, EditorContext)
+  assert_eq(entries.length(), 3)
+  guard entries[0] is ContextMenuAction(id="test.first", ..) else {
+    fail("expected the first nonempty group first")
+  }
+  assert_true(entries[1] is ContextMenuSeparator)
+  guard entries[2] is ContextMenuAction(id="test.second", ..) else {
+    fail("expected the second nonempty group after one separator")
+  }
+}
+
+///|
+test "semantic Markdown uses the shared menu and ordinary command dispatcher" {
+  install_mounted_test_browser()
+  defer restore_mounted_test_browser()
+  let services = definition_navigation_services([])
+  defer services.dispose()
+  let viewer = Viewer::Viewer(services~)
+  defer viewer.dispose()
+  let source =
+    #|# Literate source
+    #|
+    #|```mbt check
+    #|let source = target
+    #|```
+  let model = markdown_presentation_test_model(
+    "/src/context-menu.mbt.md", "moonbit", source,
+  )
+  defer model.dispose()
+  let host = @rdom.document().create_element("div")
+  viewer.attach(host)
+  viewer.set_model(Some(model))
+  guard viewer.current_markdown_document() is Some(_) else {
+    fail("expected a mounted semantic Markdown presentation")
+  }
+  let source_offset = source.find("target").unwrap()
+  guard viewer.definition_target_from_source_offset(source_offset)
+    is Some(target) else {
+    fail("expected a definition target in the projected source")
+  }
+  viewer.commit_plain_definition_pointer_target(Some(target))
+  viewer.record_markdown_context_menu_anchor(Some(target), 24.0, 36.0)
+
+  assert_true(
+    viewer.handle_markdown_definition_key_down("F10", false, false, true),
+  )
+  let context_menu = viewer.context_menu_contribution().unwrap()
+  guard context_menu.widget is Some(widget) else {
+    fail("Shift+F10 did not lazily create the shared context menu")
+  }
+  assert_true(widget.is_visible())
+  let menu_root = widget.get_dom_node()
+  assert_eq(menu_root.get_attribute("aria-hidden"), Some("false"))
+  assert_true(menu_root.query_selector("[role=\"menu\"]") is Some(_))
+  assert_true(
+    menu_root.query_selector(
+      "[data-context-menu-command=\"editor.action.revealDefinition\"]",
+    )
+    is Some(_),
+  )
+  assert_true(
+    menu_root.query_selector(
+      "[data-context-menu-command=\"editor.action.peekDefinition\"]",
+    )
+    is Some(_),
+  )
+
+  assert_false(
+    widget.show(
+      [],
+      0.0,
+      0.0,
+      "dark",
+      theme_source=viewer.current_markdown_document().unwrap().root(),
+    ),
+  )
+  assert_false(widget.is_visible())
+  let dispatched = Ref(false)
+  let markdown_registry : EditorContributionRegistry = {
+    contributions: [],
+    commands: Map([]),
+    keybindings: [],
+  }
+  markdown_registry.register_editor_command(
+    "test.markdown-command",
+    _viewer => true,
+    _viewer => dispatched.val = true,
+    [],
+  )
+  assert_true(
+    markdown_registry.run_editor_command(viewer, "test.markdown-command"),
+  )
+  assert_true(dispatched.val)
+
+  assert_true(
+    viewer.handle_markdown_definition_key_down(
+      "ContextMenu", false, false, false,
+    ),
+  )
+  assert_true(widget.is_visible())
+  viewer.set_value(source.replace(old="target", new="replacement"))
+  assert_false(widget.is_visible())
+  assert_false(
+    viewer.handle_markdown_definition_key_down(
+      "ContextMenu", false, false, false,
+    ),
+  )
+  let replacement_source = source.replace(old="target", new="replacement")
+  guard viewer.definition_target_from_source_offset(
+      replacement_source.find("replacement").unwrap(),
+    )
+    is Some(replacement_target) else {
+    fail("expected the replaced semantic target")
+  }
+  viewer.commit_plain_definition_pointer_target(Some(replacement_target))
+  viewer.record_markdown_context_menu_anchor(
+    Some(replacement_target),
+    48.0,
+    60.0,
+  )
+  assert_true(
+    viewer.handle_markdown_definition_key_down(
+      "ContextMenu", false, false, false,
+    ),
+  )
+  assert_true(widget.is_visible())
+  viewer.dispose()
+  assert_false(widget.is_visible())
+  assert_eq(menu_root.get_attribute("aria-hidden"), Some("true"))
 }

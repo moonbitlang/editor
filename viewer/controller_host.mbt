@@ -46,9 +46,13 @@ fn Viewer::pointer_handler_helper(
     get_current_selection: () => self.view_selection(),
     // --- ViewController substitutes ---
     dispatch_mouse: data => self.dispatch_mouse(data),
+    before_mouse_down_selection: (event, target) => {
+      self.before_definition_mouse_down_selection(event, target)
+    },
     emit_mouse_down: (event, target) => self.emit_mouse_down(event, target),
     emit_mouse_up: (event, target) => self.emit_mouse_up(event, target),
     emit_mouse_move: (event, target) => self.emit_mouse_move(event, target),
+    emit_context_menu: (event, target) => self.emit_context_menu(event, target),
     emit_mouse_drag: (event, target) => self.emit_mouse_drag(event, target),
     emit_mouse_leave: event => self.emit_mouse_leave(event),
     // --- retained viewer scroll seams ---

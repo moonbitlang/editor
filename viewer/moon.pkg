@@ -14,9 +14,13 @@ import {
   "moonbitlang/editor/viewer/common/core",
   "moonbitlang/editor/viewer/common/model",
   "moonbitlang/editor/viewer/common/agent_feedback_api",
+  "moonbitlang/editor/viewer/common/navigation_api",
   "moonbitlang/editor/viewer/common/quick_diff_api",
   "moonbitlang/editor/internal/viewer/contrib/agent_feedback",
   "moonbitlang/editor/internal/viewer/contrib/agent_feedback/browser" @agent_feedback_browser,
+  "moonbitlang/editor/internal/viewer/contrib/contextmenu/browser" @contextmenu_browser,
+  "moonbitlang/editor/internal/viewer/contrib/definition",
+  "moonbitlang/editor/internal/viewer/contrib/definition/browser" @definition_browser,
   "moonbitlang/editor/internal/viewer/contrib/folding/browser" @folding_browser,
   "moonbitlang/editor/internal/viewer/contrib/hover",
   "moonbitlang/editor/internal/viewer/contrib/hover/browser" @hover_browser,
@@ -37,6 +41,7 @@ import {
 }
 
 import {
+  "moonbitlang/async",
   "moonbitlang/editor/syntax",
 } for "wbtest"
 

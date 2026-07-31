@@ -13,3 +13,9 @@
 .moonbit-viewer .rangeHighlight {
   background-color: var(--vscode-editor-rangeHighlightBackground);
 }
+
+.moonbit-viewer .symbolHighlight {
+  box-sizing: border-box;
+  background-color: var(--vscode-editor-symbolHighlightBackground, #ea5c0055);
+  border: 1px solid var(--vscode-editor-symbolHighlightBorder, transparent);
+}

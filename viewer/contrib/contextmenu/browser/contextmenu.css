@@ -1,0 +1,188 @@
+/*
+ * Selected behavior/CSS port of VS Code's generated `getMenuWidgetCSS` plus
+ * `contextview.css`. The DOM is owned by
+ * `internal/viewer/contrib/contextmenu/browser`.
+ */
+
+@keyframes moonbit-context-menu-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.moonbit-context-menu {
+  --moonbit-menu-background: #1f1f1f;
+  --moonbit-menu-foreground: #cccccc;
+  --moonbit-menu-selection-background: #0078d4;
+  --moonbit-menu-selection-foreground: #ffffff;
+  --moonbit-menu-separator-background: #cccccc33;
+  --moonbit-menu-border: transparent;
+  all: initial;
+  position: fixed;
+  z-index: 2575;
+  box-sizing: border-box;
+  color: var(--vscode-menu-foreground, var(--moonbit-menu-foreground));
+  font-family: var(
+    --ui-font-family,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif
+  );
+  font-size: 13px;
+  outline: 0;
+  border: none;
+  border-radius: var(--vscode-cornerRadius-large, 4px);
+  overflow: hidden;
+  animation: moonbit-context-menu-fade-in 0.083s linear;
+  box-shadow: var(
+    --vscode-shadow-lg,
+    0 0 12px var(--vscode-widget-shadow, rgb(0 0 0 / 36%))
+  );
+}
+
+.moonbit-context-menu[data-theme="light"] {
+  --moonbit-menu-background: #ffffff;
+  --moonbit-menu-foreground: #3b3b3b;
+  --moonbit-menu-selection-background: #005fb8;
+  --moonbit-menu-selection-foreground: #ffffff;
+  --moonbit-menu-separator-background: #3b3b3b33;
+  --moonbit-menu-border: #cecece;
+}
+
+.moonbit-context-menu,
+.moonbit-context-menu * {
+  box-sizing: border-box;
+}
+
+.moonbit-context-menu .monaco-menu {
+  min-width: 160px;
+  color: var(--vscode-menu-foreground, var(--moonbit-menu-foreground));
+  background: var(--vscode-menu-background, var(--moonbit-menu-background));
+  border: 1px solid var(--vscode-menu-border, var(--moonbit-menu-border));
+  border-radius: var(--vscode-cornerRadius-large, 4px);
+  font-size: 13px;
+}
+
+.moonbit-context-menu .monaco-action-bar,
+.moonbit-context-menu .monaco-action-bar:focus,
+.moonbit-context-menu .action-menu-item:focus {
+  outline: 0;
+}
+
+.moonbit-context-menu .actions-container {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 4px 0;
+  overflow: visible;
+  white-space: nowrap;
+}
+
+.moonbit-context-menu .action-item {
+  position: static;
+  display: flex;
+  padding: 0;
+  overflow: visible;
+  cursor: default;
+}
+
+.moonbit-context-menu .action-menu-item {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  height: 24px;
+  margin: 0 4px;
+  color: inherit;
+  border-radius: var(--vscode-cornerRadius-medium, 2px);
+  cursor: default;
+  user-select: none;
+}
+
+.moonbit-context-menu .action-item.focused .action-menu-item {
+  color: var(
+    --vscode-menu-selectionForeground,
+    var(--moonbit-menu-selection-foreground)
+  );
+  background: var(
+    --vscode-menu-selectionBackground,
+    var(--moonbit-menu-selection-background)
+  );
+}
+
+.moonbit-context-menu
+  .action-item.focused
+  .action-menu-item[data-pointer-focus="false"] {
+  outline: 1px solid var(--vscode-menu-selectionBorder, transparent);
+  outline-offset: -1px;
+}
+
+.moonbit-context-menu .action-label:not(.separator),
+.moonbit-context-menu .keybinding {
+  display: inline-block;
+  max-height: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0 2em;
+  font-size: inherit;
+  line-height: 1;
+}
+
+.moonbit-context-menu .action-label:not(.separator) {
+  flex: 1 1 auto;
+  text-decoration: none;
+}
+
+.moonbit-context-menu .keybinding,
+.moonbit-context-menu .submenu-indicator {
+  display: inline-block;
+  flex: 2 1 auto;
+  text-align: right;
+  line-height: 1;
+  opacity: 0.7;
+}
+
+.moonbit-context-menu .action-item.focused .keybinding {
+  opacity: 1;
+}
+
+.moonbit-context-menu .submenu-indicator {
+  height: 100%;
+  padding: 0 1.8em;
+  font-size: 60%;
+}
+
+.moonbit-context-menu .submenu-indicator.codicon {
+  display: flex;
+  align-items: center;
+  font-size: 16px !important;
+}
+
+.moonbit-context-menu .submenu-indicator.codicon::before {
+  margin-right: -20px;
+  margin-left: auto;
+}
+
+.moonbit-context-menu .action-label.separator {
+  display: block;
+  width: 100%;
+  height: 0 !important;
+  margin: 5px 0 !important;
+  padding: 0;
+  border-bottom: 1px solid
+    var(
+      --vscode-menu-separatorBackground,
+      var(--moonbit-menu-separator-background)
+    );
+  border-radius: 0;
+  opacity: 1;
+}
+
+.moonbit-context-submenu {
+  z-index: 2576;
+}

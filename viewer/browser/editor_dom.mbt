@@ -14,10 +14,9 @@
 //     every `targetWindow`/`getWindow` parameter.
 //
 // Omissions:
-//   * `EditorPointerEventFactory`'s touch/pen dispatch and
-//     `EditorMouseEventFactory.onContextMenu` (no consumers). The mouse path
-//     retains Monaco's paired pointerdown-id capture plus mousedown delivery,
-//     because only mousedown carries double/triple-click detail.
+//   * `EditorPointerEventFactory`'s touch/pen dispatch. The mouse path retains
+//     Monaco's paired pointerdown-id capture plus mousedown delivery, because
+//     only mousedown carries double/triple-click detail.
 //   * `DynamicCssRules` and friends (editorDom.ts:288-429) — decoration CSS
 //     helpers unrelated to mouse handling.
 //   * The keydown monitor-cancel check reads `KeyboardEvent.key` instead of
@@ -280,6 +279,16 @@ pub fn EditorMouseEventFactory::on_mouse_down(
   callback : (EditorDomMouseEvent) -> Unit,
 ) -> @base_common.Disposable {
   self.listen(target, "mousedown", callback)
+}
+
+///|
+/// `EditorMouseEventFactory.onContextMenu` (editorDom.ts:177-181).
+pub fn EditorMouseEventFactory::on_context_menu(
+  self : EditorMouseEventFactory,
+  target : @rdom.Element,
+  callback : (EditorDomMouseEvent) -> Unit,
+) -> @base_common.Disposable {
+  self.listen(target, "contextmenu", callback)
 }
 
 ///|

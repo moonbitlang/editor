@@ -291,145 +291,7 @@ pub fn MarkdownDocumentHoverWidget::dispose(
 }
 
 ///|
-/// Caret FFI exposes only the browser-selected text node and its UTF-16 node
-/// offset. Line ancestry, text accumulation, source mapping, and request state
-/// remain in MoonBit below.
-#external
-priv type MarkdownNativeCaretHit
-
-///|
-extern "js" fn markdown_native_caret_hit(
-  article : @rdom.Element,
-  client_x : Double,
-  client_y : Double,
-) -> MarkdownNativeCaretHit = "(article, x, y) => typeof article.ownerDocument.caretPositionFromPoint === 'function' ? article.ownerDocument.caretPositionFromPoint(x, y) : article.ownerDocument.caretRangeFromPoint?.(x, y) ?? null"
-
-///|
-extern "js" fn markdown_native_caret_hit_has_node(
-  hit : MarkdownNativeCaretHit,
-) -> Bool = "(hit) => Boolean(hit?.offsetNode ?? hit?.startContainer)"
-
-///|
-extern "js" fn markdown_native_caret_hit_node(
-  hit : MarkdownNativeCaretHit,
-) -> @rdom.Node = "(hit) => hit.offsetNode ?? hit.startContainer"
-
-///|
-extern "js" fn markdown_native_caret_hit_offset(
-  hit : MarkdownNativeCaretHit,
-) -> Int = "(hit) => Number(hit.offset ?? hit.startOffset ?? 0) | 0"
-
-///|
-fn markdown_native_caret_hit_ok(hit : MarkdownNativeCaretHit) -> Bool {
-  markdown_native_caret_hit_has_node(hit) &&
-  markdown_native_caret_hit_node(hit).get_node_type() == 3
-}
-
-///|
 extern "js" fn markdown_node_text_length(node : @rdom.Node) -> Int = "(node) => String(node.textContent || '').length"
-
-///|
-fn markdown_node_is_descendant_of(
-  node : @rdom.Node,
-  root : @rdom.Element,
-) -> Bool {
-  let mut current : @rdom.Node? = Some(node)
-  while current is Some(value) {
-    if value.is_same_node(root.as_node()) {
-      return true
-    }
-    current = value.get_parent_node().to_option()
-  }
-  false
-}
-
-///|
-/// Returns `(found, text units consumed)`. Before the target is found the
-/// consumed value is the complete subtree text length; at the target it is the
-/// validated UTF-16 node offset.
-fn markdown_text_units_before_node(
-  root : @rdom.Node,
-  target : @rdom.Node,
-  target_offset : Int,
-) -> (Bool, Int) {
-  if root.is_same_node(target) {
-    let length = markdown_node_text_length(root)
-    if target_offset >= 0 && target_offset <= length {
-      return (true, target_offset)
-    }
-    return (false, length)
-  }
-  if root.get_child_count() == 0 {
-    return (false, markdown_node_text_length(root))
-  }
-  let mut consumed = 0
-  for child_index = 0
-      child_index < root.get_child_count()
-      child_index = child_index + 1 {
-    let (found, child_units) = markdown_text_units_before_node(
-      root.get_child(child_index),
-      target,
-      target_offset,
-    )
-    if found {
-      return (true, consumed + child_units)
-    }
-    consumed += child_units
-  }
-  (false, consumed)
-}
-
-///|
-priv struct MarkdownSemanticPointerHit {
-  line : @markdown_document.MarkdownSemanticCodeLineDom
-  source_offset : Int
-  pointer_x : Double
-}
-
-///|
-fn markdown_pointer_inside_line_y(
-  line : @rdom.Element,
-  client_x : Double,
-  client_y : Double,
-) -> Bool {
-  let rect = line.get_bounding_client_rect()
-  client_x >= rect.get_left() &&
-  client_x <= rect.get_right() &&
-  client_y >= rect.get_top() &&
-  client_y <= rect.get_bottom()
-}
-
-///|
-fn markdown_semantic_pointer_hit(
-  view : @markdown_document.MarkdownDocumentView,
-  client_x : Double,
-  client_y : Double,
-) -> MarkdownSemanticPointerHit? {
-  let lines = view.semantic_code_lines()
-  let caret = markdown_native_caret_hit(view.article(), client_x, client_y)
-  if markdown_native_caret_hit_ok(caret) {
-    let node = markdown_native_caret_hit_node(caret)
-    let node_offset = markdown_native_caret_hit_offset(caret)
-    for line in lines {
-      if !markdown_pointer_inside_line_y(line.element, client_x, client_y) ||
-        !markdown_node_is_descendant_of(node, line.element) {
-        continue
-      }
-      let (found, displayed_boundary) = markdown_text_units_before_node(
-        line.element.as_node(),
-        node,
-        node_offset,
-      )
-      guard found &&
-        line.code_line.source_offset_at_displayed_boundary(displayed_boundary)
-        is Some(source_offset) else {
-        return None
-      }
-      return Some({ line, source_offset, pointer_x: client_x })
-    }
-  }
-  None
-}
 
 ///|
 /// Full request authority for one asynchronous language hover. This is
@@ -654,7 +516,7 @@ pub fn MarkdownDocumentHoverBridge::layout_changed(
 ///|
 fn MarkdownDocumentHoverBridge::make_stamp(
   self : MarkdownDocumentHoverBridge,
-  hit : MarkdownSemanticPointerHit,
+  hit : @markdown_document.MarkdownSemanticPointerHit,
   token : @language.CancellationToken,
 ) -> MarkdownDocumentHoverRequestStamp {
   {
@@ -752,7 +614,7 @@ fn markdown_first_language_hover_range(
 fn MarkdownDocumentHoverBridge::accept_parts(
   self : MarkdownDocumentHoverBridge,
   stamp : MarkdownDocumentHoverRequestStamp,
-  hit : MarkdownSemanticPointerHit,
+  hit : @markdown_document.MarkdownSemanticPointerHit,
   parts : Array[@hover.HoverPart],
 ) -> Unit {
   guard self.stamp_is_current(stamp) else { return }
@@ -788,7 +650,7 @@ fn MarkdownDocumentHoverBridge::accept_parts(
 fn MarkdownDocumentHoverBridge::start_pointer_request(
   self : MarkdownDocumentHoverBridge,
   stamp : MarkdownDocumentHoverRequestStamp,
-  hit : MarkdownSemanticPointerHit,
+  hit : @markdown_document.MarkdownSemanticPointerHit,
   anchor : @hover.HoverAnchor,
 ) -> Unit {
   self.request_start_timer = None
@@ -867,7 +729,7 @@ fn MarkdownDocumentHoverBridge::on_pointer_move(
     !self.disposed &&
     (self.is_attach_current)() &&
     self.view.source_model_version() == self.model.get_version_id() &&
-    markdown_semantic_pointer_hit(self.view, client_x, client_y) is Some(hit) else {
+    self.view.semantic_pointer_hit(client_x, client_y) is Some(hit) else {
     self.invalidate_pointer_request()
     return
   }

@@ -94,13 +94,13 @@ async test "hover forwards caller token and skips empty provider results" {
     observed_tokens: good_tokens,
     empty: false,
   }
-  let empty_registration = languages.register_hover_provider(
-    LanguageId("moonbit"),
-    empty,
-  )
   let good_registration = languages.register_hover_provider(
     LanguageId("moonbit"),
     good,
+  )
+  let empty_registration = languages.register_hover_provider(
+    LanguageId("moonbit"),
+    empty,
   )
   let token = @language.CancellationToken::new()
   let hover = languages.hover_at(test_model(), 3, LogService(), token~)
@@ -120,10 +120,6 @@ async test "hover skips a provider None result and continues in order" {
   let none_tokens : Array[@language.CancellationToken] = []
   let good_calls = Ref(0)
   let good_tokens : Array[@language.CancellationToken] = []
-  let none_registration = languages.register_hover_provider(
-    LanguageId("moonbit"),
-    NoneHoverProvider::{ calls: none_calls, observed_tokens: none_tokens },
-  )
   let good_registration = languages.register_hover_provider(
     LanguageId("moonbit"),
     RecordingHoverProvider::{
@@ -132,6 +128,10 @@ async test "hover skips a provider None result and continues in order" {
       observed_tokens: good_tokens,
       empty: false,
     },
+  )
+  let none_registration = languages.register_hover_provider(
+    LanguageId("moonbit"),
+    NoneHoverProvider::{ calls: none_calls, observed_tokens: none_tokens },
   )
   let token = @language.CancellationToken::new()
   let hover = languages.hover_at(test_model(), 3, LogService(), token~)

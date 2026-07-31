@@ -40,8 +40,10 @@ viewer.on_mouse_down(event => match event.target.kind {
 ```
 
 - `EditorMouseEvent`, `PartialEditorMouseEvent`, target kinds, and target detail
-  records are canonical public editor-DOM event values. Raw DOM input uses the
-  distinct `EditorDomMouseEvent` name.
+  records are canonical public editor-DOM event values for pointer and
+  context-menu delivery. Raw DOM input uses the distinct
+  `EditorDomMouseEvent` name; `EditorMouseEventFactory` owns the disposable DOM
+  listeners but no command or menu policy.
 - `ViewZone` is the mutable public descriptor. The runtime retains it by
   identity and rereads its live fields during layout. Its optional
   `ignore_hidden_area_source` extension tests the declared anchor against all

@@ -224,9 +224,19 @@ test "content and model invalidation clear a pending mouse-react handle" {
   viewer.on_editor_mouse_move(async_hover_mouse_target())
   assert_true(hc.hover_react_pending)
   assert_eq(scheduler.active_count(), 1)
+  hc.hover_is_mouse_down = true
+  hc.hover_mouse_posx = 42.0
+  hc.hover_mouse_posy = 24.0
+  hc.hover_last_modifiers = { ctrl: true, meta: true, alt: true }
   viewer.set_model(Some(replacement))
   assert_false(hc.hover_react_pending)
   assert_eq(scheduler.active_count(), 0)
+  assert_false(hc.hover_is_mouse_down)
+  assert_eq(hc.hover_mouse_posx, 0.0)
+  assert_eq(hc.hover_mouse_posy, 0.0)
+  assert_false(hc.hover_last_modifiers.ctrl)
+  assert_false(hc.hover_last_modifiers.meta)
+  assert_false(hc.hover_last_modifiers.alt)
 
   viewer.dispose()
   backings.dispose()

@@ -1,0 +1,51 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitlang/editor/internal/viewer/contrib/definition"
+
+import {
+  "moonbitlang/core/debug",
+  "moonbitlang/editor/base/common",
+  "moonbitlang/editor/language",
+  "moonbitlang/editor/viewer/common/model",
+}
+
+// Values
+pub fn normalize_definition_locations(Array[@language.Location]) -> Array[@language.Location]
+
+// Errors
+
+// Types and methods
+pub(all) enum DefinitionLinkState {
+  LinkIdle
+  LinkResolving(DefinitionRequestStamp)
+  LinkResolvedEmpty(DefinitionRequestStamp)
+  LinkArmed(DefinitionRequestStamp, Array[@language.Location])
+}
+
+pub(all) enum DefinitionPeekPhase {
+  PeekClosed
+  PeekLoadingDefinitions(Int)
+  PeekLoadingPreview(Int, Int)
+  PeekShown(Int, Int)
+  PeekUnavailable(Int, Int)
+} derive(Eq, @debug.Debug)
+
+pub(all) struct DefinitionRequestStamp {
+  sequence : Int
+  target : DefinitionTargetFingerprint
+} derive(Eq, @debug.Debug)
+
+pub(all) struct DefinitionTargetFingerprint {
+  model_identity : Int
+  model_generation : Int
+  model_version_id : Int
+  position : @common.Position
+  word_range : @common.Range
+  word : String
+} derive(Eq, @debug.Debug)
+pub fn DefinitionTargetFingerprint::from_model(@model.TextModel, Int, @common.Position, @model.WordAtPosition) -> Self
+pub fn DefinitionTargetFingerprint::is_current(Self, @model.TextModel, Int) -> Bool
+pub fn DefinitionTargetFingerprint::same_word(Self, Self) -> Bool
+
+// Type aliases
+
+// Traits

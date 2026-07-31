@@ -28,7 +28,7 @@ flowchart LR
   C --> D[ViewLayout<br>common/view_layout]
   D --> E[BrowserPresentation<br>closed family]
   E --> F[Code: View<br>browser/view]
-  E --> G[Markdown: document view<br>+ hover bridge]
+  E --> G[Markdown: document view<br>+ hover and definition bridges]
   F --> H[DOM]
   G --> H
 ```
@@ -38,8 +38,7 @@ The stages after the host document live in `viewer/common/model`,
 closed `BrowserPresentation` family then selects
 `internal/viewer/browser/view.View` for Code or
 `internal/viewer/browser/markdown_document.MarkdownDocumentView` plus the
-`internal/viewer/contrib/hover/browser.MarkdownDocumentHoverBridge` for
-Markdown.
+presentation-local hover and definition bridges for Markdown.
 
 `Viewer` keeps cross-domain ordering at the root and delegates private state to
 five concrete owners: `EditorConfigurationState`, `ViewerModelSlot`,
@@ -50,8 +49,9 @@ five concrete owners: `EditorConfigurationState`, `ViewerModelSlot`,
 theme, layout, scroll, reveal, and lifecycle dispatch exhaustively over that
 family instead of assuming a hidden Code `View`. The Code payload pairs a real
 `View` with its retained mouse handler and view-scoped render/reveal facts. The
-Markdown payload pairs a contribution-free document view with a
-presentation-local bridge over the original model. Public construction seeds
+Markdown payload pairs a contribution-free document view with
+presentation-local hover and definition bridges over the original model.
+Public construction seeds
 `EditorConfigurationState` synchronously from the host client box before model
 attachment. Each `ModelData` then carries one generation-scoped initialization
 boundary: the host invokes `Viewer::handle_initialized` after model, view-state,
@@ -150,8 +150,10 @@ common -> foundations
 - `editor_api`: the single owner of public cursor/model/scroll event values and
   editor-option enums shared by root, cursor, layout, view-model, and browser
   consumers.
-- `agent_feedback_api` and `quick_diff_api`: host-facing DTO/callback handles;
-  concrete feature implementations remain contributions below their callers.
+- `agent_feedback_api`, `navigation_api`, and `quick_diff_api`: host-facing
+  DTO/callback handles. Navigation exposes only location-opening intent and
+  caller-owned target-model leases; concrete feature implementations remain
+  contributions below their callers.
 - `languages` and `markers`: runtime provider registration and
   diagnostics-to-decoration flow. Their opaque `LanguageHandle`,
   `MarkerServiceHandle`, and `MarkerDecorationsHandle` expose only the reviewed
@@ -201,8 +203,9 @@ js-only. Concrete browser runtime packages live below the module-private
   same-parse source projection. Only compiler-recognized fenced rows receive
   semantic source boundaries; cross-line tokenization state is preserved, and
   decoded-text or row-cardinality mismatches fail closed. The package owns no
-  model, provider, marker store, or request policy. Root and the hover browser
-  package own those higher-level contracts.
+  model, provider, marker store, or request policy. It also owns semantic DOM
+  caret-to-source mapping and exact projected-range span construction; root and
+  the hover browser package own the higher-level feature contracts.
 - `internal/viewer/markdown` is the multi-target safe-cmark boundary. It owns
   plaintext fallback, a cmark-independent code-block value, conversion facts,
   the shared editor-token HTML override, and the private synchronous adapter
@@ -269,6 +272,27 @@ editor common/browser layers; editor common never depends on them.
   because they mutate source glyphs; the overlay does not approximate them.
   The emitted hover stylesheet remains at
   `viewer/contrib/hover/hover.css`.
+- `internal/viewer/contrib/definition` owns DOM-free result normalization,
+  token fingerprints, and the Ctrl/Cmd-link and Peek generation states.
+  `internal/viewer/contrib/definition/browser` owns only the Peek and
+  non-destructive-message DOM shells. Root `viewer` owns provider requests,
+  cancellation, Code decorations or projected Markdown link spans, Code
+  ViewZone spacers plus overlay registrations or the projection-scoped
+  Markdown overlay, nested Viewer composition, opener dispatch, and
+  target-model reference release. The
+  Markdown adapter resolves native pointer geometry through the document-owned
+  source map and never creates a virtual model. The emitted stylesheet remains
+  at `viewer/contrib/definition/browser/definition.css`.
+- `internal/viewer/contrib/contextmenu/browser` owns the reusable detached HTML
+  menu shell, focus return, temporary document/window listeners, submenu
+  timers, ARIA state, and viewport fitting. Root `viewer` owns the per-Viewer
+  contribution, live command/menu resolution, target filtering,
+  cursor/selection policy, and semantic Markdown source anchor. Code text or
+  empty-content hits and valid semantic Markdown rows use the custom menu;
+  injected text, editor widgets, margins, scrollbars, ordinary Markdown, and
+  unavailable command sets retain the browser-native menu. The emitted
+  stylesheet remains at
+  `viewer/contrib/contextmenu/browser/contextmenu.css`.
 - `internal/viewer/contrib/agent_feedback` owns concrete feedback
   storage/service projection; host DTOs and the callback handle live in
   `viewer/common/agent_feedback_api`, while
@@ -314,10 +338,11 @@ while unrelated ViewZones and the margin container retain their hidden default.
 Removal restores the caller node's original `aria-hidden` presence and value.
 
 The root editor registry has two distinct ownership layers. Its process-wide
-contribution-description table contains constructors only; the adjacent command
-and keybinding tables likewise contain no per-Viewer state.
+contribution-description table contains constructors only; the adjacent
+command, keybinding, and closed menu-placement tables likewise contain no
+per-Viewer state.
 `Viewer.contributions` is an `EditorContributions` owner whose `instances` map
-is the sole lookup table for that Viewer's six concrete contribution entries;
+is the sole lookup table for that Viewer's eight concrete contribution entries;
 feature packages do not keep second maps keyed by editor id. Root `Viewer::`
 helpers recover typed controllers by matching both the fixed id and central
 entry variant, mirroring Monaco's typed view over
@@ -334,7 +359,7 @@ are released at their later root cleanup slot before the map is cleared.
 Declared instantiation modes are retained for source parity, but all modes
 currently instantiate eagerly.
 
-The Markdown hover bridge is not a seventh central Code contribution. It is
+The Markdown hover bridge is not a central Code contribution. It is
 owned by `MarkdownBrowserData`, is activated only after the corresponding
 `ModelData` becomes current, and is cancelled before any source/theme
 projection replacement. Detach retires the bridge and renderer while the root

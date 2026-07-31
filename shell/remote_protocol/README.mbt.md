@@ -1,7 +1,7 @@
 # shell/remote_protocol
 
 MoonBit-owned JSON contract between the reference browser workbench and native
-server. Protocol version `4` is carried by every packet and must match exactly.
+server. Protocol version `5` is carried by every packet and must match exactly.
 
 ## Wire contract
 
@@ -12,6 +12,8 @@ server. Protocol version `4` is carried by every packet and must match exactly.
 - Position requests carry a document revision and UTF-16 offset; whole-document
   feature requests carry a revision. Request IDs correlate replies. Diagnostics
   deliberately have no request ID; watch pushes reuse the watch request ID.
+- Definition results carry an ordered `locations` array; an empty array means
+  that no definition was found.
 - Decoders return structured errors for invalid JSON, version, packet shape,
   URI, or provider failure. `provider_code` preserves the lower-level category.
 - Reference results add line, column, and line-text preview fields. There is no
@@ -23,7 +25,7 @@ The public surface is the packet/payload types plus `protocol_version`,
 
 ## Version negotiation
 
-Protocol version `4` is carried by every packet and must match exactly. There is
+Protocol version `5` is carried by every packet and must match exactly. There is
 no forward or backward compatibility window: a mismatch is a negotiation
 failure, not a downgrade.
 
@@ -55,12 +57,12 @@ test "only the exact protocol version negotiates" {
     ),
     content=(
       #|(
-      #|  4,
-      #|  ProtocolAccepted(4),
+      #|  5,
+      #|  ProtocolAccepted(5),
       #|  ProtocolRejected(
       #|    {
       #|      code: ProtocolUnsupportedVersion,
-      #|      message: "Unsupported remote protocol version 3",
+      #|      message: "Unsupported remote protocol version 4",
       #|      request_id: "",
       #|      provider_code: "",
       #|    },

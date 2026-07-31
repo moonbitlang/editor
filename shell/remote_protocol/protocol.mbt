@@ -2,7 +2,7 @@
 /// Current client/server protocol version. Both sides reject packets carrying a
 /// different version.
 pub fn protocol_version() -> Int {
-  4
+  5
 }
 
 ///|
@@ -119,7 +119,7 @@ pub(all) struct DefinitionResultPayload {
   id : String
   uri : @base_common.Uri
   revision : String
-  location : @language.Location?
+  locations : Array[@language.Location]
 } derive(Debug)
 
 ///|
@@ -579,16 +579,23 @@ fn decode_definition_result_payload(
 ) -> ServerPacketDecodeResult {
   match parse_uri_field(packet, "uri", id) {
     ParsedProtocolUri(uri) => {
-      let location = match json_field(packet, "location") {
-        Some(value) => parse_location(value)
-        None => None
+      let locations = []
+      match json_field(packet, "locations") {
+        Some(Array(items)) =>
+          for item in items {
+            match parse_location(item) {
+              Some(location) => locations.push(location)
+              None => ()
+            }
+          }
+        _ => ()
       }
       DecodedServerPacket(
         DefinitionResult({
           id,
           uri,
           revision: json_string_field(packet, "documentRevision").unwrap_or(""),
-          location,
+          locations,
         }),
       )
     }
@@ -932,10 +939,7 @@ fn definition_result_json(payload : DefinitionResultPayload) -> Json {
   let fields = packet_fields("DefinitionResult", payload.id)
   fields["uri"] = payload.uri.to_string().to_json()
   fields["documentRevision"] = payload.revision.to_json()
-  fields["location"] = match payload.location {
-    Some(location) => location_json(location)
-    None => Json::null()
-  }
+  fields["locations"] = Json::array(payload.locations.map(location_json))
   Json::object(fields)
 }
 

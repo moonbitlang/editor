@@ -14,6 +14,8 @@ pub fn native_server_host() -> &@server.ServerHost
 
 pub fn parse_moon_check_diagnostics(String, String) -> Map[String, Array[@language.Diagnostic]]
 
+pub fn parse_moon_definition_output(String, String) -> Array[@language.Location]
+
 pub fn parse_moon_hover_output(String, @common.Position) -> @language.Hover?
 
 pub async fn run_native_editor_server(String, host? : String, port? : Int, asset_dir? : String, moon_command? : String, log? : (String) -> Unit) -> Unit

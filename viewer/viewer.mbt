@@ -12,6 +12,9 @@
 /// into the element passed to `attach`.
 pub struct Viewer {
   priv services : ViewerServices
+  /// Private embedding role. A Peek preview borrows the same public services
+  /// but cannot recursively create another Peek widget.
+  priv role : ViewerRole
   /// Services created by an omitted constructor argument belong to this
   /// Viewer. An explicitly supplied bundle remains caller-owned and may be
   /// shared by other Viewers.
@@ -59,12 +62,13 @@ pub struct Viewer {
   priv did_change_hidden_areas : @base_common.Emitter[Unit]
   priv did_dispose : @base_common.Emitter[Unit]
   /// Public mouse events (`onMouseDown`/`onMouseUp`/`onMouseMove`/
-  /// `onMouseLeave`, see `mouse_events.mbt`), fired from the controller's
-  /// notify seams; the comments contrib subscribes like Monaco's
-  /// `CommentController.registerEditorListeners`.
+  /// `onMouseLeave`/`onContextMenu`, see `mouse_events.mbt`), fired from the
+  /// controller's notify seams; contributions subscribe like Monaco's editor
+  /// controllers.
   priv did_mouse_down : @base_common.Emitter[@editor_browser.EditorMouseEvent]
   priv did_mouse_up : @base_common.Emitter[@editor_browser.EditorMouseEvent]
   priv did_mouse_move : @base_common.Emitter[@editor_browser.EditorMouseEvent]
+  priv did_context_menu : @base_common.Emitter[@editor_browser.EditorMouseEvent]
   priv did_mouse_leave : @base_common.Emitter[
     @editor_browser.PartialEditorMouseEvent,
   ]
@@ -90,6 +94,12 @@ pub struct Viewer {
   /// instance map, including its two-phase disposal lifecycle.
   priv contributions : EditorContributions
 }
+
+///|
+priv enum ViewerRole {
+  OuterViewer
+  PeekPreviewViewer
+} derive(Eq)
 
 ///|
 priv struct PendingRendered {
@@ -133,6 +143,7 @@ fn Viewer::Viewer(
   services? : ViewerServices,
   options? : ViewerOptions = ViewerOptions::default(),
   initial_container? : @rdom.Element,
+  role? : ViewerRole = OuterViewer,
 ) -> Viewer {
   let (services, owns_services) = match services {
     Some(services) => (services, false)
@@ -147,6 +158,7 @@ fn Viewer::Viewer(
   }
   let viewer : Viewer = {
     services,
+    role,
     owns_services,
     disposed: false,
     testing_registration: None,
@@ -170,6 +182,7 @@ fn Viewer::Viewer(
     did_mouse_down: Emitter(),
     did_mouse_up: Emitter(),
     did_mouse_move: Emitter(),
+    did_context_menu: Emitter(),
     did_mouse_leave: Emitter(),
     last_scroll_event: None,
     model_slot: ViewerModelSlot(),
@@ -541,6 +554,7 @@ pub fn Viewer::set_model(self : Viewer, model : @model.TextModel?) -> Unit {
     None => None
   }
   let had_text_focus = self.has_text_focus()
+  let had_definition_peek_focus = self.definition_peek_contains_focus()
   let detached_model = self.detach_model()
   match model {
     Some(model) => self.attach_model(model)
@@ -552,7 +566,7 @@ pub fn Viewer::set_model(self : Viewer, model : @model.TextModel?) -> Unit {
   }
   if self.has_model() {
     // "we have a new model (with a new view)!" (`cew:528-532`).
-    if had_text_focus {
+    if had_text_focus || had_definition_peek_focus {
       self.focus()
     }
   } else {
@@ -594,9 +608,12 @@ pub fn Viewer::handle_initialized(self : Viewer) -> Unit {
 /// the container (restoring the no-model placeholder), drop `data-mode-id`,
 /// and hand back the outgoing model for the owner-id decoration sweep.
 fn Viewer::detach_model(self : Viewer) -> @model.TextModel? {
+  guard self.model_slot.current is Some(_) else { return None }
+  self.close_definition_peek(restore_focus=false)
   guard self.model_slot.invalidate_current_for_detach() is Some(model_data) else {
     return None
   }
+  self.reset_definition_requests()
   self.cancel_render_frame()
   self.cursor_delivery.reset_model_scope()
   let model = model_data.model
@@ -612,6 +629,9 @@ fn Viewer::detach_model(self : Viewer) -> @model.TextModel? {
       hc.hover_keep_open = false
       hc.hover_ignore_mouse_events = false
       hc.hover_is_mouse_down = false
+      hc.hover_mouse_posx = 0.0
+      hc.hover_mouse_posy = 0.0
+      hc.hover_last_modifiers = @hover.EventModifiers::none()
     }
     None => ()
   }
@@ -860,6 +880,7 @@ pub fn Viewer::dispose(self : Viewer) -> Unit {
   self.did_mouse_down.dispose()
   self.did_mouse_up.dispose()
   self.did_mouse_move.dispose()
+  self.did_context_menu.dispose()
   self.did_mouse_leave.dispose()
   match self.testing_registration {
     Some(registration) => {
@@ -916,6 +937,9 @@ fn Viewer::apply_scroll_change(
 ) -> Unit {
   match change {
     Some(scroll_change) => {
+      if scroll_change.scroll_top_changed || scroll_change.scroll_left_changed {
+        self.reset_definition_link()
+      }
       self.emit_view_scroll_changed(scroll_change)
       if scroll_change.scroll_top_changed || scroll_change.scroll_left_changed {
         self.emit_scroll_frame_phase(

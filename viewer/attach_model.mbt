@@ -297,9 +297,13 @@ fn Viewer::create_browser_presentation(
         },
         launch_async_task,
       )
+      let definition_bridge = MarkdownDocumentDefinitionBridge(
+        self, markdown, model, model_data_generation,
+      )
       let markdown_data : MarkdownBrowserData = {
         view: markdown,
         hover_bridge,
+        definition_bridge,
         fold: MarkdownFoldState(),
       }
       // Seed fold state (auto-fold policy plus controls) before the bridge is

@@ -4,21 +4,52 @@ import {
 }
 
 ///|
-/// The committed moon.work namespaces member artifacts by module name on
-/// current moon releases; older layouts keep the bare package path.
-async fn resolved_build_dir(package_path : String) -> String {
-  let plain = "_build/js/debug/build/\{package_path}"
-  if @fs.exists(plain) {
-    return plain
+async fn build_layout_contains(
+  build_dir : String,
+  artifacts : Array[String],
+) -> Bool {
+  for artifact in artifacts {
+    if !@fs.exists(build_dir + "/" + artifact) {
+      return false
+    }
   }
-  "_build/js/debug/build/moonbitlang/editor/\{package_path}"
+  true
+}
+
+///|
+/// Selects only a complete, unambiguous output layout from the workspace build.
+/// If both layouts contain every requested artifact, one may be stale, so
+/// refuse to stage either instead of silently serving the wrong checkout.
+async fn resolved_build_dir(
+  package_path : String,
+  artifacts : Array[String],
+) -> String {
+  let plain = "_build/js/debug/build/\{package_path}"
+  let module_dir = "_build/js/debug/build/moonbitlang/editor/\{package_path}"
+  match (
+    build_layout_contains(plain, artifacts),
+    build_layout_contains(module_dir, artifacts),
+  ) {
+    (true, false) => plain
+    (false, true) => module_dir
+    (false, false) =>
+      fail("missing js artifacts for \{package_path}; run `moon build` first")
+    (true, true) =>
+      fail(
+        "ambiguous js artifact layouts for \{package_path}; remove stale _build outputs and rebuild",
+      )
+  }
 }
 
 ///|
 async fn main {
-  let source_dir = resolved_build_dir("internal/shell/web")
+  let source_dir = resolved_build_dir(
+    "internal/shell/web",
+    ["web.js", "web.js.map", "moonbit.d.ts", "web.d.ts"],
+  )
   let embed_source_dir = resolved_build_dir(
     "internal/shell/examples/embedded_viewer",
+    ["embedded_viewer.js", "embedded_viewer.js.map"],
   )
   if !@fs.exists(source_dir) || !@fs.exists(embed_source_dir) {
     fail("missing js artifacts for the web entry points; run `moon build` first")
@@ -114,6 +145,8 @@ fn css_sources() -> Array[String] {
     "viewer/browser/view_parts/view_lines/tokens.css",
     "viewer/browser/view_parts/view_lines/markers.css",
     "viewer/contrib/folding/browser/folding.css",
+    "viewer/contrib/contextmenu/browser/contextmenu.css",
+    "viewer/contrib/definition/browser/definition.css",
     "viewer/contrib/hover/hover.css",
     "viewer/contrib/quick_diff/browser/quick_diff.css",
     "viewer/contrib/agent_feedback/browser/agent_feedback.css",

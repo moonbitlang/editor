@@ -1,5 +1,7 @@
 ///|
-suberror FixtureError String
+priv suberror FixtureError {
+  FixtureError(String)
+}
 
 ///|
 fn risky_step(flag : Bool) -> Int raise FixtureError {

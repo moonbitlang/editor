@@ -21,7 +21,15 @@
   --vscode-widget-border: #313131;
   --vscode-widget-shadow: rgb(0 0 0 / 36%);
   --vscode-shadow-hover: rgb(0 0 0 / 36%);
+  --vscode-shadow-lg: 0 0 12px rgb(0 0 0 / 36%);
+  --vscode-cornerRadius-medium: 2px;
   --vscode-cornerRadius-large: 4px;
+  --vscode-menu-background: #1f1f1f;
+  --vscode-menu-foreground: #cccccc;
+  --vscode-menu-selectionBackground: #0078d4;
+  --vscode-menu-selectionForeground: #ffffff;
+  --vscode-menu-separatorBackground: #cccccc33;
+  --vscode-menu-border: transparent;
 
   --vscode-editor-background: #1f1f1f;
   --vscode-editor-foreground: #cccccc;
@@ -30,6 +38,8 @@
   --vscode-editor-selectionBackground: #264f78;
   --vscode-editor-hoverHighlightBackground: #264f7840;
   --vscode-editor-rangeHighlightBackground: #ffffff0b;
+  --vscode-editor-symbolHighlightBackground: #ea5c0055;
+  --vscode-editor-symbolHighlightBorder: transparent;
   /* editor.foldBackground = transparent(editor.selectionBackground, 0.3),
      editor.foldPlaceholderForeground = #808080,
      editorGutter.foldingControlForeground = iconForeground
@@ -53,6 +63,19 @@
   --vscode-editorError-foreground: #f14c4c;
   --vscode-editorInfo-foreground: #59a4f9;
   --vscode-editorHint-foreground: #eeeeeeb3;
+  --vscode-peekView-border: #59a4f9;
+  --vscode-peekViewTitle-background: #252526;
+  --vscode-peekViewTitleLabel-foreground: #ffffff;
+  --vscode-peekViewTitleDescription-foreground: #ccccccb3;
+  --vscode-peekViewResult-background: #252526;
+  --vscode-peekViewResult-lineForeground: #bbbbbb;
+  --vscode-peekViewResult-fileForeground: #ffffff;
+  --vscode-peekViewResult-selectionBackground: #3399ff33;
+  --vscode-peekViewResult-selectionForeground: #ffffff;
+  --vscode-peekViewEditor-background: #001f33;
+  --vscode-peekViewEditorGutter-background: #001f33;
+  --vscode-peekViewEditor-matchHighlightBackground: #ff8f0099;
+  --vscode-peekViewEditor-matchHighlightBorder: transparent;
 
   /* editorError/Warning/Info/Hint.border are null in VS Code's normal (non-HC)
      themes, so they stay unset here too — the visible squiggle is the runtime
@@ -74,6 +97,7 @@
   --vscode-input-background: #313131;
   --vscode-input-foreground: #cccccc;
   --vscode-input-border: #3c3c3c;
+  --vscode-inputValidation-infoBorder: #007acc;
   --vscode-button-background: #0078d4;
   --vscode-button-foreground: #ffffff;
   --vscode-button-hoverBackground: #026ec1;
@@ -145,7 +169,15 @@
   --vscode-widget-border: #e5e5e5;
   --vscode-widget-shadow: rgb(0 0 0 / 16%);
   --vscode-shadow-hover: rgb(0 0 0 / 16%);
+  --vscode-shadow-lg: 0 0 12px rgb(0 0 0 / 16%);
+  --vscode-cornerRadius-medium: 2px;
   --vscode-cornerRadius-large: 4px;
+  --vscode-menu-background: #ffffff;
+  --vscode-menu-foreground: #3b3b3b;
+  --vscode-menu-selectionBackground: #005fb8;
+  --vscode-menu-selectionForeground: #ffffff;
+  --vscode-menu-separatorBackground: #3b3b3b33;
+  --vscode-menu-border: #cecece;
 
   --vscode-editor-background: #ffffff;
   --vscode-editor-foreground: #3b3b3b;
@@ -154,6 +186,8 @@
   --vscode-editor-selectionBackground: #add6ff;
   --vscode-editor-hoverHighlightBackground: #add6ff26;
   --vscode-editor-rangeHighlightBackground: #fdff0033;
+  --vscode-editor-symbolHighlightBackground: #ea5c0055;
+  --vscode-editor-symbolHighlightBorder: transparent;
   /* See the Dark Modern block above (folding colors). */
   --vscode-editor-foldBackground: #add6ff4d;
   --vscode-editor-foldPlaceholderForeground: #808080;
@@ -171,6 +205,19 @@
   --vscode-editorError-foreground: #e51400;
   --vscode-editorInfo-foreground: #0063d3;
   --vscode-editorHint-foreground: #6c6c6c;
+  --vscode-peekView-border: #0063d3;
+  --vscode-peekViewTitle-background: #f3f3f3;
+  --vscode-peekViewTitleLabel-foreground: #000000;
+  --vscode-peekViewTitleDescription-foreground: #616161;
+  --vscode-peekViewResult-background: #f3f3f3;
+  --vscode-peekViewResult-lineForeground: #646465;
+  --vscode-peekViewResult-fileForeground: #1e1e1e;
+  --vscode-peekViewResult-selectionBackground: #3399ff33;
+  --vscode-peekViewResult-selectionForeground: #6c6c6c;
+  --vscode-peekViewEditor-background: #f2f8fc;
+  --vscode-peekViewEditorGutter-background: #f2f8fc;
+  --vscode-peekViewEditor-matchHighlightBackground: #f5d802de;
+  --vscode-peekViewEditor-matchHighlightBorder: transparent;
 
   /* See the Dark Modern block above. */
   --vscode-editorUnnecessaryCode-opacity: 0.47;
@@ -187,6 +234,7 @@
   --vscode-input-background: #ffffff;
   --vscode-input-foreground: #3b3b3b;
   --vscode-input-border: #cecece;
+  --vscode-inputValidation-infoBorder: #007acc;
   --vscode-button-background: #005fb8;
   --vscode-button-foreground: #ffffff;
   --vscode-button-hoverBackground: #0258a8;

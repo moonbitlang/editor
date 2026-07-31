@@ -238,11 +238,11 @@ async test "answers hover and definition from cached provider state" {
 
   match
     server.definition({ id: "def-1", uri, document_revision: "", offset: 7 }) {
-    DefinitionResult(payload) =>
-      match payload.location {
-        Some(location) => assert_eq(location.uri.to_string(), uri.to_string())
-        None => fail("expected definition")
-      }
+    DefinitionResult(payload) => {
+      assert_eq(payload.locations.length(), 2)
+      assert_eq(payload.locations[0].uri.to_string(), uri.to_string())
+      assert_eq(payload.locations[1].uri.to_string(), uri.to_string())
+    }
     _ => fail("expected definition result")
   }
 
@@ -344,11 +344,11 @@ async test "dispatches language requests through configured providers" {
 
   match
     server.definition({ id: "def-1", uri, document_revision: "", offset: 7 }) {
-    DefinitionResult(payload) =>
-      match payload.location {
-        Some(location) => assert_eq(location.uri.to_string(), uri.to_string())
-        None => fail("expected configured definition")
-      }
+    DefinitionResult(payload) => {
+      assert_eq(payload.locations.length(), 2)
+      assert_eq(payload.locations[0].uri.to_string(), uri.to_string())
+      assert_eq(payload.locations[1].uri.to_string(), uri.to_string())
+    }
     _ => fail("expected definition result")
   }
 
@@ -543,10 +543,16 @@ impl @language.DefinitionProvider for FakeLanguageProvider with fn provide_defin
 ) {
   let offset = model.get_offset_at(position)
   let end_pos = model.get_position_at(offset + 4)
-  Some({
-    uri: model.uri,
-    range: @base_common.Range::from_positions(position, end_pos),
-  })
+  [
+    {
+      uri: model.uri,
+      range: @base_common.Range::from_positions(position, end_pos),
+    },
+    {
+      uri: model.uri,
+      range: @base_common.Range::from_positions(end_pos, end_pos),
+    },
+  ]
 }
 
 ///|

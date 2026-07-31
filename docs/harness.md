@@ -105,7 +105,11 @@ under `web/dist`. `scripts/build-browser-tests.mbtx` has separate `smoke` and
 `perf` profiles under `web/dist/browser-tests`. The smoke profile stages the
 MoonBit scenarios used by browser correctness without touching the perf bundle
 or Monaco. The perf profile stages only its local scenarios plus the pinned
-Monaco oracle, which it builds with esbuild from the VS Code submodule.
+Monaco oracle, which it builds with esbuild from the VS Code submodule. Before
+staging, the browser-test assembler requires every selected bundle and source
+map to exist in exactly one of the module-qualified or unqualified layouts; it
+rejects ambiguous layouts rather than risking a stale artifact from a different
+`moon.work` context.
 
 The whole-line Markdown proof is the direct public-Viewer component scenario
 `tests/browser/moonbit/component/markdown_comments_scenario.mbt`, loaded by
@@ -160,6 +164,18 @@ of the fold ordering rule (programmatic collapse and agent-style
 `replace_source`), plus reconciliation in both directions and disposal. The
 synchronous fold state machine itself is pinned one layer down by
 `viewer/markdown_folding_wbtest.mbt`.
+
+The definition and HTML-context-menu proof is the direct public-Viewer scenario
+`tests/browser/moonbit/definition/definition_scenario.mbt`, loaded by
+`definition.html` and asserted by
+`tests/browser/component/definition_navigation.spec.js`. Real right-click and
+keyboard gestures cover selection-preserving Code anchoring, the shared
+semantic Markdown command path, native fallback on ordinary Markdown and the
+Code scrollbar, live definition actions, ARIA and 24px-row styling,
+hide-before-run/focus restoration, top-level keyboard navigation, and
+bottom-right viewport fitting. Command grouping/preconditions and lifecycle
+stay in Viewer white-box tests; pure placement boundaries stay in the
+context-menu browser package.
 
 The shell-independent selection and native integration layer uses
 `tests/fixtures/workspace/README.md` and

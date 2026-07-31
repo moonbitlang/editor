@@ -42,9 +42,10 @@ if accepts(payload, current_model_identity) {
 - `start_app` creates and retains concrete language, marker, feedback,
   quick-diff, and logging backings, derives their narrow handles into an opaque
   `ViewerServices`, installs MoonBit/JSON/JavaScript tokenizers (TypeScript
-  reuses JavaScript), remote hover/document-symbol providers, the private
-  MoonBit Markdown-comment provider, and agent-feedback persistence; then it
-  calls `mount_app`. The MoonBit adapter treats an exact `///|` line as an item
+  reuses JavaScript), remote hover/definition/document-symbol providers, the
+  location opener and Peek model resolver, the private MoonBit
+  Markdown-comment provider, and agent-feedback persistence; then it calls
+  `mount_app`. The MoonBit adapter treats an exact `///|` line as an item
   anchor and always renders it as a horizontal separator. Immediately following
   `///` lines render as that item's documentation below the separator.
 - Rabbita owns topbar/sidebar/status/diagnostics/theme state and renders one
@@ -74,13 +75,28 @@ if accepts(payload, current_model_identity) {
   Viewer alone selects Code or Markdown, so `.md` and `.mbt.md` add no shell
   parser, projection, or presentation branch. Remote language providers and
   markers continue to target that original model.
+  Definition opens carry their target range through the same active-document
+  read and reveal it only after the target model is installed.
+- The host-neutral location opener accepts `Current` requests for
+  `readonly-remote://workspace` resources and rejects unsupported `Side`
+  requests. The Peek resolver creates one caller-owned preview `TextModel` per
+  URI, returns ref-counted `TextModelReference` leases, and closes/disposes the
+  backing only after the final lease and in-flight read retire. Active-document
+  teardown defers its remote close while a preview lease still uses that URI.
+  Viewer disposal synchronously closes the resolver to new work, marks existing
+  resources as closing, and lets their real lease/in-flight counters reach zero
+  before retiring models or late remote opens.
 - The protocol client correlates in-flight requests by ID and resolves all
-  pending requests on connection loss. Watch results and diagnostics are push
-  paths. Remote hover and diagnostics are accepted only for the exact
-  registered model identity, version, URI, revision, and content generation.
-  Model change, replacement, and disposal retire that generation and clear
-  only owner `moon`; diagnostics update the workbench-retained `MarkerService`
-  rather than a field recovered from `ViewerServices`.
+  pending requests on connection loss. Provider cancellation removes the
+  pending continuation, disposes its token subscription, and retains a
+  request-id tombstone so a late response cannot be misrouted as a watch push.
+  Connection loss and send failure both resume all remaining requests. Watch
+  results and diagnostics are push paths. Remote hover and diagnostics are
+  accepted only for the exact registered model identity, version, URI,
+  revision, and content generation. Model change, replacement, and disposal
+  retire that generation and clear only owner `moon`; diagnostics update the
+  workbench-retained `MarkerService` rather than a field recovered from
+  `ViewerServices`.
 - Public Viewer lifecycle subscriptions update shell state and drive tree
   `autoReveal`. Build/render/hover telemetry comes from the internal
   Viewer-id-keyed `internal/viewer/browser/testing` registry; diagnostic
