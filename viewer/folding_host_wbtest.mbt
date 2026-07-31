@@ -255,6 +255,40 @@ test "folding: bodyless declarations and raw literals release comment runs" {
 }
 
 ///|
+test "folding: split bindings and declare signatures keep their comments" {
+  let text =
+    #|let x
+    #|// binding a
+    #|// binding b
+    #|= 1
+    #|declare pub fn
+    #|// name a
+    #|// name b
+    #|lookup() -> Int
+    #|// tail a
+    #|// tail b
+  let model = test_model(text, language_id="moonbit")
+  let source_folds = moonbit_source_folds(model.snapshot)
+  assert_eq(source_folds.function_bodies.length(), 0)
+  let runs = source_folds.comment_runs
+  assert_eq(runs.length(), 1)
+  assert_eq(runs[0].start_line_number, 9)
+  assert_eq(runs[0].end_line_number, 10)
+}
+
+///|
+test "folding: a BOM-prefixed header folds from its first line" {
+  let model = test_model(
+    "\u{FEFF}// bom a\n// bom b\n// bom c",
+    language_id="moonbit",
+  )
+  let runs = moonbit_source_folds(model.snapshot).comment_runs
+  assert_eq(runs.length(), 1)
+  assert_eq(runs[0].start_line_number, 1)
+  assert_eq(runs[0].end_line_number, 3)
+}
+
+///|
 test "folding: MoonBit outline collapses a copyright header to its first line" {
   let text =
     #|// Copyright 2026 Example Authors.

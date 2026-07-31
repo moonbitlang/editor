@@ -73,11 +73,12 @@ fn is_moonbit_expression_continuation_code(code : Int) -> Bool {
 ///|
 /// Whether a line's first token is a plain `//` line comment. Doc comments
 /// (`///`, including the `///|` block delimiter) document the adjacent
-/// declaration and never join a comment run.
+/// declaration and never join a comment run. A byte-order mark — present on
+/// a BOM-prefixed file's first line — is ignorable like whitespace.
 fn is_moonbit_plain_comment_line(line : String) -> Bool {
   for index in 0..<line.length() {
     let code = line[index].to_int()
-    if code == ' ' || code == '\t' {
+    if code == ' ' || code == '\t' || code == 0xFEFF {
       continue
     }
     return code == '/' &&
@@ -110,6 +111,8 @@ fn moonbit_source_folds(snapshot : @model.TextSnapshot) -> MoonbitSourceFolds {
   let mut pending_impl_start_line = 0
   let mut pending_impl_saw_with = false
   let mut pending_bodyless_declaration = false
+  let mut pending_bodyless_saw_fn = false
+  let mut pending_binding_declaration = false
   let mut declaration_start_line = 0
   let mut body_start_line = 0
   let mut paren_depth = 0
@@ -134,6 +137,7 @@ fn moonbit_source_folds(snapshot : @model.TextSnapshot) -> MoonbitSourceFolds {
       pending_function_prefix_line == 0 &&
       pending_impl_start_line == 0 &&
       !pending_bodyless_declaration &&
+      !pending_binding_declaration &&
       is_moonbit_plain_comment_line(line) {
       if comment_run_start_line == 0 {
         comment_run_start_line = line_number
@@ -263,13 +267,20 @@ fn moonbit_source_folds(snapshot : @model.TextSnapshot) -> MoonbitSourceFolds {
         if brace_depth == 0 && declaration_start_line == 0 {
           if word == "declare" {
             pending_bodyless_declaration = true
+            pending_bodyless_saw_fn = false
             pending_function_prefix_line = 0
             pending_function_prefix_paren_depth = 0
             pending_impl_start_line = 0
             pending_impl_saw_with = false
-          } else if pending_bodyless_declaration && word == "fn" {
-            pending_bodyless_declaration = false
           } else if pending_bodyless_declaration &&
+            !pending_bodyless_saw_fn &&
+            word == "fn" {
+            // Keep the bodyless state through `fn` so comments split from
+            // the declared name stay inside the declaration; the word after
+            // `fn` — the name — releases it below.
+            pending_bodyless_saw_fn = true
+          } else if pending_bodyless_declaration &&
+            !pending_bodyless_saw_fn &&
             (
               word == "pub" ||
               word == "priv" ||
@@ -280,6 +291,7 @@ fn moonbit_source_folds(snapshot : @model.TextSnapshot) -> MoonbitSourceFolds {
             ()
           } else if pending_bodyless_declaration {
             pending_bodyless_declaration = false
+            pending_bodyless_saw_fn = false
           } else if function_keyword_line > 0 &&
             function_keyword_bracket_depth == 0 {
             declaration_start_line = function_keyword_line
@@ -325,6 +337,15 @@ fn moonbit_source_folds(snapshot : @model.TextSnapshot) -> MoonbitSourceFolds {
               line_number
             }
             function_keyword_bracket_depth = 0
+            pending_function_prefix_line = 0
+            pending_function_prefix_paren_depth = 0
+          } else if word == "let" || word == "const" || word == "typealias" {
+            // These declarations always take an initializer, so they stay
+            // pending — keeping split forms like `let x` + later `= 1` out
+            // of comment runs — until their `=` is reached. Bare-completable
+            // forms (`type X`, `struct Point(Int, Int)`) are excluded: with
+            // no `=` or `{` to release them the state would never clear.
+            pending_binding_declaration = true
             pending_function_prefix_line = 0
             pending_function_prefix_paren_depth = 0
           } else {
@@ -387,6 +408,7 @@ fn moonbit_source_folds(snapshot : @model.TextSnapshot) -> MoonbitSourceFolds {
           }
         } else if code == '=' && brace_depth == 0 {
           line_saw_equals = true
+          pending_binding_declaration = false
         }
         // Unlike `paren_depth`/`bracket_depth`, which only track an
         // in-progress function signature, this counts every lexical
@@ -410,6 +432,8 @@ fn moonbit_source_folds(snapshot : @model.TextSnapshot) -> MoonbitSourceFolds {
           }
           if brace_depth == 0 && declaration_start_line == 0 {
             pending_bodyless_declaration = false
+            pending_bodyless_saw_fn = false
+            pending_binding_declaration = false
             pending_function_prefix_line = 0
             pending_function_prefix_paren_depth = 0
             pending_impl_start_line = 0
