@@ -395,10 +395,8 @@ pub fn RemoteServer::close_document(
 ///|
 /// Disposes every active document watch.
 pub fn RemoteServer::dispose_watches(self : RemoteServer) -> Unit {
-  let keys : Array[String] = []
-  for key, _watch in self.watches {
-    keys.push(key)
-  }
+  // Snapshot the keys first: disposal callbacks may re-enter the map.
+  let keys = [ for key, _watch in self.watches => key ]
   for key in keys {
     if self.watches.get(key) is Some(watch) {
       watch.dispose()
@@ -479,10 +477,9 @@ pub async fn RemoteServer::references(
         model.get_position_at(request.offset),
         @language.CancellationToken::none(),
       )
-      let references = []
-      for location in locations {
-        references.push(self.enrich_reference(document, location))
-      }
+      let references = [
+        for location in locations => self.enrich_reference(document, location)
+      ]
       ReferencesResult({
         id: request.id,
         uri: request.uri,
@@ -652,13 +649,8 @@ fn RemoteServer::tracked_document(
   document : @workspace.DocumentSnapshot,
 ) -> @workspace.DocumentSnapshot {
   match self.documents.get(document.uri.to_string()) {
-    Some(previous) =>
-      if same_document_snapshot(previous, document) {
-        previous
-      } else {
-        document
-      }
-    None => document
+    Some(previous) if same_document_snapshot(previous, document) => previous
+    _ => document
   }
 }
 
@@ -681,12 +673,9 @@ fn RemoteServer::is_current_document(
   self : RemoteServer,
   document : @workspace.DocumentSnapshot,
 ) -> Bool {
-  match self.documents.get(document.uri.to_string()) {
-    Some(current) =>
-      physical_equal(current, document) &&
-      same_document_snapshot(current, document)
-    None => false
-  }
+  self.documents.get(document.uri.to_string()) is Some(current) &&
+  physical_equal(current, document) &&
+  same_document_snapshot(current, document)
 }
 
 ///|
@@ -698,13 +687,9 @@ fn RemoteServer::cached_document(
 ) -> @workspace.DocumentSnapshot? {
   ignore(request_id)
   match self.documents.get(uri.to_string()) {
-    Some(document) =>
-      if expected_revision == "" || document.revision == expected_revision {
-        Some(document)
-      } else {
-        None
-      }
-    None => None
+    Some(document) if expected_revision is "" ||
+      document.revision == expected_revision => Some(document)
+    _ => None
   }
 }
 

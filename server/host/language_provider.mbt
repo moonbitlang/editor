@@ -51,9 +51,8 @@ pub impl @language.HoverProvider for MoonWorkspaceLanguageProvider with fn provi
     }
     match output {
       Some((exit_code, data)) =>
-        match (Some(data.text()) catch { _ => None }) {
-          Some(raw) => Some((exit_code, raw))
-          None => None
+        Some((exit_code, data.text())) catch {
+          _ => None
         }
       None => None
     }
@@ -148,9 +147,8 @@ pub impl @language.DefinitionProvider for MoonWorkspaceLanguageProvider with fn 
       }
       match output {
         Some((0, data)) =>
-          match (Some(data.text()) catch { _ => None }) {
-            Some(raw) => parse_moon_definition_output(root, raw)
-            None => []
+          parse_moon_definition_output(root, data.text()) catch {
+            _ => []
           }
         _ => []
       }
@@ -194,24 +192,21 @@ pub fn parse_moon_hover_output(
   guard (Some(@json.parse(raw)) catch { _ => None }) is Some(json) else {
     return None
   }
-  let contents : Array[@language.HoverContent] = []
-  if json is { "contents": Array(items), .. } {
-    for item in items {
-      if item is String(text) && text != "" {
-        contents.push(Markdown(text))
-      }
-    }
+  let contents : Array[@language.HoverContent] = match json {
+    { "contents": Array(items), .. } =>
+      [
+        for item in items if item is String(text) && text != "" => {
+          Markdown(text)
+        }
+      ]
+    _ => []
   }
   if contents.is_empty() {
     return None
   }
-  let parsed_range = match json {
-    { "range": String(loc), .. } => parse_moon_loc(loc)
-    _ => None
-  }
-  let range = match parsed_range {
-    Some(range) => range
-    None =>
+  let range = match json {
+    { "range": String(loc), .. } if parse_moon_loc(loc) is Some(range) => range
+    _ =>
       Range(
         position.line_number,
         position.column,

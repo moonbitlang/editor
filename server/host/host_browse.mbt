@@ -126,18 +126,14 @@ async fn resolve_host_directory_listing(
   let entries : Array[@remote_protocol.HostDirectoryEntry] = []
   for name in names {
     // The picker chooses repositories; hidden directories are noise there.
-    if name.has_prefix(".") {
-      continue
-    }
+    guard !name.has_prefix(".") else { continue }
     let child = join_host_path(real, name)
-    match (Some(@fs.kind(child)) catch { _ => None }) {
-      Some(Directory) =>
-        entries.push({
-          name,
-          path: child,
-          is_workspace: looks_like_repository_root(child),
-        })
-      _ => ()
+    if (Some(@fs.kind(child)) catch { _ => None }) is Some(Directory) {
+      entries.push({
+        name,
+        path: child,
+        is_workspace: looks_like_repository_root(child),
+      })
     }
   }
   HostDirectoryListOk({

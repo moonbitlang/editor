@@ -240,9 +240,8 @@ fn same_native_disk_snapshot_map(
     return false
   }
   for key, snapshot in left {
-    match right.get(key) {
-      Some(other) => if snapshot != other { return false }
-      None => return false
+    guard right.get(key) is Some(other) && other == snapshot else {
+      return false
     }
   }
   true
@@ -254,12 +253,9 @@ fn native_disk_matches_document(
   key : String,
   document : SyncedDocumentStamp,
 ) -> Bool {
-  match snapshots.get(key) {
-    Some(disk) =>
-      disk.signature == document.revision &&
-      disk.normalized_text == document.normalized_text
-    None => false
-  }
+  snapshots.get(key) is Some(disk) &&
+  disk.signature == document.revision &&
+  disk.normalized_text == document.normalized_text
 }
 
 ///|
@@ -303,10 +299,7 @@ pub fn parse_moon_check_diagnostics(
               message,
               tags: None,
             }
-            match grouped.get(uri.to_string()) {
-              Some(diagnostics) => diagnostics.push(diagnostic)
-              None => grouped.set(uri.to_string(), [diagnostic])
-            }
+            grouped.get_or_init(uri.to_string(), () => []).push(diagnostic)
           }
           _ => ()
         }
