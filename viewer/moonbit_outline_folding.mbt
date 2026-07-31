@@ -99,6 +99,7 @@ fn is_moonbit_leading_continuation_line(line : String) -> Bool {
         word == "raise" ||
         word == "is" ||
         word == "as" ||
+        word == "with" ||
         word == "derive"
     }
     let next = if index + 1 < line.length() {
@@ -116,6 +117,36 @@ fn is_moonbit_leading_continuation_line(line : String) -> Bool {
     }
   }
   false
+}
+
+///|
+/// Whether the line's last meaningful token is a keyword operator that must
+/// be followed by an operand, leaving the construct unfinished. `raise` and
+/// `noraise` are excluded: they can validly end a bodyless signature
+/// (`declare fn f() -> Int raise`). The scan records the first character of
+/// the last token, so the word is read forward from `last_code_index`.
+fn moonbit_line_ends_with_continuation_word(
+  line : String,
+  last_code : Int,
+  last_code_index : Int,
+) -> Bool {
+  if !is_moonbit_outline_identifier_start(last_code) {
+    return false
+  }
+  let mut end = last_code_index + 1
+  while end < line.length() &&
+        is_moonbit_outline_identifier_continue(line[end].to_int()) {
+    end += 1
+  }
+  let word = line[last_code_index:end].to_owned()
+  word == "is" ||
+  word == "as" ||
+  word == "with" ||
+  word == "else" ||
+  word == "try" ||
+  word == "match" ||
+  word == "if" ||
+  word == "catch"
 }
 
 ///|
@@ -154,8 +185,7 @@ fn moonbit_source_folds(snapshot : @model.TextSnapshot) -> MoonbitSourceFolds {
   let folds : Array[MoonbitFunctionBodyFold] = []
   let comment_runs : Array[MoonbitCommentRunFold] = []
   let mut comment_run_start_line = 0
-  let mut deferred_run_start_line = 0
-  let mut deferred_run_end_line = 0
+  let deferred_comment_runs : Array[MoonbitCommentRunFold] = []
   let mut block_comment_depth = 0
   let mut brace_depth = 0
   let mut function_keyword_line = 0
@@ -200,6 +230,7 @@ fn moonbit_source_folds(snapshot : @model.TextSnapshot) -> MoonbitSourceFolds {
     let interpolation_resume_depths : Array[Int] = []
     let mut line_saw_equals = false
     let mut line_last_code = 0
+    let mut line_last_code_index = -1
     while index < line.length() {
       let code = line[index].to_int()
       let next = if index + 1 < line.length() {
@@ -216,6 +247,7 @@ fn moonbit_source_folds(snapshot : @model.TextSnapshot) -> MoonbitSourceFolds {
         !(quote == 0 && code == '/' && (next == '/' || next == '*')) &&
         !(quote == 0 && (code == '#' || code == '$') && next == '|') {
         line_last_code = code
+        line_last_code_index = index
       }
       if block_comment_depth > 0 {
         if code == '/' && next == '*' {
@@ -507,44 +539,33 @@ fn moonbit_source_folds(snapshot : @model.TextSnapshot) -> MoonbitSourceFolds {
       }
     }
     if joins_comment_run {
-      if deferred_run_start_line > 0 {
-        // A fresh comment line proves the deferred run below was not part
-        // of a continued construct.
-        comment_runs.push({
-          start_line_number: deferred_run_start_line,
-          end_line_number: deferred_run_end_line,
-        })
-        deferred_run_start_line = 0
-        deferred_run_end_line = 0
-      }
       if comment_run_start_line == 0 {
         comment_run_start_line = line_number
       }
     } else if line_last_code == 0 {
       // A trivia line — blank, doc-comment-only, or block-comment-only —
-      // ends the run but defers the accept/discard decision to the next
-      // meaningful line, which may still continue the construct above the
-      // run (an `else` arm after a commented gap).
+      // ends the run but defers the accept/discard decision until the next
+      // meaningful line: every queued run before a continuation line (an
+      // `else` arm after a commented gap) belongs to that construct.
       if comment_run_start_line > 0 && line_number - 1 > comment_run_start_line {
-        deferred_run_start_line = comment_run_start_line
-        deferred_run_end_line = line_number - 1
+        deferred_comment_runs.push({
+          start_line_number: comment_run_start_line,
+          end_line_number: line_number - 1,
+        })
       }
       comment_run_start_line = 0
     } else {
       // A run terminated by a leading-operator line (`-> Int`, `.chain()`,
-      // `= 1`) sits inside that continued construct and is discarded — the
-      // previous line's tail cannot reveal this kind of split.
+      // `= 1`) sits inside that continued construct and is discarded, along
+      // with every run queued across the trivia gap above it — the previous
+      // line's tail cannot reveal this kind of split.
       let continues_construct = is_moonbit_leading_continuation_line(line)
-      if deferred_run_start_line > 0 {
-        if !continues_construct {
-          comment_runs.push({
-            start_line_number: deferred_run_start_line,
-            end_line_number: deferred_run_end_line,
-          })
+      if !continues_construct {
+        for deferred_run in deferred_comment_runs {
+          comment_runs.push(deferred_run)
         }
-        deferred_run_start_line = 0
-        deferred_run_end_line = 0
       }
+      deferred_comment_runs.clear()
       if comment_run_start_line > 0 &&
         line_number - 1 > comment_run_start_line &&
         !continues_construct {
@@ -562,15 +583,15 @@ fn moonbit_source_folds(snapshot : @model.TextSnapshot) -> MoonbitSourceFolds {
     // `let value = /* explanation` the `=` is the meaningful signal.
     if line_last_code != 0 && brace_depth == 0 && expression_nesting_depth == 0 {
       pending_expression_continuation = is_moonbit_expression_continuation_code(
-        line_last_code,
-      )
+          line_last_code,
+        ) ||
+        moonbit_line_ends_with_continuation_word(
+          line, line_last_code, line_last_code_index,
+        )
     }
   }
-  if deferred_run_start_line > 0 {
-    comment_runs.push({
-      start_line_number: deferred_run_start_line,
-      end_line_number: deferred_run_end_line,
-    })
+  for deferred_run in deferred_comment_runs {
+    comment_runs.push(deferred_run)
   }
   if comment_run_start_line > 0 &&
     snapshot.line_count() > comment_run_start_line {
