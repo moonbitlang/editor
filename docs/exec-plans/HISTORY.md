@@ -98,6 +98,65 @@ browser integration), and `5da7139` (durable contracts and interface review).
 
 Former artifact: `peek-references-ui.md`.
 
+### Provider-backed Peek References
+
+The later provider-integration slice completed the References action around
+the existing precomputed-locations UI. The behavior port used the pinned
+`vscode` gitlink at `b18492a288de038fbc7643aae6de8247029d11bd`, specifically
+`goToCommands.ts:644-727`, `goToSymbol.ts:23-91`, and
+`referencesController.ts:77-187`. Shift+F12 now directly opens Peek References
+in the readonly Viewer, and the flattened HTML editor menu exposes a top-level
+`Peek References` row immediately after Peek Definition. Code uses the current
+cursor; semantic Markdown uses its most recent still-valid projected pointer
+anchor.
+
+`viewer/common/languages` gained a References registry parallel to Definition.
+It queries every matching live provider, isolates failures, preserves selector
+score/newer-registration order independently of completion order, and rejects
+cancelled or disposed work. The root References contribution opens the shared
+shell immediately in `Loading references...` and stamps each query with model,
+attachment, content version, anchor, session generation, and cancellation
+identity. Cursor or semantic-anchor movement, model/content replacement, newer
+navigation/Peek intent, close, and disposal reject stale completion. Nonempty
+results reuse the grouped ARIA tree, lazy snippets, nested preview, decoration,
+opening, and teardown implementation; an authoritative empty result retains
+the accessible `No references found` dialog. The public
+`Viewer::show_references` entry remains provider-free.
+
+The reference workbench now registers `RemoteLanguageClient` as a
+`ReferencesProvider`, maps the existing ordered protocol payload back to
+language locations, and preserves cancellation tombstones for late replies.
+The native host replaced its stub with exactly
+`moon ide find-references --loc <path:line:column> --json`, reusing the
+Definition JSON-location parser and workspace containment rules. Moon IDE owns
+declaration inclusion; the Viewer applies its existing exact
+sort/dedup/grouping normalization.
+
+Intentional differences remain documented in `docs/references/monaco.md`.
+VS Code routes Shift+F12 through Go to References and a
+`multipleReferences` preference, while this readonly product has no editable
+navigation history and opens Peek directly. VS Code nests Peek References
+under `EditorContextPeek`; the local menu keeps adjacent top-level navigation
+rows. Go to References, CodeLens, document highlights, a Workbench References
+View, result filtering/copy/history, protocol cancellation packets,
+virtualization, and progress notifications remain excluded.
+
+Focused evidence covered provider ordering, failure isolation, cancellation,
+late completion, action availability, loading/populated/empty sessions,
+same-anchor toggling, Code and semantic-Markdown keyboard/menu gestures, remote
+mapping, exact native argv, and the live Moon CLI JSON shape. Final validation
+passed 1,939 JS, 1,362 native, and 1,215 Wasm MoonBit tests; wasm-gc has no test
+entry. The complete browser gate passed 127 of 128 scenarios, with only the
+existing opt-in live-CDN Mermaid diagnostic skipped. `moon info --target all`,
+`moon check --target all --warn-list +73`, `moon fmt --check`, `just test`,
+`just build`, `just test-browser-smoke`, and diff checks passed.
+
+Milestones were `46ec231` (plan and Gate A), `24e205d` (language registry and
+Viewer action), and `c5bb998` (remote/native integration), followed by the
+browser-proof and contract closeout.
+
+Former artifact: `peek-references-provider-integration.md`.
+
 ### HTML editor context menu behavior port
 
 The browser Viewer now renders a Monaco-shaped HTML editor context menu instead

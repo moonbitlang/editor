@@ -188,11 +188,13 @@ keyboard gestures cover selection-preserving Code anchoring, the shared
 semantic Markdown command path, native fallback on ordinary Markdown and the
 Code scrollbar, live definition actions, ARIA and 24px-row styling,
 hide-before-run/focus restoration, top-level keyboard navigation, and
-bottom-right viewport fitting. Command grouping/preconditions and lifecycle
-stay in Viewer white-box tests; pure placement boundaries stay in the
-context-menu browser package. The same fixture also keeps one browser
-regression proving Definition uses the shared mode-labelled Peek dialog and
-reference tree.
+bottom-right viewport fitting. The fixture also registers an isolated
+References provider and proves Shift+F12 plus the top-level Peek References
+menu action in Code and semantic Markdown, including the shared loading/result
+shell. Command grouping/preconditions and lifecycle stay in Viewer white-box
+tests; pure placement boundaries stay in the context-menu browser package.
+The same fixture keeps one browser regression proving Definition uses the
+shared mode-labelled Peek dialog and reference tree.
 
 The precomputed References Peek proof is the direct public-Viewer scenario
 `tests/browser/moonbit/peek_references/peek_references_scenario.mbt`, staged as
@@ -225,9 +227,12 @@ The shell-independent selection and native integration layer uses
 URI-backed models through the remote protocol; the Viewer selects the
 presentation, and a real pointer in the `.mbt.md` semantic fence reaches the
 native `moon ide hover` adapter with the original source range. The embedded
-smoke in `tests/browser/smoke/embed.spec.js` separately opens an in-memory
-`README.md` through the same public `Viewer::set_model` path, proving that
-neither the workbench nor the remote protocol owns selection.
+smoke in the same file also drives Shift+F12 on a real MoonBit symbol through
+the workbench References provider, remote References request, native
+`moon ide find-references --loc ... --json`, grouped Peek UI, and preview. The
+embedded smoke in `tests/browser/smoke/embed.spec.js` separately opens an
+in-memory `README.md` through the same public `Viewer::set_model` path, proving
+that neither the workbench nor the remote protocol owns selection.
 
 The folding-versus-own-hidden-source branch stays in the focused mounted
 Viewer/ViewZones matrices: it is a source-membership and whitespace-visibility

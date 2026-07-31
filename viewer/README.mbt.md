@@ -135,9 +135,9 @@ viewer.slot.data -> model: borrows readonly
   map is the only per-Viewer instance store. Each central entry owns one
   concrete hover, folding, feedback-input, feedback-widget, quick-diff, or
   Markdown-comment state value, the context-menu shell/source-anchor state, or
-  the Definition request/link state, or the shared Definition/References Peek
-  state, plus its root listeners; feature packages keep no editor-id-keyed
-  instance table.
+  the Definition request/link state, or the shared Definition/References
+  Peek/query state, plus its root listeners; feature packages keep no
+  editor-id-keyed instance table.
   The content-hover payload additionally
   owns its controller, lazy widget and logical widget view, and timeout/async
   launch policy across model swaps. The Markdown-comment payload owns its
@@ -395,8 +395,9 @@ retires.
 
 Alt+F12 and multiple Definition results populate the same per-Viewer
 References controller used by the public precomputed-locations entry. Provider
-requests and Definition-specific no-result/open-rejection messages stay in the
-Definition contribution; the shared controller owns only an already-computed
+requests and Definition-specific no-result/open-rejection messages stay in
+the Definition contribution. References provider requests stay in the
+References contribution. Both feed already-computed locations into the shared
 result session.
 
 Code requests the Monaco-default 18 lines with a blank ViewZone, reduces toward
@@ -453,6 +454,26 @@ word-specific `No definition found` feedback rather than retaining an empty
 dialog. Confirmation is stamped with both the source model and latest open
 intent, so queued work cannot overwrite a newer cursor or navigation action.
 
+### Provider-backed Peek References action
+
+Shift+F12 and the top-level `Peek References` editor context-menu row query the
+current Code cursor or most recent valid semantic-Markdown pointer anchor. The
+action is available only on a mounted outer Viewer with a matching References
+provider. It opens the shared shell immediately in `Loading references...`,
+queries every matching live provider, isolates provider failures, and flattens
+results in selector/registration priority regardless of completion order.
+An authoritative empty result remains visible as `No references found`.
+
+The request is stamped with the source model, attachment generation, content
+version, anchor, session generation, and cancellation identity. Cursor or
+semantic-anchor movement, model/content replacement, another navigation or
+Peek intent, close, and disposal all reject stale completion. The reference
+workbench registers its remote language client as the provider; the native
+host executes
+`moon ide find-references --loc <path:line:column> --json`. Moon IDE's result
+includes the declaration, and the shared model applies its existing exact
+sort/dedup/group normalization before rendering.
+
 ### Public precomputed References entry
 
 ```mbt nocheck
@@ -469,9 +490,11 @@ accessible `No references found` dialog.
 
 Opening References retires pending Definition actions, link gestures, and
 feedback so older intent cannot later replace the direct session. This API does
-not register a References provider or add Shift+F12/context-menu commands,
-declaration policy, CodeLens, document highlights, a Workbench References View,
-filtering, copying, history, virtualization, or a resizable/persisted split.
+not register or query a References provider; the provider-backed action above
+is an independent contribution using the same result controller. Go to
+References, CodeLens, document highlights, a Workbench References View,
+filtering, copying, history, virtualization, and a resizable/persisted split
+remain outside the Viewer surface.
 
 `ViewerServices` is an opaque capability aggregate. Its constructor accepts a
 `LanguageHandle`, one closed marker source (`MarkerStore` or `Decorations`), an

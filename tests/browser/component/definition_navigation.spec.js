@@ -29,6 +29,9 @@ const goToDefinitionAction =
 const peekDefinitionAction =
   `${contextMenu} ` +
   '[data-context-menu-command="editor.action.peekDefinition"]';
+const peekReferencesAction =
+  `${contextMenu} ` +
+  '[data-context-menu-command="editor.action.referenceSearch.trigger"]';
 const platformModifier = process.platform === 'darwin' ? 'Meta' : 'Control';
 
 async function settle(page) {
@@ -212,13 +215,16 @@ test('HTML context menu preserves an enclosing selection and runs Go to Definiti
     await expect(page.locator(contextMenu)).toHaveCount(1);
     await expect(page.locator(`${contextMenu} [role="menu"]`)).toHaveCount(1);
     await expect(page.locator(`${contextMenu} [role="menuitem"]`)).toHaveCount(
-      2,
+      3,
     );
     await expect(page.locator(goToDefinitionAction)).toContainText(
       'Go to Definition',
     );
     await expect(page.locator(peekDefinitionAction)).toContainText(
       'Peek Definition',
+    );
+    await expect(page.locator(peekReferencesAction)).toContainText(
+      'Peek References',
     );
     const menuState = await page.locator(contextMenu).evaluate((root) => {
       const item = root.querySelector('.action-menu-item');
@@ -284,6 +290,53 @@ test('HTML context menu preserves an enclosing selection and runs Go to Definiti
       .poll(async () => (await state(page)).position)
       .toEqual({ line: 1, column: 5 });
     expect((await state(page)).providerCalls).toBe(callsBefore + 1);
+  } finally {
+    reporter.dispose();
+  }
+});
+
+test('Shift+F12 and the context action open provider-backed Peek References', async ({
+  page,
+}, testInfo) => {
+  const reporter = await mountDefinitionFixture(page, testInfo);
+  try {
+    const point = await referencePoint(page);
+    await page.mouse.click(point.x, point.y);
+    const callsBefore = (await state(page)).referencesProviderCalls;
+
+    await page.keyboard.press('Shift+F12');
+    await expect(
+      page.getByRole('dialog', { name: 'Peek References' }),
+    ).toHaveCount(1);
+    await expect(page.locator(`${peek} [role="treeitem"]`)).toHaveCount(2);
+    await expect(page.locator(peek)).toContainText('2 results');
+    await expect
+      .poll(async () => (await state(page)).referencesProviderCalls)
+      .toBe(callsBefore + 1);
+    await page.keyboard.press('Escape');
+    await expect(page.locator(peek)).toHaveCount(0);
+
+    // Removing the Code ViewZone may restore a different scroll offset. Read
+    // the live token geometry again before the second, independent gesture.
+    await settle(page);
+    const contextPoint = await referencePoint(page);
+    await page.mouse.click(contextPoint.x, contextPoint.y, {
+      button: 'right',
+    });
+    await expect(page.locator(contextMenu)).toHaveCount(1);
+    await expect(page.locator(peekReferencesAction)).toContainText(
+      process.platform === 'darwin' ? '⇧F12' : 'Shift+F12',
+    );
+    await page.locator(peekReferencesAction).click();
+    await expect(page.locator(contextMenu)).toHaveCount(0);
+    await expect(
+      page.getByRole('dialog', { name: 'Peek References' }),
+    ).toHaveCount(1);
+    await expect(page.locator(preview)).toHaveCount(1);
+    await expect
+      .poll(async () => (await state(page)).referencesProviderCalls)
+      .toBe(callsBefore + 2);
+    await page.keyboard.press('Escape');
   } finally {
     reporter.dispose();
   }
@@ -569,6 +622,52 @@ test('semantic Markdown shares the HTML menu while ordinary Markdown and scrollb
       ),
     ).toBe(false);
     await expect(page.locator(contextMenu)).toHaveCount(0);
+  } finally {
+    reporter.dispose();
+  }
+});
+
+test('semantic Markdown runs Peek References from its menu and Shift+F12 anchor', async ({
+  page,
+}, testInfo) => {
+  const reporter = await mountDefinitionFixture(page, testInfo);
+  try {
+    const semantic = await markdownTextRange(
+      page,
+      'definition_alpha',
+      true,
+      0,
+    );
+    const callsBefore = (await markdownState(page)).referencesProviderCalls;
+
+    await page.mouse.click(semantic.x, semantic.y, { button: 'right' });
+    await expect(page.locator(contextMenu)).toHaveCount(1);
+    await page.locator(peekReferencesAction).click();
+    await expect(page.locator(markdownPeek)).toHaveAttribute(
+      'aria-label',
+      'Peek References',
+    );
+    await expect(page.locator(`${markdownPeek} [role="treeitem"]`)).toHaveCount(
+      2,
+    );
+    await expect(page.locator(markdownPreview)).toHaveCount(1);
+    await expect
+      .poll(async () => (await markdownState(page)).referencesProviderCalls)
+      .toBe(callsBefore + 1);
+    await page.keyboard.press('Escape');
+    await expect(page.locator(markdownPeek)).toHaveCount(0);
+
+    await page.mouse.click(semantic.x, semantic.y, { button: 'right' });
+    await page.keyboard.press('Escape');
+    await page.keyboard.press('Shift+F12');
+    await expect(page.locator(markdownPeek)).toHaveAttribute(
+      'aria-label',
+      'Peek References',
+    );
+    await expect
+      .poll(async () => (await markdownState(page)).referencesProviderCalls)
+      .toBe(callsBefore + 2);
+    await page.keyboard.press('Escape');
   } finally {
     reporter.dispose();
   }

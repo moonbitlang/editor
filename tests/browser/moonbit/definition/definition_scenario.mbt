@@ -1,7 +1,8 @@
-// Real-Chromium fixture for goto-definition, definition-link, and Peek
-// Definition. Playwright drives trusted mouse, modifier, wheel, and keyboard
-// events; this MoonBit side supplies only the public Viewer, an isolated
-// definition provider, and deterministic readback of public editor state.
+// Real-Chromium fixture for goto-definition, definition-link, Peek Definition,
+// and provider-backed Peek References. Playwright drives trusted mouse,
+// modifier, wheel, and keyboard events; this MoonBit side supplies only the
+// public Viewer, isolated language providers, and deterministic readback of
+// public editor state.
 
 ///|
 priv struct BrowserDefinitionProvider {
@@ -28,6 +29,50 @@ impl @language.DefinitionProvider for BrowserDefinitionProvider with fn provide_
       (true, Some(alternate)) => [self.location, alternate]
       _ => [self.location]
     }
+  } else {
+    []
+  }
+}
+
+///|
+priv struct BrowserReferencesProvider {
+  calls : Ref[Int]
+  code_uri : @base_common.Uri
+  markdown_uri : @base_common.Uri
+}
+
+///|
+impl @language.ReferencesProvider for BrowserReferencesProvider with fn provide_references(
+  self,
+  model,
+  position,
+  _token,
+) {
+  self.calls.val += 1
+  if model.uri.to_string() == self.code_uri.to_string() &&
+    position.line_number == 2 &&
+    position.column >= definition_reference_start_column() &&
+    position.column <= definition_reference_end_column() {
+    [
+      { uri: self.code_uri, range: Range(1, 5, 1, 21) },
+      { uri: self.code_uri, range: Range(2, 11, 2, 27) },
+    ]
+  } else if model.uri.to_string() == self.markdown_uri.to_string() &&
+    position.line_number == 2 &&
+    position.column >= definition_reference_start_column() &&
+    position.column <= definition_reference_end_column() {
+    [
+      { uri: self.markdown_uri, range: Range(2, 11, 2, 27) },
+      {
+        uri: self.markdown_uri,
+        range: Range(
+          markdown_definition_line(),
+          5,
+          markdown_definition_line(),
+          21,
+        ),
+      },
+    ]
   } else {
     []
   }
@@ -76,6 +121,7 @@ fn markdown_definition_line() -> Int {
 fn definition_state_json(
   viewer : @viewer.Viewer,
   provider_calls : Ref[Int],
+  references_provider_calls : Ref[Int],
 ) -> String {
   let (line, column) = match viewer.get_position() {
     Some(position) => (position.line_number, position.column)
@@ -102,6 +148,7 @@ fn definition_state_json(
       "activeColumn": active_column.to_json(),
     }),
     "providerCalls": provider_calls.val.to_json(),
+    "referencesProviderCalls": references_provider_calls.val.to_json(),
     "scrollTop": viewer.get_scroll_top().to_json(),
     "scrollHeight": viewer.get_scroll_height().to_json(),
     "hasTextFocus": viewer.has_text_focus().to_json(),
@@ -185,12 +232,23 @@ fn run_definition_browser_test() -> Unit {
     multiple: markdown_provider_multiple,
     reference_line: 2,
   }
+  let references_provider_calls = Ref(0)
+  let references_provider = BrowserReferencesProvider::{
+    calls: references_provider_calls,
+    code_uri: uri,
+    markdown_uri,
+  }
   let languages = @languages.Languages()
   languages.register_definition_provider(LanguageId("moonbit"), provider)
   |> ignore
   languages.register_definition_provider(
     LanguageId("moonbit"),
     markdown_provider,
+  )
+  |> ignore
+  languages.register_references_provider(
+    LanguageId("moonbit"),
+    references_provider,
   )
   |> ignore
   let log_service = @log.LogService()
@@ -235,8 +293,14 @@ fn run_definition_browser_test() -> Unit {
   install_definition_controls(
     root,
     markdown_root,
-    () => definition_state_json(viewer, provider_calls),
-    () => definition_state_json(markdown_viewer, markdown_provider_calls),
+    () => {
+      definition_state_json(viewer, provider_calls, references_provider_calls)
+    },
+    () => {
+      definition_state_json(
+        markdown_viewer, markdown_provider_calls, references_provider_calls,
+      )
+    },
     () => viewer.set_scroll_top(0.0),
     () => viewer.focus(),
     () => markdown_viewer.focus(),

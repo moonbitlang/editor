@@ -170,6 +170,17 @@ algorithm-fidelity ports for the selected observable invariants below.
   and delegation through `ReferencesController`; zero results stop before Peek.
   `DefinitionAction` and the F12/Web CtrlCmd+F12 and Alt+F12 registrations are
   at `:253-312,343-374`.
+- `src/vs/editor/contrib/gotoSymbol/browser/goToCommands.ts:644-727` owns
+  provider-backed References actions. Upstream `Go to References` registers
+  Shift+F12 and queries with `includeDeclaration=true`; `Peek References`
+  registers the Peek-menu action. The local readonly product combines those
+  observable seams into one direct Peek action and keeps it adjacent to
+  Definition in the flattened navigation menu.
+- `src/vs/editor/contrib/gotoSymbol/browser/goToSymbol.ts:23-91` queries every
+  ordered matching References provider, isolates provider failure, observes
+  cancellation, and retains provider order independently of completion order.
+  The local References registry ports those query invariants; Moon IDE owns
+  declaration inclusion.
 - `src/vs/editor/contrib/gotoSymbol/browser/goToCommands.ts:735-825,858-859`
   supplies the precomputed
   `peekLocations`/`showReferences` entry. Local
@@ -181,7 +192,8 @@ algorithm-fidelity ports for the selected observable invariants below.
   descending and registration time descending. The local selector surface
   ports exact and wildcard language/scheme scoring, path-match scoring, list
   maxima, zero-score empty filters, and newer-first tie-breaking; definition
-  results retain that priority regardless of concurrent completion order.
+  and References results retain that priority regardless of concurrent
+  completion order.
 - `src/vs/editor/contrib/gotoSymbol/browser/link/goToDefinitionAtPosition.ts:
   47-79,111-224,266-315` resolves only eligible content-text targets, cancels
   prior work, validates position/value/selection/scroll freshness, decorates
@@ -226,7 +238,11 @@ algorithm-fidelity ports for the selected observable invariants below.
 Intentional local differences and exclusions:
 
 - The browser-only Viewer uses Alt+F12 on all platforms and CtrlCmd+F12 as a web
-  binding; VS Code overrides Peek to CtrlCmd+Shift+F10 on Linux.
+  Definition binding; VS Code overrides Peek Definition to
+  CtrlCmd+Shift+F10 on Linux. Shift+F12 directly opens Peek References locally:
+  the readonly Viewer has no `multipleReferences` goto preference or editable
+  navigation history through which to route an intermediate Go to References
+  action.
 - The local link trigger is exact platform Ctrl/Command. VS Code can remap it
   from `multiCursorModifier` and also supports side/middle-click variants.
   Local preview caching requires the same model identity, attachment
@@ -261,12 +277,13 @@ Intentional local differences and exclusions:
   unavailable state.
   Upstream same-Peek toggle accepts a range containing the widget position; the
   local readonly anchor is exact model/generation/version/position. Empty
-  precomputed References locations retain an accessible empty dialog;
+  precomputed or provider-backed References locations retain an accessible
+  empty dialog;
   Definition's zero-result request still stops Peek and uses its existing
   feedback.
 - Upstream's aliased precomputed action titles its model `Locations`, while the
-  provider-backed action uses `References`. The local public entry always uses
-  the product-facing `References` title.
+  provider-backed action uses `References`. Both the local public entry and
+  provider action use the product-facing `References` title.
 - Upstream F4/Shift+F4 also performs Peek-mode goto and re-anchors the outer
   editor. The local keys change only tree selection and the nested preview
   because the host-neutral opener does not expose same-Viewer model transfer.
@@ -286,10 +303,13 @@ Intentional local differences and exclusions:
   and model lifetime policy. Definition opener rejection and unavailable
   selected preview produce local non-destructive feedback; References opener
   rejection has no Definition-message side effect.
-- References-provider registration, Shift+F12/context-menu commands, provider
-  query cancellation, declaration inclusion policy, CodeLens, document
-  highlights, the Workbench References View, filtering, virtualization, and
-  result copy/history actions are outside this precomputed-location UI seam.
+- Upstream places Peek References under `EditorContextPeek`; the local HTML
+  menu deliberately keeps it as a top-level navigation row immediately after
+  Peek Definition. The local provider contract has no `ReferenceContext`;
+  Moon IDE's `find-references` result already includes the declaration.
+  Go to References, CodeLens, document highlights, the Workbench References
+  View, filtering, virtualization, and result copy/history actions remain
+  outside this feature.
 - Same-resource goto reveals in the center only when outside the viewport;
   upstream uses `NearTopIfOutsideViewport`. Upstream word-specific no-result
   text remains Definition-only, and 250 ms action progress is not reproduced.
