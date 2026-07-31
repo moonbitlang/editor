@@ -172,6 +172,34 @@ test "folding: MoonBit comment-run scan finds only top-level plain runs" {
 }
 
 ///|
+test "folding: comments inside an in-progress declaration never form a run" {
+  let text =
+    #|fn f(
+    #|  // keep a
+    #|  // keep b
+    #|) -> Int {
+    #|  1
+    #|}
+    #|pub
+    #|// prefix a
+    #|// prefix b
+    #|  fn g() -> Int {
+    #|    2
+    #|  }
+  let model = test_model(text, language_id="moonbit")
+  let source_folds = moonbit_source_folds(model.snapshot)
+  assert_eq(source_folds.comment_runs.length(), 0)
+  let folds = source_folds.function_bodies
+  assert_eq(folds.length(), 2)
+  assert_eq(folds[0].declaration_start_line_number, 1)
+  assert_eq(folds[0].body_start_line_number, 4)
+  assert_eq(folds[0].body_end_line_number, 6)
+  assert_eq(folds[1].declaration_start_line_number, 7)
+  assert_eq(folds[1].body_start_line_number, 10)
+  assert_eq(folds[1].body_end_line_number, 12)
+}
+
+///|
 test "folding: MoonBit outline collapses a copyright header to its first line" {
   let text =
     #|// Copyright 2026 Example Authors.
