@@ -165,11 +165,9 @@ pub fn TokenizationRegistry::register(
   // immediately when a newer registration owns the key.
   self.handle_change([language_id])
   @base_common.Disposable::from(() => {
-    if self.tokenizers.get(language_id) is Some(entry) {
-      if entry.id == id {
-        self.tokenizers.remove(language_id)
-        self.handle_change([language_id])
-      }
+    if self.tokenizers.get(language_id) is Some(entry) && entry.id == id {
+      self.tokenizers.remove(language_id)
+      self.handle_change([language_id])
     }
   })
 }
@@ -183,10 +181,7 @@ pub fn TokenizationRegistry::get(
   self : TokenizationRegistry,
   language_id : String,
 ) -> &LineTokenizer? {
-  match self.tokenizers.get(language_id) {
-    Some(entry) => Some(entry.tokenizer)
-    None => None
-  }
+  self.tokenizers.get(language_id).map(entry => entry.tokenizer)
 }
 
 ///|
@@ -299,14 +294,11 @@ pub fn push_token(
 /// Shared by the language lexers (`lang_*`), which otherwise carry identical
 /// copies. Inverse of `encode_mode_stack`.
 pub fn decode_mode_stack(state : TokenizerState) -> Array[Char] {
-  let stack : Array[Char] = []
-  for mode in state.0 {
-    stack.push(mode)
+  if state.0 is "" {
+    ['n']
+  } else {
+    state.0.to_array()
   }
-  if stack.length() == 0 {
-    stack.push('n')
-  }
-  stack
 }
 
 ///|

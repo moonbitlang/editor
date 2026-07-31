@@ -32,12 +32,12 @@ pub impl LineTokenizer for PlainTokenizer with fn tokenize_line(
     let unit = line_text[offset].to_int()
     if is_space(unit) {
       offset = offset + 1
-    } else if unit == 47 &&
+    } else if unit == '/' &&
       offset + 1 < line_text.length() &&
-      line_text[offset + 1].to_int() == 47 {
+      line_text[offset + 1].to_int() == '/' {
       tokens.push({ start: offset, end: line_text.length(), tag: Comment })
       offset = line_text.length()
-    } else if unit == 34 {
+    } else if unit == '"' {
       let start = offset
       offset = consume_string(line_text, offset)
       tokens.push({ start, end: offset, tag: String })
@@ -82,9 +82,9 @@ fn consume_string(text : String, offset : Int) -> Int {
     let unit = text[at].to_int()
     if escaped {
       escaped = false
-    } else if unit == 92 {
+    } else if unit == '\\' {
       escaped = true
-    } else if unit == 34 {
+    } else if unit == '"' {
       return at + 1
     }
     at = at + 1
@@ -103,17 +103,17 @@ fn consume_while(text : String, offset : Int, pred : (Int) -> Bool) -> Int {
 
 ///|
 fn is_space(unit : Int) -> Bool {
-  unit == 9 || unit == 10 || unit == 13 || unit == 32
+  unit is ('\t' | '\n' | '\r' | ' ')
 }
 
 ///|
 fn is_digit(unit : Int) -> Bool {
-  48 <= unit && unit <= 57
+  unit is ('0'..='9')
 }
 
 ///|
 fn is_ident_start(unit : Int) -> Bool {
-  (65 <= unit && unit <= 90) || (97 <= unit && unit <= 122) || unit == 95
+  unit is ('A'..='Z' | 'a'..='z' | '_')
 }
 
 ///|
@@ -123,17 +123,18 @@ fn is_ident_continue(unit : Int) -> Bool {
 
 ///|
 fn is_keyword(text : String) -> Bool {
-  text == "fn" ||
-  text == "let" ||
-  text == "pub" ||
-  text == "struct" ||
-  text == "enum" ||
-  text == "match" ||
-  text == "if" ||
-  text == "else" ||
-  text == "while" ||
-  text == "for" ||
-  text == "return" ||
-  text == "test" ||
-  text == "import"
+  text
+  is ("fn"
+  | "let"
+  | "pub"
+  | "struct"
+  | "enum"
+  | "match"
+  | "if"
+  | "else"
+  | "while"
+  | "for"
+  | "return"
+  | "test"
+  | "import")
 }
