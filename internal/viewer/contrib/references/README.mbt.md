@@ -2,9 +2,18 @@
 
 This multi-target, DOM-free package owns the immutable result and session
 values shared by Peek Definition and the public precomputed-references entry.
-The root Viewer owns provider requests, model-reference leases, nested Viewers,
-decorations, presentation mounts, opening, and teardown. The browser sibling
-owns the Peek shell and accessible result tree.
+The root Viewer owns Definition provider requests, model-reference leases,
+nested Viewers, decorations, presentation mounts, opening, and teardown. The
+browser sibling owns the Peek shell and accessible result tree.
+
+The public entry itself remains in the root facade:
+
+```mbt nocheck
+viewer.show_references(anchor, locations)
+```
+
+It consumes already-computed locations. This package does not register or call
+a References provider and does not own declaration-inclusion policy.
 
 `ReferencesModel` copies caller locations, sorts by canonical
 `Uri::to_string()` and full 1-based `Range`, removes exact duplicates, and
@@ -15,6 +24,12 @@ part of identity; no filesystem case policy enters the Viewer.
 followed by `abs(line delta) * 100 + abs(column delta)` and stable sorted order.
 Next and previous navigation use the flat sequence and wrap across resource
 groups.
+
+`ReferencesSessionKey` captures the exact source model identity, attachment
+generation, content version, and validated anchor used for freshness and
+same-session toggle decisions. `ReferencesPeekMode` labels the shared shell as
+Definitions or References; phases describe controller lifecycle without owning
+any browser or cancellation resource.
 
 `reference_snippet` reads only through `TextModel` range operations. It begins
 the prefix at the word containing the position eight UTF-16 columns before the
@@ -29,3 +44,14 @@ The selected algorithms are traceable to the checked-in VS Code revision
 `referencesModel.ts:66-145,147-297`. Local URI identity, snippet strings, line
 break normalization, and invalid-range rejection are documented representation
 choices.
+
+Provider discovery, query cancellation, Shift+F12 commands, CodeLens, document
+highlights, the Workbench References View, filtering, virtualization, history,
+and copy actions are outside this package.
+
+Exact callable types are in `pkg.generated.mbti`. Focused coverage is:
+
+```sh
+moon test internal/viewer/contrib/references --target js
+moon test internal/viewer/contrib/references --target native
+```

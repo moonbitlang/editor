@@ -251,6 +251,37 @@ extern "js" fn references_peek_root_test_row(
   #| }
 
 ///|
+extern "js" fn references_peek_root_test_tree(
+  root : @rdom.Element,
+) -> @rdom.Element =
+  #| root => {
+  #|   const tree = root.querySelector(
+  #|     ".moonbit-viewer-reference-results-tree",
+  #|   );
+  #|   if (!tree) throw new Error("missing reference results tree");
+  #|   return tree;
+  #| }
+
+///|
+fn assert_references_peek_session_key(
+  viewer : Viewer,
+  model : @model.TextModel,
+  anchor : @base_common.Position,
+) -> Unit raise {
+  let state = viewer.references_contribution().unwrap()
+  assert_eq(
+    state.session_key,
+    Some(
+      @references.ReferencesSessionKey::from_model(
+        model,
+        viewer.model_slot.generation,
+        anchor,
+      ),
+    ),
+  )
+}
+
+///|
 extern "js" fn references_peek_root_test_dispatch_target(
   dispatcher : @rdom.Element,
   target : @rdom.Element,
@@ -317,7 +348,7 @@ fn run_references_peek_public_contract_test() -> Unit raise {
   viewer.show_references(invalid_anchor, locations)
   let state = viewer.references_contribution().unwrap()
   assert_eq(state.mode, Some(References))
-  assert_eq(state.session_key.unwrap().anchor, validated_anchor)
+  assert_references_peek_session_key(viewer, source, validated_anchor)
   assert_eq(state.model.unwrap().references.length(), 1)
   assert_eq(
     state.model.unwrap().references[0].uri_string,
@@ -358,7 +389,7 @@ fn run_references_peek_public_contract_test() -> Unit raise {
     { uri: original_uri, range: Range(2, 14, 2, 20) },
   ])
   assert_true(state.generation > empty_generation)
-  assert_eq(state.session_key.unwrap().anchor, Position(1, 2))
+  assert_references_peek_session_key(viewer, source, Position(1, 2))
   assert_eq(state.model.unwrap().references.length(), 1)
 
   // A Peek preview Viewer cannot recursively create another shell.
@@ -417,13 +448,15 @@ async fn run_references_peek_same_resource_test() -> Unit {
   assert_eq(resolver_calls.val, 0)
   assert_eq(
     references_peek_root_test_class_count(
-      widget.get_tree_node(),
+      references_peek_root_test_tree(widget.get_dom_node()),
       "moonbit-viewer-reference-results-snippet-match",
     ),
     2,
   )
   assert_true(
-    references_peek_root_test_text(widget.get_tree_node()).contains("target"),
+    references_peek_root_test_text(
+      references_peek_root_test_tree(widget.get_dom_node()),
+    ).contains("target"),
   )
   tasks.run_all()
   guard state.preview_viewer is Some(preview) else {
@@ -567,7 +600,9 @@ async fn run_references_peek_cross_resource_ownership_test() -> Unit {
     fail("cross-resource References Peek lost its widget")
   }
   assert_true(
-    references_peek_root_test_text(widget.get_tree_node()).contains("alpha"),
+    references_peek_root_test_text(
+      references_peek_root_test_tree(widget.get_dom_node()),
+    ).contains("alpha"),
   )
   assert_eq(
     references_peek_decoration_ranges(
@@ -594,7 +629,9 @@ async fn run_references_peek_cross_resource_ownership_test() -> Unit {
   ])
   assert_true(state.group_preview_owners[1].reference is Some(_))
   assert_true(
-    references_peek_root_test_text(widget.get_tree_node()).contains("beta"),
+    references_peek_root_test_text(
+      references_peek_root_test_tree(widget.get_dom_node()),
+    ).contains("beta"),
   )
 
   // Selecting across groups obtains a distinct selected lease and swaps all
@@ -706,9 +743,9 @@ async fn run_references_peek_failure_and_opening_test() -> Unit {
     fail("missing-resolver fallback lost its shell")
   }
   assert_true(
-    references_peek_root_test_text(missing_widget.get_tree_node()).contains(
-      "target.mbt:1:5",
-    ),
+    references_peek_root_test_text(
+      references_peek_root_test_tree(missing_widget.get_dom_node()),
+    ).contains("target.mbt:1:5"),
   )
   let missing_item = missing_state.model.unwrap().references[0]
   missing_viewer.confirm_references_peek_item(missing_item, Current)
@@ -912,7 +949,7 @@ fn run_references_peek_stale_widget_callback_test() -> Unit raise {
   guard state.widget is Some(old_widget) else {
     fail("initial stale-callback widget was not installed")
   }
-  let old_tree = old_widget.get_tree_node()
+  let old_tree = references_peek_root_test_tree(old_widget.get_dom_node())
   let old_second_reference = references_peek_root_test_row(
     old_tree, "reference", 1,
   )
@@ -1024,7 +1061,7 @@ async fn run_references_peek_reentrant_release_test() -> Unit {
   // instead of overwriting that new widget/owner set.
   viewer.show_references(Position(1, 5), [outer_location])
   assert_eq(releases.val, 2)
-  assert_eq(state.session_key.unwrap().anchor, reentrant_anchor)
+  assert_references_peek_session_key(viewer, source, reentrant_anchor)
   assert_eq(state.model.unwrap().references[0].range, reentrant_location.range)
   assert_eq(state.mode, Some(References))
   assert_true(state.widget is Some(_))
@@ -1117,7 +1154,7 @@ async fn run_references_peek_reentrant_model_swap_zone_test() -> Unit {
   viewer.close_references_peek(restore_focus=false)
 
   assert_true(viewer.get_model() is Some(model) && model.same(new_source))
-  assert_eq(state.session_key.unwrap().anchor, new_anchor)
+  assert_references_peek_session_key(viewer, new_source, new_anchor)
   assert_eq(state.model.unwrap().references[0].range, new_location.range)
   assert_eq(state.zone_id, Some(old_zone_id))
   assert_eq(releases.val, 2)
@@ -1205,7 +1242,7 @@ async fn run_references_peek_reentrant_preview_cancellation_test() -> Unit {
   assert_true(state.generation > old_generation)
   assert_eq(state.generation, captured_generation.val)
   assert_eq(state.preview_generation, captured_preview_generation.val)
-  assert_eq(state.session_key.unwrap().anchor, new_anchor)
+  assert_references_peek_session_key(viewer, source, new_anchor)
   assert_eq(state.model.unwrap().references[0].range, new_location.range)
   assert_eq(state.selected_index, 0)
   guard captured_widget.val is Some(new_widget) else {
@@ -1330,7 +1367,7 @@ async fn run_references_peek_reentrant_set_selected_test() -> Unit {
   assert_true(state.generation > old_generation)
   assert_eq(state.generation, captured_generation.val)
   assert_eq(state.preview_generation, captured_preview_generation.val)
-  assert_eq(state.session_key.unwrap().anchor, new_anchor)
+  assert_references_peek_session_key(viewer, source, new_anchor)
   assert_eq(state.model.unwrap().references[0].range, new_location.range)
   assert_eq(state.selected_index, 0)
   guard captured_widget.val is Some(new_widget) else {
@@ -1442,7 +1479,7 @@ async fn run_references_peek_reentrant_preview_commit_test() -> Unit {
   assert_true(reentered.val)
   assert_eq(state.generation, captured_generation.val)
   assert_eq(state.preview_generation, captured_preview_generation.val)
-  assert_eq(state.session_key.unwrap().anchor, new_anchor)
+  assert_references_peek_session_key(viewer, source, new_anchor)
   assert_eq(state.model.unwrap().references[0].range, new_location.range)
   guard captured_widget.val is Some(new_widget) else {
     fail("decoration reentry did not capture the newer widget")
@@ -1540,7 +1577,7 @@ async fn run_references_peek_reentrant_view_zone_test() -> Unit {
   assert_true(reentered.val)
   assert_true(event_count.val >= 1)
   assert_eq(state.generation, captured_generation.val)
-  assert_eq(state.session_key.unwrap().anchor, inner_anchor)
+  assert_references_peek_session_key(viewer, source, inner_anchor)
   assert_eq(state.model.unwrap().references[0].range, inner_location.range)
   guard captured_widget.val is Some(inner_widget) else {
     fail("ViewZone listener did not capture the newer widget")
@@ -1605,7 +1642,7 @@ async fn run_definition_peek_reentrant_view_zone_test() -> Unit {
 
   assert_true(reentered.val)
   assert_eq(state.mode, Some(References))
-  assert_eq(state.session_key.unwrap().anchor, new_anchor)
+  assert_references_peek_session_key(viewer, source, new_anchor)
   assert_eq(state.model.unwrap().references[0].range, new_location.range)
   assert_true(viewer.definition_message_for_test() is None)
   assert_eq(provider_calls.val, 0)

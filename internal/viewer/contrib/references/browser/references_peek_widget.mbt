@@ -113,15 +113,6 @@ pub fn ReferencesPeekWidget::get_dom_node(
 }
 
 ///|
-/// Accessible result-tree node, exposed for layout and browser conformance
-/// tests.
-pub fn ReferencesPeekWidget::get_tree_node(
-  self : ReferencesPeekWidget,
-) -> @rdom.Element {
-  self.tree.get_dom_node()
-}
-
-///|
 /// Empty host where the root mounts and tears down its nested readonly Viewer.
 pub fn ReferencesPeekWidget::get_preview_host(
   self : ReferencesPeekWidget,
@@ -143,7 +134,7 @@ pub fn ReferencesPeekWidget::focus(self : ReferencesPeekWidget) -> Unit {
 
 ///|
 /// Clears result state and presents mode-specific query progress.
-pub fn ReferencesPeekWidget::show_loading(self : ReferencesPeekWidget) -> Unit {
+fn ReferencesPeekWidget::show_loading(self : ReferencesPeekWidget) -> Unit {
   if self.disposed {
     return
   }

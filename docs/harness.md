@@ -82,6 +82,13 @@ model-browser ownership, render/reveal requests, and lifecycle ordering before
 a flush consumes them. Use Playwright component tests instead for real DOM
 layout, focus, pointer input, and native animation-frame behavior.
 
+`viewer/references_peek_wbtest.mbt` uses this layer for the public
+`show_references` guards, copied input, lazy per-group and selected-preview
+resolver slots, exact lease counts, stale/wrong-URI rejection, Definition-intent
+cancellation, reentrant teardown, and mode-neutral opening.
+`viewer/definition_navigation_wbtest.mbt` retains the corresponding
+Definition-provider and shared-Peek regression matrix.
+
 ### Browser suites
 
 ```text
@@ -183,7 +190,33 @@ Code scrollbar, live definition actions, ARIA and 24px-row styling,
 hide-before-run/focus restoration, top-level keyboard navigation, and
 bottom-right viewport fitting. Command grouping/preconditions and lifecycle
 stay in Viewer white-box tests; pure placement boundaries stay in the
-context-menu browser package.
+context-menu browser package. The same fixture also keeps one browser
+regression proving Definition uses the shared mode-labelled Peek dialog and
+reference tree.
+
+The precomputed References Peek proof is the direct public-Viewer scenario
+`tests/browser/moonbit/peek_references/peek_references_scenario.mbt`, staged as
+`/browser-tests/peek_references.html` and asserted by
+`tests/browser/component/peek_references.spec.js`. It calls only the public
+`Viewer::show_references` entry and supplies its own caller-owned Code,
+Markdown, and resolved target models plus opener/resolver handles. Real browser
+assertions cover the ARIA group/reference tree, lazy snippets and lease reuse,
+all-reference plus selected preview decorations, F4 focus preservation,
+Current/Side opening, exact-anchor toggle/replacement, accessible empty state,
+bounded Markdown overlay, and Definition's shared-shell regression.
+
+Use the routine component gate for this fixture:
+
+```sh
+just test-browser-component
+```
+
+After `just build` and `just build-browser-tests`, its focused Playwright
+diagnostic is:
+
+```sh
+./node_modules/.bin/playwright test tests/browser/component/peek_references.spec.js
+```
 
 The shell-independent selection and native integration layer uses
 `tests/fixtures/workspace/README.md` and

@@ -511,7 +511,14 @@ test "mode-labelled shell exposes loading empty and stable hosts" {
     "Peek Definition",
   )
   assert_eq(
-    references_peek_test_attribute(definition.get_tree_node(), "role"),
+    references_peek_test_attribute(
+      references_peek_test_class_descendant(
+        definition.get_dom_node(),
+        "moonbit-viewer-reference-results-tree",
+        0,
+      ),
+      "role",
+    ),
     "tree",
   )
   assert_true(
@@ -572,7 +579,11 @@ test "delayed results transfer only exact dialog-root loading focus" {
   assert_true(references_peek_test_is_active(widget.get_dom_node()))
   widget.set_results(model, Some(model.references[1]))
   let selected = references_peek_test_row(
-    widget.get_tree_node(),
+    references_peek_test_class_descendant(
+      widget.get_dom_node(),
+      "moonbit-viewer-reference-results-tree",
+      0,
+    ),
     "reference",
     1,
   )
@@ -615,7 +626,11 @@ test "preview status transitions retain tree selection and busy state" {
     references_peek_test_location("/workspace/a.mbt", 1, 1),
   ])
   widget.set_results(model, Some(model.references[0]))
-  let tree = widget.get_tree_node()
+  let tree = references_peek_test_class_descendant(
+    widget.get_dom_node(),
+    "moonbit-viewer-reference-results-tree",
+    0,
+  )
   let row = references_peek_test_row(tree, "reference", 0)
   let status = references_peek_test_class_descendant(
     widget.get_dom_node(),
@@ -676,7 +691,11 @@ test "one resource flattens rows and renders exact snippet parts" {
     references_peek_test_location("/workspace/a.mbt", 4, 5),
   ])
   widget.set_results(model, Some(model.references[1]))
-  let tree = widget.get_tree_node()
+  let tree = references_peek_test_class_descendant(
+    widget.get_dom_node(),
+    "moonbit-viewer-reference-results-tree",
+    0,
+  )
   assert_eq(references_peek_test_visible_row_count(tree), 2)
   assert_eq(references_peek_test_visible_tabstop_count(tree), 1)
   assert_eq(log.expanded, [0])
@@ -745,7 +764,11 @@ test "multiple resources expose grouped ARIA rows and lazy expansion" {
     references_peek_test_location("/workspace/src/b.mbt", 3, 3),
   ])
   widget.set_results(model, Some(model.references[2]))
-  let tree = widget.get_tree_node()
+  let tree = references_peek_test_class_descendant(
+    widget.get_dom_node(),
+    "moonbit-viewer-reference-results-tree",
+    0,
+  )
   let first_group = references_peek_test_row(tree, "group", 0)
   let second_group = references_peek_test_row(tree, "group", 1)
   assert_eq(references_peek_test_visible_row_count(tree), 3)
@@ -814,7 +837,11 @@ test "tree keyboard navigation clamps expands and couples reference selection" {
     references_peek_test_location("/workspace/b.mbt", 3, 3),
   ])
   widget.set_results(model, Some(model.references[2]))
-  let tree = widget.get_tree_node()
+  let tree = references_peek_test_class_descendant(
+    widget.get_dom_node(),
+    "moonbit-viewer-reference-results-tree",
+    0,
+  )
   let first_group = references_peek_test_row(tree, "group", 0)
   let second_group = references_peek_test_row(tree, "group", 1)
   let selected = references_peek_test_row(tree, "reference", 2)
@@ -876,8 +903,13 @@ test "pointer activation session commands and side open respect focus domains" {
     references_peek_test_location("/workspace/a.mbt", 2, 2),
   ])
   widget.set_results(model, Some(model.references[0]))
-  let first = references_peek_test_row(widget.get_tree_node(), "reference", 0)
-  let second = references_peek_test_row(widget.get_tree_node(), "reference", 1)
+  let tree = references_peek_test_class_descendant(
+    widget.get_dom_node(),
+    "moonbit-viewer-reference-results-tree",
+    0,
+  )
+  let first = references_peek_test_row(tree, "reference", 0)
+  let second = references_peek_test_row(tree, "reference", 1)
   let nested = references_peek_test_class_descendant(
     second, "moonbit-viewer-reference-results-fallback", 0,
   )
@@ -928,7 +960,11 @@ test "host selection preserves preview focus reveals and rerenders one group" {
     references_peek_test_location("/workspace/b.mbt", 2, 2),
   ])
   widget.set_results(model, Some(model.references[0]))
-  let tree = widget.get_tree_node()
+  let tree = references_peek_test_class_descendant(
+    widget.get_dom_node(),
+    "moonbit-viewer-reference-results-tree",
+    0,
+  )
   let first_group = references_peek_test_row(tree, "group", 0)
   let second_group = references_peek_test_row(tree, "group", 1)
   let first = references_peek_test_row(tree, "reference", 0)
@@ -1003,7 +1039,12 @@ test "replacement and disposal leave no stale row or listener callbacks" {
     references_peek_test_location("/workspace/a.mbt", 1, 1),
   ])
   widget.set_results(first_model, Some(first_model.references[0]))
-  let stale = references_peek_test_row(widget.get_tree_node(), "reference", 0)
+  let tree = references_peek_test_class_descendant(
+    widget.get_dom_node(),
+    "moonbit-viewer-reference-results-tree",
+    0,
+  )
+  let stale = references_peek_test_row(tree, "reference", 0)
   assert_eq(references_peek_test_listener_count(stale, false), 0)
   let second_model = references_peek_test_model([
     references_peek_test_location("/workspace/b.mbt", 2, 2),
@@ -1015,7 +1056,12 @@ test "replacement and disposal leave no stale row or listener callbacks" {
   widget.dispose()
   widget.dispose()
   assert_eq(references_peek_test_listener_count(widget.get_dom_node(), true), 0)
-  let current = references_peek_test_row(widget.get_tree_node(), "reference", 0)
+  let current_tree = references_peek_test_class_descendant(
+    widget.get_dom_node(),
+    "moonbit-viewer-reference-results-tree",
+    0,
+  )
+  let current = references_peek_test_row(current_tree, "reference", 0)
   assert_eq(references_peek_test_dispatch(current, "click"), "false:false")
   assert_eq(log.selected, [])
 }

@@ -21,7 +21,7 @@ pub(all) enum ReferencesPeekPhase {
 /// Exact source identity for toggling and freshness checks. The attachment
 /// generation distinguishes repeated attachment of the same physical model;
 /// the content version distinguishes edits within one attachment.
-pub(all) struct ReferencesSessionKey {
+pub struct ReferencesSessionKey {
   model_identity : Int
   model_generation : Int
   model_version_id : Int

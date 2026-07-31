@@ -9,9 +9,6 @@ import {
 }
 
 // Values
-pub fn normalize_reference_locations(Array[@language.Location]) -> Array[@language.Location]
-
-pub fn reference_snippet(@model.TextModel, @common.Range) -> ReferenceSnippet?
 
 // Errors
 
@@ -54,7 +51,6 @@ pub(all) struct ReferencesModel {
 pub fn ReferencesModel::ReferencesModel(Array[@language.Location]) -> Self
 pub fn ReferencesModel::is_empty(Self) -> Bool
 pub fn ReferencesModel::nearest_reference(Self, @common.Uri, @common.Position) -> ReferenceItem?
-pub fn ReferencesModel::next_or_previous_reference(Self, ReferenceItem, Bool) -> ReferenceItem?
 pub fn ReferencesModel::next_reference(Self, ReferenceItem) -> ReferenceItem?
 pub fn ReferencesModel::previous_reference(Self, ReferenceItem) -> ReferenceItem?
 
@@ -71,7 +67,7 @@ pub(all) enum ReferencesPeekPhase {
   PeekUnavailable(Int, Int)
 } derive(Eq, @debug.Debug)
 
-pub(all) struct ReferencesSessionKey {
+pub struct ReferencesSessionKey {
   model_identity : Int
   model_generation : Int
   model_version_id : Int

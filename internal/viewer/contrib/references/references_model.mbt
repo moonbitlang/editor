@@ -95,7 +95,7 @@ fn sorted_indexed_reference_locations(
 ///|
 /// Copies, canonical-URI/range sorts, and removes exact URI-string plus range
 /// duplicates. Equal entries retain their first caller occurrence.
-pub fn normalize_reference_locations(
+fn normalize_reference_locations(
   locations : Array[@language.Location],
 ) -> Array[@language.Location] {
   let result : Array[@language.Location] = []
@@ -201,7 +201,7 @@ pub fn ReferencesModel::nearest_reference(
 ///|
 /// Returns the adjacent flat reference and wraps at either end. A reference
 /// not belonging to this model produces `None`.
-pub fn ReferencesModel::next_or_previous_reference(
+fn ReferencesModel::next_or_previous_reference(
   self : ReferencesModel,
   reference : ReferenceItem,
   next : Bool,
@@ -282,7 +282,7 @@ fn valid_snippet_range(
 ///|
 /// Builds the pinned eight-column/word-context snippet. Invalid, stale, empty,
 /// or surrogate-splitting ranges return `None` rather than being clamped.
-pub fn reference_snippet(
+fn reference_snippet(
   model : @model.TextModel,
   range : @base_common.Range,
 ) -> ReferenceSnippet? {
