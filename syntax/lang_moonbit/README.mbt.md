@@ -9,7 +9,7 @@ talks to `@syntax.TokenizationRegistry`, never to a concrete language.
 
 ```mermaid
 flowchart LR
-  H["host / example / test"] -->|"set_tokens_provider(\"moonbit\", …)"| R["@syntax.tokenization_registry"]
+  H["host / example / test"] -->|"set_tokens_provider(&quot;moonbit&quot;, …)"| R["@syntax.tokenization_registry"]
   R -->|"lookup by language id"| M["MoonbitTokenizer"]
   M -->|"LineToken[] + state"| MD["viewer/common/model<br>tokenization part"]
 ```
