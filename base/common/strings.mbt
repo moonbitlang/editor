@@ -159,7 +159,7 @@ pub fn compare_substring(
 /// (e.g. `İ`) pass through unchanged — a documented deviation from the full
 /// Unicode table JS applies.
 fn to_lower_code_unit(code : UInt16) -> UInt16 {
-  if is_upper_ascii_letter(code) {
+  if is_upper_ascii_letter_code_unit(code) {
     return code + 32
   }
   // Latin-1 Supplement: À-Þ except ×
@@ -254,13 +254,23 @@ pub fn split_lines(text : String) -> Array[String] {
 
 ///|
 /// Mirrors `strings.isLowerAsciiLetter` (strings.ts:428).
-pub fn is_lower_ascii_letter(code : UInt16) -> Bool {
+pub fn is_lower_ascii_letter(code : Int) -> Bool {
   code is ('a'..='z')
 }
 
 ///|
 /// Mirrors `strings.isUpperAsciiLetter` (strings.ts:432).
-pub fn is_upper_ascii_letter(code : UInt16) -> Bool {
+pub fn is_upper_ascii_letter(code : Int) -> Bool {
+  code is ('A'..='Z')
+}
+
+///|
+fn is_lower_ascii_letter_code_unit(code : UInt16) -> Bool {
+  code is ('a'..='z')
+}
+
+///|
+fn is_upper_ascii_letter_code_unit(code : UInt16) -> Bool {
   code is ('A'..='Z')
 }
 
@@ -302,10 +312,10 @@ pub fn compare_substring_ignore_case(
     }
     // map lower-case ascii letter onto upper-case variants
     // [97-122] (lower ascii) --> [65-90] (upper ascii)
-    if is_lower_ascii_letter(code_a) {
+    if is_lower_ascii_letter_code_unit(code_a) {
       code_a -= 32
     }
-    if is_lower_ascii_letter(code_b) {
+    if is_lower_ascii_letter_code_unit(code_b) {
       code_b -= 32
     }
     // Compare both code points. The difference must be taken in `Int`: a
