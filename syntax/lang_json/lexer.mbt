@@ -3,7 +3,7 @@
 /// the trivial two-state machine. State "n" is normal; state "c" is
 /// inside a `/* ... */` block comment, the one construct that carries
 /// across lines.
-pub struct JsonTokenizer {}
+struct JsonTokenizer {}
 
 ///|
 /// Creates the JSON/JSONC tokenizer.

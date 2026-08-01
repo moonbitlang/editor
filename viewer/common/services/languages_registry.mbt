@@ -18,7 +18,7 @@ let builtin_language_ids : Array[String] = [
 ///|
 /// Faithful `ILanguageIdCodec` (`languagesRegistry.ts`). Seeded with the
 /// built-in languages; `register` extends it.
-pub struct LanguageIdCodec {
+struct LanguageIdCodec {
   language_id_to_language : Array[String]
   language_to_language_id : Map[String, Int]
   mut next_language_id : Int
