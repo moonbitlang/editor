@@ -1,6 +1,10 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "moonbitlang/editor/viewer/common/services"
 
+import {
+  "moonbitlang/core/debug",
+}
+
 // Values
 pub let language_id_codec : LanguageIdCodec
 
@@ -12,6 +16,7 @@ pub fn LanguageIdCodec::LanguageIdCodec() -> Self
 pub fn LanguageIdCodec::decode_language_id(Self, Int) -> String
 pub fn LanguageIdCodec::encode_language_id(Self, String) -> Int
 pub fn LanguageIdCodec::register(Self, String) -> Int
+pub impl @debug.Debug for LanguageIdCodec
 
 // Type aliases
 

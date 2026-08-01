@@ -92,13 +92,90 @@ test "presentation decodes the font-style bits into booleans" {
 
 ## LineTokens
 
-`LineTokens` mirrors Monaco's flat `Uint32Array`: each pair is an exclusive end
-offset followed by a packed metadata word. It provides token lookup, text/class/
-style reads, zero-copy slicing for wrapped lines, and `with_inserted` for injected
-text.
+`LineTokens` combines one line of UTF-16 text with a flat `Array[UInt]`. The
+array alternates between an exclusive end offset and the packed metadata for
+the token ending there:
+
+```text
+[end₀, metadata₀, end₁, metadata₁, ...]
+```
+
+Starts are implicit. Token 0 starts at offset 0; every later token starts at
+the previous token's end. Offsets count UTF-16 code units, not Unicode scalar
+values or displayed columns. End offsets are exclusive, so an offset on a
+boundary between two tokens belongs to the following token.
+
+For the five-code-unit line `let x`, this is the physical layout:
+
+| Pair | UTF-16 range | Text | Meaning |
+| --- | ---: | --- | --- |
+| `3, keyword` | `[0, 3)` | `let` | first token ends before the space |
+| `4, default` | `[3, 4)` | ` ` | second token is the space |
+| `5, identifier` | `[4, 5)` | `x` | final end equals the line length |
+
+The complete word array is therefore `[3, keyword, 4, default, 5,
+identifier]`. Keeping starts implicit saves one word per token while retaining
+binary search over the monotonically increasing end offsets. A well-formed raw
+array has an even number of words and, for a complete line with at least one
+token, its final end offset equals the text length.
+
+`LineTokens` provides token lookup, text/class/style reads, zero-copy slicing
+for wrapped lines, and `with_inserted` for injected text.
 
 `create_from_text_and_metadata` is the readable constructor — it derives the end
-offsets from the token texts.
+offsets from the token texts. `Debug` exposes the resulting flat encoding,
+cached token count, text, and codec table, which makes token fixtures readable
+without adding a second inspection format.
+
+```mbt check
+///|
+test "LineTokens Debug shows the physical encoding" {
+  let codec = @services.LanguageIdCodec()
+  let keyword = (
+      codec.encode_language_id("moonbit").reinterpret_as_uint() <<
+      @tokens.METADATA_LANGUAGEID_OFFSET
+    ) |
+    (
+      @tokens.FONT_STYLE_BOLD.reinterpret_as_uint() <<
+      @tokens.METADATA_FONT_STYLE_OFFSET
+    ) |
+    (7U << @tokens.METADATA_FOREGROUND_OFFSET)
+  let line = @tokens.LineTokens::create_from_text_and_metadata(
+    [
+      ("let", keyword),
+      (" ", @tokens.LineTokens::default_token_metadata()),
+      ("x", 0U),
+    ],
+    codec,
+  )
+  debug_inspect(
+    line,
+    content=(
+      #|{
+      #|  tokens: [3, 233474, 4, 33587200, 5, 0],
+      #|  tokens_count: 3,
+      #|  text: "let x",
+      #|  language_id_codec: ["null", "plaintext", "moonbit", "javascript", "typescript", "json"],
+      #|}
+    ),
+  )
+}
+```
+
+The direct `LineTokens(words, text, codec)` constructor expects end offsets.
+Some tokenizers naturally produce start offsets instead. For words laid out as
+`[start₀, metadata₀, start₁, metadata₁, ...]`,
+`convert_to_end_offset(words, text.length())` shifts each next start into the
+previous end slot and writes the line length into the final end slot:
+
+```mbt check
+///|
+test "start offsets can be converted to LineTokens end offsets" {
+  let words = [0U, 11U, 3U, 22U, 4U, 33U]
+  @tokens.LineTokens::convert_to_end_offset(words, 5)
+  debug_inspect(words, content="[3, 11, 4, 22, 5, 33]")
+}
+```
 
 ```mbt check
 ///|

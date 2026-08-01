@@ -32,14 +32,25 @@ pub enum ViewLineTokens {
 }
 
 ///|
-/// A token sequence backed by a flat metadata array. `tokens[i << 1]` is the
-/// exclusive end offset of token `i`; `tokens[(i << 1) + 1]` its metadata.
+/// A token sequence backed by interleaved end-offset and metadata words.
+///
+/// For token `i`, `tokens[i << 1]` is its exclusive UTF-16 end offset and
+/// `tokens[(i << 1) + 1]` is its packed metadata. Its start offset is `0` for
+/// the first token and the previous token's end offset otherwise. For example,
+/// `[3U, a, 4U, b, 5U, c]` over `"let x"` describes `"let"` at `[0, 3)`, a
+/// space at `[3, 4)`, and `"x"` at `[4, 5)`.
+///
+/// Direct-constructor callers must supply an even number of words with
+/// nondecreasing end offsets. For a complete line with at least one token, the
+/// last end offset is the text's UTF-16 length. Use
+/// `create_from_text_and_metadata` when token text is available and these
+/// offsets should be derived automatically.
 pub struct LineTokens {
   tokens : Array[UInt]
   tokens_count : Int
   text : String
   language_id_codec : @services.LanguageIdCodec
-}
+} derive(Debug)
 
 ///|
 pub fn LineTokens::LineTokens(
