@@ -48,7 +48,7 @@ jobs:
       # native server member is covered too.
       - name: check
         run: |
-          moon check --target all --warn-list +73+prefer_readonly_array
+          moon check --target all --warn-list +73
           moon fmt --check
 
       - name: test

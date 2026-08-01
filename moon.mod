@@ -16,6 +16,8 @@ supported_targets = "+js+native+wasm"
 
 preferred_target = "js"
 
+warnings = "+prefer_readonly_array"
+
 import {
   "moonbit-community/cmark@0.4.4",
   "moonbitlang/async@0.20.3",
