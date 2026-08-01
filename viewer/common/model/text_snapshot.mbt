@@ -303,8 +303,7 @@ pub fn TextSnapshot::might_contain_rtl(self : TextSnapshot) -> Bool {
 /// Monaco treats Tab, CR/LF, and printable ASCII 32..126 as basic; CR is
 /// impossible after construction but remains classified consistently here.
 pub fn TextSnapshot::might_contain_non_basic_ascii(self : TextSnapshot) -> Bool {
-  for unit in self.text.code_units() {
-    let code = unit.to_int()
+  for code in self.text.code_units() {
     if code != 9 && code != 10 && code != 13 && (code < 32 || code > 126) {
       return true
     }
