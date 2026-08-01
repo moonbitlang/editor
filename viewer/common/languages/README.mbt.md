@@ -386,7 +386,10 @@ test "a tokenized line renders to inline-styled spans" {
   let keyword = 3U << @tokens.METADATA_FOREGROUND_OFFSET
   let plain = 1U << @tokens.METADATA_FOREGROUND_OFFSET
   let line = @tokens.LineTokens::create_from_text_and_metadata(
-    [("let", keyword), (" x", plain)],
+    [
+      ("let", @tokens.TokenMetadata::from_uint(keyword)),
+      (" x", @tokens.TokenMetadata::from_uint(plain)),
+    ],
     codec,
   )
   debug_inspect(

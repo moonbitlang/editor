@@ -32,7 +32,7 @@ pub fn render_tokenized_code_block(
     let pairs : Array[UInt] = []
     for index in 0..<line_tokens.get_count() {
       pairs.push(line_tokens.get_start_offset(index).reinterpret_as_uint())
-      pairs.push(line_tokens.get_metadata(index))
+      pairs.push(line_tokens.get_metadata(index).to_uint())
     }
     pairs
   })
