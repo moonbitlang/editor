@@ -83,4 +83,3 @@ pub(open) trait LineTokenizer {
   fn initial_state(Self) -> TokenizerState
   fn tokenize_line(Self, String, TokenizerState) -> (Array[LineToken], TokenizerState)
 }
-

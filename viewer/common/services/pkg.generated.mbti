@@ -21,4 +21,3 @@ pub fn LanguageIdCodec::register(Self, String) -> Int
 // Type aliases
 
 // Traits
-

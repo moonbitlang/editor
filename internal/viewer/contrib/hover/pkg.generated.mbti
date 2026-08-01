@@ -326,4 +326,3 @@ pub fn MultiCursorModifier::from_config(String, mac~ : Bool) -> Self
 // Type aliases
 
 // Traits
-

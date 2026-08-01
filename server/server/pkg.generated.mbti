@@ -72,4 +72,3 @@ pub(open) trait ServerHost {
   async fn read_text_file(Self, String, @workspace.SourcePath) -> ServerHostReadResult
   fn watch_text_file(Self, String, @workspace.SourcePath, async (@workspace.FileChangeType) -> Unit, (async () -> Unit) -> Unit) -> ServerWatch
 }
-

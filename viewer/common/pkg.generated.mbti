@@ -21,4 +21,3 @@ pub fn render_line_html(@view_model.ViewLineData, Array[@view_layout.LineDecorat
 // Type aliases
 
 // Traits
-

@@ -116,4 +116,3 @@ pub fn StandardWheelEvent::StandardWheelEvent(@dom.WheelEvent) -> Self
 // Type aliases
 
 // Traits
-

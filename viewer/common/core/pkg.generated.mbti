@@ -54,4 +54,3 @@ pub(all) enum SelectionDirection {
 // Type aliases
 
 // Traits
-

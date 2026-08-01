@@ -33,4 +33,3 @@ pub fn QuickDiffService::set_original_content(Self, @moonbitlang/editor/base/com
 // Type aliases
 
 // Traits
-

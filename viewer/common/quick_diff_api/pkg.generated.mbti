@@ -21,4 +21,3 @@ pub fn QuickDiffHandle::on_did_change_original(Self, (@common.Uri) -> Unit) -> @
 // Type aliases
 
 // Traits
-

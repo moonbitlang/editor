@@ -20,4 +20,3 @@ pub fn to_line_changes(Array[@diff.DetailedLineRangeMapping]) -> Array[@diff.Cha
 // Type aliases
 
 // Traits
-
