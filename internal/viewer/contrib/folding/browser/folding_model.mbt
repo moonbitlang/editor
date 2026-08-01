@@ -610,7 +610,7 @@ pub fn set_collapse_state_for_matching_lines(
   let editor_model = folding_model.text_model()
   let regions = folding_model.regions()
   let to_toggle : Array[FoldingRegion] = []
-  for i = regions.length() - 1; i >= 0; i = i - 1 {
+  for i in regions.length()>..0 {
     if do_collapse != regions.is_collapsed(i) {
       let start_line_number = regions.get_start_line_number(i)
       if matches(editor_model.snapshot.line_text(start_line_number - 1)) {
@@ -631,7 +631,7 @@ pub fn set_collapse_state_for_type(
 ) -> Unit {
   let regions = folding_model.regions()
   let to_toggle : Array[FoldingRegion] = []
-  for i = regions.length() - 1; i >= 0; i = i - 1 {
+  for i in regions.length()>..0 {
     if do_collapse != regions.is_collapsed(i) &&
       regions.get_type(i) is Some(t) &&
       t == type_ {

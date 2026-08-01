@@ -364,14 +364,12 @@ fn markdown_code_line_from_source_facts(
     for _ in 0..<padding {
       boundary_map.push(None)
     }
-    for source_delta = 0
-        source_delta <= source_length
-        source_delta = source_delta + 1 {
+    for source_delta in 0..<=source_length {
       boundary_map.push(Some(source_range.start + source_delta))
     }
     ()
   } else {
-    for ignored = 0; ignored <= displayed_length; ignored = ignored + 1 {
+    for _ in 0..<=displayed_length {
       boundary_map.push(None)
     }
     ()

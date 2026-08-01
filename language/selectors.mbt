@@ -51,19 +51,18 @@ pub fn LanguageSelector::score(
         0
       }
     LanguageFilter(filter) => filter.score(model)
-    LanguageSelectorList(selectors) => {
-      let mut result = 0
-      for selector in selectors {
+    LanguageSelectorList(selectors) =>
+      for selector in selectors; result = 0 {
         let score = selector.score(model)
         if score == 10 {
-          return 10
+          break 10
         }
         if score > result {
-          result = score
+          continue score
         }
+      } nobreak {
+        result
       }
-      result
-    }
   }
 }
 

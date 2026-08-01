@@ -238,9 +238,7 @@ pub fn ContiguousTokensStore::set_multiline_tokens(
     let mut min_changed_line_number = 0
     let mut max_changed_line_number = 0
     let mut has_change = false
-    for line_number = element.start_line_number()
-        line_number <= element.end_line_number()
-        line_number = line_number + 1 {
+    for line_number in element.start_line_number()..<=element.end_line_number() {
       if has_change {
         ignore(
           self.set_tokens(

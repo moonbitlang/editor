@@ -135,12 +135,13 @@ fn FontMeasurementsImpl::evict_untrusted_readings(
   self : FontMeasurementsImpl,
 ) -> Unit {
   let values = self.cached_values()
-  let mut something_removed = false
-  for font_info in values {
+  let something_removed = for font_info in values; something_removed = false {
     if !font_info.is_trusted {
-      something_removed = true
       self.remove_from_cache(font_info.get_id())
+      continue true
     }
+  } nobreak {
+    something_removed
   }
   if something_removed {
     self.did_change.fire(())
@@ -252,21 +253,25 @@ fn FontMeasurementsImpl::actual_read_font_info(
     create_request(chr, Bold, all, Some(monospace)) |> ignore
   }
   (self.read_widths)(bare_font_info, all)
-  let mut max_digit_width = 0.0
-  for digit in digits {
-    max_digit_width = max_digit_width.max(digit.width)
+  let max_digit_width = for digit in digits; max_digit_width = 0.0 {
+    continue max_digit_width.max(digit.width)
+  } nobreak {
+    max_digit_width
   }
-  let mut is_monospace = bare_font_info.font_feature_settings ==
-    @common_config.editor_font_ligatures_off
   let reference_width = monospace[0].width
-  for index in 1..<monospace.length() {
+  let is_monospace = for
+    monospace_sample in monospace[1:]
+    is_monospace = bare_font_info.font_feature_settings ==
+    @common_config.editor_font_ligatures_off {
     if !is_monospace {
-      break
+      break false
     }
-    let diff = reference_width - monospace[index].width
+    let diff = monospace[0].width - monospace_sample.width
     if diff < -0.001 || diff > 0.001 {
-      is_monospace = false
+      continue false
     }
+  } nobreak {
+    is_monospace
   }
   let mut can_use_halfwidth_rightwards_arrow = true
   if is_monospace && halfwidth_rightwards_arrow.width != reference_width {

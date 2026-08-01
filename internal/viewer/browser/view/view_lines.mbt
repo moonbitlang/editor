@@ -497,8 +497,7 @@ fn ViewLines::on_token_ranges_changed(
   }
   let start_line_number = self.window.start
   let end_line_number = self.window.start + self.lines.length() - 1
-  let mut notified_someone = false
-  for range in ranges {
+  let notified_someone = for range in ranges; notified_someone = false {
     let range_to_line_number = range.end_line_number_exclusive - 1
     if range_to_line_number < start_line_number ||
       range.start_line_number > end_line_number {
@@ -506,10 +505,14 @@ fn ViewLines::on_token_ranges_changed(
     }
     let from_line_number = start_line_number.max(range.start_line_number)
     let to_line_number = end_line_number.min(range_to_line_number)
-    for line_number in from_line_number..<=to_line_number {
-      self.lines[line_number - self.window.start].on_tokens_changed()
-      notified_someone = true
+    if from_line_number <= to_line_number {
+      for line_number in from_line_number..<=to_line_number {
+        self.lines[line_number - self.window.start].on_tokens_changed()
+      }
+      continue true
     }
+  } nobreak {
+    notified_someone
   }
   notified_someone
 }
@@ -519,11 +522,11 @@ fn ViewLines::on_token_ranges_changed(
 /// source's right-to-left sticky OR: every retained line is visited even after
 /// one returns true.
 fn ViewLines::on_selection_changed(self : ViewLines) -> Bool {
-  let mut should_render = false
-  for line in self.lines {
-    should_render = line.on_selection_changed() || should_render
+  for line in self.lines; should_render = false {
+    continue line.on_selection_changed() || should_render
+  } nobreak {
+    should_render
   }
-  should_render
 }
 
 ///|
@@ -934,14 +937,15 @@ fn ViewLines::update_line_widths_internal(
   self : ViewLines,
   fast : Bool,
 ) -> Bool {
-  let mut local_max_line_width = 1.0
-  let mut all_widths_computed = true
-  for line in self.lines {
+  let (local_max_line_width, all_widths_computed) = for
+    line in self.lines
+    local_max_line_width = 1.0, all_widths_computed = true {
     if fast && !line.get_width_is_fast() {
-      all_widths_computed = false
-      continue
+      continue local_max_line_width, false
     }
-    local_max_line_width = local_max_line_width.max(line.get_width(None))
+    continue local_max_line_width.max(line.get_width(None)), all_widths_computed
+  } nobreak {
+    (local_max_line_width, all_widths_computed)
   }
   match self.last_layout {
     Some(layout) =>

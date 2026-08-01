@@ -139,12 +139,12 @@ fn AttachedViews::detach_view(
   self : AttachedViews,
   view : AttachedViewImpl,
 ) -> Unit {
-  let mut found = -1
-  for i, candidate in self.views {
+  let found = for i, candidate in self.views {
     if candidate.same(view) {
-      found = i
-      break
+      break i
     }
+  } nobreak {
+    -1
   }
   if found >= 0 {
     self.views.remove(found) |> ignore

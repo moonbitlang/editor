@@ -157,7 +157,7 @@ test "model identities and decoration namespaces do not wrap after 52 models" {
   let service = MarkerDecorationsService(markers.marker_service_handle())
   let models : Array[@model.TextModel] = []
   let leases : Array[@base_common.Disposable] = []
-  for index = 0; index < 53; index = index + 1 {
+  for index in 0..<53 {
     let model = lifecycle_model(uri, "\{index}.mbt", "value")
     models.push(model)
     leases.push(service.acquire_model(model))

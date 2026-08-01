@@ -62,7 +62,7 @@ pub fn first_non_whitespace_index(text : String) -> Int {
 /// Index of the last non-whitespace (non-space, non-tab) character, or `-1`.
 /// Mirrors `strings.lastNonWhitespaceIndex`.
 pub fn last_non_whitespace_index(text : String) -> Int {
-  for i = text.length() - 1; i >= 0; i = i - 1 {
+  for i in text.length()>..0 {
     let code = text[i]
     if code != ' ' && code != '\t' {
       return i
@@ -199,21 +199,20 @@ fn to_lower_code_unit(code : UInt16) -> UInt16 {
 /// non-ASCII authorities/paths fold the way Monaco's do.
 fn to_lower_js(s : String) -> String {
   let len = s.length()
-  let mut changed = false
-  for i in 0..<len {
+  let changed = for i in 0..<len {
     let code = s[i]
     if to_lower_code_unit(code) != code {
-      changed = true
-      break
+      break true
     }
+  } nobreak {
+    false
   }
   guard changed else { return s }
   // Copy unchanged runs as substring chunks: every mapped unit is a BMP
   // non-surrogate, so chunk boundaries never split a surrogate pair, and
   // `UInt16::to_char` therefore always yields `Some`.
   let sb = StringBuilder::new()
-  let mut chunk_start = 0
-  for i in 0..<len {
+  let chunk_start = for i in 0..<len; chunk_start = 0 {
     let code = s[i]
     let lowered = to_lower_code_unit(code)
     if lowered != code {
@@ -223,8 +222,10 @@ fn to_lower_js(s : String) -> String {
       if lowered.to_char() is Some(ch) {
         sb.write_char(ch)
       }
-      chunk_start = i + 1
+      continue i + 1
     }
+  } nobreak {
+    chunk_start
   }
   if chunk_start < len {
     sb.write_string(s[chunk_start:].to_owned())

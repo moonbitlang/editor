@@ -47,7 +47,7 @@ fn assert_indent_guides(
   let line_count = snapshot.line_count()
   assert_eq(line_count, lines.length())
   let actual_indents = guides.get_lines_indent_guides(1, line_count)
-  for line = 1; line <= line_count; line = line + 1 {
+  for line in 1..<=line_count {
     let expected = lines[line - 1]
     let active = guides.get_active_indent_guide(line, 1, line_count)
     assert_eq(actual_indents[line - 1], expected.0)

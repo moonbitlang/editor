@@ -394,12 +394,12 @@ fn markdown_element_has_class(
 
 ///|
 fn markdown_mermaid_source(wrapper : @rdom.Element) -> String {
-  let mut root = wrapper
-  for candidate in wrapper.query_selector_all("div") {
+  let root = for candidate in wrapper.query_selector_all("div") {
     if markdown_element_has_class(candidate, "monaco-tokenized-source") {
-      root = candidate
-      break
+      break candidate
     }
+  } nobreak {
+    wrapper
   }
   let output = StringBuilder()
   markdown_write_text_with_line_breaks(root.as_node(), output)
@@ -419,7 +419,7 @@ fn markdown_write_text_with_line_breaks(
     output.write_char('\n')
     return
   }
-  for index = 0; index < node.get_child_count(); index = index + 1 {
+  for index in 0..<node.get_child_count() {
     markdown_write_text_with_line_breaks(node.get_child(index), output)
   }
 }

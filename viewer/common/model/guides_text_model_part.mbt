@@ -106,9 +106,7 @@ pub fn GuidesTextModelPart::get_lines_indent_guides(
   let mut above_content_line_indent = -1
   let mut below_content_line_index = -2 // -2 is a marker for not yet computed
   let mut below_content_line_indent = -1
-  for line_number = start_line_number
-      line_number <= end_line_number
-      line_number = line_number + 1 {
+  for line_number in start_line_number..<=end_line_number {
     let result_index = line_number - start_line_number
     let current_indent = self.compute_indent_level(line_number - 1)
     if current_indent >= 0 {
@@ -122,9 +120,7 @@ pub fn GuidesTextModelPart::get_lines_indent_guides(
       above_content_line_index = -1
       above_content_line_indent = -1
       // must find previous line with content
-      for line_index = line_number - 2
-          line_index >= 0
-          line_index = line_index - 1 {
+      for line_index in (line_number - 1)>..0 {
         let indent = self.compute_indent_level(line_index)
         if indent >= 0 {
           above_content_line_index = line_index
@@ -141,9 +137,7 @@ pub fn GuidesTextModelPart::get_lines_indent_guides(
       below_content_line_index = -1
       below_content_line_indent = -1
       // must find next line with content
-      for line_index = line_number
-          line_index < line_count
-          line_index = line_index + 1 {
+      for line_index in line_number..<line_count {
         let indent = self.compute_indent_level(line_index)
         if indent >= 0 {
           below_content_line_index = line_index
@@ -188,9 +182,7 @@ pub fn GuidesTextModelPart::get_active_indent_guide(
       up_above_content_line_index = -1
       up_above_content_line_indent = -1
       // must find previous line with content
-      for line_index = line_number - 2
-          line_index >= 0
-          line_index = line_index - 1 {
+      for line_index in (line_number - 1)>..0 {
         let indent = self.compute_indent_level(line_index)
         if indent >= 0 {
           up_above_content_line_index = line_index
@@ -203,9 +195,7 @@ pub fn GuidesTextModelPart::get_active_indent_guide(
       up_below_content_line_index = -1
       up_below_content_line_indent = -1
       // must find next line with content
-      for line_index = line_number
-          line_index < line_count
-          line_index = line_index + 1 {
+      for line_index in line_number..<line_count {
         let indent = self.compute_indent_level(line_index)
         if indent >= 0 {
           up_below_content_line_index = line_index
@@ -224,9 +214,7 @@ pub fn GuidesTextModelPart::get_active_indent_guide(
       down_above_content_line_index = -1
       down_above_content_line_indent = -1
       // must find previous line with content
-      for line_index = line_number - 2
-          line_index >= 0
-          line_index = line_index - 1 {
+      for line_index in (line_number - 1)>..0 {
         let indent = self.compute_indent_level(line_index)
         if indent >= 0 {
           down_above_content_line_index = line_index
@@ -243,9 +231,7 @@ pub fn GuidesTextModelPart::get_active_indent_guide(
       down_below_content_line_index = -1
       down_below_content_line_indent = -1
       // must find next line with content
-      for line_index = line_number
-          line_index < line_count
-          line_index = line_index + 1 {
+      for line_index in line_number..<line_count {
         let indent = self.compute_indent_level(line_index)
         if indent >= 0 {
           down_below_content_line_index = line_index
@@ -261,7 +247,10 @@ pub fn GuidesTextModelPart::get_active_indent_guide(
   let mut go_down = true
   let mut indent = 0
   let mut initial_indent = 0
-  for distance = 0; go_up || go_down; distance = distance + 1 {
+  for distance in 0..<=50001 {
+    if !go_up && !go_down {
+      break
+    }
     let up_line_number = line_number - distance
     let down_line_number = line_number + distance
     if distance > 1 && (up_line_number < 1 || up_line_number < min_line_number) {

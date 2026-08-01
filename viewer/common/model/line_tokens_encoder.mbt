@@ -37,8 +37,7 @@ fn encode_raw_start_offsets(
   language_id? : Int = 0,
 ) -> Array[UInt] {
   let words : Array[UInt] = []
-  let mut cursor = 0
-  for token in tokens {
+  let cursor = for token in tokens; cursor = 0 {
     let start = token.start.max(cursor).min(line_length)
     let end = token.end.max(start).min(line_length)
     if cursor < start {
@@ -48,8 +47,10 @@ fn encode_raw_start_offsets(
     if start < end {
       words.push(start.reinterpret_as_uint())
       words.push(tag_to_metadata(token.tag, language_id~))
-      cursor = end
+      continue end
     }
+  } nobreak {
+    cursor
   }
   if cursor < line_length || words.is_empty() {
     words.push(cursor.reinterpret_as_uint())

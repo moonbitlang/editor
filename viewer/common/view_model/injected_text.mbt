@@ -82,24 +82,27 @@ pub fn ProjectedTextLine::from_injected_text(
     line_text.length(),
   )
   let parts : Array[ProjectedLinePart] = []
-  let mut source_cursor = 0
-  let mut view_cursor = 0
-  for item in normalized {
+  let (source_cursor, view_cursor) = for
+    item in normalized
+    source_cursor = 0, view_cursor = 0 {
     let column = item.position.column.clamp(min=0, max=line_text.length())
-    if column > source_cursor {
+    let (source_cursor, view_cursor) = if column > source_cursor {
       append_source_text(
         builder, line_text, source_cursor, column, model_columns, injected_text_indices,
         model_to_projected_columns, parts, view_cursor,
       )
-      view_cursor += column - source_cursor
-      source_cursor = column
+      (column, view_cursor + column - source_cursor)
+    } else {
+      (source_cursor, view_cursor)
     }
     append_injected_text(
       builder, item, column, model_columns, injected_text_indices, parts, view_cursor,
     )
-    view_cursor += item.text.length()
+    continue source_cursor, view_cursor + item.text.length()
+  } nobreak {
+    (source_cursor, view_cursor)
   }
-  if source_cursor < line_text.length() {
+  let view_cursor = if source_cursor < line_text.length() {
     append_source_text(
       builder,
       line_text,
@@ -111,7 +114,9 @@ pub fn ProjectedTextLine::from_injected_text(
       parts,
       view_cursor,
     )
-    view_cursor += line_text.length() - source_cursor
+    view_cursor + line_text.length() - source_cursor
+  } else {
+    view_cursor
   }
   fill_unmapped_model_columns(model_to_projected_columns, view_cursor)
   {
@@ -145,19 +150,18 @@ pub fn ProjectedTextLine::model_column_to_projected_column(
     None => self.text.length()
   }
   match affinity {
-    Some(Right) => {
-      let mut result = projected
+    Some(Right) =>
       // Parts are in ascending projected order, so one pass walks every
       // injection anchored at this model column.
-      for part in self.parts {
+      for part in self.parts; result = projected {
         if part.start == result &&
           part.kind is InjectedSegment(model_column=anchor, ..) &&
           anchor == column {
-          result = part.end
+          continue part.end
         }
+      } nobreak {
+        result
       }
-      result
-    }
     _ => projected
   }
 }
@@ -177,18 +181,17 @@ pub fn ProjectedTextLine::normalize_projected_column_around_injections(
   affinity : @model.PositionAffinity,
 ) -> Int {
   let parts = self.parts
-  let mut found = -1
-  for index in 0..<parts.length() {
-    let part = parts[index]
+  let found = for index, part in parts {
     guard part.kind is InjectedSegment(..) else { continue }
     if part.start > projected_column {
       // All later injections start even further right.
-      break
+      break -1
     }
     if projected_column <= part.end {
-      found = index
-      break
+      break index
     }
+  } nobreak {
+    -1
   }
   if found < 0 {
     return projected_column
@@ -385,10 +388,9 @@ fn fill_unmapped_model_columns(
   model_to_projected_columns : Array[Int],
   fallback : Int,
 ) -> Unit {
-  let mut last = fallback
-  for index in 0..<model_to_projected_columns.length() {
-    if model_to_projected_columns[index] >= 0 {
-      last = model_to_projected_columns[index]
+  for index, projected_column in model_to_projected_columns; last = fallback {
+    if projected_column >= 0 {
+      continue projected_column
     } else {
       model_to_projected_columns[index] = last
     }

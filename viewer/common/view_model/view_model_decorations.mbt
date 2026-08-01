@@ -235,14 +235,13 @@ fn view_model_lines_get_decorations_in_range(
   // Eliminate duplicate decorations that might have intersected our visible
   // ranges multiple times
   let final_result : Array[@model.ModelDecoration] = []
-  let mut last_dec_id = ""
-  for dec in result {
+  for dec in result; last_dec_id = "" {
     let dec_id = dec.id
     if last_dec_id == dec_id {
       continue
     }
-    last_dec_id = dec_id
     final_result.push(dec)
+    continue dec_id
   }
   final_result
 }

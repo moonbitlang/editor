@@ -1059,7 +1059,7 @@ fn first_non_whitespace_index_of(view : StringView, len : Int) -> Int {
 
 ///|
 fn last_non_whitespace_index_of(view : StringView, len : Int) -> Int {
-  for i = len - 1; i >= 0; i = i - 1 {
+  for i in len>..0 {
     let charcode = view.unsafe_get(i).to_int()
     if charcode != cc_space && charcode != cc_tab {
       return i

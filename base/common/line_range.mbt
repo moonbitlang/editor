@@ -79,11 +79,12 @@ pub fn LineRange::join_many(
   line_ranges : Array[Array[LineRange]],
 ) -> Array[LineRange] {
   guard line_ranges is [first, ..] else { return [] }
-  let mut result = LineRangeSet(normalized_ranges=first.copy())
-  for index in 1..<line_ranges.length() {
-    result = result.get_union(
-      LineRangeSet(normalized_ranges=line_ranges[index].copy()),
-    )
+  let result = for
+    ranges in line_ranges[1:]
+    result = LineRangeSet(normalized_ranges=first.copy()) {
+    continue result.get_union(LineRangeSet(normalized_ranges=ranges.copy()))
+  } nobreak {
+    result
   }
   result.ranges()
 }

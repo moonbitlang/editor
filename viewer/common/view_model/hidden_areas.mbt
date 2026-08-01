@@ -70,9 +70,12 @@ fn HiddenAreasModel::get_merged_ranges(
     return self.ranges
   }
   self.should_recompute = false
-  let mut new_ranges : Array[@base_common.Range] = []
-  for _, hidden_areas in self.hidden_areas {
-    new_ranges = merge_line_range_array(new_ranges, hidden_areas)
+  let new_ranges = for
+    _, hidden_areas in self.hidden_areas
+    new_ranges = ([] : Array[@base_common.Range]) {
+    continue merge_line_range_array(new_ranges, hidden_areas)
+  } nobreak {
+    new_ranges
   }
   if self.ranges == new_ranges {
     return self.ranges

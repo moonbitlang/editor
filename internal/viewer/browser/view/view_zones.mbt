@@ -694,14 +694,17 @@ fn ViewZones::render(
 ) -> Unit {
   let visible_zones : Map[String, @view_layout.ViewWhitespaceViewportData] = Map([],
   )
-  let mut has_visible_zone = false
-  for visible_whitespace in visible_whitespaces {
+  let has_visible_zone = for
+    visible_whitespace in visible_whitespaces
+    has_visible_zone = false {
     let zone = self.zones[visible_whitespace.id]
     if zone.is_in_hidden_area {
       continue
     }
     visible_zones.set(visible_whitespace.id, visible_whitespace)
-    has_visible_zone = true
+    continue true
+  } nobreak {
+    has_visible_zone
   }
 
   let keys = self.zone_keys_snapshot()
