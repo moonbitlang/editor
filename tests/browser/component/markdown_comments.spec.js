@@ -532,6 +532,16 @@ test('public Viewer replaces whole-line source with themed Markdown while model 
       'title',
       'Show original source',
     );
+    await expect(
+      zones
+        .nth(0)
+        .locator('.moonbit-viewer-markdown-comment-source .monaco-tokenized-source'),
+    ).toHaveCount(0);
+    await expect(
+      zones
+        .nth(1)
+        .locator('.moonbit-viewer-markdown-comment-source .monaco-tokenized-source'),
+    ).toHaveCount(0);
     expect(
       await zones.nth(0).locator(content).evaluate((element) =>
         Number.parseFloat(getComputedStyle(element).paddingRight)),
@@ -547,6 +557,11 @@ test('public Viewer replaces whole-line source with themed Markdown while model 
     ).toContainText(
       '/// Start prose with [fixture link](https://example.test/docs).',
     );
+    await expect(
+      zones
+        .nth(1)
+        .locator('.moonbit-viewer-markdown-comment-source .monaco-tokenized-source'),
+    ).toHaveCount(0);
     await expect(zones.nth(1)).toHaveAttribute('data-source-visible', 'false');
     await expect(zones.nth(1).locator('h2')).toBeVisible();
     await expect(firstSourceToggle).toHaveAttribute('aria-pressed', 'true');

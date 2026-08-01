@@ -379,8 +379,8 @@ rerender retained Mermaid SVGs in place and send accepted size changes through
 the existing observer and generation-checked ViewZone height writer.
 
 Each rendered entry retains the full and optional preview shared-Markdown
-renderers, an escaped tokenized target built from the exact original model
-lines, its source and expanded-state toggle lifetimes, its diagram-viewport
+renderers, an initially empty source target that extracts and tokenizes exact
+model lines only while source is selected, its source and expanded-state toggle lifetimes, its diagram-viewport
 group, and the existing size observer. The source toggle is per block, keeps
 the model projection unchanged, survives same-range content replacement, and
 restores the block's prior documentation-fold state when rendering resumes.

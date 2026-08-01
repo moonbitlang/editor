@@ -6,11 +6,11 @@ plus a caller-owned margin ViewZone node; the root contribution retains the
 outer node as its ViewZone DOM, registers the margin node so ViewZones keeps
 it top/height-synced in the gutter, and renders shared Markdown into
 independent full and one-line preview targets inside the measured inner node.
-Every block also retains an escaped, tokenized target containing the exact
-original model lines. Its accessible in-content control switches only that
-block between rendered Markdown and source; same-range replacement refreshes
-the target while preserving the reader's choice, and returning to Markdown
-restores the prior documentation-fold state. The toggle keeps the stable
+Every block also owns an initially empty source target. Its accessible
+in-content control lazily extracts and tokenizes the exact original model lines
+only when that block first selects source; a visible same-range replacement
+refreshes the target while a hidden block defers the work until its next reveal.
+Returning to Markdown restores the prior documentation-fold state. The toggle keeps the stable
 accessible name `Original source`, reports the selected presentation through
 `aria-pressed`, and uses its tooltip for the next action. Rendered content
 always reserves its trailing hit area, while a one-line separator constrains

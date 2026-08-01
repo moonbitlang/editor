@@ -3,8 +3,8 @@
 /// `outer` is the caller-owned ViewZone node; `content` is the auto-height
 /// ResizeObserver target. `full` and `preview` are independent shared-Markdown
 /// targets so folding never reparses or mutates the complete rendered body;
-/// `source` retains the tokenized original model lines for the per-block
-/// rendered/source switch.
+/// `source` is the lazy target for tokenized original model lines; it remains
+/// empty until the per-block rendered/source switch first selects source.
 /// `margin` is the caller-owned margin ViewZone node: ViewZones keeps its
 /// top/height synced with `outer`, and `margin_toggle` sits in the
 /// line-decorations lane so the documentation fold control lines up with the
@@ -108,9 +108,9 @@ pub fn MarkdownCommentDom::MarkdownCommentDom(
 ///|
 /// Installs the independent rendered/source switch for this block. The caller
 /// retains `source_visible` across same-range source replacement and owns the
-/// exact tokenized source target. Documentation folding remains unchanged in
-/// the background, so returning to the rendered body restores its prior fold
-/// state.
+/// lazily materialized source target. Documentation folding remains unchanged
+/// in the background, so returning to the rendered body restores its prior
+/// fold state.
 pub fn MarkdownCommentDom::enable_source_toggle(
   self : MarkdownCommentDom,
   source_visible : Ref[Bool],

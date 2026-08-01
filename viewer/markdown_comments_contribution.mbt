@@ -32,7 +32,9 @@ fn MarkdownCommentContributionState::MarkdownCommentContributionState() -> Markd
 ///|
 priv struct RenderedMarkdownComment {
   mut block : @language.MarkdownCommentBlock
-  mut original_source : String
+  original_source : Ref[String]
+  source_visible : Ref[Bool]
+  source_rendered_version : Ref[Int]
   mut foldable : Bool
   dom : @markdown_comments_browser.MarkdownCommentDom
   zone : @editor_browser.ViewZone
@@ -239,6 +241,27 @@ fn install_markdown_comment_original_source(
   target.set_inner_html(
     render_markdown_comment_original_source(source, model.get_language_id()),
   )
+}
+
+///|
+/// Materializes exact source only while the reader has selected it. The model
+/// version makes repeated toggles free and lets hidden blocks skip both the
+/// range copy and token-span DOM until their next reveal.
+fn ensure_markdown_comment_original_source(
+  model : @model.TextModel,
+  block : @language.MarkdownCommentBlock,
+  target : @rdom.Element,
+  original_source : Ref[String],
+  source_rendered_version : Ref[Int],
+) -> Unit {
+  let version = model.get_version_id()
+  if source_rendered_version.val == version {
+    return
+  }
+  let source = markdown_comment_original_source(model, block)
+  install_markdown_comment_original_source(model, source, target)
+  original_source.val = source
+  source_rendered_version.val = version
 }
 
 ///|
@@ -508,14 +531,14 @@ fn Viewer::refresh_markdown_comments(
       match state.rendered.get(key) {
         Some(existing) => {
           existing.generation.val = generation
-          let original_source = markdown_comment_original_source(model, block)
-          if existing.original_source != original_source {
-            install_markdown_comment_original_source(
+          if existing.source_visible.val {
+            ensure_markdown_comment_original_source(
               model,
-              original_source,
+              block,
               existing.dom.source,
+              existing.original_source,
+              existing.source_rendered_version,
             )
-            existing.original_source = original_source
             existing.size_observer.request_measure()
           }
           if existing.block.markdown != block.markdown ||
@@ -577,15 +600,20 @@ fn Viewer::refresh_markdown_comments(
           })
           let fold_expanded = Ref(false)
           let source_visible = Ref(false)
+          let original_source = Ref("")
+          let source_rendered_version = Ref(0)
           let source_lifetime = dom.enable_source_toggle(source_visible, () => {
+            if source_visible.val {
+              ensure_markdown_comment_original_source(
+                model,
+                block,
+                dom.source,
+                original_source,
+                source_rendered_version,
+              )
+            }
             size_observer.request_measure()
           })
-          let original_source = markdown_comment_original_source(model, block)
-          install_markdown_comment_original_source(
-            model,
-            original_source,
-            dom.source,
-          )
           let (
             rendered_markdown,
             preview_rendered_markdown,
@@ -603,6 +631,8 @@ fn Viewer::refresh_markdown_comments(
           let entry : RenderedMarkdownComment = {
             block,
             original_source,
+            source_visible,
+            source_rendered_version,
             foldable,
             dom,
             zone,
