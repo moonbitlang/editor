@@ -12,6 +12,7 @@ const diagram = '.moonbit-viewer-markdown-diagram';
 const diagramViewport =
   `${diagram}.moonbit-viewer-markdown-diagram-viewport`;
 const diagramContent = '.moonbit-viewer-markdown-diagram-content';
+const diagramSvg = `${diagramContent} > svg`;
 const diagramControls = '.moonbit-viewer-markdown-diagram-controls';
 const diagramResizeHandle =
   '.moonbit-viewer-markdown-diagram-resize-handle';
@@ -254,8 +255,16 @@ async function observeMermaidCommits(page) {
         ? [node]
         : Array.from(node.querySelectorAll('[data-mermaid-source]'));
       for (const svg of svgs) {
+        const id = svg.getAttribute('data-mermaid-id');
+        if (
+          globalThis.__markdownCommentsMermaidCommits.some(
+            (entry) => entry.id === id,
+          )
+        ) {
+          continue;
+        }
         globalThis.__markdownCommentsMermaidCommits.push({
-          id: svg.getAttribute('data-mermaid-id'),
+          id,
           source: svg.getAttribute('data-mermaid-source'),
           theme: svg.getAttribute('data-mermaid-theme'),
         });
@@ -2011,7 +2020,7 @@ test('renders exact Mermaid fences through the pinned CDN module and rerenders t
 
     const mermaidDiagram = `${zone} ${diagram}[data-diagram-language="mermaid"]`;
     const mermaidDiagrams = page.locator(mermaidDiagram);
-    const renderedSvgs = page.locator(`${mermaidDiagram} > svg`);
+    const renderedSvgs = page.locator(`${mermaidDiagram} > ${diagramSvg}`);
     await expect(mermaidDiagrams).toHaveCount(3);
     await expect(renderedSvgs).toHaveCount(2);
     await expect
@@ -2020,6 +2029,50 @@ test('renders exact Mermaid fences through the pinned CDN module and rerenders t
     await expect
       .poll(async () => (await mermaidLog(page)).bind.length)
       .toBe(2);
+
+    const renderedMermaid = page.locator(
+      `${mermaidDiagram}[data-mermaid-state="rendered"]`,
+    );
+    await expect(renderedMermaid).toHaveCount(2);
+    for (const rendered of [renderedMermaid.first(), renderedMermaid.last()]) {
+      await expect(rendered).toHaveAttribute(
+        'aria-label',
+        'Interactive Mermaid diagram',
+      );
+    }
+    await expect(
+      renderedMermaid.locator(`:scope > ${diagramControls} > button`),
+    ).toHaveCount(8);
+    const interactiveMermaid = renderedMermaid.first();
+    const initialInteractiveGeometry = await viewportGeometry(
+      interactiveMermaid,
+    );
+    await interactiveMermaid.getByRole('button', { name: 'Zoom in' }).click();
+    expect((await viewportGeometry(interactiveMermaid)).scale).toBeGreaterThan(
+      initialInteractiveGeometry.scale,
+    );
+    const panButton = interactiveMermaid.getByRole('button', {
+      name: 'Toggle pan mode',
+    });
+    await panButton.click();
+    await expect(panButton).toHaveAttribute('aria-pressed', 'true');
+    const beforePan = await viewportGeometry(interactiveMermaid);
+    const interactiveBox = await interactiveMermaid.boundingBox();
+    expect(interactiveBox).not.toBeNull();
+    await page.mouse.move(
+      interactiveBox.x + interactiveBox.width / 2,
+      interactiveBox.y + interactiveBox.height / 2,
+    );
+    await page.mouse.down();
+    await page.mouse.move(
+      interactiveBox.x + interactiveBox.width / 2 + 24,
+      interactiveBox.y + interactiveBox.height / 2,
+      { steps: 3 },
+    );
+    await page.mouse.up();
+    expect((await viewportGeometry(interactiveMermaid)).translateX).toBeGreaterThan(
+      beforePan.translateX,
+    );
 
     const invalid = mermaidDiagrams.filter({ hasText: 'INVALID' });
     await expect(invalid).toHaveCount(1);
@@ -2049,10 +2102,10 @@ test('renders exact Mermaid fences through the pinned CDN module and rerenders t
     expect(new Set(initialSvgState.map(({ id }) => id)).size).toBe(2);
 
     const tallMermaid = page.locator(
-      `${mermaidDiagram} > svg[data-mermaid-source="VALID_SECOND"]`,
+      `${mermaidDiagram} > ${diagramSvg}[data-mermaid-source="VALID_SECOND"]`,
     );
     const tallMermaidLayout = await tallMermaid.evaluate((svg) => {
-      const wrapper = svg.parentElement;
+      const wrapper = svg.closest('.moonbit-viewer-markdown-diagram');
       const wrapperRect = wrapper.getBoundingClientRect();
       const svgRect = svg.getBoundingClientRect();
       const viewBox = svg.viewBox.baseVal;
@@ -2070,13 +2123,16 @@ test('renders exact Mermaid fences through the pinned CDN module and rerenders t
         overflowY: window.getComputedStyle(wrapper).overflowY,
       };
     });
-    expectNear(tallMermaidLayout.svgHeight, tallMermaidLayout.heightLimit);
+    expectNear(
+      tallMermaidLayout.svgHeight,
+      tallMermaidLayout.heightLimit - 32,
+    );
     expectNear(
       tallMermaidLayout.wrapperHeight,
       tallMermaidLayout.heightLimit,
     );
     expect(tallMermaidLayout.fullyVisible).toBe(true);
-    expect(tallMermaidLayout.overflowY).toBe('auto');
+    expect(tallMermaidLayout.overflowY).toBe('hidden');
     expect(
       Math.abs(
         tallMermaidLayout.svgAspectRatio -
@@ -2189,6 +2245,9 @@ test('renders exact Mermaid fences through the pinned CDN module and rerenders t
     await expect
       .poll(async () => (await mermaidLog(page)).render.length)
       .toBe(9);
+    await expect(
+      renderedMermaid.locator(`:scope > ${diagramControls} > button`),
+    ).toHaveCount(8);
     await expect
       .poll(() =>
         page
@@ -2234,7 +2293,7 @@ test('drops delayed Mermaid results after same-key replacement and keeps the Vie
     await expect(page.locator(zone)).toContainText('DELAYED_OLD');
     await expect(
       page.locator(
-        `${zone} ${diagram}[data-diagram-language="mermaid"] > svg`,
+        `${zone} ${diagram}[data-diagram-language="mermaid"] > ${diagramSvg}`,
       ),
     ).toHaveCount(0);
 
@@ -2269,7 +2328,7 @@ test('drops delayed Mermaid results after same-key replacement and keeps the Vie
     expect(await releaseMermaid(page, 'DELAYED_OLD')).toBe(true);
 
     const currentSvg = page.locator(
-      `${zone} ${diagram}[data-diagram-language="mermaid"] > svg`,
+      `${zone} ${diagram}[data-diagram-language="mermaid"] > ${diagramSvg}`,
     );
     await expect(currentSvg).toHaveCount(1);
     await expect(currentSvg).toHaveAttribute(
@@ -2365,7 +2424,9 @@ test('commits only the latest theme after rapid light and dark changes while Mer
         (await mermaidLog(page)).pending.map(({ theme }) => theme),
       )
       .toEqual(['default']);
-    await expect(mermaidWrapper.locator(':scope > svg')).toHaveCount(0);
+    await expect(
+      mermaidWrapper.locator(`:scope > ${diagramSvg}`),
+    ).toHaveCount(0);
     expect(await mermaidCommits(page)).toEqual([]);
 
     expect(await releaseMermaid(page, 'DELAYED_OLD')).toBe(true);
@@ -2374,15 +2435,18 @@ test('commits only the latest theme after rapid light and dark changes while Mer
         (await mermaidLog(page)).pending.map(({ theme }) => theme),
       )
       .toEqual(['dark']);
-    await expect(mermaidWrapper.locator(':scope > svg')).toHaveCount(0);
+    await expect(
+      mermaidWrapper.locator(`:scope > ${diagramSvg}`),
+    ).toHaveCount(0);
     expect(await mermaidCommits(page)).toEqual([]);
 
     expect(await releaseMermaid(page, 'DELAYED_OLD')).toBe(true);
-    await expect(mermaidWrapper.locator(':scope > svg')).toHaveCount(1);
-    await expect(mermaidWrapper.locator(':scope > svg')).toHaveAttribute(
-      'data-mermaid-theme',
-      'dark',
-    );
+    await expect(
+      mermaidWrapper.locator(`:scope > ${diagramSvg}`),
+    ).toHaveCount(1);
+    await expect(
+      mermaidWrapper.locator(`:scope > ${diagramSvg}`),
+    ).toHaveAttribute('data-mermaid-theme', 'dark');
     await expect
       .poll(async () => (await mermaidCommits(page)).map(({ theme }) => theme))
       .toEqual(['dark']);
@@ -2457,7 +2521,7 @@ test('drops pending Mermaid output after a direct model swap', async ({
     await settle(page);
     await expect(
       page.locator(
-        `${zone} ${diagram}[data-diagram-language="mermaid"] > svg`,
+        `${zone} ${diagram}[data-diagram-language="mermaid"] > ${diagramSvg}`,
       ),
     ).toHaveCount(0);
     expect(await mermaidCommits(page)).toEqual([]);
@@ -2481,7 +2545,7 @@ test('keeps an offscreen Mermaid SVG and its ViewZone height synchronized across
     const mermaidWrapper = page.locator(
       `${zone} ${diagram}[data-diagram-language="mermaid"]`,
     );
-    const svg = mermaidWrapper.locator(':scope > svg');
+    const svg = mermaidWrapper.locator(`:scope > ${diagramSvg}`);
     await expect(svg).toHaveCount(1);
     await expect(svg).toHaveAttribute(
       'data-mermaid-source',
@@ -2547,7 +2611,7 @@ test('keeps an offscreen Mermaid SVG and its ViewZone height synchronized across
         (node) =>
           node ===
           document.querySelector(
-            '.markdown-comments-host .moonbit-viewer-markdown-diagram[data-diagram-language="mermaid"] > svg',
+            '.markdown-comments-host .moonbit-viewer-markdown-diagram[data-diagram-language="mermaid"] > .moonbit-viewer-markdown-diagram-content > svg',
           ),
       ),
     ).toBe(true);
@@ -2565,7 +2629,7 @@ test('keeps an offscreen Mermaid SVG and its ViewZone height synchronized across
         '.moonbit-viewer-markdown-comment-content',
       );
       const rendered = outer.querySelector(
-        '.moonbit-viewer-markdown-diagram[data-diagram-language="mermaid"] > svg',
+        '.moonbit-viewer-markdown-diagram[data-diagram-language="mermaid"] > .moonbit-viewer-markdown-diagram-content > svg',
       );
       const svgRect = rendered.getBoundingClientRect();
       return {
@@ -2660,16 +2724,16 @@ test('renders through the real pinned Mermaid CDN when live diagnostics are enab
 
     const mermaidDiagram = `${zone} ${diagram}[data-diagram-language="mermaid"]`;
     await expect(page.locator(mermaidDiagram)).toHaveCount(3);
-    await expect(page.locator(`${mermaidDiagram} > svg`)).toHaveCount(2, {
+    await expect(page.locator(`${mermaidDiagram} > ${diagramSvg}`)).toHaveCount(2, {
       timeout: 30_000,
     });
     await expect(
       page.locator(
-        `${mermaidDiagram}[data-mermaid-state="rendered"] > svg`,
+        `${mermaidDiagram}[data-mermaid-state="rendered"] > ${diagramSvg}`,
       ),
     ).toHaveCount(2);
     const sizes = await page
-      .locator(`${mermaidDiagram} > svg`)
+      .locator(`${mermaidDiagram} > ${diagramSvg}`)
       .evaluateAll((nodes) =>
         nodes.map((node) => {
           const rect = node.getBoundingClientRect();

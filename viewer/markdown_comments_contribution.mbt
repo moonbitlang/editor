@@ -386,7 +386,16 @@ fn render_markdown_comment_presentations(
   @base_common.Disposable?,
   @markdown_comments_browser.MarkdownCommentDiagramViewports,
 ) {
-  let on_size_changed = () => size_observer.request_measure()
+  let diagram_viewports_slot : Ref[
+    @markdown_comments_browser.MarkdownCommentDiagramViewports?,
+  ] = Ref(None)
+  let on_size_changed = () => {
+    match diagram_viewports_slot.val {
+      Some(diagram_viewports) => diagram_viewports.refresh()
+      None => ()
+    }
+    size_observer.request_measure()
+  }
   let rendered_markdown = render_markdown_comment_body(
     model,
     markdown,
@@ -416,6 +425,7 @@ fn render_markdown_comment_presentations(
     rendered_markdown.element,
     on_size_changed,
   )
+  diagram_viewports_slot.val = Some(diagram_viewports)
   (
     rendered_markdown, preview_rendered_markdown, fold_lifetime, diagram_viewports,
   )
