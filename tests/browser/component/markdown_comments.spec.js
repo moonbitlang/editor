@@ -521,7 +521,39 @@ test('public Viewer replaces whole-line source with themed Markdown while model 
       'same-key initial phrase',
     );
     await expect(zones.nth(1).locator('li')).toHaveCount(2);
-    const fencedCode = zones.nth(2).locator('.monaco-tokenized-source');
+
+    // Source presentation is owned per block and shows the exact model text,
+    // including MoonBit comment syntax, without changing a sibling block.
+    const firstSourceToggle = zones.nth(0).getByRole('button', {
+      name: 'Show original source',
+    });
+    await expect(firstSourceToggle).toHaveAttribute('aria-pressed', 'false');
+    await firstSourceToggle.click();
+    await expect(zones.nth(0)).toHaveAttribute('data-source-visible', 'true');
+    await expect(zones.nth(0).locator('h1')).toBeHidden();
+    await expect(
+      zones.nth(0).locator('.moonbit-viewer-markdown-comment-source'),
+    ).toContainText('/// # Start comment');
+    await expect(
+      zones.nth(0).locator('.moonbit-viewer-markdown-comment-source'),
+    ).toContainText(
+      '/// Start prose with [fixture link](https://example.test/docs).',
+    );
+    await expect(zones.nth(1)).toHaveAttribute('data-source-visible', 'false');
+    await expect(zones.nth(1).locator('h2')).toBeVisible();
+    const showRendered = zones.nth(0).getByRole('button', {
+      name: 'Show rendered documentation',
+    });
+    await showRendered.focus();
+    await showRendered.press('Enter');
+    await expect(zones.nth(0)).toHaveAttribute('data-source-visible', 'false');
+    await expect(zones.nth(0).locator('h1')).toBeVisible();
+
+    const fencedCode = zones
+      .nth(2)
+      .locator(
+        '.moonbit-viewer-markdown-comment-full .monaco-tokenized-source',
+      );
     await expect(fencedCode).toContainText(
       'let fenced_value = 42',
     );
@@ -1473,6 +1505,13 @@ test('same-key replacement retains zone identity, reflows, and reconciles add re
     expect(oldOuter).not.toBeNull();
     expect(oldContent).not.toBeNull();
     expect(oldHeading).not.toBeNull();
+    await page.locator(middleSelector).getByRole('button', {
+      name: 'Show original source',
+    }).click();
+    await expect(page.locator(middleSelector)).toHaveAttribute(
+      'data-source-visible',
+      'true',
+    );
     const eofContent = page.locator(zone).nth(2).locator(content);
     const initialDiagram = eofContent.locator(diagramViewport).nth(0);
     const oldDiagram = await initialDiagram.elementHandle();
@@ -1510,6 +1549,20 @@ test('same-key replacement retains zone identity, reflows, and reconciles add re
     ]);
     expect(updateFrames.every((frame) => !frame.rawSourceVisible)).toBe(true);
     await expect(page.locator(middleSelector)).toContainText('Middle updated');
+    await expect(
+      page.locator(
+        `${middleSelector} .moonbit-viewer-markdown-comment-source`,
+      ),
+    ).toContainText('/// ## Middle updated');
+    await expect(page.locator(`${middleSelector} h2`)).toBeHidden();
+    await page.locator(middleSelector).getByRole('button', {
+      name: 'Show rendered documentation',
+    }).click();
+    await expect(page.locator(middleSelector)).toHaveAttribute(
+      'data-source-visible',
+      'false',
+    );
+    await expect(page.locator(`${middleSelector} h2`)).toBeVisible();
     await expect(page.locator(middleSelector)).not.toContainText(
       'same-key initial phrase',
     );
@@ -1615,7 +1668,9 @@ test('same-key replacement retains zone identity, reflows, and reconciles add re
     for (const previous of previousZones) {
       expect(await previous.evaluate((node) => node.isConnected)).toBe(false);
     }
-    await expect(page.locator(editor)).not.toContainText('Start comment');
+    await expect(page.locator(`${editor} .view-lines`)).not.toContainText(
+      'Start comment',
+    );
     expect((await state(page)).attachedValue).toContain('/// ### Added comment');
     expect(
       await page

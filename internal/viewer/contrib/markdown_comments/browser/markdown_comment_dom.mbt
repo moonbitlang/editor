@@ -2,7 +2,9 @@
 /// The stable DOM retained by one whole-line Markdown-comment ViewZone.
 /// `outer` is the caller-owned ViewZone node; `content` is the auto-height
 /// ResizeObserver target. `full` and `preview` are independent shared-Markdown
-/// targets so folding never reparses or mutates the complete rendered body.
+/// targets so folding never reparses or mutates the complete rendered body;
+/// `source` retains the tokenized original model lines for the per-block
+/// rendered/source switch.
 /// `margin` is the caller-owned margin ViewZone node: ViewZones keeps its
 /// top/height synced with `outer`, and `margin_toggle` sits in the
 /// line-decorations lane so the documentation fold control lines up with the
@@ -14,6 +16,8 @@ pub(all) struct MarkdownCommentDom {
   content : @rdom.Element
   full : @rdom.Element
   preview : @rdom.Element
+  source : @rdom.Element
+  source_toggle : @rdom.Element
   toggle : @rdom.Element
   toggle_icon : @rdom.Element
   margin : @rdom.Element
@@ -35,6 +39,7 @@ pub fn MarkdownCommentDom::MarkdownCommentDom(
   outer.set_attribute("data-end-line", end_line_number_exclusive.to_string())
   outer.set_attribute("data-documentation-foldable", "false")
   outer.set_attribute("data-documentation-expanded", "true")
+  outer.set_attribute("data-source-visible", "false")
   let content = document.create_element("div")
   content.set_attribute("class", "moonbit-viewer-markdown-comment-content")
   let full = document.create_element("div")
@@ -45,6 +50,21 @@ pub fn MarkdownCommentDom::MarkdownCommentDom(
   preview.set_attribute(
     "class", "moonbit-viewer-markdown-comment-body moonbit-viewer-markdown-comment-preview",
   )
+  let source = document.create_element("div")
+  source.set_attribute(
+    "class", "moonbit-viewer-markdown-comment-body moonbit-viewer-markdown-comment-source",
+  )
+  let source_toggle = document.create_element("button")
+  source_toggle.set_attribute(
+    "class", "moonbit-viewer-markdown-comment-source-toggle",
+  )
+  source_toggle.set_attribute("type", "button")
+  source_toggle.set_attribute("aria-pressed", "false")
+  source_toggle.set_attribute("aria-label", "Show original source")
+  source_toggle.set_attribute("title", "Show original source")
+  // A textual code mark remains legible if the optional codicon font is not
+  // installed by an embedder.
+  source_toggle.set_inner_html("{ }")
   let toggle = document.create_element("button")
   toggle.set_attribute("class", "moonbit-viewer-markdown-comment-toggle")
   toggle.set_attribute("type", "button")
@@ -57,6 +77,7 @@ pub fn MarkdownCommentDom::MarkdownCommentDom(
   toggle.append_child(toggle_icon.as_node())
   let margin = document.create_element("div")
   margin.set_attribute("class", "moonbit-viewer-markdown-comment-margin")
+  margin.set_attribute("data-source-visible", "false")
   let margin_toggle = document.create_element("div")
   margin_toggle.set_attribute(
     "class",
@@ -66,9 +87,84 @@ pub fn MarkdownCommentDom::MarkdownCommentDom(
   margin.append_child(margin_toggle.as_node())
   content.append_child(full.as_node())
   content.append_child(preview.as_node())
+  content.append_child(source.as_node())
+  outer.append_child(source_toggle.as_node())
   outer.append_child(toggle.as_node())
   outer.append_child(content.as_node())
-  { outer, content, full, preview, toggle, toggle_icon, margin, margin_toggle }
+  {
+    outer,
+    content,
+    full,
+    preview,
+    source,
+    source_toggle,
+    toggle,
+    toggle_icon,
+    margin,
+    margin_toggle,
+  }
+}
+
+///|
+/// Installs the independent rendered/source switch for this block. The caller
+/// retains `source_visible` across same-range source replacement and owns the
+/// exact tokenized source target. Documentation folding remains unchanged in
+/// the background, so returning to the rendered body restores its prior fold
+/// state.
+pub fn MarkdownCommentDom::enable_source_toggle(
+  self : MarkdownCommentDom,
+  source_visible : Ref[Bool],
+  on_did_toggle : () -> Unit,
+) -> @base_common.Disposable {
+  let apply_state = () => {
+    let visible = source_visible.val
+    let label = if visible {
+      "Show rendered documentation"
+    } else {
+      "Show original source"
+    }
+    self.outer.set_attribute(
+      "data-source-visible",
+      if visible {
+        "true"
+      } else {
+        "false"
+      },
+    )
+    self.margin.set_attribute(
+      "data-source-visible",
+      if visible {
+        "true"
+      } else {
+        "false"
+      },
+    )
+    self.source_toggle.set_attribute(
+      "aria-pressed",
+      if visible {
+        "true"
+      } else {
+        "false"
+      },
+    )
+    self.source_toggle.set_attribute("aria-label", label)
+    self.source_toggle.set_attribute("title", label)
+  }
+  apply_state()
+  let stop_mouse_down : @rdom.Listener = event => event.stop_propagation()
+  let toggle_source : @rdom.Listener = event => {
+    event.prevent_default()
+    event.stop_propagation()
+    source_visible.val = !source_visible.val
+    apply_state()
+    on_did_toggle()
+  }
+  self.source_toggle.add_event_listener("mousedown", stop_mouse_down)
+  self.source_toggle.add_event_listener("click", toggle_source)
+  @base_common.Disposable::from(() => {
+    self.source_toggle.remove_event_listener("mousedown", stop_mouse_down)
+    self.source_toggle.remove_event_listener("click", toggle_source)
+  })
 }
 
 ///|

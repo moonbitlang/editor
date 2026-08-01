@@ -188,6 +188,23 @@ test('renders MoonBit documentation comments through the real workbench', async 
   await expect(preview).not.toContainText('native shell');
   await expect(full).toBeHidden();
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  const showSource = markdown.getByRole('button', {
+    name: 'Show original source',
+  });
+  await showSource.click();
+  await expect(markdown).toHaveAttribute('data-source-visible', 'true');
+  await expect(
+    markdown.locator('.moonbit-viewer-markdown-comment-source'),
+  ).toContainText('/// # Fixture entry point');
+  await expect(preview).toBeHidden();
+  await markdown.getByRole('button', {
+    name: 'Show rendered documentation',
+  }).click();
+  await expect(markdown).toHaveAttribute('data-source-visible', 'false');
+  // Source inspection is orthogonal to API-doc folding.
+  await expect(markdown).toHaveAttribute('data-documentation-expanded', 'false');
+  await expect(preview).toBeVisible();
+  await expect(full).toBeHidden();
   const collapsedBox = await markdown.boundingBox();
   const toggleBox = await toggle.boundingBox();
   expect(collapsedBox).not.toBeNull();
@@ -217,7 +234,7 @@ test('renders MoonBit documentation comments through the real workbench', async 
   await expect
     .poll(async () => (await markdown.boundingBox())?.height ?? 0)
     .toBeLessThan(expandedHeight);
-  await expect(markdown).not.toContainText('|');
+  await expect(preview).not.toContainText('|');
 
   // The gutter chevron shares the code-folding column: same codicon family,
   // horizontally centered on the collapsed `fn main` chevron, and it drives

@@ -24,6 +24,8 @@ pub(all) struct MarkdownCommentDom {
   content : @dom.Element
   full : @dom.Element
   preview : @dom.Element
+  source : @dom.Element
+  source_toggle : @dom.Element
   toggle : @dom.Element
   toggle_icon : @dom.Element
   margin : @dom.Element
@@ -33,6 +35,7 @@ pub(all) struct MarkdownCommentDom {
 pub fn MarkdownCommentDom::MarkdownCommentDom(Int, Int) -> Self
 pub fn MarkdownCommentDom::disable_folding(Self) -> Unit
 pub fn MarkdownCommentDom::enable_folding(Self, @ref.Ref[Bool], () -> Unit) -> @common.Disposable
+pub fn MarkdownCommentDom::enable_source_toggle(Self, @ref.Ref[Bool], () -> Unit) -> @common.Disposable
 pub fn MarkdownCommentDom::expose_accessible_content(Self) -> Unit
 pub fn MarkdownCommentDom::observe_size(Self, (Int) -> Unit) -> MarkdownCommentSizeObserver
 pub fn MarkdownCommentDom::observe_viewport_width(Self, () -> Unit) -> MarkdownCommentViewportObserver
