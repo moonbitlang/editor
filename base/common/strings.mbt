@@ -1,6 +1,17 @@
 ///| Faithful ports of a few `base/common/strings.ts` helpers from the
 /// checked-in vscode source. Kept here, the
 /// lowest-level shared package, so model/view code shares one definition.
+///
+/// These are UTF-16 code-unit algorithms, which is what JavaScript strings are
+/// and what Monaco's offsets count. `String::at` (`s[i]`) already yields a
+/// `UInt16` code unit, so the scanners below stay in that type instead of
+/// widening every read to `Int`. Only values that leave the code-unit domain —
+/// a comparator result, a public `Int` predicate argument — convert.
+
+///|
+/// The first code unit outside ASCII, above which case folding needs the full
+/// lowercase table rather than the `±32` letter shift.
+let code_ascii_limit : UInt16 = 128
 
 ///|
 /// `0xD800 <= charCode <= 0xDBFF`. Mirrors `strings.isHighSurrogate`; the std
@@ -23,8 +34,7 @@ pub fn is_low_surrogate(char_code : Int) -> Bool {
 /// `U+FE70..U+FEFF`); supplementary-plane RTL is not detected, matching the
 /// viewer's existing simplified port.
 pub fn contains_rtl(text : String) -> Bool {
-  for i in 0..<text.length() {
-    let code = text[i].to_int()
+  for code in text.code_units() {
     if (code >= 0x0590 && code <= 0x08ff) ||
       (code >= 0xfb1d && code <= 0xfdff) ||
       (code >= 0xfe70 && code <= 0xfeff) {
@@ -38,9 +48,8 @@ pub fn contains_rtl(text : String) -> Bool {
 /// Index of the first non-whitespace (non-space, non-tab) character, or `-1`.
 /// Mirrors `strings.firstNonWhitespaceIndex`.
 pub fn first_non_whitespace_index(text : String) -> Int {
-  for i in 0..<text.length() {
-    let code = text[i].to_int()
-    if code != 32 && code != 9 {
+  for i, code in text.code_units() {
+    if code != ' ' && code != '\t' {
       return i
     }
   }
@@ -51,9 +60,10 @@ pub fn first_non_whitespace_index(text : String) -> Int {
 /// Index of the last non-whitespace (non-space, non-tab) character, or `-1`.
 /// Mirrors `strings.lastNonWhitespaceIndex`.
 pub fn last_non_whitespace_index(text : String) -> Int {
-  for i = text.length() - 1; i >= 0; i = i - 1 {
-    let code = text[i].to_int()
-    if code != 32 && code != 9 {
+  let units = text.code_units()
+  for i = units.length() - 1; i >= 0; i = i - 1 {
+    let code = units[i]
+    if code != ' ' && code != '\t' {
       return i
     }
   }
@@ -89,16 +99,14 @@ pub fn single_letter_hash(n : Int) -> String {
 /// charwise UTF-16 code-unit lexicographic. Required because MoonBit's
 /// built-in `String` compare is length-first (`"z" > "aa"` here, not there).
 pub fn compare(a : String, b : String) -> Int {
-  let a_len = a.length()
-  let b_len = b.length()
-  let len = a_len.min(b_len)
-  for i in 0..<len {
-    let code_a = a[i].to_int()
-    let code_b = b[i].to_int()
-    if code_a < code_b {
-      return -1
-    } else if code_a > code_b {
-      return 1
+  let a_units = a.code_units()
+  let b_units = b.code_units()
+  let a_len = a_units.length()
+  let b_len = b_units.length()
+  for i in 0..<a_len.min(b_len) {
+    let order = a_units[i].compare(b_units[i])
+    if order != 0 {
+      return order
     }
   }
   if a_len < b_len {
@@ -125,12 +133,9 @@ pub fn compare_substring(
   let mut a_start = a_start
   let mut b_start = b_start
   while a_start < a_end && b_start < b_end {
-    let code_a = a[a_start].to_int()
-    let code_b = b[b_start].to_int()
-    if code_a < code_b {
-      return -1
-    } else if code_a > code_b {
-      return 1
+    let order = a[a_start].compare(b[b_start])
+    if order != 0 {
+      return order
     }
     a_start += 1
     b_start += 1
@@ -153,8 +158,8 @@ pub fn compare_substring(
 /// fullwidth Latin; other scripts and the rare length-changing mappings
 /// (e.g. `İ`) pass through unchanged — a documented deviation from the full
 /// Unicode table JS applies.
-fn to_lower_code_unit(code : Int) -> Int {
-  if code >= 'A'.to_int() && code <= 'Z'.to_int() {
+fn to_lower_code_unit(code : UInt16) -> UInt16 {
+  if is_upper_ascii_letter(code) {
     return code + 32
   }
   // Latin-1 Supplement: À-Þ except ×
@@ -194,32 +199,28 @@ fn to_lower_code_unit(code : Int) -> Int {
 /// `toLowerCase()` call sites of the URI stack route through this so
 /// non-ASCII authorities/paths fold the way Monaco's do.
 fn to_lower_js(s : String) -> String {
-  let mut changed = false
-  for i in 0..<s.length() {
-    if to_lower_code_unit(s[i].to_int()) != s[i].to_int() {
-      changed = true
-      break
-    }
-  }
-  if !changed {
+  let units = s.code_units()
+  guard units.iter().any(code => to_lower_code_unit(code) != code) else {
     return s
   }
   // Copy unchanged runs as substring chunks: every mapped unit is a BMP
-  // non-surrogate, so chunk boundaries never split a surrogate pair.
+  // non-surrogate, so chunk boundaries never split a surrogate pair, and
+  // `UInt16::to_char` therefore always yields `Some`.
   let sb = StringBuilder::new()
   let mut chunk_start = 0
-  for i in 0..<s.length() {
-    let code = s[i].to_int()
+  for i, code in units {
     let lowered = to_lower_code_unit(code)
     if lowered != code {
       if chunk_start < i {
         sb.write_string(s[chunk_start:i].to_owned())
       }
-      sb.write_char(Int::unsafe_to_char(lowered))
+      if lowered.to_char() is Some(ch) {
+        sb.write_char(ch)
+      }
       chunk_start = i + 1
     }
   }
-  if chunk_start < s.length() {
+  if chunk_start < units.length() {
     sb.write_string(s[chunk_start:].to_owned())
   }
   sb.to_string()
@@ -230,18 +231,18 @@ fn to_lower_js(s : String) -> String {
 /// (strings.ts:251), whose split regex treats `\r\n` as one separator.
 pub fn split_lines(text : String) -> Array[String] {
   let lines = []
-  let len = text.length()
+  let units = text.code_units()
+  let len = units.length()
   let mut line_start = 0
   let mut i = 0
   while i < len {
-    let code = text[i].to_int()
-    if code == '\r' {
+    if units[i] == '\r' {
       lines.push(text[line_start:i].to_owned())
-      if i + 1 < len && text[i + 1].to_int() == '\n' {
+      if i + 1 < len && units[i + 1] == '\n' {
         i += 1 // consume the \n of a \r\n pair
       }
       line_start = i + 1
-    } else if code == '\n' {
+    } else if units[i] == '\n' {
       lines.push(text[line_start:i].to_owned())
       line_start = i + 1
     }
@@ -253,13 +254,13 @@ pub fn split_lines(text : String) -> Array[String] {
 
 ///|
 /// Mirrors `strings.isLowerAsciiLetter` (strings.ts:428).
-pub fn is_lower_ascii_letter(code : Int) -> Bool {
+pub fn is_lower_ascii_letter(code : UInt16) -> Bool {
   code is ('a'..='z')
 }
 
 ///|
 /// Mirrors `strings.isUpperAsciiLetter` (strings.ts:432).
-pub fn is_upper_ascii_letter(code : Int) -> Bool {
+pub fn is_upper_ascii_letter(code : UInt16) -> Bool {
   code is ('A'..='Z')
 }
 
@@ -280,15 +281,15 @@ pub fn compare_substring_ignore_case(
   let mut a_start = a_start
   let mut b_start = b_start
   while a_start < a_end && b_start < b_end {
-    let mut code_a = a[a_start].to_int()
-    let mut code_b = b[b_start].to_int()
+    let mut code_a = a[a_start]
+    let mut code_b = b[b_start]
     if code_a == code_b {
       // equal
       a_start += 1
       b_start += 1
       continue
     }
-    if code_a >= 128 || code_b >= 128 {
+    if code_a >= code_ascii_limit || code_b >= code_ascii_limit {
       // not ASCII letters -> fallback to lower-casing strings
       return compare_substring(
         to_lower_js(a),
@@ -307,8 +308,9 @@ pub fn compare_substring_ignore_case(
     if is_lower_ascii_letter(code_b) {
       code_b -= 32
     }
-    // compare both code points
-    let diff = code_a - code_b
+    // Compare both code points. The difference must be taken in `Int`: a
+    // `UInt16` subtraction wraps, so `'A' - 'B'` would be 65535, not -1.
+    let diff = code_a.to_int() - code_b.to_int()
     if diff == 0 {
       a_start += 1
       b_start += 1
