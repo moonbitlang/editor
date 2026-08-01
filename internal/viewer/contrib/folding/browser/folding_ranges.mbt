@@ -338,18 +338,18 @@ pub fn FoldingRegions::contains(
 /// `findIndex` (`foldingRanges.ts:207`): the last region starting at or
 /// before `line`, `-1` when none.
 fn FoldingRegions::find_index(self : FoldingRegions, line : Int) -> Int {
-  let mut low = 0
-  let mut high = self.start_indexes.length()
-  if high == 0 {
+  if self.start_indexes.length() == 0 {
     return -1 // no children
   }
-  while low < high {
+  let (low, _high) = for low = 0, high = self.start_indexes.length(); low < high; {
     let mid = (low + high) / 2
     if line < self.get_start_line_number(mid) {
-      high = mid
+      continue low, mid
     } else {
-      low = mid + 1
+      continue mid + 1, high
     }
+  } nobreak {
+    (low, high)
   }
   low - 1
 }
@@ -358,21 +358,21 @@ fn FoldingRegions::find_index(self : FoldingRegions, line : Int) -> Int {
 /// `findRange` (`foldingRanges.ts:223`): the innermost region containing
 /// `line`, walking parents outward; `-1` when none.
 pub fn FoldingRegions::find_range(self : FoldingRegions, line : Int) -> Int {
-  let mut index = self.find_index(line)
-  if index >= 0 {
-    let end_line_number = self.get_end_line_number(index)
-    if end_line_number >= line {
-      return index
-    }
-    index = self.get_parent_index(index)
-    while index != -1 {
-      if self.contains(index, line) {
-        return index
-      }
-      index = self.get_parent_index(index)
-    }
+  let index = self.find_index(line)
+  if index < 0 {
+    return -1
   }
-  -1
+  if self.get_end_line_number(index) >= line {
+    return index
+  }
+  for index = self.get_parent_index(index); index != -1; {
+    if self.contains(index, line) {
+      break index
+    }
+    continue self.get_parent_index(index)
+  } nobreak {
+    -1
+  }
 }
 
 ///|

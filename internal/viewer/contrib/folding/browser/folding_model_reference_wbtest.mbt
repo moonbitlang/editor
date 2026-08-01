@@ -118,9 +118,10 @@ fn slash_region_markers() -> @languages.FoldingMarkers {
 /// `/^\s*<rest>$/`: optional leading whitespace, then exactly `rest`.
 fn ws_then_exact(rest : String) -> (String) -> Bool {
   line => {
-    let mut i = 0
-    while i < line.length() && (line[i] == ' ' || line[i] == '\t') {
-      i += 1
+    let i = for i = 0; i < line.length() && (line[i] == ' ' || line[i] == '\t'); {
+      continue i + 1
+    } nobreak {
+      i
     }
     line.length() - i == rest.length() &&
     ({
@@ -633,9 +634,10 @@ test "setCollapseStateForMatchingLines" {
   )
   // `new RegExp('^\\s*' + escapeRegExpCharacters('/*'))`
   let reg_exp = (line : String) => {
-    let mut i = 0
-    while i < line.length() && (line[i] == ' ' || line[i] == '\t') {
-      i += 1
+    let i = for i = 0; i < line.length() && (line[i] == ' ' || line[i] == '\t'); {
+      continue i + 1
+    } nobreak {
+      i
     }
     i + 1 < line.length() && line[i] == '/' && line[i + 1] == '*'
   }

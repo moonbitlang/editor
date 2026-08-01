@@ -1034,14 +1034,12 @@ fn display_name_from_uri(uri : String) -> String {
     None => uri
   }
   let segments = path.split("/")
-  let mut found = uri
-  for segment_view in segments {
+  for segment_view in segments; found = uri {
     let segment = segment_view.to_owned()
-    if segment != "" {
-      found = segment
-    }
+    continue if segment == "" { found } else { segment }
+  } nobreak {
+    found
   }
-  found
 }
 
 ///|

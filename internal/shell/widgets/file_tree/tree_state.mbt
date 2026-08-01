@@ -109,12 +109,11 @@ fn TreeNode::with_resolved(
     })
   }
   guard self.children is Some(children) else { return None }
-  let mut index = 0
-  for child in children {
+  for index in 0..<children.length() {
+    let child = children[index]
     if child.with_resolved(uri, stat, rank~) is Some(next) {
       return Some({ ..self, children: Some(children.set(index, next)) })
     }
-    index = index + 1
   }
   None
 }
@@ -140,14 +139,13 @@ fn TreeNode::toggle(
     return Some((next, effect))
   }
   guard self.children is Some(children) else { return None }
-  let mut index = 0
-  for child in children {
+  for index in 0..<children.length() {
+    let child = children[index]
     if child.toggle(uri) is Some((next, effect)) {
       return Some(
         ({ ..self, children: Some(children.set(index, next)) }, effect),
       )
     }
-    index = index + 1
   }
   None
 }
@@ -162,12 +160,11 @@ fn TreeNode::with_resolve_failed(
     return Some({ ..self, resolve_failed: true })
   }
   guard self.children is Some(children) else { return None }
-  let mut index = 0
-  for child in children {
+  for index in 0..<children.length() {
+    let child = children[index]
     if child.with_resolve_failed(uri) is Some(next) {
       return Some({ ..self, children: Some(children.set(index, next)) })
     }
-    index = index + 1
   }
   None
 }
@@ -221,14 +218,13 @@ fn TreeNode::reveal_ancestors(
   guard self.children is Some(children) else {
     return (self, RevealResolve(self.uri))
   }
-  let mut child_index = 0
-  for child in children {
+  for child_index in 0..<children.length() {
+    let child = children[child_index]
     if child.uri == ancestors[index] {
       let expanded = { ..child, expanded: true }
       let (next, step) = expanded.reveal_ancestors(ancestors, index + 1)
       return ({ ..self, children: Some(children.set(child_index, next)) }, step)
     }
-    child_index = child_index + 1
   }
   (self, RevealUnreachable)
 }

@@ -976,19 +976,21 @@ fn next_context_menu_item_index(
 ) -> Int {
   guard nodes.length() > 0 else { return -1 }
   let step = if direction < 0 { -1 } else { 1 }
-  let mut index = current
-  for _ in 0..<nodes.length() {
-    index += step
-    if index < 0 {
-      index = nodes.length() - 1
-    } else if index >= nodes.length() {
-      index = 0
+  for _ in 0..<nodes.length(); index = current {
+    let index = if index + step < 0 {
+      nodes.length() - 1
+    } else if index + step >= nodes.length() {
+      0
+    } else {
+      index + step
     }
     if nodes[index] is Some(_) {
-      return index
+      break index
     }
+    continue index
+  } nobreak {
+    -1
   }
-  -1
 }
 
 ///|

@@ -36,28 +36,34 @@ pub fn compute_hover_positions(
 ) -> (@base_common.Position, @base_common.Position) {
   // The anchor range is always on a single line.
   let anchor_start_line_number = anchor_range.start_line_number
-  let mut secondary_position_column = anchor_range.start_column
-  let mut force_show_at_range : @base_common.Range? = None
-  for hover_part in hover_parts {
+  let (secondary_position_column, force_show_at_range) = for
+    hover_part in hover_parts
+    state = (anchor_range.start_column, (None : @base_common.Range?)) {
+    let (secondary_position_column, force_show_at_range) = state
     let hover_part_range = hover_part.range
     let on_anchor_start_line = hover_part_range.start_line_number ==
       anchor_start_line_number
     let on_anchor_end_line = hover_part_range.end_line_number ==
       anchor_start_line_number
     let is_on_anchor_line = on_anchor_start_line && on_anchor_end_line
-    if is_on_anchor_line {
+    let secondary_position_column = if is_on_anchor_line {
       // This message has a range that is completely sitting on the anchor line.
       let hover_part_start_column = hover_part_range.start_column
       let min_secondary_position_column = secondary_position_column.min(
         hover_part_start_column,
       )
-      secondary_position_column = min_secondary_position_column.max(
-        start_column_boundary,
-      )
+      min_secondary_position_column.max(start_column_boundary)
+    } else {
+      secondary_position_column
     }
-    if hover_part.force_show_at_range {
-      force_show_at_range = Some(hover_part_range)
+    let force_show_at_range = if hover_part.force_show_at_range {
+      Some(hover_part_range)
+    } else {
+      force_show_at_range
     }
+    continue (secondary_position_column, force_show_at_range)
+  } nobreak {
+    state
   }
   match force_show_at_range {
     Some(range) => {

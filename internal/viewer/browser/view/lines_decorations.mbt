@@ -41,9 +41,10 @@ fn prepare_lines_decorations_render(
     decorations_width.to_string() +
     "px;\"></div>"
   for class_names in class_names_per_line {
-    let mut line_output = ""
-    for class_name in class_names {
-      line_output = line_output + "<div class=\"cldr " + class_name + common
+    let line_output = for class_name in class_names; line_output = "" {
+      continue line_output + "<div class=\"cldr " + class_name + common
+    } nobreak {
+      line_output
     }
     output.push(line_output)
   }

@@ -167,15 +167,13 @@ fn sample_summary(samples : Array[Double]) -> (Double, Double, Double) {
   if samples.length() == 0 {
     return (0.0, 0.0, 0.0)
   }
-  let mut best = samples[0]
-  let mut worst = samples[0]
-  for sample in samples {
-    if sample < best {
-      best = sample
-    }
-    if sample > worst {
-      worst = sample
-    }
+  let (best, worst) = for sample in samples; bounds = (samples[0], samples[0]) {
+    let (best, worst) = bounds
+    let best = if sample < best { sample } else { best }
+    let worst = if sample > worst { sample } else { worst }
+    continue (best, worst)
+  } nobreak {
+    bounds
   }
   let median = if samples.length() == 3 {
     samples[0] + samples[1] + samples[2] - best - worst

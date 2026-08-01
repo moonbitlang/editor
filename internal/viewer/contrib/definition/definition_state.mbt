@@ -79,14 +79,10 @@ pub fn normalize_definition_locations(
 ) -> Array[@language.Location] {
   let normalized : Array[@language.Location] = []
   for candidate in locations {
-    let mut duplicate = false
-    for existing in normalized {
-      if existing.uri.to_string() == candidate.uri.to_string() &&
-        existing.range == candidate.range {
-        duplicate = true
-        break
-      }
-    }
+    let duplicate = normalized.any(existing => {
+      existing.uri.to_string() == candidate.uri.to_string() &&
+      existing.range == candidate.range
+    })
     if !duplicate {
       normalized.push(candidate)
     }

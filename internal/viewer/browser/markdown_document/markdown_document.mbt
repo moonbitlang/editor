@@ -784,10 +784,11 @@ fn markdown_fold_toggle_section(event : @rdom.Event) -> Int? {
 /// than routed to section 0.
 fn markdown_parse_section_index(raw : String) -> Int? {
   guard raw.length() > 0 && raw.length() <= 9 else { return None }
-  let mut value = 0
-  for unit in raw {
+  let value = for unit in raw; value = 0 {
     guard unit >= '0' && unit <= '9' else { return None }
-    value = value * 10 + (unit.to_int() - '0'.to_int())
+    continue value * 10 + (unit.to_int() - '0'.to_int())
+  } nobreak {
+    value
   }
   Some(value)
 }

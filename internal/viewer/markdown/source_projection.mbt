@@ -352,12 +352,13 @@ fn markdown_code_line_from_source_facts(
   let source_length = source_range.length()
   let padding = displayed_length - source_length
   let boundary_map : Array[Int?] = []
-  let mut representable = padding >= 0
-  if representable {
-    for i in 0..<padding {
-      if displayed_text[i] != ' ' {
-        representable = false
-      }
+  let representable = if padding < 0 {
+    false
+  } else {
+    for i in 0..<padding; representable = true {
+      continue representable && displayed_text[i] == ' '
+    } nobreak {
+      representable
     }
   }
   if representable {

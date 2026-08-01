@@ -196,13 +196,11 @@ pub fn DocumentSnapshot::line_at_offset(
   offset : Int,
 ) -> Int {
   let offset = offset.clamp(min=0, max=self.length())
-  let mut found = 0
-  for i in 0..<self.line_starts.length() {
-    if self.line_starts[i] <= offset {
-      found = i
-    }
+  for i in 0..<self.line_starts.length(); found = 0 {
+    continue if self.line_starts[i] <= offset { i } else { found }
+  } nobreak {
+    found
   }
-  found
 }
 
 ///|

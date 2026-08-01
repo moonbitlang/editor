@@ -452,11 +452,11 @@ pub fn hover_parts_range(
   parts : Array[HoverPart],
   fallback : @base_common.Range,
 ) -> @base_common.Range {
-  let mut range = fallback
-  for part in parts {
-    range = union_range(range, hover_part_range(part))
+  for part in parts; range = fallback {
+    continue union_range(range, hover_part_range(part))
+  } nobreak {
+    range
   }
-  range
 }
 
 ///|
@@ -468,9 +468,10 @@ fn computed_hover_from_parts(
     return None
   }
   let sorted = sort_hover_parts_stably(parts)
-  let mut range = fallback_range
-  for part in sorted {
-    range = union_range(range, hover_part_range(part))
+  let range = for part in sorted; range = fallback_range {
+    continue union_range(range, hover_part_range(part))
+  } nobreak {
+    range
   }
   Some({ range, parts: sorted })
 }

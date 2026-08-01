@@ -240,15 +240,14 @@ fn async_feature_state_json(
   reports : Array[AsyncHoverReport],
   disposed : Ref[Bool],
 ) -> String {
-  let mut settled = 0
-  let mut released = 0
-  for call in harness.calls {
-    if call.settled {
-      settled += 1
-    }
-    if call.released {
-      released += 1
-    }
+  let (settled, released) = for call in harness.calls; counts = (0, 0) {
+    let (settled, released) = counts
+    continue (
+        settled + (if call.settled { 1 } else { 0 }),
+        released + (if call.released { 1 } else { 0 }),
+      )
+  } nobreak {
+    counts
   }
   let (
     current_model_id,

@@ -222,9 +222,10 @@ pub fn normalize_markdown_comment_blocks(
     }
   }
   let normalized = non_overlapping.filter(block => block.markdown != "")
-  let mut covered_line_count = 0
-  for block in normalized {
-    covered_line_count += block.line_range.length()
+  let covered_line_count = for block in normalized; covered_line_count = 0 {
+    continue covered_line_count + block.line_range.length()
+  } nobreak {
+    covered_line_count
   }
   if model_line_count > 0 && covered_line_count == model_line_count {
     []
@@ -254,21 +255,22 @@ fn line_comment_content(line : String, delimiter : String) -> String? {
 
 ///|
 fn normalize_block_body(lines : Array[String]) -> String {
-  let mut common_indent = -1
-  for line in lines {
+  let common_indent = for line in lines; common_indent = -1 {
     // Boundary/doc-comment lines such as the extra `*` in `/**` and
     // conventional ` *` blank lines carry no Markdown content. They must not
     // force the shared source indentation down to zero before mixed starred
     // and unstarred content is dedented.
     if trailing_content_end(strip_interior_star(line)) > 0 {
       let indent = leading_indent_end(line)
-      if common_indent < 0 || indent < common_indent {
-        common_indent = indent
-      }
+      continue if common_indent < 0 || indent < common_indent {
+          indent
+        } else {
+          common_indent
+        }
     }
-  }
-  if common_indent < 0 {
-    common_indent = 0
+    continue common_indent
+  } nobreak {
+    common_indent.max(0)
   }
   let normalized : Array[String] = []
   for line in lines {
