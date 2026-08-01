@@ -85,14 +85,13 @@ pub fn visible_column_from_column(
   } else {
     line_content.length()
   }
-  let mut result = 0
-  let mut offset = 0
-  while offset < text_len {
+  for offset = 0, result = 0; offset < text_len; {
     let code_point = get_next_code_point(line_content, text_len, offset)
-    offset += code_point_utf16_length(code_point)
-    result = next_visible_column(code_point, result, tab_size)
+    continue offset + code_point_utf16_length(code_point),
+      next_visible_column(code_point, result, tab_size)
+  } nobreak {
+    result
   }
-  result
 }
 
 ///|
@@ -108,16 +107,16 @@ pub fn to_statusbar_column(
   } else {
     line_content.length()
   }
-  let mut result = 0
-  let mut offset = 0
-  while offset < text_len {
+  let result = for offset = 0, result = 0; offset < text_len; {
     let code_point = get_next_code_point(line_content, text_len, offset)
-    offset += code_point_utf16_length(code_point)
-    if code_point == 9 {
-      result = next_render_tab_stop(result, tab_size)
+    let result = if code_point == 9 {
+      next_render_tab_stop(result, tab_size)
     } else {
-      result = result + 1
+      result + 1
     }
+    continue offset + code_point_utf16_length(code_point), result
+  } nobreak {
+    result
   }
   result + 1
 }
@@ -133,14 +132,12 @@ pub fn column_from_visible_column(
     return 1
   }
   let line_content_length = line_content.length()
-  let mut before_visible_column = 0
-  let mut before_column = 1
-  let mut offset = 0
-  while offset < line_content_length {
+  for offset = 0, before_visible_column = 0, before_column = 1; offset <
+     line_content_length; {
     let code_point = get_next_code_point(
       line_content, line_content_length, offset,
     )
-    offset += code_point_utf16_length(code_point)
+    let offset = offset + code_point_utf16_length(code_point)
     let after_visible_column = next_visible_column(
       code_point, before_visible_column, tab_size,
     )
@@ -149,15 +146,15 @@ pub fn column_from_visible_column(
       let before_delta = visible_column - before_visible_column
       let after_delta = after_visible_column - visible_column
       if after_delta < before_delta {
-        return after_column
+        break after_column
       } else {
-        return before_column
+        break before_column
       }
     }
-    before_visible_column = after_visible_column
-    before_column = after_column
+    continue offset, after_visible_column, after_column
+  } nobreak {
+    line_content_length + 1
   }
-  line_content_length + 1
 }
 
 ///|

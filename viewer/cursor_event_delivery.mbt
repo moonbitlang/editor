@@ -42,12 +42,13 @@ fn CursorEventDelivery::has_completed_content_version(
 fn CursorEventDelivery::refresh_content_barrier_depth(
   self : CursorEventDelivery,
 ) -> Unit {
-  let mut depth = 0
-  for event in self.queue {
+  let depth = for event in self.queue; depth = 0 {
     if is_model_flush_cursor_event(event) &&
       !self.has_completed_content_version(event.model_version_id) {
-      depth += 1
+      continue depth + 1
     }
+  } nobreak {
+    depth
   }
   self.content_barrier_depth = depth
 }

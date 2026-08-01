@@ -209,28 +209,24 @@ pub fn ProjectedTextLine::normalize_projected_column_around_injections(
     Right | RightOfInjectedText => {
       // Past every injection anchored at the same model column.
       let anchor = injected_part_anchor(part)
-      let mut result = part.end
-      let mut index = found + 1
-      while index < parts.length() &&
-            parts[index].kind is InjectedSegment(model_column=next_anchor, ..) &&
-            next_anchor == anchor {
-        result = parts[index].end
-        index += 1
+      for index = found + 1, result = part.end; index < parts.length() &&
+         parts[index].kind is InjectedSegment(model_column=next_anchor, ..) &&
+         next_anchor == anchor; {
+        continue index + 1, parts[index].end
+      } nobreak {
+        result
       }
-      result
     }
     Left | LeftOfInjectedText => {
       // Before every injection anchored at the same model column.
       let anchor = injected_part_anchor(part)
-      let mut result = part.start
-      let mut index = found - 1
-      while index >= 0 &&
-            parts[index].kind is InjectedSegment(model_column=prev_anchor, ..) &&
-            prev_anchor == anchor {
-        result = parts[index].start
-        index -= 1
+      for index = found - 1, result = part.start; index >= 0 &&
+         parts[index].kind is InjectedSegment(model_column=prev_anchor, ..) &&
+         prev_anchor == anchor; {
+        continue index - 1, parts[index].start
+      } nobreak {
+        result
       }
-      result
     }
   }
 }

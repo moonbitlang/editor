@@ -253,23 +253,22 @@ pub fn LinesLayout::find_insertion_index(
   after_line_number : Int,
   ordinal : Int,
 ) -> Int {
-  let mut low = 0
-  let mut high = arr.length()
-  while low < high {
+  for low = 0, high = arr.length(); low < high; {
     let mid = (low + high) / 2
     if after_line_number == arr[mid].after_line_number {
       if ordinal < arr[mid].ordinal {
-        high = mid
+        continue low, mid
       } else {
-        low = mid + 1
+        continue mid + 1, high
       }
     } else if after_line_number < arr[mid].after_line_number {
-      high = mid
+      continue low, mid
     } else {
-      low = mid + 1
+      continue mid + 1, high
     }
+  } nobreak {
+    low
   }
-  low
 }
 
 ///|
@@ -574,24 +573,23 @@ fn LinesLayout::find_last_whitespace_before_line_number(
   line_number : Int,
 ) -> Int {
   let arr = self.arr
-  let mut low = 0
-  let mut high = arr.length() - 1
-  while low <= high {
+  for low = 0, high = arr.length() - 1; low <= high; {
     let delta = high - low
     let half_delta = delta / 2
     let mid = low + half_delta
     if arr[mid].after_line_number < line_number {
       if mid + 1 >= arr.length() ||
         arr[mid + 1].after_line_number >= line_number {
-        return mid
+        break mid
       } else {
-        low = mid + 1
+        continue mid + 1, high
       }
     } else {
-      high = mid - 1
+      continue low, mid - 1
     }
+  } nobreak {
+    -1
   }
-  -1
 }
 
 ///|
@@ -731,9 +729,8 @@ pub fn LinesLayout::get_line_number_at_or_after_vertical_offset(
     return 1
   }
   let lines_count = self.line_count
-  let mut min_line_number = 1
-  let mut max_line_number = lines_count
-  while min_line_number < max_line_number {
+  let min_line_number = for min_line_number = 1, max_line_number = lines_count; min_line_number <
+                           max_line_number; {
     let mid_line_number = min_line_number +
       (max_line_number - min_line_number) / 2
     let line_height = self.get_line_height_for_line_number(mid_line_number)
@@ -743,14 +740,16 @@ pub fn LinesLayout::get_line_number_at_or_after_vertical_offset(
     if vertical_offset.to_double() >=
       mid_line_number_vertical_offset.to_double() + line_height.to_double() {
       // vertical offset is after mid line number
-      min_line_number = mid_line_number + 1
+      continue mid_line_number + 1, max_line_number
     } else if vertical_offset >= mid_line_number_vertical_offset {
       // Hit
-      return mid_line_number
+      break mid_line_number
     } else {
       // vertical offset is before mid line number, but it could still be it
-      max_line_number = mid_line_number
+      continue min_line_number, mid_line_number
     }
+  } nobreak {
+    min_line_number
   }
   if min_line_number > lines_count {
     return lines_count
@@ -936,8 +935,7 @@ pub fn LinesLayout::get_whitespace_index_at_or_after_vertical_offset(
   vertical_offset : Double,
 ) -> Int {
   let vertical_offset = javascript_to_int32(vertical_offset).to_double()
-  let mut min_whitespace_index = 0
-  let mut max_whitespace_index = self.get_whitespaces_count() - 1
+  let max_whitespace_index = self.get_whitespaces_count() - 1
   if max_whitespace_index < 0 {
     return -1
   }
@@ -952,7 +950,8 @@ pub fn LinesLayout::get_whitespace_index_at_or_after_vertical_offset(
     max_whitespace_vertical_offset + max_whitespace_height.to_double() {
     return -1
   }
-  while min_whitespace_index < max_whitespace_index {
+  for min_whitespace_index = 0, max_whitespace_index = max_whitespace_index; min_whitespace_index <
+     max_whitespace_index; {
     let mid_whitespace_index = min_whitespace_index +
       (max_whitespace_index - min_whitespace_index) / 2
     let mid_whitespace_vertical_offset = self.get_vertical_offset_for_whitespace_index(
@@ -964,16 +963,17 @@ pub fn LinesLayout::get_whitespace_index_at_or_after_vertical_offset(
     if vertical_offset >=
       mid_whitespace_vertical_offset + mid_whitespace_height.to_double() {
       // vertical offset is after whitespace
-      min_whitespace_index = mid_whitespace_index + 1
+      continue mid_whitespace_index + 1, max_whitespace_index
     } else if vertical_offset >= mid_whitespace_vertical_offset {
       // Hit
-      return mid_whitespace_index
+      break mid_whitespace_index
     } else {
       // before whitespace, but mid index could still be the answer
-      max_whitespace_index = mid_whitespace_index
+      continue min_whitespace_index, mid_whitespace_index
     }
+  } nobreak {
+    min_whitespace_index
   }
-  min_whitespace_index
 }
 
 ///|

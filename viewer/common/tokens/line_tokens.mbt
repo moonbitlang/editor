@@ -118,20 +118,19 @@ pub fn LineTokens::find_index_in_tokens_array(
   if tokens.length() <= 2 {
     return 0
   }
-  let mut low = 0
-  let mut high = (tokens.length() >> 1) - 1
-  while low < high {
+  for low = 0, high = (tokens.length() >> 1) - 1; low < high; {
     let mid = low + (high - low) / 2
     let end_offset = tokens[mid << 1].reinterpret_as_int()
     if end_offset == desired_index {
-      return mid + 1
+      break mid + 1
     } else if end_offset < desired_index {
-      low = mid + 1
+      continue mid + 1, high
     } else {
-      high = mid
+      continue low, mid
     }
+  } nobreak {
+    low
   }
-  low
 }
 
 ///|

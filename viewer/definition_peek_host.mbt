@@ -300,11 +300,11 @@ fn definition_uri_common_prefix_length(left : String, right : String) -> Int {
   let left_chars = left.to_array()
   let right_chars = right.to_array()
   let limit = left_chars.length().min(right_chars.length())
-  let mut length = 0
-  while length < limit && left_chars[length] == right_chars[length] {
-    length += 1
+  for length = 0; length < limit && left_chars[length] == right_chars[length]; {
+    continue length + 1
+  } nobreak {
+    length
   }
-  length
 }
 
 ///|

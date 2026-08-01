@@ -92,18 +92,18 @@ fn CharacterMapping::part_data_to_char_offset(
     return 0
   }
   let search = mapping_rank(part_index, char_index)
-  let mut min = 0
-  let mut max = self.length - 1
-  while min + 1 < max {
+  let (min, max) = for min = 0, max = self.length - 1; min + 1 < max; {
     let mid = (min + max) / 2
     let mid_entry = mapping_rank_entry(self.entries[mid])
     if mid_entry == search {
-      return mid
+      break (mid, mid)
     } else if mid_entry > search {
-      max = mid
+      continue min, mid
     } else {
-      min = mid
+      continue mid, max
     }
+  } nobreak {
+    (min, max)
   }
   if min == max {
     return min

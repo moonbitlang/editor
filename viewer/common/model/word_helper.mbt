@@ -55,25 +55,28 @@ fn is_word_break(code : Int) -> Bool {
 /// recover a failed match.
 fn match_number(text : String, i : Int) -> Int? {
   let len = text.length()
-  let mut j = i
-  if j < len && text[j].to_int() == 45 { // '-'
-    j = j + 1
+  let j = if i < len && text[i].to_int() == 45 { // '-'
+    i + 1
+  } else {
+    i
   }
-  while j < len && is_ascii_digit(text[j].to_int()) {
-    j = j + 1
+  let j = for j = j; j < len && is_ascii_digit(text[j].to_int()); {
+    continue j + 1
+  } nobreak {
+    j
   }
   if j >= len || text[j].to_int() != 46 { // '.'
     return None
   }
-  j = j + 1
+  let j = j + 1
   if j >= len || !is_ascii_digit(text[j].to_int()) {
     return None
   }
-  j = j + 1
-  while j < len && is_regex_word_char(text[j].to_int()) {
-    j = j + 1
+  for j = j + 1; j < len && is_regex_word_char(text[j].to_int()); {
+    continue j + 1
+  } nobreak {
+    Some(j)
   }
-  Some(j)
 }
 
 ///|
@@ -81,9 +84,10 @@ fn match_number(text : String, i : Int) -> Int? {
 /// exclusive end index or `None`.
 fn match_word_run(text : String, i : Int) -> Int? {
   let len = text.length()
-  let mut j = i
-  while j < len && !is_word_break(text[j].to_int()) {
-    j = j + 1
+  let j = for j = i; j < len && !is_word_break(text[j].to_int()); {
+    continue j + 1
+  } nobreak {
+    j
   }
   if j > i {
     Some(j)

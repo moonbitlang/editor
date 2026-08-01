@@ -1073,26 +1073,25 @@ fn last_non_whitespace_index_of(view : StringView, len : Int) -> Int {
 /// `line_content[start:end)` (surrogate pairs decoded to code points).
 fn contains_rtl_in(line_content : String, start : Int, end : Int) -> Bool {
   let view = line_content.view()
-  let mut i = start
-  while i < end {
+  for i = start; i < end; {
     let c = view.unsafe_get(i).to_int()
-    let code = if c >= 0xD800 && c <= 0xDBFF && i + 1 < end {
+    let (i, code) = if c >= 0xD800 && c <= 0xDBFF && i + 1 < end {
       let low = view.unsafe_get(i + 1).to_int()
       if low >= 0xDC00 && low <= 0xDFFF {
-        i = i + 1
-        0x10000 + ((c - 0xD800) << 10) + (low - 0xDC00)
+        (i + 1, 0x10000 + ((c - 0xD800) << 10) + (low - 0xDC00))
       } else {
-        c
+        (i, c)
       }
     } else {
-      c
+      (i, c)
     }
     if is_rtl_code(code) {
-      return true
+      break true
     }
-    i = i + 1
+    continue i + 1
+  } nobreak {
+    false
   }
-  false
 }
 
 ///|

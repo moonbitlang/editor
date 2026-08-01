@@ -73,13 +73,14 @@ fn ManualHoverScheduler::next_due_index(
   self : ManualHoverScheduler,
   target_ms : Int,
 ) -> Int? {
-  let mut result : Int? = None
-  let mut earliest = target_ms + 1
-  for index, task in self.tasks {
+  let (result, _) = for
+    index, task in self.tasks
+    result = (None : Int?), earliest = target_ms + 1 {
     if task.active && task.due_ms <= target_ms && task.due_ms < earliest {
-      result = Some(index)
-      earliest = task.due_ms
+      continue Some(index), task.due_ms
     }
+  } nobreak {
+    (result, earliest)
   }
   result
 }
@@ -103,13 +104,13 @@ fn ManualHoverScheduler::advance_to(
 
 ///|
 fn ManualHoverScheduler::active_count(self : ManualHoverScheduler) -> Int {
-  let mut count = 0
-  for task in self.tasks {
+  for task in self.tasks; count = 0 {
     if task.active {
-      count += 1
+      continue count + 1
     }
+  } nobreak {
+    count
   }
-  count
 }
 
 ///|

@@ -260,27 +260,25 @@ fn markdown_comment_folded_preview(
   if !has_leading_separator {
     return None
   }
-  let mut first_line = true
-  let mut preview_line : String? = None
-  let mut has_more = false
-  for line_view in normalized.split("\n") {
+  let (preview_line, has_more) = for
+    line_view in normalized.split("\n")
+    first_line = true, preview_line = (None : String?) {
     let line = line_view.to_owned()
     if first_line {
-      first_line = false
       if line == "---" {
-        continue
+        continue false, preview_line
       }
     }
+    let first_line = false
     if line.trim().is_empty() {
-      continue
+      continue first_line, preview_line
     }
     match preview_line {
-      None => preview_line = Some(line)
-      Some(_) => {
-        has_more = true
-        break
-      }
+      None => continue first_line, Some(line)
+      Some(_) => break (preview_line, true)
     }
+  } nobreak {
+    (preview_line, false)
   }
   guard has_more && preview_line is Some(preview) else { return None }
   let trimmed_preview = preview.trim()
