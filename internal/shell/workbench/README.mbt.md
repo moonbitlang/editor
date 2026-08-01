@@ -57,8 +57,8 @@ if accepts(payload, current_model_identity) {
   On connect/reconnect the tree refreshes; a bounded depth-first walk auto-opens
   the first MoonBit file (otherwise the first file). Explorer order is a
   reference-host policy passed to the widget as `rank~`: every level leads with
-  its README (any extension), then `pkg.generated.mbti`, then the widget's
-  directories-before-files default.
+  its README (any extension), then `pkg.generated.mbti`, then `moon.pkg`, then
+  the widget's directories-before-files default.
 - `RemoteDocumentProvider` maps read/watch/close to protocol packets. Active URI
   and generation guards discard stale async results. Every snapshot becomes a
   new `TextModel`; reloads save/restore viewer scroll state, while user opens

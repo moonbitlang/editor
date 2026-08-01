@@ -22,8 +22,9 @@ tree.on_select(uri => workbench.open_document(uri))
 
 // Level order is host policy: a negative rank leads its level.
 @file_tree.FileTree(provider, on_open~, rank=stat => match stat.name {
-  "README.md" => -1
-  "pkg.generated.mbti" => -1
+  "README.md" => -3
+  "pkg.generated.mbti" => -2
+  "moon.pkg" => -1
   _ => 0
 })
 ```
@@ -37,7 +38,8 @@ tree.on_select(uri => workbench.open_document(uri))
   ascending rank, and equal ranks fall back to directories-before-files and then
   to the provider's order. The default ranks everything alike; a negative rank
   pins a name above the directories (the workbench pins `README*`, then
-  `pkg.generated.mbti`) and a positive one sinks it below the files.
+  `pkg.generated.mbti`, then `moon.pkg`) and a positive one sinks it below the
+  files.
 - A failed resolve leaves an empty `resolve-failed` row; the next
   collapse/re-expand retries.
 - `set_active` selects a URI and resolves/expands its ancestor chain
