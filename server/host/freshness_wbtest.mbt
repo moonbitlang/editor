@@ -277,13 +277,13 @@ fn controlled_diagnostics(
 
 ///|
 fn check_event_count(events : Array[CheckPublishEvent], uri : String) -> Int {
-  let mut count = 0
-  for event in events {
+  for event in events; count = 0 {
     if event.uri == uri {
-      count += 1
+      continue count + 1
     }
+  } nobreak {
+    count
   }
-  count
 }
 
 ///|
@@ -291,13 +291,13 @@ fn last_check_event(
   events : Array[CheckPublishEvent],
   uri : String,
 ) -> CheckPublishEvent? {
-  let mut found = None
-  for event in events {
+  for event in events; found = None {
     if event.uri == uri {
-      found = Some(event)
+      continue Some(event)
     }
+  } nobreak {
+    found
   }
-  found
 }
 
 ///|

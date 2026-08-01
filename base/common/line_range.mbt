@@ -215,36 +215,28 @@ pub fn LineRangeSet::get_union(
     return self
   }
   let result : Array[LineRange] = []
-  let mut i1 = 0
-  let mut i2 = 0
-  let mut current : LineRange? = None
-  while i1 < self.normalized_ranges.length() ||
-        i2 < other.normalized_ranges.length() {
-    let next = if i1 < self.normalized_ranges.length() &&
+  let current = for i1 = 0, i2 = 0, current = (None : LineRange?); i1 <
+                   self.normalized_ranges.length() ||
+                   i2 < other.normalized_ranges.length(); {
+    let (next, next_i1, next_i2) = if i1 < self.normalized_ranges.length() &&
       i2 < other.normalized_ranges.length() {
       let line_range1 = self.normalized_ranges[i1]
       let line_range2 = other.normalized_ranges[i2]
       if line_range1.start_line_number < line_range2.start_line_number {
-        i1 += 1
-        line_range1
+        (line_range1, i1 + 1, i2)
       } else {
-        i2 += 1
-        line_range2
+        (line_range2, i1, i2 + 1)
       }
     } else if i1 < self.normalized_ranges.length() {
-      let r = self.normalized_ranges[i1]
-      i1 += 1
-      r
+      (self.normalized_ranges[i1], i1 + 1, i2)
     } else {
-      let r = other.normalized_ranges[i2]
-      i2 += 1
-      r
+      (other.normalized_ranges[i2], i1, i2 + 1)
     }
-    match current {
-      None => current = Some(next)
+    let next_current = match current {
+      None => Some(next)
       Some(cur) =>
         if cur.end_line_number_exclusive >= next.start_line_number {
-          current = Some(
+          Some(
             LineRange(
               cur.start_line_number,
               cur.end_line_number_exclusive.max(next.end_line_number_exclusive),
@@ -252,9 +244,12 @@ pub fn LineRangeSet::get_union(
           )
         } else {
           result.push(cur)
-          current = Some(next)
+          Some(next)
         }
     }
+    continue next_i1, next_i2, next_current
+  } nobreak {
+    current
   }
   if current is Some(cur) {
     result.push(cur)
@@ -274,17 +269,16 @@ fn find_first_idx_monotonous_or_arr_len(
   array : ArrayView[LineRange],
   predicate : (LineRange) -> Bool,
 ) -> Int {
-  let mut i = 0
-  let mut j = array.length()
-  while i < j {
+  for i = 0, j = array.length(); i < j; {
     let k = (i + j) / 2
     if predicate(array[k]) {
-      j = k
+      continue i, k
     } else {
-      i = k + 1
+      continue k + 1, j
     }
+  } nobreak {
+    i
   }
-  i
 }
 
 ///|
@@ -292,15 +286,15 @@ fn find_last_idx_monotonous(
   array : ArrayView[LineRange],
   predicate : (LineRange) -> Bool,
 ) -> Int {
-  let mut i = 0
-  let mut j = array.length()
-  while i < j {
+  let i = for i = 0, j = array.length(); i < j; {
     let k = (i + j) / 2
     if predicate(array[k]) {
-      i = k + 1
+      continue k + 1, j
     } else {
-      j = k
+      continue i, k
     }
+  } nobreak {
+    i
   }
   i - 1
 }

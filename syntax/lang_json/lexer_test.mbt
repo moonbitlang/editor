@@ -5,9 +5,9 @@
 fn render_tokens(source : String) -> String {
   let tokenizer : &@syntax.LineTokenizer = @lang_json.JsonTokenizer()
   let rendered : Array[String] = []
-  let mut state = tokenizer.initial_state()
-  let mut line_start = 0
-  for line in split_lines(source) {
+  for
+    line in split_lines(source)
+    state = tokenizer.initial_state(), line_start = 0 {
     let (tokens, next_state) = tokenizer.tokenize_line(line, state)
     for token in tokens {
       let text = line[token.start:token.end].to_owned()
@@ -15,8 +15,7 @@ fn render_tokens(source : String) -> String {
         "\{line_start + token.start}-\{line_start + token.end} \{token.tag} \{text}",
       )
     }
-    state = next_state
-    line_start += line.length() + 1
+    continue next_state, line_start + line.length() + 1
   }
   rendered.join("\n")
 }
@@ -25,12 +24,13 @@ fn render_tokens(source : String) -> String {
 /// Splits on `\n` only, matching the snapshot line table the part consumes.
 fn split_lines(source : String) -> Array[String] {
   let lines : Array[String] = []
-  let mut start = 0
-  for i in 0..<source.length() {
+  let start = for i in 0..<source.length(); start = 0 {
     if source[i] == '\n' {
       lines.push(source[start:i].to_owned())
-      start = i + 1
+      continue i + 1
     }
+  } nobreak {
+    start
   }
   lines.push(source[start:source.length()].to_owned())
   lines

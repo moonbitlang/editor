@@ -27,30 +27,28 @@ pub impl @syntax.LineTokenizer for JsonTokenizer with fn tokenize_line(
   state,
 ) {
   let tokens : Array[@syntax.LineToken] = []
-  let mut in_comment = state == TokenizerState("c")
-  let mut at = 0
-  let mut view = line_text[:]
-  while view.length() > 0 {
+  let in_comment = for at = 0, view = line_text[:], in_comment = state ==
+                         TokenizerState("c"); view.length() > 0; {
     let (op, rest) = if in_comment {
       comment_step(view)
     } else {
       normal_step(view)
     }
     let consumed = view.length() - rest.length()
+    let next_in_comment = match op {
+      EnterComment => true
+      LeaveComment => false
+      _ => in_comment
+    }
     match op {
       Blank => ()
       Emit(tag) => tokens.push({ start: at, end: at + consumed, tag })
-      EnterComment => {
+      EnterComment | LeaveComment =>
         tokens.push({ start: at, end: at + consumed, tag: Comment })
-        in_comment = true
-      }
-      LeaveComment => {
-        tokens.push({ start: at, end: at + consumed, tag: Comment })
-        in_comment = false
-      }
     }
-    at = at + consumed
-    view = rest
+    continue at + consumed, rest, next_in_comment
+  } nobreak {
+    in_comment
   }
   (tokens, TokenizerState(if in_comment { "c" } else { "n" }))
 }

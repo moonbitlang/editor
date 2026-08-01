@@ -129,18 +129,14 @@ pub fn compare_substring(
 ) -> Int {
   let a_end = if a_end < 0 { a.length() } else { a_end }
   let b_end = if b_end < 0 { b.length() } else { b_end }
-  let mut a_start = a_start
-  let mut b_start = b_start
-  while a_start < a_end && b_start < b_end {
-    let order = a[a_start].compare(b[b_start])
+  let a_len = a_end - a_start
+  let b_len = b_end - b_start
+  for offset in 0..<a_len.min(b_len) {
+    let order = a[a_start + offset].compare(b[b_start + offset])
     if order != 0 {
       return order
     }
-    a_start += 1
-    b_start += 1
   }
-  let a_len = a_end - a_start
-  let b_len = b_end - b_start
   if a_len < b_len {
     -1
   } else if a_len > b_len {
@@ -239,20 +235,21 @@ fn to_lower_js(s : String) -> String {
 pub fn split_lines(text : String) -> Array[String] {
   let lines = []
   let len = text.length()
-  let mut line_start = 0
-  let mut i = 0
-  while i < len {
+  let line_start = for i = 0, line_start = 0; i < len; {
     if text[i] == '\r' {
       lines.push(text[line_start:i].to_owned())
       if i + 1 < len && text[i + 1] == '\n' {
-        i += 1 // consume the \n of a \r\n pair
+        // Consume the `\n` of a `\r\n` pair.
+        continue i + 2, i + 2
       }
-      line_start = i + 1
+      continue i + 1, i + 1
     } else if text[i] == '\n' {
       lines.push(text[line_start:i].to_owned())
-      line_start = i + 1
+      continue i + 1, i + 1
     }
-    i += 1
+    continue i + 1, line_start
+  } nobreak {
+    line_start
   }
   lines.push(text[line_start:].to_owned())
   lines
@@ -294,48 +291,48 @@ pub fn compare_substring_ignore_case(
 ) -> Int {
   let a_end = if a_end < 0 { a.length() } else { a_end }
   let b_end = if b_end < 0 { b.length() } else { b_end }
-  let mut a_start = a_start
-  let mut b_start = b_start
-  while a_start < a_end && b_start < b_end {
-    let mut code_a = a[a_start]
-    let mut code_b = b[b_start]
-    if code_a == code_b {
+  let a_len = a_end - a_start
+  let b_len = b_end - b_start
+  for offset in 0..<a_len.min(b_len) {
+    let a_index = a_start + offset
+    let b_index = b_start + offset
+    let raw_code_a = a[a_index]
+    let raw_code_b = b[b_index]
+    if raw_code_a == raw_code_b {
       // equal
-      a_start += 1
-      b_start += 1
       continue
     }
-    if code_a >= code_ascii_limit || code_b >= code_ascii_limit {
+    if raw_code_a >= code_ascii_limit || raw_code_b >= code_ascii_limit {
       // not ASCII letters -> fallback to lower-casing strings
       return compare_substring(
         to_lower_js(a),
         to_lower_js(b),
-        a_start~,
+        a_start=a_index,
         a_end~,
-        b_start~,
+        b_start=b_index,
         b_end~,
       )
     }
     // map lower-case ascii letter onto upper-case variants
     // [97-122] (lower ascii) --> [65-90] (upper ascii)
-    if is_lower_ascii_letter_code_unit(code_a) {
-      code_a -= 32
+    let code_a = if is_lower_ascii_letter_code_unit(raw_code_a) {
+      raw_code_a - 32
+    } else {
+      raw_code_a
     }
-    if is_lower_ascii_letter_code_unit(code_b) {
-      code_b -= 32
+    let code_b = if is_lower_ascii_letter_code_unit(raw_code_b) {
+      raw_code_b - 32
+    } else {
+      raw_code_b
     }
     // Compare both code points. The difference must be taken in `Int`: a
     // `UInt16` subtraction wraps, so `'A' - 'B'` would be 65535, not -1.
     let diff = code_a.to_int() - code_b.to_int()
     if diff == 0 {
-      a_start += 1
-      b_start += 1
       continue
     }
     return diff
   }
-  let a_len = a_end - a_start
-  let b_len = b_end - b_start
   if a_len < b_len {
     -1
   } else if a_len > b_len {

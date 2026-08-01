@@ -264,90 +264,88 @@ fn Uri::new_(
 /// (D3). Returns the raw (undecoded) components.
 fn parse_components(value : String) -> (String, String, String, String, String) {
   let len = value.length()
-  let mut pos = 0
 
   // scheme: `([^:/?#]+?):` — at least one class char before the first ':'.
-  let mut scheme = ""
-  let mut i = 0
-  let mut scheme_end = -1
-  while i < len {
+  let scheme_end = for i in 0..<len {
     let code = value[i].to_int()
     if code == char_colon {
-      scheme_end = i
-      break
+      break i
     }
     if code == char_forward_slash ||
       code == '?'.to_int() ||
       code == '#'.to_int() {
-      break
+      break -1
     }
-    i += 1
+  } nobreak {
+    -1
   }
-  if scheme_end > 0 {
-    scheme = js_slice(value, 0, end=scheme_end)
-    pos = scheme_end + 1
+  let (scheme, pos) = if scheme_end > 0 {
+    (js_slice(value, 0, end=scheme_end), scheme_end + 1)
+  } else {
+    ("", 0)
   }
 
   // authority: `(\/\/([^/?#]*))?`
-  let mut authority = ""
-  if char_code_at(value, pos) == char_forward_slash &&
+  let (authority, pos) = if char_code_at(value, pos) == char_forward_slash &&
     char_code_at(value, pos + 1) == char_forward_slash {
     let start = pos + 2
-    let mut j = start
-    while j < len {
+    let end = for j in start..<len {
       let code = value[j].to_int()
       if code == char_forward_slash ||
         code == '?'.to_int() ||
         code == '#'.to_int() {
-        break
+        break j
       }
-      j += 1
+    } nobreak {
+      len
     }
-    authority = js_slice(value, start, end=j)
-    pos = j
+    (js_slice(value, start, end~), end)
+  } else {
+    ("", pos)
   }
 
   // path: `([^?#]*)`
   let path_start = pos
-  let mut j = pos
-  while j < len {
+  let pos = for j in pos..<len {
     let code = value[j].to_int()
     if code == '?'.to_int() || code == '#'.to_int() {
-      break
+      break j
     }
-    j += 1
+  } nobreak {
+    len
   }
-  let path = js_slice(value, path_start, end=j)
-  pos = j
+  let path = js_slice(value, path_start, end=pos)
 
   // query: `(\?([^#]*))?`
-  let mut query = ""
-  if char_code_at(value, pos) == '?'.to_int() {
+  let (query, pos) = if char_code_at(value, pos) == '?'.to_int() {
     let start = pos + 1
-    let mut k = start
-    while k < len && value[k].to_int() != '#'.to_int() {
-      k += 1
+    let end = for k = start; k < len && value[k].to_int() != '#'.to_int(); {
+      continue k + 1
+    } nobreak {
+      k
     }
-    query = js_slice(value, start, end=k)
-    pos = k
+    (js_slice(value, start, end~), end)
+  } else {
+    ("", pos)
   }
 
   // fragment: `(#(.*))?` — JS `.` (no /s flag) stops at line terminators.
-  let mut fragment = ""
-  if char_code_at(value, pos) == '#'.to_int() {
+  let fragment = if char_code_at(value, pos) == '#'.to_int() {
     let start = pos + 1
-    let mut k = start
-    while k < len {
+    let end = for k in start..<len {
       let code = value[k].to_int()
       if code == '\n'.to_int() ||
         code == '\r'.to_int() ||
         code == 0x2028 ||
         code == 0x2029 {
-        break
+        break k
       }
-      k += 1
+    } nobreak {
+      len
     }
-    fragment = js_slice(value, start, end=k)
+    js_slice(value, start, end~)
+  } else {
+    ""
   }
   (scheme, authority, path, query, fragment)
 }
@@ -984,14 +982,12 @@ fn is_encoded_as_hex_at(str : String, pos : Int) -> Bool {
 /// replaces the regex, D3).
 fn percent_decode(str : String) -> String {
   let len = str.length()
-  let mut pos = 0
-  let mut found = false
-  while pos < len {
+  let found = for pos in 0..<len {
     if is_encoded_as_hex_at(str, pos) {
-      found = true
-      break
+      break true
     }
-    pos += 1
+  } nobreak {
+    false
   }
   if !found {
     return str

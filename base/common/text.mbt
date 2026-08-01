@@ -316,15 +316,17 @@ pub fn OffsetRange::add_range(
   range : OffsetRange,
   sorted_ranges : Array[OffsetRange],
 ) -> Unit {
-  let mut i = 0
-  while i < sorted_ranges.length() &&
-        sorted_ranges[i].end_exclusive < range.start {
-    i = i + 1
+  let i = for i = 0; i < sorted_ranges.length() &&
+             sorted_ranges[i].end_exclusive < range.start; {
+    continue i + 1
+  } nobreak {
+    i
   }
-  let mut j = i
-  while j < sorted_ranges.length() &&
-        sorted_ranges[j].start <= range.end_exclusive {
-    j = j + 1
+  let j = for j = i; j < sorted_ranges.length() &&
+             sorted_ranges[j].start <= range.end_exclusive; {
+    continue j + 1
+  } nobreak {
+    j
   }
   if i == j {
     sorted_ranges.insert(i, range)

@@ -220,28 +220,25 @@ pub fn ExtUri::relative_path(self : ExtUri, from : Uri, to : Uri) -> String? {
     let rel = relative(original_fs_path(from), original_fs_path(to))
     return Some(if platform_is_win32() { to_slashes(rel) } else { rel })
   }
-  let mut from_path = from.path
-  if from_path == "" {
-    from_path = "/"
-  }
-  let mut to_path = to.path
-  if to_path == "" {
-    to_path = "/"
-  }
-  if (self.ignore_path_casing_fn)(from) {
+  let from_path = if from.path == "" { "/" } else { from.path }
+  let to_path = if to.path == "" { "/" } else { to.path }
+  let from_path = if (self.ignore_path_casing_fn)(from) {
     // make casing of fromPath match toPath
-    let mut i = 0
     let len = from_path.length().min(to_path.length())
-    while i < len {
+    let i = for i = 0; i < len; {
       if from_path[i].to_int() != to_path[i].to_int() {
         if to_lower_js(js_slice(from_path, i, end=i + 1)) !=
           to_lower_js(js_slice(to_path, i, end=i + 1)) {
-          break
+          break i
         }
       }
-      i += 1
+      continue i + 1
+    } nobreak {
+      i
     }
-    from_path = js_slice(to_path, 0, end=i) + js_slice(from_path, i)
+    js_slice(to_path, 0, end=i) + js_slice(from_path, i)
+  } else {
+    from_path
   }
   Some(Posix::relative(from_path, to_path))
 }

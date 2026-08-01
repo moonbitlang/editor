@@ -38,9 +38,7 @@ pub impl @syntax.LineTokenizer for MoonbitTokenizer with fn tokenize_line(
 ) {
   let stack = @syntax.decode_mode_stack(state)
   let tokens : Array[@syntax.LineToken] = []
-  let mut at = 0
-  let mut view = line_text[:]
-  while view.length() > 0 {
+  for at = 0, view = line_text[:]; view.length() > 0; {
     let top = stack[stack.length() - 1]
     let (op, rest) = match top {
       's' => string_step(view)
@@ -62,8 +60,7 @@ pub impl @syntax.LineTokenizer for MoonbitTokenizer with fn tokenize_line(
         }
       }
     }
-    at = at + consumed
-    view = rest
+    continue at + consumed, rest
   }
   (tokens, TokenizerState("n"))
 }
