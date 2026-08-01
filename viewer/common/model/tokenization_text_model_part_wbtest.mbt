@@ -163,20 +163,25 @@ test "the sweep threads state across lines and encodes every line" {
 
   // Line 1: "let" (keyword) then " a = 1" (gap, default fg).
   let line1 = part.get_line_tokens(1)
+  let line1_view = line1.inflate()
   assert_eq(line1.get_count(), 2)
-  assert_eq(line1.get_class_name(0), "mtk3") // Keyword
-  assert_eq(line1.get_end_offset(0), 3)
-  assert_eq(line1.get_class_name(1), "mtk1") // gap -> default foreground
+  assert_eq(line1_view.get_class_name(0), "mtk3") // Keyword
+  assert_eq(line1_view.get_end_offset(0), 3)
+  assert_eq(line1_view.get_class_name(1), "mtk1") // gap -> default foreground
 
   // The block comment carries the comment color and standard token type on
   // the interior lines the threaded state covers.
   let line2 = part.get_line_tokens(2)
-  assert_eq(line2.get_class_name(0), "mtk7") // Comment
+  assert_eq(line2.inflate().get_class_name(0), "mtk7") // Comment
   assert_eq(
-    line2.get_standard_token_type(0),
+    ((
+      line2.get_metadata(0).to_uint() >>
+      @common_tokens.METADATA_TOKEN_TYPE_OFFSET
+    ) &
+    0x3U).reinterpret_as_int(),
     @common_tokens.STANDARD_TOKEN_TYPE_COMMENT,
   )
-  assert_eq(part.get_line_tokens(3).get_class_name(0), "mtk7")
+  assert_eq(part.get_line_tokens(3).inflate().get_class_name(0), "mtk7")
 }
 
 ///|
@@ -197,8 +202,16 @@ test "language id round-trips through the process-wide codec" {
     let tokens = part.get_line_tokens(line_number)
     assert_true(tokens.get_count() >= 1)
     for i in 0..<tokens.get_count() {
-      assert_eq(tokens.get_language_id(i), "part-null-language")
-      assert_eq(tokens.get_metadata(i).get_language_id(), expected_id)
+      let language_id = ((
+        tokens.get_metadata(i).to_uint() >>
+        @common_tokens.METADATA_LANGUAGEID_OFFSET
+      ) &
+      0xffU).reinterpret_as_int()
+      assert_eq(
+        @services.language_id_codec.decode_language_id(language_id),
+        "part-null-language",
+      )
+      assert_eq(language_id, expected_id)
     }
   }
 }

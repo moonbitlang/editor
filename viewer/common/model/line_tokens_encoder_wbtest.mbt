@@ -10,15 +10,16 @@ test "encoder fills gaps and trailing text with default metadata" {
     { start: 8, end: 9, tag: Number },
   ]
   let lt = line_tokens_from_lexer_tokens(line, tokens, LanguageIdCodec())
+  let view = lt.inflate()
   assert_eq(lt.get_line_content(), line)
   assert_eq(lt.get_count(), 3)
   // "let" | " x = " (gap) | "1"
-  assert_eq(lt.get_end_offset(0), 3)
-  assert_eq(lt.get_end_offset(1), 8)
-  assert_eq(lt.get_end_offset(2), 9)
-  assert_eq(lt.get_class_name(0), "mtk3") // Keyword
-  assert_eq(lt.get_class_name(1), "mtk1") // gap -> default foreground
-  assert_eq(lt.get_class_name(2), "mtk6") // Number
+  assert_eq(view.get_end_offset(0), 3)
+  assert_eq(view.get_end_offset(1), 8)
+  assert_eq(view.get_end_offset(2), 9)
+  assert_eq(view.get_class_name(0), "mtk3") // Keyword
+  assert_eq(view.get_class_name(1), "mtk1") // gap -> default foreground
+  assert_eq(view.get_class_name(2), "mtk6") // Number
 }
 
 ///|
@@ -26,7 +27,7 @@ test "empty line encodes to a single zero-length default token" {
   let lt = line_tokens_from_lexer_tokens("", [], LanguageIdCodec())
   assert_eq(lt.get_line_content(), "")
   assert_eq(lt.get_count(), 1)
-  assert_eq(lt.get_end_offset(0), 0)
+  assert_eq(lt.inflate().get_end_offset(0), 0)
 }
 
 ///|
@@ -38,7 +39,7 @@ test "tokens past the line end clamp to the line" {
   )
   assert_eq(lt.get_line_content(), "ab")
   assert_eq(lt.get_count(), 1)
-  assert_eq(lt.get_end_offset(0), 2)
+  assert_eq(lt.inflate().get_end_offset(0), 2)
 }
 
 ///|
@@ -67,7 +68,8 @@ test "raw UTF16 encoder preserves lone surrogates pair halves FEFF and BMP bound
     assert_eq(words[2], 1)
     start_offsets_to_end_offsets(words, line.length())
     let tokens = @common_tokens.LineTokens(words, line, LanguageIdCodec())
-    assert_same_code_units(tokens.get_token_text(0), held)
-    assert_same_code_units(tokens.get_token_text(1), "x")
+    let view = tokens.inflate()
+    assert_same_code_units(view.get_token_text(0), held)
+    assert_same_code_units(view.get_token_text(1), "x")
   }
 }

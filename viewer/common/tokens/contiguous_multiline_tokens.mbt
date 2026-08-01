@@ -9,7 +9,7 @@
 /// Encoded tokens for one contiguous inclusive interval of one-based lines.
 /// Each inner array contains `[endOffset, metadata]` pairs for one line.
 /// Source: `contiguousMultilineTokens.ts:17,35-46`.
-pub struct ContiguousMultilineTokens {
+struct ContiguousMultilineTokens {
   start_line_number_ : Int
   tokens : Array[Array[UInt]]
 }
@@ -17,7 +17,7 @@ pub struct ContiguousMultilineTokens {
 ///|
 /// Retains the caller's line order and encoded token arrays.
 /// Source: `contiguousMultilineTokens.ts:62-65`.
-pub fn ContiguousMultilineTokens::ContiguousMultilineTokens(
+fn ContiguousMultilineTokens::ContiguousMultilineTokens(
   start_line_number : Int,
   tokens : Array[Array[UInt]],
 ) -> ContiguousMultilineTokens {
@@ -27,7 +27,7 @@ pub fn ContiguousMultilineTokens::ContiguousMultilineTokens(
 ///|
 /// Inclusive first line of this batch.
 /// Source: `contiguousMultilineTokens.ts:51-53`.
-pub fn ContiguousMultilineTokens::start_line_number(
+fn ContiguousMultilineTokens::start_line_number(
   self : ContiguousMultilineTokens,
 ) -> Int {
   self.start_line_number_
@@ -36,7 +36,7 @@ pub fn ContiguousMultilineTokens::start_line_number(
 ///|
 /// Inclusive final line of this batch.
 /// Source: `contiguousMultilineTokens.ts:58-60`.
-pub fn ContiguousMultilineTokens::end_line_number(
+fn ContiguousMultilineTokens::end_line_number(
   self : ContiguousMultilineTokens,
 ) -> Int {
   self.start_line_number_ + self.tokens.length() - 1
@@ -45,7 +45,8 @@ pub fn ContiguousMultilineTokens::end_line_number(
 ///|
 /// Half-open line range covered by this batch.
 /// Source: `contiguousMultilineTokens.ts:67-69`.
-pub fn ContiguousMultilineTokens::get_line_range(
+#warnings("-unused_value")
+fn ContiguousMultilineTokens::get_line_range(
   self : ContiguousMultilineTokens,
 ) -> @base_common.LineRange {
   let range : @base_common.LineRange = {
@@ -58,7 +59,7 @@ pub fn ContiguousMultilineTokens::get_line_range(
 ///|
 /// Returns the encoded words for an included one-based line.
 /// Source: `contiguousMultilineTokens.ts:74-76`.
-pub fn ContiguousMultilineTokens::get_line_tokens(
+fn ContiguousMultilineTokens::get_line_tokens(
   self : ContiguousMultilineTokens,
   line_number : Int,
 ) -> Array[UInt] {
@@ -68,7 +69,7 @@ pub fn ContiguousMultilineTokens::get_line_tokens(
 ///|
 /// Extends the batch by exactly one final line.
 /// Source: `contiguousMultilineTokens.ts:78-80`.
-pub fn ContiguousMultilineTokens::append_line_tokens(
+fn ContiguousMultilineTokens::append_line_tokens(
   self : ContiguousMultilineTokens,
   line_tokens : Array[UInt],
 ) -> Unit {

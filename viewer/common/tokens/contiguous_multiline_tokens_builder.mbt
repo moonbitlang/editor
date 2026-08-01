@@ -9,7 +9,7 @@
 ///|
 /// Collects adjacent one-based lines into ordered contiguous batches.
 /// Source: `contiguousMultilineTokensBuilder.ts:9,21`.
-pub struct ContiguousMultilineTokensBuilder {
+struct ContiguousMultilineTokensBuilder {
   tokens : Array[ContiguousMultilineTokens]
 }
 

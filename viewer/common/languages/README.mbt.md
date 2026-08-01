@@ -385,17 +385,14 @@ test "a tokenized line renders to inline-styled spans" {
   let codec = @services.LanguageIdCodec()
   let keyword = 3U << @tokens.METADATA_FOREGROUND_OFFSET
   let plain = 1U << @tokens.METADATA_FOREGROUND_OFFSET
-  let line = @tokens.LineTokens::create_from_text_and_metadata(
-    [("let", TokenMetadata(keyword)), (" x", TokenMetadata(plain))],
-    codec,
-  )
+  let line = @tokens.LineTokens([3U, keyword, 5U, plain], "let x", codec)
   debug_inspect(
     @languages.tokenize_line_to_html(
       line.get_line_content(),
       line.inflate(),
       ["#000000", "#d4d4d4", "#1e1e1e", "#569cd6"],
       0,
-      line.get_text_length(),
+      line.get_line_content().length(),
       4,
       true,
     ),

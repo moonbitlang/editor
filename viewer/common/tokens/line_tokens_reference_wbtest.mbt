@@ -59,7 +59,7 @@ fn assert_view_line_tokens(
   assert_eq(actual.get_count(), expected.length())
   for i in 0..<expected.length() {
     assert_eq(actual.get_end_offset(i), expected[i].0)
-    assert_eq(actual.get_foreground(i), expected[i].1)
+    assert_eq(actual.get_class_name(i), "mtk" + expected[i].1.to_string())
   }
 }
 

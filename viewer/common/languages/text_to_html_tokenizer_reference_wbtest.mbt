@@ -9,6 +9,15 @@
 /// seam (see the port's file header).
 
 ///|
+const TEST_FONT_STYLE_ITALIC : Int = 1
+
+///|
+const TEST_FONT_STYLE_BOLD : Int = 2
+
+///|
+const TEST_FONT_STYLE_UNDERLINE : Int = 4
+
+///|
 /// Builds a metadata word from a foreground color id and a font-style mask, as
 /// the suite does with `<<` against `MetadataConsts.*_OFFSET`.
 fn make_meta(foreground : Int, font_style : Int) -> UInt {
@@ -82,7 +91,7 @@ test "tokenizeLineToHTML" {
   let text = "Ciao hello world!"
   let tokens : Array[UInt] = [
     4U,
-    make_meta(3, @tokens.FONT_STYLE_BOLD | @tokens.FONT_STYLE_ITALIC),
+    make_meta(3, TEST_FONT_STYLE_BOLD | TEST_FONT_STYLE_ITALIC),
     5U,
     make_meta(1, @tokens.FONT_STYLE_NONE),
     10U,
@@ -90,7 +99,7 @@ test "tokenizeLineToHTML" {
     11U,
     make_meta(1, @tokens.FONT_STYLE_NONE),
     17U,
-    make_meta(5, @tokens.FONT_STYLE_UNDERLINE),
+    make_meta(5, TEST_FONT_STYLE_UNDERLINE),
   ]
   let color_map = ["", "#000000", "#ffffff", "#ff0000", "#00ff00", "#0000ff"]
   let view = view_tokens(text, tokens)
@@ -159,7 +168,7 @@ test "tokenizeLineToHTML handle spaces #35954" {
     2U,
     make_meta(1, @tokens.FONT_STYLE_NONE),
     6U,
-    make_meta(3, @tokens.FONT_STYLE_BOLD | @tokens.FONT_STYLE_ITALIC),
+    make_meta(3, TEST_FONT_STYLE_BOLD | TEST_FONT_STYLE_ITALIC),
     9U,
     make_meta(1, @tokens.FONT_STYLE_NONE),
     14U,
@@ -167,7 +176,7 @@ test "tokenizeLineToHTML handle spaces #35954" {
     15U,
     make_meta(1, @tokens.FONT_STYLE_NONE),
     21U,
-    make_meta(5, @tokens.FONT_STYLE_UNDERLINE),
+    make_meta(5, TEST_FONT_STYLE_UNDERLINE),
   ]
   let color_map = ["", "#000000", "#ffffff", "#ff0000", "#00ff00", "#0000ff"]
   let view = view_tokens(text, tokens)
