@@ -6,6 +6,15 @@ plus a caller-owned margin ViewZone node; the root contribution retains the
 outer node as its ViewZone DOM, registers the margin node so ViewZones keeps
 it top/height-synced in the gutter, and renders shared Markdown into
 independent full and one-line preview targets inside the measured inner node.
+Every block also owns an initially empty source target. Its accessible
+in-content control lazily extracts and tokenizes the exact original model lines
+only when that block first selects source; a visible same-range replacement
+refreshes the target while a hidden block defers the work until its next reveal.
+Returning to Markdown restores the prior documentation-fold state. The toggle keeps the stable
+accessible name `Original source`, reports the selected presentation through
+`aria-pressed`, and uses its tooltip for the next action. Rendered content
+always reserves its trailing hit area, while a one-line separator constrains
+the control to the existing ViewZone height.
 Item-delimited multi-line API documents whose provider registration opted
 into folding start on the preview. Two affordances drive one fold state: a
 mouse-only gutter chevron that reuses the code-folding `.cldr` codicons and
@@ -16,9 +25,9 @@ invisible until pointer hover or keyboard focus and carries the
 callback. `set_margin_fold_lane_width` pins the chevron lane to the
 configured `lineDecorationsWidth` at mount. Ordinary Markdown,
 separator-only blocks, and one-line API docs keep the full target and do not
-expose a control. The root retains the expanded-state ref and both renderer
-lifetimes so same-key body replacement preserves the user's choice while a
-newly mounted block starts collapsed.
+expose a fold control. The root retains the source/expanded state and renderer
+lifetimes so same-key body replacement preserves the user's choices while a
+newly mounted block starts rendered and, when foldable, collapsed.
 
 > The code blocks on this page are `mbt nocheck`. This package is js-only and
 > its values need a live DOM, which `moon test` (Node, no DOM) cannot provide.
@@ -49,9 +58,9 @@ entry.renderer.set_markdown(next_source)
 
 The shared ViewZones container hides caller nodes individually by default.
 After registration, `expose_accessible_content` removes that default only from
-the Markdown zone, allowing its links and fold button into the accessibility
-tree without exposing unrelated ViewZones. Zone removal restores the caller's
-original `aria-hidden` state.
+the Markdown zone, allowing its links and source/fold buttons into the
+accessibility tree without exposing unrelated ViewZones. Zone removal restores
+the caller's original `aria-hidden` state.
 
 `observe_size` watches only the auto-height inner content. The root
 contribution owns one model-scoped viewport-width observer and invalidates all

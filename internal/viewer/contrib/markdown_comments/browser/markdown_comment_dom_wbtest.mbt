@@ -376,20 +376,26 @@ test "MarkdownCommentDom creates the stable half-open ViewZone target shape" {
     markdown_comment_test_attribute(dom.content, "class"),
     "moonbit-viewer-markdown-comment-content",
   )
-  assert_eq(markdown_comment_test_child_count(dom.outer), 2)
+  assert_eq(markdown_comment_test_child_count(dom.outer), 3)
   assert_true(
     markdown_comment_test_same_element(
       markdown_comment_test_first_child(dom.outer),
-      dom.toggle,
+      dom.source_toggle,
     ),
   )
   assert_true(
     markdown_comment_test_same_element(
       markdown_comment_test_child(dom.outer, 1),
+      dom.toggle,
+    ),
+  )
+  assert_true(
+    markdown_comment_test_same_element(
+      markdown_comment_test_child(dom.outer, 2),
       dom.content,
     ),
   )
-  assert_eq(markdown_comment_test_child_count(dom.content), 2)
+  assert_eq(markdown_comment_test_child_count(dom.content), 3)
   assert_true(
     markdown_comment_test_same_element(
       markdown_comment_test_child(dom.content, 0),
@@ -402,11 +408,25 @@ test "MarkdownCommentDom creates the stable half-open ViewZone target shape" {
       dom.preview,
     ),
   )
+  assert_true(
+    markdown_comment_test_same_element(
+      markdown_comment_test_child(dom.content, 2),
+      dom.source,
+    ),
+  )
   assert_eq(
     markdown_comment_test_attribute(dom.outer, "data-documentation-foldable"),
     "false",
   )
   assert_eq(markdown_comment_test_attribute(dom.toggle, "hidden"), "")
+  assert_eq(
+    markdown_comment_test_attribute(dom.source_toggle, "aria-label"),
+    "Original source",
+  )
+  assert_eq(
+    markdown_comment_test_attribute(dom.source_toggle, "aria-pressed"),
+    "false",
+  )
   assert_eq(
     markdown_comment_test_attribute(dom.margin, "class"),
     "moonbit-viewer-markdown-comment-margin",
@@ -428,6 +448,65 @@ test "MarkdownCommentDom creates the stable half-open ViewZone target shape" {
   dom.outer.set_attribute("aria-hidden", "true")
   dom.expose_accessible_content()
   assert_false(markdown_comment_test_has_attribute(dom.outer, "aria-hidden"))
+}
+
+///|
+test "MarkdownCommentDom toggles one source target independently and releases listeners" {
+  let harness = install_markdown_comment_browser_test_dom()
+  defer harness.dispose()
+  let dom = MarkdownCommentDom(3, 7)
+  let source_visible = Ref(false)
+  let toggles = Ref(0)
+  let lifetime = dom.enable_source_toggle(source_visible, () => toggles.val += 1)
+  assert_eq(
+    markdown_comment_test_attribute(dom.outer, "data-source-visible"),
+    "false",
+  )
+  assert_eq(
+    markdown_comment_test_attribute(dom.margin, "data-source-visible"),
+    "false",
+  )
+  assert_eq(
+    markdown_comment_test_attribute(dom.source_toggle, "aria-label"),
+    "Original source",
+  )
+  assert_eq(
+    markdown_comment_test_attribute(dom.source_toggle, "title"),
+    "Show original source",
+  )
+
+  markdown_comment_test_dispatch(dom.source_toggle, "click")
+  assert_true(source_visible.val)
+  assert_eq(toggles.val, 1)
+  assert_eq(
+    markdown_comment_test_attribute(dom.outer, "data-source-visible"),
+    "true",
+  )
+  assert_eq(
+    markdown_comment_test_attribute(dom.margin, "data-source-visible"),
+    "true",
+  )
+  assert_eq(
+    markdown_comment_test_attribute(dom.source_toggle, "aria-pressed"),
+    "true",
+  )
+  assert_eq(
+    markdown_comment_test_attribute(dom.source_toggle, "aria-label"),
+    "Original source",
+  )
+  assert_eq(
+    markdown_comment_test_attribute(dom.source_toggle, "title"),
+    "Show rendered documentation",
+  )
+
+  markdown_comment_test_dispatch(dom.source_toggle, "click")
+  assert_false(source_visible.val)
+  assert_eq(toggles.val, 2)
+  lifetime.dispose()
+  lifetime.dispose()
+  markdown_comment_test_dispatch(dom.source_toggle, "click")
+  assert_false(source_visible.val)
+  assert_eq(toggles.val, 2)
 }
 
 ///|

@@ -37,6 +37,17 @@ test "Markdown comments mark only exact mermaid fences and keep safe fallback so
 }
 
 ///|
+test "original Markdown-comment source uses escaped token HTML" {
+  let html = render_markdown_comment_original_source(
+    "/// <script>alert(1)</script>\n/// let answer = 42", "moonbit",
+  )
+  assert_true(html.contains("monaco-tokenized-source"))
+  assert_true(html.contains("&lt;script&gt;"))
+  assert_false(html.contains("<script>"))
+  assert_true(html.contains("let answer = 42"))
+}
+
+///|
 fn markdown_contribution_block(
   start_line_number : Int,
   end_line_number_exclusive : Int,
@@ -222,6 +233,11 @@ extern "js" fn markdown_contribution_test_attribute(
 ) -> String = "(element, name) => element.getAttribute(name) ?? ''"
 
 ///|
+extern "js" fn markdown_contribution_test_inner_html(
+  element : @rdom.Element,
+) -> String = "element => element.innerHTML"
+
+///|
 extern "js" fn markdown_contribution_test_is_detached(
   element : @rdom.Element,
 ) -> Bool = "element => element.parentNode === null"
@@ -391,6 +407,48 @@ test "Markdown comments replace start middle EOF blocks while preserving model t
       assert_eq(viewer.test_view_model().get_whitespaces().length(), 3)
       assert_eq(viewer.get_value(), source)
       assert_eq(viewer.get_model().unwrap().get_line_content(3), "three")
+      // Hidden source starts completely lazy: neither the range copy nor its
+      // token-span DOM is retained for any block before the reader asks.
+      for key in ["1:2", "3:5", "6:7"] {
+        assert_eq(state.rendered[key].original_source.val, "")
+        assert_eq(
+          markdown_contribution_test_inner_html(state.rendered[key].dom.source),
+          "",
+        )
+      }
+
+      // Each block owns an independent rendered/source switch; changing one
+      // does not alter the model projection or any sibling presentation.
+      markdown_contribution_test_dispatch(
+        state.rendered["3:5"].dom.source_toggle,
+        "click",
+      )
+      assert_eq(state.rendered["3:5"].original_source.val, "three\nfour")
+      assert_true(
+        markdown_contribution_test_inner_html(state.rendered["3:5"].dom.source).contains(
+          "three",
+        ),
+      )
+      assert_eq(state.rendered["1:2"].original_source.val, "")
+      assert_eq(state.rendered["6:7"].original_source.val, "")
+      assert_eq(
+        markdown_contribution_test_attribute(
+          state.rendered["3:5"].dom.outer,
+          "data-source-visible",
+        ),
+        "true",
+      )
+      assert_eq(
+        markdown_contribution_test_attribute(
+          state.rendered["1:2"].dom.outer,
+          "data-source-visible",
+        ),
+        "false",
+      )
+      assert_true(
+        viewer.test_view_model().get_hidden_areas() ==
+        [Range(1, 1, 1, 1), Range(3, 1, 4, 1), Range(6, 1, 6, 1)],
+      )
     },
     provider_blocks=blocks,
   )
@@ -482,6 +540,14 @@ test "same-key Markdown update retains the ViewZone and target identities" {
       let first_zone_id = first.zone_id
       let first_whitespace_id = viewer.test_view_model().get_whitespaces()[0].id
       assert_eq(markdown_contribution_test_disconnect_count(), 0)
+      markdown_contribution_test_dispatch(first.dom.source_toggle, "click")
+      assert_eq(
+        markdown_contribution_test_attribute(
+          first.dom.outer,
+          "data-source-visible",
+        ),
+        "true",
+      )
 
       provider_blocks.val = [
         markdown_contribution_block(2, 4, "updated **body**"),
@@ -491,6 +557,7 @@ test "same-key Markdown update retains the ViewZone and target identities" {
       let updated = state.rendered["2:4"]
       assert_eq(state.rendered.length(), 1)
       assert_eq(updated.block.markdown, "updated **body**")
+      assert_eq(updated.original_source.val, "TWO\nTHREE")
       assert_eq(updated.zone_id, first_zone_id)
       assert_true(same_mounted_test_element(updated.zone.dom_node, first_outer))
       assert_true(
@@ -504,8 +571,42 @@ test "same-key Markdown update retains the ViewZone and target identities" {
         first_whitespace_id,
       )
       assert_eq(markdown_contribution_test_disconnect_count(), 0)
+      assert_eq(
+        markdown_contribution_test_attribute(
+          updated.dom.outer,
+          "data-source-visible",
+        ),
+        "true",
+      )
+      assert_true(
+        markdown_contribution_test_inner_html(updated.dom.source).contains(
+          "TWO",
+        ),
+      )
       assert_true(
         viewer.test_view_model().get_hidden_areas() == [Range(2, 1, 3, 1)],
+      )
+
+      let visible_source_html = markdown_contribution_test_inner_html(
+        updated.dom.source,
+      )
+      markdown_contribution_test_dispatch(updated.dom.source_toggle, "click")
+      viewer.set_value(
+        "LATEST\nLATEST TWO\nLATEST THREE\nLATEST FOUR\nLATEST FIVE",
+      )
+      // A hidden block keeps its already-rendered source untouched and skips
+      // range extraction/tokenization until it is selected again.
+      assert_eq(updated.original_source.val, "TWO\nTHREE")
+      assert_eq(
+        markdown_contribution_test_inner_html(updated.dom.source),
+        visible_source_html,
+      )
+      markdown_contribution_test_dispatch(updated.dom.source_toggle, "click")
+      assert_eq(updated.original_source.val, "LATEST TWO\nLATEST THREE")
+      assert_true(
+        markdown_contribution_test_inner_html(updated.dom.source).contains(
+          "LATEST TWO",
+        ),
       )
     },
     provider_blocks=[markdown_contribution_block(2, 4, "original body")],

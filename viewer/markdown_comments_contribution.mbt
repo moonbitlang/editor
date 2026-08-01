@@ -32,6 +32,9 @@ fn MarkdownCommentContributionState::MarkdownCommentContributionState() -> Markd
 ///|
 priv struct RenderedMarkdownComment {
   mut block : @language.MarkdownCommentBlock
+  original_source : Ref[String]
+  source_visible : Ref[Bool]
+  source_rendered_version : Ref[Int]
   mut foldable : Bool
   dom : @markdown_comments_browser.MarkdownCommentDom
   zone : @editor_browser.ViewZone
@@ -40,6 +43,7 @@ priv struct RenderedMarkdownComment {
   mut preview_rendered_markdown : @browser_markdown.RenderedMarkdown?
   mut fold_lifetime : @base_common.Disposable?
   fold_expanded : Ref[Bool]
+  source_lifetime : @base_common.Disposable
   mut diagram_viewports : @markdown_comments_browser.MarkdownCommentDiagramViewports
   size_observer : @markdown_comments_browser.MarkdownCommentSizeObserver
   mut measured_height : Double
@@ -68,6 +72,7 @@ fn RenderedMarkdownComment::dispose_body_resources(
 fn RenderedMarkdownComment::dispose_render_resources(
   self : RenderedMarkdownComment,
 ) -> Unit {
+  self.source_lifetime.dispose()
   self.dispose_body_resources()
   self.size_observer.dispose()
 }
@@ -185,6 +190,78 @@ fn markdown_comment_hidden_ranges(
     let range = block.line_range
     Range(range.start_line_number, 1, range.end_line_number_exclusive - 1, 1)
   })
+}
+
+///|
+/// Reads exactly the model lines owned by one normalized block without the
+/// synthetic newline at the start of the following line. The returned text is
+/// the source-mode document of record; the provider's stripped Markdown is not
+/// used to reconstruct comment delimiters or indentation.
+fn markdown_comment_original_source(
+  model : @model.TextModel,
+  block : @language.MarkdownCommentBlock,
+) -> String {
+  let range = block.line_range
+  let end_line_number = range.end_line_number_exclusive - 1
+  model.get_value_in_range(
+    Range(
+      range.start_line_number,
+      1,
+      end_line_number,
+      model.get_line_max_column(end_line_number),
+    ),
+  )
+}
+
+///|
+/// Produces the same escaped, class-based token HTML used by fenced Markdown
+/// code, but from the untouched model source retained for one comment block.
+fn render_markdown_comment_original_source(
+  source : String,
+  language_id : String,
+) -> String {
+  let code_block : @markdown_core.MarkdownCodeBlock = {
+    block_index: 0,
+    code: source,
+    language_id: Some(language_id),
+    full_info_string: None,
+    info_remainder: None,
+    block_source_range: @base_common.OffsetRange::of_length(source.length()),
+    code_lines: [],
+  }
+  @markdown_core.render_tokenized_code_block(code_block, Some(language_id))
+}
+
+///|
+fn install_markdown_comment_original_source(
+  model : @model.TextModel,
+  source : String,
+  target : @rdom.Element,
+) -> Unit {
+  target.set_inner_html(
+    render_markdown_comment_original_source(source, model.get_language_id()),
+  )
+}
+
+///|
+/// Materializes exact source only while the reader has selected it. The model
+/// version makes repeated toggles free and lets hidden blocks skip both the
+/// range copy and token-span DOM until their next reveal.
+fn ensure_markdown_comment_original_source(
+  model : @model.TextModel,
+  block : @language.MarkdownCommentBlock,
+  target : @rdom.Element,
+  original_source : Ref[String],
+  source_rendered_version : Ref[Int],
+) -> Unit {
+  let version = model.get_version_id()
+  if source_rendered_version.val == version {
+    return
+  }
+  let source = markdown_comment_original_source(model, block)
+  install_markdown_comment_original_source(model, source, target)
+  original_source.val = source
+  source_rendered_version.val = version
 }
 
 ///|
@@ -452,6 +529,16 @@ fn Viewer::refresh_markdown_comments(
       match state.rendered.get(key) {
         Some(existing) => {
           existing.generation.val = generation
+          if existing.source_visible.val {
+            ensure_markdown_comment_original_source(
+              model,
+              block,
+              existing.dom.source,
+              existing.original_source,
+              existing.source_rendered_version,
+            )
+            existing.size_observer.request_measure()
+          }
           if existing.block.markdown != block.markdown ||
             existing.foldable != foldable {
             existing.dispose_body_resources()
@@ -510,6 +597,21 @@ fn Viewer::refresh_markdown_comments(
             )
           })
           let fold_expanded = Ref(false)
+          let source_visible = Ref(false)
+          let original_source = Ref("")
+          let source_rendered_version = Ref(0)
+          let source_lifetime = dom.enable_source_toggle(source_visible, () => {
+            if source_visible.val {
+              ensure_markdown_comment_original_source(
+                model,
+                block,
+                dom.source,
+                original_source,
+                source_rendered_version,
+              )
+            }
+            size_observer.request_measure()
+          })
           let (
             rendered_markdown,
             preview_rendered_markdown,
@@ -526,6 +628,9 @@ fn Viewer::refresh_markdown_comments(
           )
           let entry : RenderedMarkdownComment = {
             block,
+            original_source,
+            source_visible,
+            source_rendered_version,
             foldable,
             dom,
             zone,
@@ -534,6 +639,7 @@ fn Viewer::refresh_markdown_comments(
             preview_rendered_markdown,
             fold_lifetime,
             fold_expanded,
+            source_lifetime,
             diagram_viewports,
             size_observer,
             measured_height: 0.0,

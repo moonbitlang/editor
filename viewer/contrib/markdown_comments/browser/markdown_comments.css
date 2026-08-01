@@ -25,12 +25,13 @@
 
 /* Vertical and trailing padding belong to the measured inner target, so
  * offsetHeight includes every content-space contribution used for ViewZone
- * relayout. The leading edge stays flush with the editor's source rail. */
+ * relayout. The leading edge stays flush with the editor's source rail; the
+ * trailing reserve keeps every rendered block clear of its source control. */
 .moonbit-viewer-markdown-comment-content {
   box-sizing: border-box;
   /* The pinned outer already ends at the vertical scrollbar rail. */
   width: 100%;
-  padding: 6px 12px 8px 0;
+  padding: 6px 40px 8px 0;
   overflow-wrap: anywhere;
   user-select: text;
   -webkit-user-select: text;
@@ -45,11 +46,15 @@
   display: none;
 }
 
+.moonbit-viewer-markdown-comment-source {
+  display: none;
+}
+
 .moonbit-viewer-markdown-comment[data-documentation-foldable="true"]
   .moonbit-viewer-markdown-comment-content {
   /* Keep the ellipsized preview clear of the hover/focus-revealed accessible
    * toggle pinned to the top-right corner. */
-  padding-right: 34px;
+  padding-right: 68px;
 }
 
 .moonbit-viewer-markdown-comment[data-documentation-foldable="true"][data-documentation-expanded="false"]
@@ -68,6 +73,72 @@
   white-space: nowrap;
 }
 
+.moonbit-viewer-markdown-comment[data-source-visible="true"][data-documentation-foldable]
+  :is(
+    .moonbit-viewer-markdown-comment-full,
+    .moonbit-viewer-markdown-comment-preview
+  ) {
+  display: none;
+}
+
+.moonbit-viewer-markdown-comment[data-source-visible="true"]
+  .moonbit-viewer-markdown-comment-source {
+  display: block;
+}
+
+.moonbit-viewer-markdown-comment[data-source-visible="true"]
+  .moonbit-viewer-markdown-comment-content {
+  padding-right: 40px;
+}
+
+/* Source mode temporarily suppresses documentation folding controls while
+ * retaining the fold state that will be restored on return to rendered mode. */
+.moonbit-viewer-markdown-comment[data-source-visible="true"]
+  .moonbit-viewer-markdown-comment-toggle,
+.moonbit-viewer-markdown-comment-margin[data-source-visible="true"]
+  .moonbit-viewer-markdown-comment-margin-toggle {
+  display: none;
+}
+
+.moonbit-viewer-markdown-comment-source-toggle {
+  position: absolute;
+  /* Keep the 22px control top-aligned in ordinary blocks, but shrink and
+   * recenter it when a one-line separator ViewZone is shorter than that. */
+  top: max(0px, min(6px, calc((100% - 22px) / 2)));
+  right: 6px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-width: 28px;
+  height: 22px;
+  max-height: 100%;
+  padding: 0 4px;
+  border: 0;
+  border-radius: 3px;
+  color: var(--vscode-descriptionForeground, var(--vscode-editor-foreground));
+  background: transparent;
+  font-family: var(--monaco-monospace-font, var(--editor-font-family));
+  font-size: 11px;
+  cursor: pointer;
+  opacity: 0.55;
+}
+
+.moonbit-viewer-markdown-comment-source-toggle:hover,
+.moonbit-viewer-markdown-comment-source-toggle:focus-visible,
+.moonbit-viewer-markdown-comment[data-source-visible="true"]
+  .moonbit-viewer-markdown-comment-source-toggle {
+  opacity: 1;
+  color: var(--vscode-foreground, var(--vscode-editor-foreground));
+  background: var(--vscode-toolbar-hoverBackground, rgba(127, 127, 127, 0.18));
+}
+
+.moonbit-viewer-markdown-comment-source-toggle:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder, currentColor);
+  outline-offset: 1px;
+}
+
 /* The visible fold affordance lives in the gutter beside the code-folding
  * chevrons; the margin plane is aria-hidden (Monaco parity), so this content
  * button remains the keyboard and screen-reader control. Opacity keeps it
@@ -76,7 +147,7 @@
 .moonbit-viewer-markdown-comment-toggle {
   position: absolute;
   top: 6px;
-  right: 6px;
+  right: 40px;
   z-index: 1;
   display: inline-flex;
   align-items: center;

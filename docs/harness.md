@@ -117,7 +117,8 @@ The whole-line Markdown proof is the direct public-Viewer component scenario
 `tests/browser/component/markdown_comments.spec.js`. It does not route through
 the reference shell. The scenario owns its language configuration and models,
 then exposes compact evidence for projected source replacement,
-tokenized Markdown DOM, CDN-backed Mermaid replacement/theme/freshness,
+tokenized Markdown DOM, per-block exact-source switching and state retention,
+CDN-backed Mermaid replacement/theme/freshness,
 measured/offscreen ViewZone geometry, native link/selection input,
 resize/image updates, model flush/swap, and disposal. Its Diago cells exercise
 the public Viewer surface rather than a private controller seam: initial

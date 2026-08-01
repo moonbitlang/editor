@@ -327,13 +327,14 @@ editor common/browser layers; editor common never depends on them.
   access, style preservation, and a non-passive wheel listener. Inline
   viewport-height changes report only through a narrow callback. The root
   `viewer` contribution owns reconciliation, renderer and viewport lifetimes,
-  zone ids, and the one hidden-area source. Its emitted stylesheet remains at
+  exact model-source extraction, zone ids, and the one hidden-area source. Its
+  emitted stylesheet remains at
   `viewer/contrib/markdown_comments/browser/markdown_comments.css`.
 
 The content ViewZones container is presentation-only but not globally hidden
 from accessibility. Registration applies `aria-hidden=true` to each caller
 node by default; the Markdown contribution removes it from its own zone after
-registration so links and the documentation fold control are discoverable,
+registration so links and the source/documentation-fold controls are discoverable,
 while unrelated ViewZones and the margin container retain their hidden default.
 Removal restores the caller node's original `aria-hidden` presence and value.
 
@@ -378,8 +379,15 @@ rerender retained Mermaid SVGs in place and send accepted size changes through
 the existing observer and generation-checked ViewZone height writer.
 
 Each rendered entry retains the full and optional preview shared-Markdown
-renderers, its expanded-state ref and toggle lifetime, its diagram-viewport
-group, and the existing size observer. Newly mounted item-delimited multi-line
+renderers, an initially empty source target that extracts and tokenizes exact
+model lines only while source is selected, its source and expanded-state toggle lifetimes, its diagram-viewport
+group, and the existing size observer. The source toggle is per block, keeps
+the model projection unchanged, survives same-range content replacement, and
+restores the block's prior documentation-fold state when rendering resumes.
+Its stable accessible name and pressed state describe the selected
+presentation; rendered content reserves the control's trailing hit area, and
+the control remains bounded by even a one-line separator ViewZone.
+Newly mounted item-delimited multi-line
 API documentation from a foldable provider registration starts on the
 first-line preview; ordinary Markdown and
 separator-only or one-line API blocks remain expanded without a control.
