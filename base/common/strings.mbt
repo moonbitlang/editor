@@ -34,7 +34,8 @@ pub fn is_low_surrogate(char_code : Int) -> Bool {
 /// `U+FE70..U+FEFF`); supplementary-plane RTL is not detected, matching the
 /// viewer's existing simplified port.
 pub fn contains_rtl(text : String) -> Bool {
-  for code in text.code_units() {
+  for i in 0..<text.length() {
+    let code = text[i]
     if (code >= 0x0590 && code <= 0x08ff) ||
       (code >= 0xfb1d && code <= 0xfdff) ||
       (code >= 0xfe70 && code <= 0xfeff) {
@@ -48,7 +49,8 @@ pub fn contains_rtl(text : String) -> Bool {
 /// Index of the first non-whitespace (non-space, non-tab) character, or `-1`.
 /// Mirrors `strings.firstNonWhitespaceIndex`.
 pub fn first_non_whitespace_index(text : String) -> Int {
-  for i, code in text.code_units() {
+  for i in 0..<text.length() {
+    let code = text[i]
     if code != ' ' && code != '\t' {
       return i
     }
@@ -60,9 +62,8 @@ pub fn first_non_whitespace_index(text : String) -> Int {
 /// Index of the last non-whitespace (non-space, non-tab) character, or `-1`.
 /// Mirrors `strings.lastNonWhitespaceIndex`.
 pub fn last_non_whitespace_index(text : String) -> Int {
-  let units = text.code_units()
-  for i = units.length() - 1; i >= 0; i = i - 1 {
-    let code = units[i]
+  for i = text.length() - 1; i >= 0; i = i - 1 {
+    let code = text[i]
     if code != ' ' && code != '\t' {
       return i
     }
@@ -99,12 +100,10 @@ pub fn single_letter_hash(n : Int) -> String {
 /// charwise UTF-16 code-unit lexicographic. Required because MoonBit's
 /// built-in `String` compare is length-first (`"z" > "aa"` here, not there).
 pub fn compare(a : String, b : String) -> Int {
-  let a_units = a.code_units()
-  let b_units = b.code_units()
-  let a_len = a_units.length()
-  let b_len = b_units.length()
+  let a_len = a.length()
+  let b_len = b.length()
   for i in 0..<a_len.min(b_len) {
-    let order = a_units[i].compare(b_units[i])
+    let order = a[i].compare(b[i])
     if order != 0 {
       return order
     }
@@ -199,16 +198,23 @@ fn to_lower_code_unit(code : UInt16) -> UInt16 {
 /// `toLowerCase()` call sites of the URI stack route through this so
 /// non-ASCII authorities/paths fold the way Monaco's do.
 fn to_lower_js(s : String) -> String {
-  let units = s.code_units()
-  guard units.iter().any(code => to_lower_code_unit(code) != code) else {
-    return s
+  let len = s.length()
+  let mut changed = false
+  for i in 0..<len {
+    let code = s[i]
+    if to_lower_code_unit(code) != code {
+      changed = true
+      break
+    }
   }
+  guard changed else { return s }
   // Copy unchanged runs as substring chunks: every mapped unit is a BMP
   // non-surrogate, so chunk boundaries never split a surrogate pair, and
   // `UInt16::to_char` therefore always yields `Some`.
   let sb = StringBuilder::new()
   let mut chunk_start = 0
-  for i, code in units {
+  for i in 0..<len {
+    let code = s[i]
     let lowered = to_lower_code_unit(code)
     if lowered != code {
       if chunk_start < i {
@@ -220,7 +226,7 @@ fn to_lower_js(s : String) -> String {
       chunk_start = i + 1
     }
   }
-  if chunk_start < units.length() {
+  if chunk_start < len {
     sb.write_string(s[chunk_start:].to_owned())
   }
   sb.to_string()
@@ -231,18 +237,17 @@ fn to_lower_js(s : String) -> String {
 /// (strings.ts:251), whose split regex treats `\r\n` as one separator.
 pub fn split_lines(text : String) -> Array[String] {
   let lines = []
-  let units = text.code_units()
-  let len = units.length()
+  let len = text.length()
   let mut line_start = 0
   let mut i = 0
   while i < len {
-    if units[i] == '\r' {
+    if text[i] == '\r' {
       lines.push(text[line_start:i].to_owned())
-      if i + 1 < len && units[i + 1] == '\n' {
+      if i + 1 < len && text[i + 1] == '\n' {
         i += 1 // consume the \n of a \r\n pair
       }
       line_start = i + 1
-    } else if units[i] == '\n' {
+    } else if text[i] == '\n' {
       lines.push(text[line_start:i].to_owned())
       line_start = i + 1
     }
