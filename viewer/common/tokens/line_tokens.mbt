@@ -52,7 +52,7 @@ struct LineTokens {
   tokens_count : Int
   text : String
   language_id_codec : @services.LanguageIdCodec
-}
+} derive(Debug)
 
 ///|
 pub fn LineTokens::LineTokens(

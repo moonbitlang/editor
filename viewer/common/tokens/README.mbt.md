@@ -14,7 +14,9 @@ in `pkg.generated.mbti` has a non-test cross-package caller. Representation
 details, full-versus-sliced variants, metadata decoders used only inside this
 package, and conformance-only helpers are private. `TokenMetadata(UInt)` remains
 the deliberate scalar-construction boundary introduced by the typed-metadata
-port. No future-only export is currently reserved; if one is deliberately
+port. `LineTokens` deliberately
+retains `derive(Debug)` for diagnostics even though production code does not
+invoke it. No future-only export is currently reserved; if one is deliberately
 staged later, it belongs in `exports.mbt` until a production caller lands.
 
 ```mermaid
@@ -163,6 +165,7 @@ test "line tokens expose their consumer-facing full view" {
     "let x",
     codec,
   )
+  assert_true(Repr(line).to_string().contains("tokens_count: 3"))
   let view = line.inflate()
   debug_inspect(
     (
