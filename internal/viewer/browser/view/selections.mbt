@@ -185,61 +185,58 @@ fn render_styled_line_html(
   line : LineSelectionRanges,
   styled : Bool,
 ) -> (String, String) {
-  let mut inner_corner_output = ""
-  let mut rest_of_selection_output = ""
-  for range in line.ranges {
-    if styled {
-      if range.start_top == Intern || range.start_bottom == Intern {
-        // Reverse rounded corner to the left: first the selection (blue
-        // layer), then the background (white layer) with inverse radius.
-        let left = range.left - rounded_piece_width
-        inner_corner_output = inner_corner_output +
-          selection_piece_html(selection_class_name, left, rounded_piece_width)
-        let mut class_name = editor_background_class_name
-        if range.start_top == Intern {
-          class_name = class_name + " top-right-radius"
-        }
-        if range.start_bottom == Intern {
-          class_name = class_name + " bottom-right-radius"
-        }
-        inner_corner_output = inner_corner_output +
-          selection_piece_html(class_name, left, rounded_piece_width)
-      }
-      if range.end_top == Intern || range.end_bottom == Intern {
-        // Reverse rounded corner to the right.
-        let left = range.left + range.width
-        inner_corner_output = inner_corner_output +
-          selection_piece_html(selection_class_name, left, rounded_piece_width)
-        let mut class_name = editor_background_class_name
-        if range.end_top == Intern {
-          class_name = class_name + " top-left-radius"
-        }
-        if range.end_bottom == Intern {
-          class_name = class_name + " bottom-left-radius"
-        }
-        inner_corner_output = inner_corner_output +
-          selection_piece_html(class_name, left, rounded_piece_width)
-      }
+  for range in line.ranges; output = ("", "") {
+    let (inner_corner_output, rest_of_selection_output) = output
+    let start_inner_corner = if styled &&
+      (range.start_top == Intern || range.start_bottom == Intern) {
+      // Reverse rounded corner to the left: first the selection (blue
+      // layer), then the background (white layer) with inverse radius.
+      let left = range.left - rounded_piece_width
+      let class_name = editor_background_class_name +
+        (if range.start_top == Intern { " top-right-radius" } else { "" }) +
+        (if range.start_bottom == Intern { " bottom-right-radius" } else { "" })
+      selection_piece_html(selection_class_name, left, rounded_piece_width) +
+      selection_piece_html(class_name, left, rounded_piece_width)
+    } else {
+      ""
     }
-    let mut class_name = selection_class_name
-    if styled {
-      if range.start_top == Extern {
-        class_name = class_name + " top-left-radius"
-      }
-      if range.start_bottom == Extern {
-        class_name = class_name + " bottom-left-radius"
-      }
-      if range.end_top == Extern {
-        class_name = class_name + " top-right-radius"
-      }
-      if range.end_bottom == Extern {
-        class_name = class_name + " bottom-right-radius"
-      }
+    let end_inner_corner = if styled &&
+      (range.end_top == Intern || range.end_bottom == Intern) {
+      // Reverse rounded corner to the right.
+      let left = range.left + range.width
+      let class_name = editor_background_class_name +
+        (if range.end_top == Intern { " top-left-radius" } else { "" }) +
+        (if range.end_bottom == Intern { " bottom-left-radius" } else { "" })
+      selection_piece_html(selection_class_name, left, rounded_piece_width) +
+      selection_piece_html(class_name, left, rounded_piece_width)
+    } else {
+      ""
     }
-    rest_of_selection_output = rest_of_selection_output +
-      selection_piece_html(class_name, range.left, range.width)
+    let class_name = selection_class_name +
+      (if styled && range.start_top == Extern {
+        " top-left-radius"
+      } else {
+        ""
+      }) +
+      (if styled && range.start_bottom == Extern {
+        " bottom-left-radius"
+      } else {
+        ""
+      }) +
+      (if styled && range.end_top == Extern { " top-right-radius" } else { "" }) +
+      (if styled && range.end_bottom == Extern {
+        " bottom-right-radius"
+      } else {
+        ""
+      })
+    continue (
+        inner_corner_output + start_inner_corner + end_inner_corner,
+        rest_of_selection_output +
+        selection_piece_html(class_name, range.left, range.width),
+      )
+  } nobreak {
+    output
   }
-  (inner_corner_output, rest_of_selection_output)
 }
 
 ///|

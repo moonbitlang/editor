@@ -138,15 +138,16 @@ pub fn markdown_section_at_source_offset(
   sections : Array[MarkdownSection],
   source_offset : Int,
 ) -> MarkdownSection? {
-  let mut found = None
-  for section in sections {
+  for section in sections; found = None {
     if section.source_range.contains(source_offset) {
       // Sections are emitted outermost-first, so a later containing section is
       // strictly more nested than an earlier one.
-      found = Some(section)
+      continue Some(section)
     }
+    continue found
+  } nobreak {
+    found
   }
-  found
 }
 
 ///|
@@ -209,20 +210,28 @@ fn markdown_heading_text_from_source(
     Some(index) => raw[0:index].to_owned()
     None => raw
   }
-  let mut trimmed = first_line.trim(chars=" \t\r")
-  while trimmed.has_prefix("#") {
-    trimmed = trimmed[1:].to_owned()
+  let trimmed = for trimmed = first_line.trim(chars=" \t\r").to_owned(); trimmed.has_prefix(
+                     "#",
+                   ); {
+    continue trimmed[1:].to_owned()
+  } nobreak {
+    trimmed
   }
-  let mut hashes = 0
-  while hashes < trimmed.length() &&
-        trimmed[trimmed.length() - 1 - hashes] == '#' {
-    hashes = hashes + 1
+  let hashes = for hashes = 0; hashes < trimmed.length() &&
+                  trimmed[trimmed.length() - 1 - hashes] == '#'; {
+    continue hashes + 1
+  } nobreak {
+    hashes
   }
-  if hashes > 0 {
+  let trimmed = if hashes > 0 {
     let before = trimmed.length() - hashes
     if before == 0 || trimmed[before - 1] == ' ' || trimmed[before - 1] == '\t' {
-      trimmed = trimmed[0:before].to_owned()
+      trimmed[0:before].to_owned()
+    } else {
+      trimmed
     }
+  } else {
+    trimmed
   }
   let collapsed = StringBuilder::new()
   let mut wrote_any = false
@@ -370,11 +379,9 @@ fn markdown_count_source_lines(
   let start = range.start.max(0).min(source.length())
   let end = range.end_exclusive.max(start).min(source.length())
   guard end > start else { return 0 }
-  let mut lines = 1
-  for offset in start..<end {
-    if source[offset] == '\n' {
-      lines = lines + 1
-    }
+  for offset in start..<end; lines = 1 {
+    continue lines + (if source[offset] == '\n' { 1 } else { 0 })
+  } nobreak {
+    lines
   }
-  lines
 }

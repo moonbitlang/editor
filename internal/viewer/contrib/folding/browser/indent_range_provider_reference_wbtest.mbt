@@ -52,9 +52,10 @@ fn region_marker(
   ignore_case? : Bool = false,
 ) -> (String) -> Bool {
   line => {
-    let mut i = 0
-    while i < line.length() && (line[i] == ' ' || line[i] == '\t') {
-      i += 1
+    let i = for i = 0; i < line.length() && (line[i] == ' ' || line[i] == '\t'); {
+      continue i + 1
+    } nobreak {
+      i
     }
     if i + keyword.length() > line.length() {
       return false

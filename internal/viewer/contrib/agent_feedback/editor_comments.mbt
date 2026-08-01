@@ -89,10 +89,11 @@ fn estimate_expanded_comment_lines(comment : SessionEditorComment) -> Int {
   let chars_per_line = 50
   let text_length = comment.text.length().max(1)
   let text_lines = (text_length + chars_per_line - 1) / chars_per_line
-  let mut reply_lines = 0
-  for reply in comment.replies {
+  let reply_lines = for reply in comment.replies; reply_lines = 0 {
     let reply_length = reply.length().max(1)
-    reply_lines += (reply_length + chars_per_line - 1) / chars_per_line
+    continue reply_lines + (reply_length + chars_per_line - 1) / chars_per_line
+  } nobreak {
+    reply_lines
   }
   text_lines + 1 + reply_lines
 }
@@ -148,11 +149,9 @@ pub fn group_nearby_session_editor_comments(
 pub fn get_accepted_agent_feedback_comment_count(
   comments : Array[SessionEditorComment],
 ) -> Int {
-  let mut count = 0
-  for comment in comments {
-    if comment.state == Accepted {
-      count += 1
-    }
+  for comment in comments; count = 0 {
+    continue count + (if comment.state == Accepted { 1 } else { 0 })
+  } nobreak {
+    count
   }
-  count
 }

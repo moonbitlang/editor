@@ -197,15 +197,15 @@ fn find_hidden_range(
   line : Int,
 ) -> @base_common.Range? {
   // first index whose range starts after `line`
-  let mut low = 0
-  let mut high = ranges.length()
-  while low < high {
+  let (low, _high) = for low = 0, high = ranges.length(); low < high; {
     let mid = (low + high) / 2
     if line < ranges[mid].start_line_number {
-      high = mid
+      continue low, mid
     } else {
-      low = mid + 1
+      continue mid + 1, high
     }
+  } nobreak {
+    (low, high)
   }
   let i = low - 1
   if i >= 0 && ranges[i].end_line_number >= line {

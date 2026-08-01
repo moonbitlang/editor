@@ -62,11 +62,15 @@ test "root-element ordinals ignore omitted blocks and nested anchors" {
   assert_eq(ordinals, [0, 1, 2, 3])
   assert_true(nested_anchor_count >= 2)
   let code_block = rendered.projection.code_blocks[0]
-  let mut code_element_index : Int? = None
-  for anchor in rendered.projection.block_anchors {
+  let code_element_index = for
+    anchor in rendered.projection.block_anchors
+    code_element_index = (None : Int?) {
     if anchor.source_range.equals(code_block.block_source_range) {
-      code_element_index = anchor.rendered_element_index
+      continue anchor.rendered_element_index
     }
+    continue code_element_index
+  } nobreak {
+    code_element_index
   }
   assert_eq(code_element_index, Some(3))
 }

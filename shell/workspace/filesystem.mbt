@@ -243,9 +243,10 @@ pub fn FileChangeType::to_string(self : FileChangeType) -> String {
 
 ///|
 pub fn revision_from_text(text : String) -> String {
-  let mut hash = 2166136261L
-  for i in 0..<text.length() {
-    hash = (hash ^ text[i].to_int64()) * 16777619L
+  let hash = for i in 0..<text.length(); hash = 2166136261L {
+    continue (hash ^ text[i].to_int64()) * 16777619L
+  } nobreak {
+    hash
   }
   hash.to_string()
 }
