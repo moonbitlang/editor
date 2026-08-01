@@ -55,11 +55,7 @@ fn is_word_break(code : UInt16) -> Bool {
 /// recover a failed match.
 fn match_number(text : String, i : Int) -> Int? {
   let len = text.length()
-  let j = if i < len && text[i] == '-' {
-    i + 1
-  } else {
-    i
-  }
+  let j = if i < len && text[i] == '-' { i + 1 } else { i }
   let j = for j = j; j < len && is_ascii_digit(text[j]); {
     continue j + 1
   } nobreak {
