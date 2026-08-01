@@ -90,9 +90,9 @@ pub struct ContiguousTokensStoreUpdate {
 pub struct InsertedToken {
   offset : Int
   text : String
-  token_metadata : UInt
+  token_metadata : TokenMetadata
 }
-pub fn InsertedToken::InsertedToken(Int, String, UInt) -> Self
+pub fn InsertedToken::InsertedToken(Int, String, TokenMetadata) -> Self
 
 pub struct LineTokens {
   tokens : Array[UInt]
@@ -103,8 +103,8 @@ pub struct LineTokens {
 pub fn LineTokens::LineTokens(Array[UInt], String, @services.LanguageIdCodec) -> Self
 pub fn LineTokens::convert_to_end_offset(Array[UInt], Int) -> Unit
 pub fn LineTokens::create_empty(String, @services.LanguageIdCodec) -> Self
-pub fn LineTokens::create_from_text_and_metadata(Array[(String, UInt)], @services.LanguageIdCodec) -> Self
-pub fn LineTokens::default_token_metadata() -> UInt
+pub fn LineTokens::create_from_text_and_metadata(Array[(String, TokenMetadata)], @services.LanguageIdCodec) -> Self
+pub fn LineTokens::default_token_metadata() -> TokenMetadata
 pub fn LineTokens::find_index_in_tokens_array(Array[UInt], Int) -> Int
 pub fn LineTokens::find_token_index_at_offset(Self, Int) -> Int
 pub fn LineTokens::for_each(Self, (Int) -> Unit) -> Unit
@@ -115,7 +115,7 @@ pub fn LineTokens::get_foreground(Self, Int) -> Int
 pub fn LineTokens::get_inline_style(Self, Int, Array[String]) -> String
 pub fn LineTokens::get_language_id(Self, Int) -> String
 pub fn LineTokens::get_line_content(Self) -> String
-pub fn LineTokens::get_metadata(Self, Int) -> UInt
+pub fn LineTokens::get_metadata(Self, Int) -> TokenMetadata
 pub fn LineTokens::get_presentation(Self, Int) -> TokenPresentation
 pub fn LineTokens::get_standard_token_type(Self, Int) -> Int
 pub fn LineTokens::get_start_offset(Self, Int) -> Int
@@ -132,16 +132,18 @@ pub struct SliceLineTokens {
 
 type SyntacticLineTokens
 
-type TokenMetadata
-pub fn TokenMetadata::contains_balanced_brackets(UInt) -> Bool
-pub fn TokenMetadata::get_background(UInt) -> Int
-pub fn TokenMetadata::get_class_name_from_metadata(UInt) -> String
-pub fn TokenMetadata::get_font_style(UInt) -> Int
-pub fn TokenMetadata::get_foreground(UInt) -> Int
-pub fn TokenMetadata::get_inline_style_from_metadata(UInt, Array[String]) -> String
-pub fn TokenMetadata::get_language_id(UInt) -> Int
-pub fn TokenMetadata::get_presentation_from_metadata(UInt) -> TokenPresentation
-pub fn TokenMetadata::get_token_type(UInt) -> Int
+pub struct TokenMetadata(UInt) derive(Eq)
+pub fn TokenMetadata::contains_balanced_brackets(Self) -> Bool
+pub fn TokenMetadata::from_uint(UInt) -> Self
+pub fn TokenMetadata::get_background(Self) -> Int
+pub fn TokenMetadata::get_class_name_from_metadata(Self) -> String
+pub fn TokenMetadata::get_font_style(Self) -> Int
+pub fn TokenMetadata::get_foreground(Self) -> Int
+pub fn TokenMetadata::get_inline_style_from_metadata(Self, Array[String]) -> String
+pub fn TokenMetadata::get_language_id(Self) -> Int
+pub fn TokenMetadata::get_presentation_from_metadata(Self) -> TokenPresentation
+pub fn TokenMetadata::get_token_type(Self) -> Int
+pub fn TokenMetadata::to_uint(Self) -> UInt
 
 pub struct TokenPresentation {
   foreground : Int
@@ -164,7 +166,7 @@ pub fn ViewLineTokens::get_foreground(Self, Int) -> Int
 pub fn ViewLineTokens::get_inline_style(Self, Int, Array[String]) -> String
 pub fn ViewLineTokens::get_language_id(Self, Int) -> String
 pub fn ViewLineTokens::get_line_content(Self) -> String
-pub fn ViewLineTokens::get_metadata(Self, Int) -> UInt
+pub fn ViewLineTokens::get_metadata(Self, Int) -> TokenMetadata
 pub fn ViewLineTokens::get_presentation(Self, Int) -> TokenPresentation
 pub fn ViewLineTokens::get_standard_token_type(Self, Int) -> Int
 pub fn ViewLineTokens::get_token_text(Self, Int) -> String

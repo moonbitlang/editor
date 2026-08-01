@@ -4,8 +4,10 @@ Binary token values and the contiguous syntactic store shared by model
 tokenization and view-line rendering.
 
 A rendered line can carry hundreds of tokens, and a document can carry hundreds
-of thousands of lines. Nothing here allocates a struct per token: a token is two
-`UInt` words in a flat array, and every read is an index computation.
+of thousands of lines. The storage representation remains two `UInt` words per
+token in a flat array, and every read is an index computation. The opaque
+`TokenMetadata` newtype marks semantic API boundaries without changing that raw
+interleaved layout.
 
 ## The packed metadata word
 
@@ -24,16 +26,18 @@ flowchart LR
 
 `encoded_token_attributes.mbt` defines the 32-bit language, standard-token-type,
 balanced-bracket, font-style, foreground, and background layout plus
-`TokenMetadata` decoders. Metadata is `UInt` because the background occupies the
-high byte — a signed `Int` would make a fully saturated background negative.
+`TokenMetadata` decoders. Its backing word is `UInt` because the background
+occupies the high byte — a signed `Int` would make a fully saturated background
+negative.
 
-The offsets are public, so a caller can compose a word and read it back with the
-same constants the renderer uses.
+The offsets are public, so a caller can compose a raw word, wrap it as
+`TokenMetadata`, and read it back with the same constants the renderer uses.
 
 ```mbt check
 ///|
 test "a metadata word round-trips through the published offsets" {
-  let metadata = (2U << @tokens.METADATA_LANGUAGEID_OFFSET) |
+  let metadata = @tokens.TokenMetadata::from_uint(
+    (2U << @tokens.METADATA_LANGUAGEID_OFFSET) |
     (
       @tokens.STANDARD_TOKEN_TYPE_COMMENT.reinterpret_as_uint() <<
       @tokens.METADATA_TOKEN_TYPE_OFFSET
@@ -43,15 +47,16 @@ test "a metadata word round-trips through the published offsets" {
       @tokens.METADATA_FONT_STYLE_OFFSET
     ) |
     (7U << @tokens.METADATA_FOREGROUND_OFFSET) |
-    (200U << @tokens.METADATA_BACKGROUND_OFFSET)
+    (200U << @tokens.METADATA_BACKGROUND_OFFSET),
+  )
   debug_inspect(
     (
-      @tokens.TokenMetadata::get_language_id(metadata),
-      @tokens.TokenMetadata::get_token_type(metadata),
-      @tokens.TokenMetadata::get_font_style(metadata),
-      @tokens.TokenMetadata::get_foreground(metadata),
-      @tokens.TokenMetadata::get_background(metadata),
-      @tokens.TokenMetadata::contains_balanced_brackets(metadata),
+      metadata.get_language_id(),
+      metadata.get_token_type(),
+      metadata.get_font_style(),
+      metadata.get_foreground(),
+      metadata.get_background(),
+      metadata.contains_balanced_brackets(),
     ),
     content=(
       #|(2, 1, 3, 7, 200, false)
@@ -66,14 +71,14 @@ consumes; the font-style bits become named booleans.
 ```mbt check
 ///|
 test "presentation decodes the font-style bits into booleans" {
-  let styled = (
+  let styled = @tokens.TokenMetadata::from_uint(
+    (
       (@tokens.FONT_STYLE_ITALIC | @tokens.FONT_STYLE_UNDERLINE).reinterpret_as_uint() <<
       @tokens.METADATA_FONT_STYLE_OFFSET
     ) |
-    (5U << @tokens.METADATA_FOREGROUND_OFFSET)
-  let presentation = @tokens.TokenMetadata::get_presentation_from_metadata(
-    styled,
+    (5U << @tokens.METADATA_FOREGROUND_OFFSET),
   )
+  let presentation = styled.get_presentation_from_metadata()
   debug_inspect(
     (
       presentation.foreground,
@@ -81,7 +86,7 @@ test "presentation decodes the font-style bits into booleans" {
       presentation.bold,
       presentation.underline,
       presentation.strikethrough,
-      @tokens.TokenMetadata::get_class_name_from_metadata(styled),
+      styled.get_class_name_from_metadata(),
     ),
     content=(
       #|(5, true, false, true, false, "mtk5 mtki mtku")
@@ -105,7 +110,11 @@ offsets from the token texts.
 test "tokens are addressed by index, and offsets are exclusive ends" {
   let codec = @services.LanguageIdCodec()
   let line = @tokens.LineTokens::create_from_text_and_metadata(
-    [("let", 1U), (" ", 0U), ("x", 2U)],
+    [
+      ("let", @tokens.TokenMetadata::from_uint(1U)),
+      (" ", @tokens.TokenMetadata::from_uint(0U)),
+      ("x", @tokens.TokenMetadata::from_uint(2U)),
+    ],
     codec,
   )
   debug_inspect(
@@ -139,7 +148,11 @@ flat array, not a scan.
 test "offset lookup maps a column into a token index" {
   let codec = @services.LanguageIdCodec()
   let line = @tokens.LineTokens::create_from_text_and_metadata(
-    [("let", 1U), (" ", 0U), ("x", 2U)],
+    [
+      ("let", @tokens.TokenMetadata::from_uint(1U)),
+      (" ", @tokens.TokenMetadata::from_uint(0U)),
+      ("x", @tokens.TokenMetadata::from_uint(2U)),
+    ],
     codec,
   )
   debug_inspect(
@@ -160,7 +173,11 @@ without copying it.
 test "slicing produces a view over the same underlying tokens" {
   let codec = @services.LanguageIdCodec()
   let line = @tokens.LineTokens::create_from_text_and_metadata(
-    [("hello", 1U), (" ", 0U), ("world", 2U)],
+    [
+      ("hello", @tokens.TokenMetadata::from_uint(1U)),
+      (" ", @tokens.TokenMetadata::from_uint(0U)),
+      ("world", @tokens.TokenMetadata::from_uint(2U)),
+    ],
     codec,
   )
   let sliced = line.slice_zero_copy(OffsetRange(6, 11))
@@ -185,10 +202,12 @@ line's token stream without the model ever containing that text.
 test "injected text splices new tokens into a copy" {
   let codec = @services.LanguageIdCodec()
   let line = @tokens.LineTokens::create_from_text_and_metadata(
-    [("value", 1U)],
+    [("value", @tokens.TokenMetadata::from_uint(1U))],
     codec,
   )
-  let with_hint = line.with_inserted([InsertedToken(5, " : Int", 3U)])
+  let with_hint = line.with_inserted([
+    InsertedToken(5, " : Int", @tokens.TokenMetadata::from_uint(3U)),
+  ])
   debug_inspect(
     (
       line.get_line_content(),
@@ -330,7 +349,10 @@ retain lone surrogates or either half of a valid pair, matching Monaco strings.
 test "a slice may split a surrogate pair, matching Monaco strings" {
   let codec = @services.LanguageIdCodec()
   let line = @tokens.LineTokens::create_from_text_and_metadata(
-    [("😀", 1U), ("x", 2U)],
+    [
+      ("😀", @tokens.TokenMetadata::from_uint(1U)),
+      ("x", @tokens.TokenMetadata::from_uint(2U)),
+    ],
     codec,
   )
   // The emoji is two UTF-16 units, so offset 1 is inside it.

@@ -1,11 +1,11 @@
-///| Faithful 1:1 port of vscode's encoded token metadata helpers.
+///| Behavior port of vscode's encoded token metadata helpers.
 ///
 /// Source: `src/vs/editor/common/encodedTokenAttributes.ts` (pinned `vscode/`
 /// submodule). Ports the `MetadataConsts` bit layout, the `FontStyle`/`ColorId`/
 /// `StandardTokenType` enums, and the `TokenMetadata` decoders. The 32-bit
-/// metadata word is held as `UInt` (Monaco packs it into a `Uint32Array`); the
-/// background field occupies the top byte, so an `Int` cannot hold a fully
-/// populated word.
+/// metadata word is stored as `UInt` (Monaco packs it into a `Uint32Array`) and
+/// exposed through a MoonBit-native `TokenMetadata` newtype. The background
+/// field occupies the top byte, so an `Int` cannot hold a fully populated word.
 ///
 /// Placement: Monaco keeps this file at the `editor/common/` root. The
 /// `viewer/common` root package imports `view_model`, which sits above this
@@ -100,45 +100,68 @@ pub const METADATA_FOREGROUND_OFFSET : Int = 15
 pub const METADATA_BACKGROUND_OFFSET : Int = 24
 
 ///|
-/// Namespace holder mirroring Monaco's static `TokenMetadata` class. Uninhabited
-/// — it only carries the static metadata decoders below.
-enum TokenMetadata {}
+/// One packed 32-bit token metadata word. The representation stays private so
+/// semantic APIs cannot accidentally accept an offset or another arbitrary
+/// `UInt`; encoded token arrays unwrap only at their raw storage seams.
+pub struct TokenMetadata(UInt) derive(Eq)
 
 ///|
-pub fn TokenMetadata::get_language_id(metadata : UInt) -> Int {
-  ((metadata & METADATA_LANGUAGEID_MASK) >> METADATA_LANGUAGEID_OFFSET).reinterpret_as_int()
+/// Wraps one raw encoded metadata word.
+pub fn TokenMetadata::from_uint(raw : UInt) -> TokenMetadata {
+  TokenMetadata(raw)
 }
 
 ///|
-pub fn TokenMetadata::get_token_type(metadata : UInt) -> Int {
-  ((metadata & METADATA_TOKEN_TYPE_MASK) >> METADATA_TOKEN_TYPE_OFFSET).reinterpret_as_int()
+/// Returns the raw word for flat encoded-token storage or transport.
+pub fn TokenMetadata::to_uint(self : TokenMetadata) -> UInt {
+  let TokenMetadata(raw) = self
+  raw
 }
 
 ///|
-pub fn TokenMetadata::contains_balanced_brackets(metadata : UInt) -> Bool {
-  (metadata & METADATA_BALANCED_BRACKETS_MASK) != 0
+/// Returns the encoded language id.
+pub fn TokenMetadata::get_language_id(self : TokenMetadata) -> Int {
+  ((self.to_uint() & METADATA_LANGUAGEID_MASK) >> METADATA_LANGUAGEID_OFFSET).reinterpret_as_int()
 }
 
 ///|
-pub fn TokenMetadata::get_font_style(metadata : UInt) -> Int {
-  ((metadata & METADATA_FONT_STYLE_MASK) >> METADATA_FONT_STYLE_OFFSET).reinterpret_as_int()
+/// Returns the encoded standard token type.
+pub fn TokenMetadata::get_token_type(self : TokenMetadata) -> Int {
+  ((self.to_uint() & METADATA_TOKEN_TYPE_MASK) >> METADATA_TOKEN_TYPE_OFFSET).reinterpret_as_int()
 }
 
 ///|
-pub fn TokenMetadata::get_foreground(metadata : UInt) -> Int {
-  ((metadata & METADATA_FOREGROUND_MASK) >> METADATA_FOREGROUND_OFFSET).reinterpret_as_int()
+/// Whether the token can contain balanced brackets.
+pub fn TokenMetadata::contains_balanced_brackets(self : TokenMetadata) -> Bool {
+  (self.to_uint() & METADATA_BALANCED_BRACKETS_MASK) != 0
 }
 
 ///|
-pub fn TokenMetadata::get_background(metadata : UInt) -> Int {
-  ((metadata & METADATA_BACKGROUND_MASK) >> METADATA_BACKGROUND_OFFSET).reinterpret_as_int()
+/// Returns the encoded font-style bitset.
+pub fn TokenMetadata::get_font_style(self : TokenMetadata) -> Int {
+  ((self.to_uint() & METADATA_FONT_STYLE_MASK) >> METADATA_FONT_STYLE_OFFSET).reinterpret_as_int()
 }
 
 ///|
-pub fn TokenMetadata::get_class_name_from_metadata(metadata : UInt) -> String {
-  let foreground = TokenMetadata::get_foreground(metadata)
+/// Returns the foreground color id.
+pub fn TokenMetadata::get_foreground(self : TokenMetadata) -> Int {
+  ((self.to_uint() & METADATA_FOREGROUND_MASK) >> METADATA_FOREGROUND_OFFSET).reinterpret_as_int()
+}
+
+///|
+/// Returns the background color id.
+pub fn TokenMetadata::get_background(self : TokenMetadata) -> Int {
+  ((self.to_uint() & METADATA_BACKGROUND_MASK) >> METADATA_BACKGROUND_OFFSET).reinterpret_as_int()
+}
+
+///|
+/// Returns the Monaco-compatible token CSS class list.
+pub fn TokenMetadata::get_class_name_from_metadata(
+  self : TokenMetadata,
+) -> String {
+  let foreground = self.get_foreground()
   let mut class_name = "mtk" + foreground.to_string()
-  let font_style = TokenMetadata::get_font_style(metadata)
+  let font_style = self.get_font_style()
   if (font_style & FONT_STYLE_ITALIC) != 0 {
     class_name = class_name + " mtki"
   }
@@ -155,12 +178,13 @@ pub fn TokenMetadata::get_class_name_from_metadata(metadata : UInt) -> String {
 }
 
 ///|
+/// Returns the inline CSS presentation for the supplied color map.
 pub fn TokenMetadata::get_inline_style_from_metadata(
-  metadata : UInt,
+  self : TokenMetadata,
   color_map : Array[String],
 ) -> String {
-  let foreground = TokenMetadata::get_foreground(metadata)
-  let font_style = TokenMetadata::get_font_style(metadata)
+  let foreground = self.get_foreground()
+  let font_style = self.get_font_style()
   let mut result = "color: " + color_map[foreground] + ";"
   if (font_style & FONT_STYLE_ITALIC) != 0 {
     result = result + "font-style: italic;"
@@ -192,11 +216,12 @@ pub struct TokenPresentation {
 }
 
 ///|
+/// Decodes the render-facing foreground and font-style fields.
 pub fn TokenMetadata::get_presentation_from_metadata(
-  metadata : UInt,
+  self : TokenMetadata,
 ) -> TokenPresentation {
-  let foreground = TokenMetadata::get_foreground(metadata)
-  let font_style = TokenMetadata::get_font_style(metadata)
+  let foreground = self.get_foreground()
+  let font_style = self.get_font_style()
   {
     foreground,
     italic: (font_style & FONT_STYLE_ITALIC) != 0,

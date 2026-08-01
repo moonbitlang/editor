@@ -198,10 +198,7 @@ test "language id round-trips through the process-wide codec" {
     assert_true(tokens.get_count() >= 1)
     for i in 0..<tokens.get_count() {
       assert_eq(tokens.get_language_id(i), "part-null-language")
-      assert_eq(
-        @common_tokens.TokenMetadata::get_language_id(tokens.get_metadata(i)),
-        expected_id,
-      )
+      assert_eq(tokens.get_metadata(i).get_language_id(), expected_id)
     }
   }
 }

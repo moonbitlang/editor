@@ -56,11 +56,13 @@ pub fn LineTokens::LineTokens(
 }
 
 ///|
-/// The default metadata word (no font style, default fg/bg colors).
-pub fn LineTokens::default_token_metadata() -> UInt {
-  ((FONT_STYLE_NONE << METADATA_FONT_STYLE_OFFSET) |
-  (COLOR_ID_DEFAULT_FOREGROUND << METADATA_FOREGROUND_OFFSET) |
-  (COLOR_ID_DEFAULT_BACKGROUND << METADATA_BACKGROUND_OFFSET)).reinterpret_as_uint()
+/// The default metadata value (no font style, default fg/bg colors).
+pub fn LineTokens::default_token_metadata() -> TokenMetadata {
+  TokenMetadata::from_uint(
+    ((FONT_STYLE_NONE << METADATA_FONT_STYLE_OFFSET) |
+    (COLOR_ID_DEFAULT_FOREGROUND << METADATA_FOREGROUND_OFFSET) |
+    (COLOR_ID_DEFAULT_BACKGROUND << METADATA_BACKGROUND_OFFSET)).reinterpret_as_uint(),
+  )
 }
 
 ///|
@@ -70,14 +72,14 @@ pub fn LineTokens::create_empty(
 ) -> LineTokens {
   let tokens : Array[UInt] = [
     line_content.length().reinterpret_as_uint(),
-    LineTokens::default_token_metadata(),
+    LineTokens::default_token_metadata().to_uint(),
   ]
   LineTokens(tokens, line_content, decoder)
 }
 
 ///|
 pub fn LineTokens::create_from_text_and_metadata(
-  data : Array[(String, UInt)],
+  data : Array[(String, TokenMetadata)],
   decoder : @services.LanguageIdCodec,
 ) -> LineTokens {
   let tokens : Array[UInt] = []
@@ -85,7 +87,7 @@ pub fn LineTokens::create_from_text_and_metadata(
     let (text, metadata) = item
     let offset = offset + text.length()
     tokens.push(offset.reinterpret_as_uint())
-    tokens.push(metadata)
+    tokens.push(metadata.to_uint())
     continue offset, full_text + text
   } nobreak {
     full_text
@@ -178,14 +180,14 @@ pub fn LineTokens::slice_zero_copy(
 pub struct InsertedToken {
   offset : Int
   text : String
-  token_metadata : UInt
+  token_metadata : TokenMetadata
 }
 
 ///|
 pub fn InsertedToken::InsertedToken(
   offset : Int,
   text : String,
-  token_metadata : UInt,
+  token_metadata : TokenMetadata,
 ) -> InsertedToken {
   { offset, text, token_metadata }
 }
@@ -236,7 +238,7 @@ pub fn LineTokens::with_inserted(
         let metadata = if next_original_token_idx < self.tokens_count {
           self.tokens[(next_original_token_idx << 1) + 1]
         } else {
-          LineTokens::default_token_metadata()
+          LineTokens::default_token_metadata().to_uint()
         }
         new_tokens.push(text.length().reinterpret_as_uint())
         new_tokens.push(metadata)
@@ -244,7 +246,7 @@ pub fn LineTokens::with_inserted(
       }
       text = text + next_insert_token.text
       new_tokens.push(text.length().reinterpret_as_uint())
-      new_tokens.push(next_insert_token.token_metadata)
+      new_tokens.push(next_insert_token.token_metadata.to_uint())
       next_insert_token_idx = next_insert_token_idx + 1
     } else {
       break
@@ -269,8 +271,11 @@ pub fn LineTokens::get_end_offset(self : LineTokens, token_index : Int) -> Int {
 }
 
 ///|
-pub fn LineTokens::get_metadata(self : LineTokens, token_index : Int) -> UInt {
-  self.tokens[(token_index << 1) + 1]
+pub fn LineTokens::get_metadata(
+  self : LineTokens,
+  token_index : Int,
+) -> TokenMetadata {
+  TokenMetadata::from_uint(self.tokens[(token_index << 1) + 1])
 }
 
 ///|
@@ -278,10 +283,8 @@ pub fn LineTokens::get_language_id(
   self : LineTokens,
   token_index : Int,
 ) -> String {
-  let metadata = self.tokens[(token_index << 1) + 1]
-  self.language_id_codec.decode_language_id(
-    TokenMetadata::get_language_id(metadata),
-  )
+  let metadata = self.get_metadata(token_index)
+  self.language_id_codec.decode_language_id(metadata.get_language_id())
 }
 
 ///|
@@ -289,12 +292,12 @@ pub fn LineTokens::get_standard_token_type(
   self : LineTokens,
   token_index : Int,
 ) -> Int {
-  TokenMetadata::get_token_type(self.tokens[(token_index << 1) + 1])
+  self.get_metadata(token_index).get_token_type()
 }
 
 ///|
 pub fn LineTokens::get_foreground(self : LineTokens, token_index : Int) -> Int {
-  TokenMetadata::get_foreground(self.tokens[(token_index << 1) + 1])
+  self.get_metadata(token_index).get_foreground()
 }
 
 ///|
@@ -302,9 +305,7 @@ pub fn LineTokens::get_class_name(
   self : LineTokens,
   token_index : Int,
 ) -> String {
-  TokenMetadata::get_class_name_from_metadata(
-    self.tokens[(token_index << 1) + 1],
-  )
+  self.get_metadata(token_index).get_class_name_from_metadata()
 }
 
 ///|
@@ -313,10 +314,7 @@ pub fn LineTokens::get_inline_style(
   token_index : Int,
   color_map : Array[String],
 ) -> String {
-  TokenMetadata::get_inline_style_from_metadata(
-    self.tokens[(token_index << 1) + 1],
-    color_map,
-  )
+  self.get_metadata(token_index).get_inline_style_from_metadata(color_map)
 }
 
 ///|
@@ -324,9 +322,7 @@ pub fn LineTokens::get_presentation(
   self : LineTokens,
   token_index : Int,
 ) -> TokenPresentation {
-  TokenMetadata::get_presentation_from_metadata(
-    self.tokens[(token_index << 1) + 1],
-  )
+  self.get_metadata(token_index).get_presentation_from_metadata()
 }
 
 ///|
@@ -412,7 +408,7 @@ fn SliceLineTokens::get_line_content(self : SliceLineTokens) -> String {
 fn SliceLineTokens::get_metadata(
   self : SliceLineTokens,
   token_index : Int,
-) -> UInt {
+) -> TokenMetadata {
   self.source.get_metadata(self.first_token_index + token_index)
 }
 
@@ -535,7 +531,7 @@ pub fn ViewLineTokens::get_line_content(self : ViewLineTokens) -> String {
 pub fn ViewLineTokens::get_metadata(
   self : ViewLineTokens,
   token_index : Int,
-) -> UInt {
+) -> TokenMetadata {
   match self {
     Full(tokens) => tokens.get_metadata(token_index)
     Slice(tokens) => tokens.get_metadata(token_index)

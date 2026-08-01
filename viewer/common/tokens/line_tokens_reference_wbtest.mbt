@@ -42,7 +42,7 @@ fn render_line_tokens(tokens : LineTokens) -> String {
   let mut last_offset = 0
   for i in 0..<tokens.get_count() {
     result.write_string(substr(str, last_offset, tokens.get_end_offset(i)))
-    result.write_string("(\{tokens.get_metadata(i)})")
+    result.write_string("(\{tokens.get_metadata(i).to_uint()})")
     last_offset = tokens.get_end_offset(i)
   }
   result.to_string()
@@ -71,9 +71,9 @@ test "withInserted 1" {
     "Hello (32768)world, (65536)this (98304)is (131072)a (163840)lovely (196608)day(229376)",
   )
   let line_tokens2 = line_tokens.with_inserted([
-    { offset: 0, text: "1", token_metadata: 0 },
-    { offset: 6, text: "2", token_metadata: 0 },
-    { offset: 9, text: "3", token_metadata: 0 },
+    { offset: 0, text: "1", token_metadata: TokenMetadata::from_uint(0U) },
+    { offset: 6, text: "2", token_metadata: TokenMetadata::from_uint(0U) },
+    { offset: 9, text: "3", token_metadata: TokenMetadata::from_uint(0U) },
   ])
   assert_eq(
     render_line_tokens(line_tokens2),
@@ -89,9 +89,9 @@ test "withInserted (tokens at the same position)" {
     "Hello (32768)world, (65536)this (98304)is (131072)a (163840)lovely (196608)day(229376)",
   )
   let line_tokens2 = line_tokens.with_inserted([
-    { offset: 0, text: "1", token_metadata: 0 },
-    { offset: 0, text: "2", token_metadata: 0 },
-    { offset: 0, text: "3", token_metadata: 0 },
+    { offset: 0, text: "1", token_metadata: TokenMetadata::from_uint(0U) },
+    { offset: 0, text: "2", token_metadata: TokenMetadata::from_uint(0U) },
+    { offset: 0, text: "3", token_metadata: TokenMetadata::from_uint(0U) },
   ])
   assert_eq(
     render_line_tokens(line_tokens2),
@@ -108,8 +108,8 @@ test "withInserted (tokens at the end)" {
   )
   let len = "Hello world, this is a lovely day".length()
   let line_tokens2 = line_tokens.with_inserted([
-    { offset: len - 1, text: "1", token_metadata: 0 },
-    { offset: len, text: "2", token_metadata: 0 },
+    { offset: len - 1, text: "1", token_metadata: TokenMetadata::from_uint(0U) },
+    { offset: len, text: "2", token_metadata: TokenMetadata::from_uint(0U) },
   ])
   assert_eq(
     render_line_tokens(line_tokens2),
