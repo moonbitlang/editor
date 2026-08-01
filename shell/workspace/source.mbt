@@ -113,7 +113,7 @@ pub fn infer_language_id(path_or_name : String) -> String {
 ///|
 fn contains_null(value : String) -> Bool {
   for unit in value.code_units() {
-    if unit.to_int() == 0 {
+    if unit == 0 {
       return true
     }
   }

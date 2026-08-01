@@ -19,29 +19,29 @@ pub struct WordAtPosition {
 } derive(Eq, Debug)
 
 ///|
-fn is_ascii_digit(code : Int) -> Bool {
-  48 <= code && code <= 57
+fn is_ascii_digit(code : UInt16) -> Bool {
+  code >= '0' && code <= '9'
 }
 
 ///|
 /// `\w` = `[A-Za-z0-9_]` (ASCII, no `u` flag).
-fn is_regex_word_char(code : Int) -> Bool {
-  (65 <= code && code <= 90) ||
-  (97 <= code && code <= 122) ||
+fn is_regex_word_char(code : UInt16) -> Bool {
+  (code >= 'A' && code <= 'Z') ||
+  (code >= 'a' && code <= 'z') ||
   is_ascii_digit(code) ||
-  code == 95
+  code == '_'
 }
 
 ///|
 /// Whether `code` is a default word separator or whitespace, i.e. excluded from
 /// the `[^...\s]+` character class (`wordHelper.ts:39`). Whitespace follows the
 /// repo convention (space/tab), the only whitespace present in line content.
-fn is_word_break(code : Int) -> Bool {
-  if code == 32 || code == 9 {
+fn is_word_break(code : UInt16) -> Bool {
+  if code is (' ' | '\t') {
     return true
   }
   for unit in usual_word_separators.code_units() {
-    if unit.to_int() == code {
+    if unit == code {
       return true
     }
   }
@@ -55,24 +55,24 @@ fn is_word_break(code : Int) -> Bool {
 /// recover a failed match.
 fn match_number(text : String, i : Int) -> Int? {
   let len = text.length()
-  let j = if i < len && text[i].to_int() == 45 { // '-'
+  let j = if i < len && text[i] == '-' {
     i + 1
   } else {
     i
   }
-  let j = for j = j; j < len && is_ascii_digit(text[j].to_int()); {
+  let j = for j = j; j < len && is_ascii_digit(text[j]); {
     continue j + 1
   } nobreak {
     j
   }
-  if j >= len || text[j].to_int() != 46 { // '.'
+  if j >= len || text[j] != '.' {
     return None
   }
   let j = j + 1
-  if j >= len || !is_ascii_digit(text[j].to_int()) {
+  if j >= len || !is_ascii_digit(text[j]) {
     return None
   }
-  for j = j + 1; j < len && is_regex_word_char(text[j].to_int()); {
+  for j = j + 1; j < len && is_regex_word_char(text[j]); {
     continue j + 1
   } nobreak {
     Some(j)
@@ -84,7 +84,7 @@ fn match_number(text : String, i : Int) -> Int? {
 /// exclusive end index or `None`.
 fn match_word_run(text : String, i : Int) -> Int? {
   let len = text.length()
-  let j = for j = i; j < len && !is_word_break(text[j].to_int()); {
+  let j = for j = i; j < len && !is_word_break(text[j]); {
     continue j + 1
   } nobreak {
     j
