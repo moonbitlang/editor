@@ -676,9 +676,10 @@ pub fn LinesLayout::has_whitespace(self : LinesLayout) -> Bool {
 /// The maximum min width over all whitespaces.
 pub fn LinesLayout::get_whitespace_min_width(self : LinesLayout) -> Int {
   if self.min_width == -1 {
-    let mut min_width = 0
-    for i in 0..<self.arr.length() {
-      min_width = min_width.max(self.arr[i].min_width)
+    let min_width = for whitespace in self.arr; min_width = 0 {
+      continue min_width.max(whitespace.min_width)
+    } nobreak {
+      min_width
     }
     self.min_width = min_width
   }

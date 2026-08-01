@@ -98,9 +98,7 @@ pub fn markdown_sections(
     // nested section on its own iteration.
     let body_indexes = []
     let mut end_offset = anchor.source_range.end_exclusive
-    for follower = index + 1
-        follower < anchors.length()
-        follower = follower + 1 {
+    for follower in (index + 1)..<anchors.length() {
       let candidate = anchors[follower]
       if markdown_anchor_section_level(candidate) is Some(candidate_level) &&
         candidate_level <= level {

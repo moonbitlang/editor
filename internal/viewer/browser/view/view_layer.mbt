@@ -232,11 +232,10 @@ fn[T] ViewLayerRenderer::finish_rendering_new_lines(
     nodes
   }
   record_view_layer_mutation("new-batch")
-  let mut child_index = parsed_nodes.length() - 1
-  for index = ctx.lines_length - 1; index >= 0; index = index - 1 {
+  for index in ctx.lines_length>..0; child_index = parsed_nodes.length() - 1 {
     if was_new[index] {
       (self.set_dom_node)(ctx.lines[index], parsed_nodes[child_index])
-      child_index -= 1
+      continue child_index - 1
     }
   }
 }

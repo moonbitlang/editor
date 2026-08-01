@@ -96,12 +96,13 @@ fn index_of_char(s : String, code : Int, from : Int) -> Int {
 /// JS `str.split(<single-char sep>)` semantics (keeps empty parts).
 fn js_split_char(s : String, code : Int) -> Array[String] {
   let parts : Array[String] = []
-  let mut start = 0
-  for i in 0..<s.length() {
+  let start = for i in 0..<s.length(); start = 0 {
     if s[i].to_int() == code {
       parts.push(js_slice(s, start, end=i))
-      start = i + 1
+      continue i + 1
     }
+  } nobreak {
+    start
   }
   parts.push(js_slice(s, start))
   parts
@@ -499,18 +500,17 @@ pub fn Win32::join(paths : Array[String]) -> String {
   if paths is [] {
     return "."
   }
-  let mut joined : String? = None
-  let mut first_part : String? = None
-  for arg in paths {
+  let (joined, first_part) = for
+    arg in paths
+    joined = (None : String?), first_part = (None : String?) {
     if arg.length() > 0 {
       match joined {
-        None => {
-          joined = Some(arg)
-          first_part = Some(arg)
-        }
-        Some(so_far) => joined = Some(so_far + "\\" + arg)
+        None => continue Some(arg), Some(arg)
+        Some(so_far) => continue Some(so_far + "\\" + arg), first_part
       }
     }
+  } nobreak {
+    (joined, first_part)
   }
   guard joined is Some(joined_value) else { return "." }
   let mut joined = joined_value

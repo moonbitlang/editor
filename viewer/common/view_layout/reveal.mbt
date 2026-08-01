@@ -138,16 +138,23 @@ pub fn ViewLayout::compute_scroll_left_to_reveal(
   minimal_reveal? : Bool = false,
 ) -> Double? {
   guard ranges is [(first_left, first_width), ..] else { return None }
-  let mut box_start_x = first_left.round()
-  let mut box_end_x = (first_left + first_width).round()
-  for index in 1..<ranges.length() {
-    let (left, width) = ranges[index]
-    box_start_x = box_start_x.min(left.round())
-    box_end_x = box_end_x.max((left + width).round())
+  let (box_start_x, box_end_x) = for
+    range in ranges[1:]
+    box_start_x = first_left.round(),
+    box_end_x = (first_left + first_width).round() {
+    let (left, width) = range
+    continue box_start_x.min(left.round()),
+      box_end_x.max((left + width).round())
+  } nobreak {
+    (box_start_x, box_end_x)
   }
-  if !minimal_reveal {
-    box_start_x = 0.0.max(box_start_x - horizontal_extra_px)
-    box_end_x += reveal_horizontal_right_padding
+  let (box_start_x, box_end_x) = if minimal_reveal {
+    (box_start_x, box_end_x)
+  } else {
+    (
+      0.0.max(box_start_x - horizontal_extra_px),
+      box_end_x + reveal_horizontal_right_padding,
+    )
   }
   // Horizontal measurement uses the current viewport; only the vertical
   // reveal composition above consults the future animated destination.

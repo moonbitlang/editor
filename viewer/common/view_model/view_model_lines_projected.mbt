@@ -336,17 +336,18 @@ fn normalize_line_ranges(
     @base_common.Range::compare_ranges_using_starts(a, b)
   })
   let result : Array[@base_common.Range] = []
-  let mut current_range_start = sorted_ranges[0].start_line_number
-  let mut current_range_end = sorted_ranges[0].end_line_number
-  for i in 1..<sorted_ranges.length() {
-    let range = sorted_ranges[i]
+  let (current_range_start, current_range_end) = for
+    range in sorted_ranges[1:]
+    current_range_start = sorted_ranges[0].start_line_number,
+    current_range_end = sorted_ranges[0].end_line_number {
     if range.start_line_number > current_range_end + 1 {
       result.push(Range(current_range_start, 1, current_range_end, 1))
-      current_range_start = range.start_line_number
-      current_range_end = range.end_line_number
+      continue range.start_line_number, range.end_line_number
     } else if range.end_line_number > current_range_end {
-      current_range_end = range.end_line_number
+      continue current_range_start, range.end_line_number
     }
+  } nobreak {
+    (current_range_start, current_range_end)
   }
   result.push(Range(current_range_start, 1, current_range_end, 1))
   result

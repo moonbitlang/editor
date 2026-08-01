@@ -807,10 +807,9 @@ fn markdown_text_boundary_at_from(
     }
     return (None, consumed_after)
   }
-  let mut consumed = consumed_before
-  for child_index = 0
-      child_index < root.get_child_count()
-      child_index = child_index + 1 {
+  let consumed = for
+    child_index in 0..<root.get_child_count()
+    consumed = consumed_before {
     let (boundary, consumed_after) = markdown_text_boundary_at_from(
       root.get_child(child_index),
       wanted,
@@ -819,7 +818,9 @@ fn markdown_text_boundary_at_from(
     if boundary is Some(_) {
       return (boundary, consumed_after)
     }
-    consumed = consumed_after
+    continue consumed_after
+  } nobreak {
+    consumed
   }
   (None, consumed)
 }

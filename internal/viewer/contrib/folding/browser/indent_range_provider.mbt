@@ -141,48 +141,43 @@ pub fn RangesCollector::to_indent_ranges(
     // reverse and create arrays of the exact length
     let start_indexes = FixedArray::make(self.length, 0U)
     let end_indexes = FixedArray::make(self.length, 0U)
-    for i = self.length - 1, k = 0; i >= 0; i = i - 1, k = k + 1 {
+    for i in self.length>..0; k = 0 {
       start_indexes[k] = self.start_indexes[i].reinterpret_as_uint()
       end_indexes[k] = self.end_indexes[i].reinterpret_as_uint()
+      continue k + 1
     }
     FoldingRegions(start_indexes, end_indexes)
   } else {
     (self.folding_ranges_limit.update)(self.length, Some(limit))
-    let mut entries = 0
-    let mut max_indent = self.indent_occurrences.length()
-    for i in 0..<self.indent_occurrences.length() {
-      let n = self.indent_occurrences[i]
+    let (entries, max_indent) = for i, n in self.indent_occurrences; entries = 0 {
       if n > 0 {
         if n + entries > limit {
-          max_indent = i
-          break
+          break (entries, i)
         }
-        entries += n
+        continue entries + n
       }
+    } nobreak {
+      (entries, self.indent_occurrences.length())
     }
     // reverse and create arrays of the exact length
     let start_indexes = FixedArray::make(limit, 0U)
     let end_indexes = FixedArray::make(limit, 0U)
-    let mut k = 0
-    for i = self.length - 1; i >= 0; i = i - 1 {
+    for i in self.length>..0; k = 0, entries = entries {
       let start_index = self.start_indexes[i]
       let line_content = model.snapshot.line_text(start_index - 1)
       let indent = @model.compute_indent_level(line_content, tab_size)
       // `indent < maxIndent || (indent === maxIndent && entries++ < limit)`
-      let take = indent < max_indent ||
-        (
-          indent == max_indent &&
-          ({
-            let before = entries
-            entries += 1
-            before < limit
-          })
-        )
+      let (take, next_entries) = if indent == max_indent {
+        (entries < limit, entries + 1)
+      } else {
+        (indent < max_indent, entries)
+      }
       if take {
         start_indexes[k] = start_index.reinterpret_as_uint()
         end_indexes[k] = self.end_indexes[i].reinterpret_as_uint()
-        k += 1
+        continue k + 1, next_entries
       }
+      continue k, next_entries
     }
     FoldingRegions(start_indexes, end_indexes)
   }
@@ -231,7 +226,7 @@ pub fn compute_ranges(
     end_above: line_count + 1,
     line: line_count + 1,
   })
-  for line = line_count; line > 0; {
+  for line in line_count>=..1 {
     let line_content = model.snapshot.line_text(line - 1)
     let indent = @model.compute_indent_level(line_content, tab_size)
     let mut previous = previous_regions[previous_regions.length() - 1]
@@ -242,7 +237,7 @@ pub fn compute_ranges(
         // this only impacts the end position of the block before
         previous.end_above = line
       }
-      continue line - 1 // only whitespace
+      continue // only whitespace
     }
     let mut is_start_match = false
     let mut is_end_match = false
@@ -273,13 +268,13 @@ pub fn compute_ranges(
           previous.line = line
           previous.indent = indent
           previous.end_above = line
-          continue line - 1
+          continue
         }
         // else: no end marker found, treat line as a regular line
       } else {
         // end pattern match
         previous_regions.push({ indent: -2, end_above: line, line })
-        continue line - 1
+        continue
       }
     }
     if previous.indent > indent {
@@ -304,7 +299,6 @@ pub fn compute_ranges(
       // previous.indent < indent: new region with a bigger indent
       previous_regions.push({ indent, end_above: line, line })
     }
-    continue line - 1
   }
   result.to_indent_ranges(model, tab_size~)
 }

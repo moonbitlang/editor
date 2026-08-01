@@ -841,7 +841,7 @@ fn as_formatted(uri : Uri, skip_encoding : Bool) -> String {
 
 ///|
 fn last_index_of_char(s : String, code : Int) -> Int {
-  for i = s.length() - 1; i >= 0; i = i - 1 {
+  for i in s.length()>..0 {
     if s[i].to_int() == code {
       return i
     }

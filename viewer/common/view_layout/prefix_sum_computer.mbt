@@ -336,9 +336,10 @@ fn ConstantTimePrefixSumComputer::ensure_valid(self : Self) -> Unit {
   }
   let len = self.values.length()
   let prefix_sum = Array::make(len, 0)
-  let mut total = 0
-  for v in self.values {
-    total += v
+  let total = for value in self.values; total = 0 {
+    continue total + value
+  } nobreak {
+    total
   }
   let index_by_sum = Array::make(total, 0)
   for i in 0..<len {

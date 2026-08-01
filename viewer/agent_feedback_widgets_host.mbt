@@ -132,7 +132,7 @@ fn Viewer::rebuild_agent_feedback_widgets(self : Viewer) -> Unit {
     return
   }
   let groups = @agent_feedback.group_nearby_session_editor_comments(comments)
-  for index = groups.length() - 1; index >= 0; index = index - 1 {
+  for index in groups.length()>..0 {
     let group = groups[index]
     let widget_id = "agent-feedback-widget-" + wc.widget_id_pool.to_string()
     wc.widget_id_pool += 1

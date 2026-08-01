@@ -35,11 +35,12 @@ fn handle_view_event_batch(
   on_event : (ViewEvent) -> Bool,
   force_dirty : () -> Unit,
 ) -> Unit {
-  let mut should_render = false
-  for event in events {
+  let should_render = for event in events; should_render = false {
     if on_event(event) {
-      should_render = true
+      continue true
     }
+  } nobreak {
+    should_render
   }
   if should_render {
     force_dirty()

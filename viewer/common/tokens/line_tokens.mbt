@@ -81,15 +81,15 @@ pub fn LineTokens::create_from_text_and_metadata(
   data : Array[(String, UInt)],
   decoder : @services.LanguageIdCodec,
 ) -> LineTokens {
-  let mut offset = 0
-  let mut full_text = ""
   let tokens : Array[UInt] = []
-  for item in data {
+  let full_text = for item in data; offset = 0, full_text = "" {
     let (text, metadata) = item
-    offset = offset + text.length()
+    let offset = offset + text.length()
     tokens.push(offset.reinterpret_as_uint())
     tokens.push(metadata)
-    full_text = full_text + text
+    continue offset, full_text + text
+  } nobreak {
+    full_text
   }
   LineTokens(tokens, full_text, decoder)
 }
@@ -382,13 +382,14 @@ fn SliceLineTokens::new(
   delta_offset : Int,
 ) -> SliceLineTokens {
   let first_token_index = source.find_token_index_at_offset(start_offset)
-  let mut tokens_count = 0
-  for i = first_token_index; i < source.get_count(); i = i + 1 {
+  let tokens_count = for i in first_token_index..<source.get_count(); count = 0 {
     let token_start_offset = source.get_start_offset(i)
     if token_start_offset >= end_offset {
-      break
+      break count
     }
-    tokens_count = tokens_count + 1
+    continue count + 1
+  } nobreak {
+    count
   }
   {
     source,

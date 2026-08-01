@@ -82,12 +82,12 @@ fn TokenizerSyntaxTokenBackend::handle_attached_view_state_change(
 ) -> Unit {
   match change.state {
     Some(state) => {
-      let mut index = -1
-      for i, entry in self.attached_view_states {
+      let index = for i, entry in self.attached_view_states {
         if entry.view.same(change.view) {
-          index = i
-          break
+          break i
         }
+      } nobreak {
+        -1
       }
       let handler = if index >= 0 {
         self.attached_view_states[index].handler
@@ -109,12 +109,12 @@ fn TokenizerSyntaxTokenBackend::handle_attached_view_state_change(
       handler.handle_state_change(state)
     }
     None => {
-      let mut index = -1
-      for i, entry in self.attached_view_states {
+      let index = for i, entry in self.attached_view_states {
         if entry.view.same(change.view) {
-          index = i
-          break
+          break i
         }
+      } nobreak {
+        -1
       }
       if index >= 0 {
         self.attached_view_states[index].handler.dispose()
