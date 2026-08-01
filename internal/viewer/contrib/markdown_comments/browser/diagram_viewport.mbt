@@ -118,6 +118,9 @@ priv struct MarkdownCommentDiagramViewport {
 
 ///|
 priv struct MarkdownCommentDiagramViewportLifetime {
+  target : @rdom.Element
+  on_size_changed : () -> Unit
+  schedule_frame : (() -> Unit) -> () -> Unit
   controllers : Array[MarkdownCommentDiagramViewport]
   mut active : Bool
 }
@@ -131,7 +134,7 @@ priv enum DiagramViewportMountResult {
 
 ///|
 /// Owns the interactive diagram viewports mounted in one rendered Markdown
-/// comment. Only successful, direct Diago SVG children are enhanced. The
+/// comment. Successful direct Diago and Mermaid SVG children are enhanced. The
 /// caller retains ownership of the Markdown target and disposes this handle
 /// before replacing or removing that target.
 pub struct MarkdownCommentDiagramViewports {
@@ -140,7 +143,9 @@ pub struct MarkdownCommentDiagramViewports {
 
 ///|
 /// Synchronously mounts controls and resize handles for every matching direct
-/// Diago SVG. Geometry is initialized at the next animation-frame boundary.
+/// Diago or Mermaid SVG. Geometry is initialized at the next animation-frame
+/// boundary. Call `refresh` after an asynchronous renderer commits or replaces
+/// a direct SVG.
 /// `on_size_changed` invalidates the owning Markdown-comment ViewZone whenever
 /// this component writes a new inline viewport height.
 ///
@@ -148,7 +153,7 @@ pub struct MarkdownCommentDiagramViewports {
 /// direction: right
 ///
 /// group: viewport group
-/// controller: one controller per Diago SVG
+/// controller: one controller per Diago or Mermaid SVG
 /// wrapper: borrowed wrapper and SVG
 /// hooks: pointer, wheel, resize hooks
 /// cursor: body-cursor lease
@@ -172,23 +177,59 @@ pub fn MarkdownCommentDiagramViewports::MarkdownCommentDiagramViewports(
     () => registration.dispose()
   }
   let lifetime : MarkdownCommentDiagramViewportLifetime = {
+    target,
+    on_size_changed,
+    schedule_frame,
     controllers: [],
     active: true,
   }
+  lifetime.refresh()
+  { lifetime, }
+}
+
+///|
+/// Reconciles asynchronously committed or replaced Mermaid SVGs with their
+/// interactive viewport controllers. Existing current controllers retain
+/// their interaction state; stale controllers are disposed before replacement
+/// SVGs are mounted.
+pub fn MarkdownCommentDiagramViewports::refresh(
+  self : MarkdownCommentDiagramViewports,
+) -> Unit {
+  self.lifetime.refresh()
+}
+
+///|
+fn MarkdownCommentDiagramViewportLifetime::refresh(
+  self : MarkdownCommentDiagramViewportLifetime,
+) -> Unit {
+  if !self.active {
+    return
+  }
+  for index = self.controllers.length() - 1; index >= 0; index = index - 1 {
+    let controller = self.controllers[index]
+    if !controller.is_current() {
+      self.controllers.remove(index) |> ignore
+      controller.dispose()
+    }
+  }
   let candidates : Array[@rdom.Element] = []
-  collect_diagram_viewport_candidates(target, candidates)
+  collect_diagram_viewport_candidates(self.target, candidates)
   for candidate in candidates {
-    if !lifetime.active {
+    if !self.active {
       break
     }
     match
-      mount_diagram_viewport(candidate, target, on_size_changed, schedule_frame) {
-      Mounted(controller) => lifetime.controllers.push(controller)
+      mount_diagram_viewport(
+        candidate,
+        self.target,
+        self.on_size_changed,
+        self.schedule_frame,
+      ) {
+      Mounted(controller) => self.controllers.push(controller)
       Skipped => ()
-      Failed => lifetime.dispose()
+      Failed => self.dispose()
     }
   }
-  { lifetime, }
 }
 
 ///|
@@ -222,8 +263,9 @@ fn collect_diagram_viewport_candidates(
   candidates : Array[@rdom.Element],
 ) -> Unit {
   for child in root.get_children() {
+    let language = element_attribute_or_empty(child, "data-diagram-language")
     if element_has_class(child, "moonbit-viewer-markdown-diagram") &&
-      element_attribute_or_empty(child, "data-diagram-language") == "diago" &&
+      (language == "diago" || language == "mermaid") &&
       !element_has_class(child, diagram_viewport_class) &&
       direct_svg_child(child) is Some(_) {
       candidates.push(child)
@@ -354,7 +396,14 @@ fn mount_diagram_viewport_in_environment(
   }
   add_element_class(wrapper, diagram_viewport_class)
   wrapper.set_attribute("tabindex", "0")
-  wrapper.set_attribute("aria-label", "Interactive Diago diagram")
+  wrapper.set_attribute(
+    "aria-label",
+    if element_attribute_or_empty(wrapper, "data-diagram-language") == "mermaid" {
+      "Interactive Mermaid diagram"
+    } else {
+      "Interactive Diago diagram"
+    },
+  )
   @base_browser.set_style_property(wrapper, "overflow", "hidden")
   @base_browser.set_style_property(content, "transform-origin", "0 0")
   wrapper.insert_before(
@@ -1081,6 +1130,23 @@ fn MarkdownCommentDiagramViewport::finish_resize(
   self.is_resizing = false
   self.resize_pointer_id = None
   self.restore_body_cursor()
+}
+
+///|
+fn MarkdownCommentDiagramViewport::is_current(
+  self : MarkdownCommentDiagramViewport,
+) -> Bool {
+  guard self.active && element_has_class(self.wrapper, diagram_viewport_class) else {
+    return false
+  }
+  guard self.content.get_parent_node().to_option() is Some(content_parent) &&
+    content_parent.is_same_node(self.wrapper.as_node()) else {
+    return false
+  }
+  match self.svg.get_parent_node().to_option() {
+    Some(svg_parent) => svg_parent.is_same_node(self.content.as_node())
+    None => false
+  }
 }
 
 ///|

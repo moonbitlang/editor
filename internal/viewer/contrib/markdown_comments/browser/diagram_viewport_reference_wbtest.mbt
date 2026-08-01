@@ -340,6 +340,10 @@ extern "js" fn diagram_viewport_test_target(
   #|     add('d2', true, 400, 200, 200, 100);
   #|     add('diago', false, 400, 200, 200, 100);
   #|     add('diago', true, 400, 200, 200, 100);
+  #|   } else if (mode === 'mermaid') {
+  #|     add('mermaid', true, 400, 200, 200, 100);
+  #|   } else if (mode === 'mermaid-pending') {
+  #|     add('mermaid', false, 400, 200, 200, 100);
   #|   } else if (mode === 'wide') {
   #|     add('diago', true, 400, 400, 800, 400);
   #|   } else if (mode === 'tall') {
@@ -348,6 +352,25 @@ extern "js" fn diagram_viewport_test_target(
   #|     add('diago', true, 400, 100, 200, 100);
   #|   }
   #|   return target;
+  #| }
+
+///|
+extern "js" fn diagram_viewport_test_commit_mermaid_svg(
+  harness : DiagramViewportTestHarness,
+  width : Double,
+  height : Double,
+) -> Unit =
+  #| (harness, width, height) => {
+  #|   const wrapper = harness.wrappers.find(
+  #|     candidate => candidate.getAttribute('data-diagram-language') === 'mermaid',
+  #|   );
+  #|   if (!wrapper) throw new Error('missing Mermaid wrapper');
+  #|   while (wrapper.firstChild) wrapper.removeChild(wrapper.firstChild);
+  #|   const svg = harness.document.createElement('svg');
+  #|   svg.setAttribute('height', String(height));
+  #|   svg.__width = width;
+  #|   svg.__height = height;
+  #|   wrapper.appendChild(svg);
   #| }
 
 ///|
@@ -831,6 +854,48 @@ test "empty wrong-language and indirect SVG targets are exact no-ops" {
     mixed.dispose()
     diagram_viewport_test_flush_frame(harness)
   })
+}
+
+///|
+test "refresh mounts asynchronous Mermaid SVGs and replaces stale controllers" {
+  let harness = install_diagram_viewport_test_dom()
+  defer harness.dispose()
+  let target = diagram_viewport_test_target(harness, "mermaid-pending")
+  let viewports = MarkdownCommentDiagramViewports(target, () => ())
+  defer viewports.dispose()
+  assert_eq(diagram_viewport_test_controller_count(viewports.lifetime), 0)
+  assert_eq(diagram_viewport_test_observer_count(harness), 0)
+
+  diagram_viewport_test_commit_mermaid_svg(harness, 200.0, 100.0)
+  viewports.refresh()
+  assert_eq(diagram_viewport_test_controller_count(viewports.lifetime), 1)
+  assert_eq(diagram_viewport_test_observer_count(harness), 1)
+  assert_eq(
+    diagram_viewport_test_attribute(
+      viewports.lifetime,
+      0,
+      "wrapper",
+      "aria-label",
+    ),
+    "Interactive Mermaid diagram",
+  )
+  diagram_viewport_test_flush_frame(harness)
+
+  // Mermaid theme rerenders replace wrapper children. Refresh must dispose
+  // the now-detached controller before enhancing the new direct SVG.
+  diagram_viewport_test_commit_mermaid_svg(harness, 300.0, 120.0)
+  viewports.refresh()
+  assert_eq(diagram_viewport_test_controller_count(viewports.lifetime), 1)
+  assert_eq(diagram_viewport_test_observer_count(harness), 2)
+  assert_eq(diagram_viewport_test_disconnect_count(harness, 0), 1)
+  assert_eq(diagram_viewport_test_pending_frames(harness), 1)
+  diagram_viewport_test_flush_frame(harness)
+  assert_eq(
+    diagram_viewport_test_wrapper_height(viewports.lifetime, 0),
+    "120px",
+  )
+  viewports.dispose()
+  assert_eq(diagram_viewport_test_disconnect_count(harness, 1), 1)
 }
 
 ///|

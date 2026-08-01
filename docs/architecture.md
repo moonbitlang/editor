@@ -222,8 +222,10 @@ js-only. Concrete browser runtime packages live below the module-private
   opt-in Mermaid lifetime lazily imports the pinned official CDN module. Its
   realm-wide MoonBit runtime caches the API, serializes global configuration
   with rendering, and rejects stale asynchronous DOM commits through
-  per-diagram epochs and target ownership. Only the root Markdown-comment
-  contribution emits
+  per-diagram epochs and target ownership. Successful Markdown-comment Mermaid
+  commits refresh the same pan/zoom/fit/resize viewport owner used by
+  synchronous D2/Diago output, including after theme replacement. Only the
+  root Markdown-comment contribution emits
   the exact lowercase `mermaid` marker and enables this lifetime; hover and
   agent feedback remain ordinary tokenized code consumers. Browser
   contributions consume these packages instead of owning private

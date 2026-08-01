@@ -76,6 +76,11 @@ SVG replacement invokes the existing size callback. Loading, CSP, syntax,
 stale-result, target-reuse, and disposal failures retain the source fallback or
 last successful SVG.
 
+The whole-line Markdown-comment consumer also uses that size callback to
+refresh its diagram-viewport owner. Successful Mermaid SVGs therefore receive
+the same pan, zoom, fit, and resize controls as synchronous Diago SVGs; a theme
+rerender disposes the controller for the replaced SVG and mounts a fresh one.
+
 Hosts using Mermaid must allow `https://cdn.jsdelivr.net` in the applicable
 module-script CSP directive, including Mermaid's relative ESM chunks, and allow
 Mermaid's inline SVG styling. Dynamic `import()` has no SRI parameter, so the
