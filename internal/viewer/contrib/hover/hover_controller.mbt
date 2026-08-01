@@ -113,7 +113,6 @@ pub struct HoverOperationOptions {
 
 ///|
 /// Builds one immutable operation-options snapshot with source defaults.
-#alias(new, deprecated)
 pub fn HoverOperationOptions::HoverOperationOptions(
   anchor : HoverAnchor,
   should_focus? : Bool = false,
@@ -340,7 +339,6 @@ pub struct HoverDebouncer {
 ///|
 /// Creates an idle latest-options debouncer with a caller-selected fallback
 /// delay. Browser timer ownership remains outside this pure value.
-#alias(new, deprecated)
 pub fn HoverDebouncer::HoverDebouncer(
   default_delay_ms? : Int = 0,
 ) -> HoverDebouncer {

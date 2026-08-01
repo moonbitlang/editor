@@ -137,7 +137,6 @@ pub struct EditorDomMouseEvent {
 }
 
 ///|
-#alias(new, deprecated)
 pub fn EditorDomMouseEvent::EditorDomMouseEvent(
   e : @rdom.MouseEvent,
   is_from_pointer_capture : Bool,
@@ -236,7 +235,6 @@ pub struct EditorMouseEventFactory {
 }
 
 ///|
-#alias(new, deprecated)
 pub fn EditorMouseEventFactory::EditorMouseEventFactory(
   editor_view_dom_node : @rdom.Element,
 ) -> EditorMouseEventFactory {
@@ -347,7 +345,6 @@ pub struct GlobalEditorPointerMoveMonitor {
 }
 
 ///|
-#alias(new, deprecated)
 pub fn GlobalEditorPointerMoveMonitor::GlobalEditorPointerMoveMonitor(
   editor_view_dom_node : @rdom.Element,
 ) -> GlobalEditorPointerMoveMonitor {

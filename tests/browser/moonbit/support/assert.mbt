@@ -8,7 +8,6 @@ pub struct BrowserTestContext {
 
 ///|
 /// Creates a browser test context for one suite.
-#alias(new, deprecated)
 pub fn BrowserTestContext::BrowserTestContext(
   suite : String,
 ) -> BrowserTestContext {

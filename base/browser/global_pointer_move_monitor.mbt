@@ -17,7 +17,6 @@ pub struct GlobalPointerMoveMonitor {
 }
 
 ///|
-#alias(new, deprecated)
 pub fn GlobalPointerMoveMonitor::GlobalPointerMoveMonitor() -> GlobalPointerMoveMonitor {
   {
     hooks: [],

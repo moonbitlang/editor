@@ -61,7 +61,6 @@ pub(all) struct MarkerData {
   tags : Array[MarkerTag]?
   origin : String?
 } derive(Eq, @debug.Debug)
-#alias(new, deprecated)
 pub fn MarkerData::MarkerData(severity~ : MarkerSeverity, message~ : String, start_line_number~ : Int, start_column~ : Int, end_line_number~ : Int, end_column~ : Int, code? : String, source? : String, model_version_id? : Int, related_information? : Array[RelatedInformation], tags? : Array[MarkerTag], origin? : String) -> Self
 pub fn MarkerData::to_marker(Self, String, @common.Uri) -> Marker?
 
@@ -76,7 +75,6 @@ pub fn MarkerDecorationsHandle::on_did_change_marker_decorations(Self, (@model.T
 pub struct MarkerDecorationsService {
   // private fields
 }
-#alias(new, deprecated)
 pub fn MarkerDecorationsService::MarkerDecorationsService(MarkerServiceHandle) -> Self
 pub fn MarkerDecorationsService::acquire_model(Self, @model.TextModel) -> @common.Disposable
 pub fn MarkerDecorationsService::add_marker_suppression(Self, @common.Uri, @common.Range) -> @common.Disposable
@@ -101,7 +99,6 @@ pub(all) struct MarkerReadOptions {
   take : Int?
   ignore_resource_filters : Bool
 } derive(Eq, @debug.Debug)
-#alias(new, deprecated)
 pub fn MarkerReadOptions::MarkerReadOptions(owner? : String, resource? : @common.Uri, severities? : Int, take? : Int, ignore_resource_filters? : Bool) -> Self
 
 pub struct MarkerService {
@@ -110,7 +107,6 @@ pub struct MarkerService {
   filtered_resources : Map[String, Array[String]]
   mut stats : MarkerStats?
 }
-#alias(new, deprecated)
 pub fn MarkerService::MarkerService(schedule? : (() -> Unit) -> Unit) -> Self
 pub fn MarkerService::change_all(Self, String, Array[ResourceMarker]) -> Unit
 pub fn MarkerService::change_one(Self, String, @common.Uri, Array[MarkerData]) -> Unit

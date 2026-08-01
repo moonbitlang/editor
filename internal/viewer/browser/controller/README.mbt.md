@@ -24,9 +24,9 @@ remains owned by the per-model handler, so a model swap cannot leave an inertia
 animation running against a detached view.
 
 ```mbt nocheck
-// The per-model mouse handler is created and retained by the root Viewer's
-// ModelBrowserData, and disposed with it.
-let handler = MouseHandler::new(view, view_model, layout)
+// The root Viewer builds the helper for the active View, then retains the
+// per-model mouse handler and disposes it with the model's browser data.
+let handler = MouseHandler(pointer_handler_helper)
 handler.dispose() // stops inertia, releases pointer capture and listeners
 ```
 

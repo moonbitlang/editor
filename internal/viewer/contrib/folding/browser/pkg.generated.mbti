@@ -90,7 +90,6 @@ pub struct FoldingDecorationProvider {
   mut show_folding_highlights : Bool
   // private fields
 }
-#alias(new, deprecated)
 pub fn FoldingDecorationProvider::FoldingDecorationProvider(@model.TextModel, owner_id? : Int) -> Self
 pub fn FoldingDecorationProvider::access(Self) -> FoldingDecorationAccess
 pub fn FoldingDecorationProvider::update_options(Self, show_folding_controls~ : @editor_api.ShowFoldingControls, show_folding_highlights~ : Bool) -> Unit
@@ -103,7 +102,6 @@ pub(all) struct FoldingLimitReporter {
 pub struct FoldingModel {
   // private fields
 }
-#alias(new, deprecated)
 pub fn FoldingModel::FoldingModel(@model.TextModel, FoldingDecorationAccess) -> Self
 pub fn FoldingModel::dispose(Self) -> Unit
 pub fn FoldingModel::get_all_regions_at_line(Self, Int, filter? : (FoldingRegion, Int) -> Bool) -> Array[FoldingRegion]
@@ -142,7 +140,6 @@ pub fn FoldingRegion::start_line_number(Self) -> Int
 pub struct FoldingRegions {
   // private fields
 }
-#alias(new, deprecated)
 pub fn FoldingRegions::FoldingRegions(FixedArray[UInt], FixedArray[UInt], types? : Array[String?]) -> Self
 pub fn FoldingRegions::contains(Self, Int, Int) -> Bool
 pub fn FoldingRegions::find_range(Self, Int) -> Int
@@ -166,7 +163,6 @@ pub impl Show for FoldingRegions
 pub struct HiddenRangeModel {
   // private fields
 }
-#alias(new, deprecated)
 pub fn HiddenRangeModel::HiddenRangeModel(FoldingModel) -> Self
 pub fn HiddenRangeModel::adjust_selections(Self, Array[@core.Selection]) -> Bool
 pub fn HiddenRangeModel::dispose(Self) -> Unit
@@ -178,7 +174,6 @@ pub fn HiddenRangeModel::on_did_change(Self, (Array[@common.Range]) -> Unit) -> 
 pub struct IndentRangeProvider {
   // private fields
 }
-#alias(new, deprecated)
 pub fn IndentRangeProvider::IndentRangeProvider(@model.TextModel, @languages.LanguageHandle, FoldingLimitReporter, tab_size? : Int) -> Self
 pub fn IndentRangeProvider::compute(Self) -> FoldingRegions
 pub fn IndentRangeProvider::dispose(Self) -> Unit
@@ -192,7 +187,6 @@ pub(all) struct LineRange {
 pub struct RangesCollector {
   // private fields
 }
-#alias(new, deprecated)
 pub fn RangesCollector::RangesCollector(FoldingLimitReporter) -> Self
 pub fn RangesCollector::insert_first(Self, Int, Int, Int) -> Unit
 pub fn RangesCollector::to_indent_ranges(Self, @model.TextModel, tab_size? : Int) -> FoldingRegions

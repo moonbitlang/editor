@@ -47,7 +47,6 @@ pub struct MarkerDecorationsService {
 ///|
 /// Creates a decoration facade over the marker store and subscribes to its change
 /// event (`markerDecorationsService.ts:43`).
-#alias(new, deprecated)
 pub fn MarkerDecorationsService::MarkerDecorationsService(
   markers : MarkerServiceHandle,
 ) -> MarkerDecorationsService {

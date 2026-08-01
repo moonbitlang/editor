@@ -20,9 +20,7 @@ pub(all) struct MarkdownRenderOptions {
 ///|
 /// Builds renderer options. Remote images are opt-in. The code-block renderer
 /// runs during synchronous Markdown conversion; image loads and successful
-/// Mermaid commits may invoke the size callback later. The `new` spelling
-/// remains only as the repository's deprecated constructor alias.
-#alias(new, deprecated)
+/// Mermaid commits may invoke the size callback later.
 pub fn MarkdownRenderOptions::MarkdownRenderOptions(
   language_id? : String,
   base_uri? : @base_common.Uri,

@@ -40,7 +40,6 @@ let smooth_scrolling_time : Double = 125.0
 
 ///|
 /// Creates a view layout with a fixed line height and optional line count.
-#alias(new, deprecated)
 pub fn ViewLayout::ViewLayout(
   line_height~ : Int,
   line_count? : Int = 0,

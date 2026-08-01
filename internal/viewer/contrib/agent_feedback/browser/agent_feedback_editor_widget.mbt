@@ -71,7 +71,6 @@ pub struct AgentFeedbackEditorWidget {
 /// Builds the bubble for one comment group. `focused_reply` restores focus
 /// into a reply composer that had it before a rebuild
 /// (`IReplyDraftState.focusedCommentId`).
-#alias(new, deprecated)
 pub fn AgentFeedbackEditorWidget::AgentFeedbackEditorWidget(
   host : AgentFeedbackEditorWidgetHost,
   id : String,

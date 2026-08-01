@@ -18,7 +18,6 @@ pub struct StandardWheelEvent {
 const DOM_DELTA_LINE : Int = 1
 
 ///|
-#alias(new, deprecated)
 pub fn StandardWheelEvent::StandardWheelEvent(
   e : @rdom.WheelEvent,
 ) -> StandardWheelEvent {

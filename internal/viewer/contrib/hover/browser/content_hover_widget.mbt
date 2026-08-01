@@ -180,7 +180,6 @@ pub fn ContentHoverWidget::content_widget_handle(
 /// Builds the persistent widget DOM and its listeners (Monaco's constructor +
 /// `HoverWidget(fadeIn: true)`); starts hidden (`_setRenderedHover(undefined)`).
 /// The caller mounts it exactly once through the editor's content-widget seam.
-#alias(new, deprecated)
 pub fn ContentHoverWidget::ContentHoverWidget(
   host : ContentHoverWidgetHost,
 ) -> ContentHoverWidget {

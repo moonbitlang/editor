@@ -27,7 +27,6 @@ pub struct LocationOpenerHandle {
 ///|
 /// Constructs an opener handle without transferring ownership of its captured
 /// backing or lifecycle to the handle or ViewerServices.
-#alias(new, deprecated)
 pub fn LocationOpenerHandle::LocationOpenerHandle(
   open~ : async (OpenLocationRequest) -> Bool noraise,
 ) -> LocationOpenerHandle {
@@ -56,7 +55,6 @@ pub struct TextModelReference {
 /// Constructs a model lease from the exact caller-owned model and one release
 /// callback. The callback is invoked at most once, including under repeated or
 /// reentrant disposal.
-#alias(new, deprecated)
 pub fn TextModelReference::TextModelReference(
   model : @model.TextModel,
   release~ : () -> Unit,
@@ -92,7 +90,6 @@ pub struct TextModelResolverHandle {
 ///|
 /// Constructs a resolver handle without transferring ownership of its captured
 /// backing or lifecycle to the handle or ViewerServices.
-#alias(new, deprecated)
 pub fn TextModelResolverHandle::TextModelResolverHandle(
   resolve~ : async (@base_common.Uri, @language.CancellationToken) -> TextModelReference? noraise,
 ) -> TextModelResolverHandle {

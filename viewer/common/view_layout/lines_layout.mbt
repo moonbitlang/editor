@@ -27,7 +27,6 @@ pub struct EditorWhitespace {
 
 ///|
 /// Constructs a whitespace; `prefix_sum` starts at 0 (lazily computed).
-#alias(new, deprecated)
 pub fn EditorWhitespace::EditorWhitespace(
   id : String,
   after_line_number : Int,
@@ -221,7 +220,6 @@ pub struct LinesLayout {
 ///|
 /// Creates a lines layout. `custom_line_height_data` is accepted for shape
 /// parity with Monaco but ignored (uniform heights — see file deviation).
-#alias(new, deprecated)
 pub fn LinesLayout::LinesLayout(
   line_count : Int,
   default_line_height : Int,

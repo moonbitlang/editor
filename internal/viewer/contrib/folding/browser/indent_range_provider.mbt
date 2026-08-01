@@ -27,7 +27,6 @@ pub struct IndentRangeProvider {
 }
 
 ///|
-#alias(new, deprecated)
 pub fn IndentRangeProvider::IndentRangeProvider(
   editor_model : @model.TextModel,
   language_configuration_service : @languages.LanguageHandle,
@@ -89,7 +88,6 @@ pub struct RangesCollector {
 }
 
 ///|
-#alias(new, deprecated)
 pub fn RangesCollector::RangesCollector(
   folding_ranges_limit : FoldingLimitReporter,
 ) -> RangesCollector {

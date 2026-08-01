@@ -22,7 +22,6 @@ pub struct BrowserTestContext {
   failures : Array[String]
   metrics : Map[String, Json]
 }
-#alias(new, deprecated)
 pub fn BrowserTestContext::BrowserTestContext(String) -> Self
 pub fn BrowserTestContext::assert_true(Self, Bool, String) -> Unit
 pub fn BrowserTestContext::fail(Self, String) -> Unit

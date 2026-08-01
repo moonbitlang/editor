@@ -13,7 +13,6 @@ import {
 pub struct QuickDiffHandle {
   // private fields
 }
-#alias(new, deprecated)
 pub fn QuickDiffHandle::QuickDiffHandle(get_original_content~ : (@common.Uri) -> String?, on_did_change_original~ : ((@common.Uri) -> Unit) -> @common.Disposable) -> Self
 pub fn QuickDiffHandle::get_original_content(Self, @common.Uri) -> String?
 pub fn QuickDiffHandle::on_did_change_original(Self, (@common.Uri) -> Unit) -> @common.Disposable

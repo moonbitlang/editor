@@ -12,7 +12,6 @@ pub struct DefinitionMessageWidget {
 
 ///|
 /// Constructs Monaco's detached, hidden overlay-message DOM.
-#alias(new, deprecated)
 pub fn DefinitionMessageWidget::DefinitionMessageWidget() -> DefinitionMessageWidget {
   let document = @rdom.document()
   let root = @rdom.document().create_element("div")

@@ -55,7 +55,6 @@ priv struct ViewLineInfo {
 /// Monaco's `ViewModelLinesFromProjectedModel` (`viewModelLines.ts:85-112`),
 /// minus the DOM/monospace computer-factory split (the viewer is
 /// monospace-only, so the monospace factory is the only one).
-#alias(new, deprecated)
 pub fn ViewModelLinesFromProjectedModel::ViewModelLinesFromProjectedModel(
   model : @model.TextModel,
   font_info~ : @config.FontInfo,
