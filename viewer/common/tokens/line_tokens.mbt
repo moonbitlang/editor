@@ -23,14 +23,9 @@
 ///     token-content slice uses `String::unsafe_substring`.
 
 ///|
-/// A line's full or sliced token view. The concrete distinction is private;
-/// consumers use the common read operations below.
-struct ViewLineTokens {
-  kind : ViewLineTokensKind
-}
-
-///|
-priv enum ViewLineTokensKind {
+/// A line's full or sliced token view. Package consumers see an abstract type
+/// and use the common read operations below.
+enum ViewLineTokens {
   Full(LineTokens)
   Slice(SliceLineTokens)
 }
@@ -132,7 +127,7 @@ pub fn LineTokens::get_start_offset(
 ///|
 /// `inflate()` returns the tokens unchanged — already a view.
 pub fn LineTokens::inflate(self : LineTokens) -> ViewLineTokens {
-  { kind: Full(self) }
+  Full(self)
 }
 
 ///|
@@ -142,11 +137,7 @@ pub fn LineTokens::slice_and_inflate(
   end_offset : Int,
   delta_offset : Int,
 ) -> ViewLineTokens {
-  {
-    kind: Slice(
-      SliceLineTokens::new(self, start_offset, end_offset, delta_offset),
-    ),
-  }
+  Slice(SliceLineTokens::new(self, start_offset, end_offset, delta_offset))
 }
 
 ///|
@@ -380,7 +371,7 @@ fn SliceLineTokens::get_token_text(
 
 ///|
 pub fn ViewLineTokens::get_count(self : ViewLineTokens) -> Int {
-  match self.kind {
+  match self {
     Full(tokens) => tokens.get_count()
     Slice(tokens) => tokens.get_count()
   }
@@ -388,7 +379,7 @@ pub fn ViewLineTokens::get_count(self : ViewLineTokens) -> Int {
 
 ///|
 pub fn ViewLineTokens::get_line_content(self : ViewLineTokens) -> String {
-  match self.kind {
+  match self {
     Full(tokens) => tokens.get_line_content()
     Slice(tokens) => tokens.get_line_content()
   }
@@ -399,7 +390,7 @@ pub fn ViewLineTokens::get_end_offset(
   self : ViewLineTokens,
   token_index : Int,
 ) -> Int {
-  match self.kind {
+  match self {
     Full(tokens) => tokens.get_end_offset(token_index)
     Slice(tokens) => tokens.get_end_offset(token_index)
   }
@@ -410,7 +401,7 @@ pub fn ViewLineTokens::get_class_name(
   self : ViewLineTokens,
   token_index : Int,
 ) -> String {
-  match self.kind {
+  match self {
     Full(tokens) => tokens.get_class_name(token_index)
     Slice(tokens) => tokens.get_class_name(token_index)
   }
@@ -422,7 +413,7 @@ pub fn ViewLineTokens::get_inline_style(
   token_index : Int,
   color_map : Array[String],
 ) -> String {
-  match self.kind {
+  match self {
     Full(tokens) => tokens.get_inline_style(token_index, color_map)
     Slice(tokens) => tokens.get_inline_style(token_index, color_map)
   }
@@ -433,7 +424,7 @@ pub fn ViewLineTokens::get_token_text(
   self : ViewLineTokens,
   token_index : Int,
 ) -> String {
-  match self.kind {
+  match self {
     Full(tokens) => tokens.get_token_text(token_index)
     Slice(tokens) => tokens.get_token_text(token_index)
   }
