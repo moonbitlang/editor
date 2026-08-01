@@ -30,4 +30,3 @@ pub(all) struct ResolvedMarkdownCommentBlocks {
 // Type aliases
 
 // Traits
-

@@ -177,4 +177,3 @@ pub fn ViewLineTokens::get_token_text(Self, Int) -> String
 // Type aliases
 
 // Traits
-

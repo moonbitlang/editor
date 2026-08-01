@@ -44,4 +44,3 @@ pub fn RenderedMarkdown::rerender_mermaid(Self, MermaidTheme) -> Unit
 // Type aliases
 
 // Traits
-

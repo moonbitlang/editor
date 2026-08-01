@@ -297,4 +297,3 @@ pub fn ViewZones::should_render(Self) -> Bool
 // Type aliases
 
 // Traits
-

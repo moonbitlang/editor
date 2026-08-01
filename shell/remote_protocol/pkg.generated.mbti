@@ -187,4 +187,3 @@ pub(all) struct WorkspaceSwitchedPayload {
 // Type aliases
 
 // Traits
-

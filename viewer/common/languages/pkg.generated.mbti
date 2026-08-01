@@ -94,4 +94,3 @@ pub(all) struct MarkdownCommentProviderResult {
 // Type aliases
 
 // Traits
-

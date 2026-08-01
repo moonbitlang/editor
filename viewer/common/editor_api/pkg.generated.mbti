@@ -98,4 +98,3 @@ pub(all) enum WrappingIndent {
 // Type aliases
 
 // Traits
-

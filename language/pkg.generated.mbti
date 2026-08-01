@@ -117,4 +117,3 @@ pub(open) trait MarkdownCommentProvider {
 pub(open) trait ReferencesProvider {
   async fn provide_references(Self, @model.TextModel, @common.Position, CancellationToken) -> Array[Location]
 }
-

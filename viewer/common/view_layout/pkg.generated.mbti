@@ -555,4 +555,3 @@ pub fn WhitespaceChangeAccessor::remove_whitespace(Self, String) -> Unit
 // Type aliases
 
 // Traits
-

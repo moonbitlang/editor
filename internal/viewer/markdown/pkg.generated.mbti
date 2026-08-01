@@ -97,4 +97,3 @@ pub(all) struct MarkdownTocEntry {
 // Type aliases
 
 // Traits
-

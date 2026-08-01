@@ -355,4 +355,3 @@ pub fn Win32::sep() -> String
 // Type aliases
 
 // Traits
-
