@@ -10,17 +10,18 @@ explicitly; reusable viewer core packages must not import it.
 
 ```mbt check
 ///|
-/// Renders each token as `text|tag`, carrying state line to line.
-fn annotate(lines : Array[String]) -> Array[String] {
-  let tokenizer : &@syntax.LineTokenizer = @lang_json.JsonTokenizer()
+/// Renders each token as `text|tag`, carrying tokenizer state line to line.
+fn annotate(
+  tokenizer : &@syntax.LineTokenizer,
+  lines : ArrayView[String],
+) -> Array[String] {
   let rendered = []
-  let mut state = tokenizer.initial_state()
-  for line in lines {
+  for line in lines; state = tokenizer.initial_state() {
     let (tokens, next_state) = tokenizer.tokenize_line(line, state)
     for token in tokens {
       rendered.push("\{line[token.start:token.end].to_owned()}|\{token.tag}")
     }
-    state = next_state
+    continue next_state
   }
   rendered
 }
@@ -36,7 +37,9 @@ one lookahead over the remainder of the line rather than by parsing structure.
 ///|
 test "a colon after a string makes it a property name" {
   debug_inspect(
-    annotate(["{ \"name\": \"moonbit\", \"version\": 3 }"]),
+    annotate(@lang_json.JsonTokenizer(), [
+      "{ \"name\": \"moonbit\", \"version\": 3 }",
+    ]),
     content=(
       #|[
       #|  "{|Delimiter",
@@ -62,7 +65,9 @@ the whole diagnostic value this lexer can offer without a parser.
 ///|
 test "JSON literals are Constant and bare words are Invalid" {
   debug_inspect(
-    annotate(["[true, false, null, -1.5e3, undefined]"]),
+    annotate(@lang_json.JsonTokenizer(), [
+      "[true, false, null, -1.5e3, undefined]",
+    ]),
     content=(
       #|[
       #|  "[|Delimiter",
@@ -102,7 +107,9 @@ stateDiagram-v2
 ///|
 test "a block comment carries across lines through TokenizerState" {
   debug_inspect(
-    annotate(["{ /* start", "still inside", "done */ \"k\": 1 }"]),
+    annotate(@lang_json.JsonTokenizer(), [
+      "{ /* start", "still inside", "done */ \"k\": 1 }",
+    ]),
     content=(
       #|[
       #|  "{|Delimiter",
