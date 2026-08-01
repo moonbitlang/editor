@@ -243,8 +243,8 @@ pub fn FileChangeType::to_string(self : FileChangeType) -> String {
 
 ///|
 pub fn revision_from_text(text : String) -> String {
-  let hash = for i in 0..<text.length(); hash = 2166136261L {
-    continue (hash ^ text[i].to_int64()) * 16777619L
+  let hash = for unit in text.code_units(); hash = 2166136261L {
+    continue (hash ^ unit.to_int64()) * 16777619L
   } nobreak {
     hash
   }

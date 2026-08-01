@@ -105,8 +105,7 @@ fn comment_step(view : StringView) -> (StepOp, StringView) {
 
 ///|
 fn colon_follows(rest : StringView) -> Bool {
-  for i in 0..<rest.length() {
-    let unit = rest[i].to_int()
+  for unit in rest.code_units() {
     if unit is (' ' | '\t') {
       continue
     }

@@ -72,8 +72,8 @@ pub(all) struct ModelDecorationMinimapOptions {
 /// applied per UTF-16 code unit like the JS regex (no /u flag).
 pub fn clean_class_name(class_name : String) -> String {
   let sb = StringBuilder()
-  for i in 0..<class_name.length() {
-    let c = class_name[i].to_int()
+  for unit in class_name.code_units() {
+    let c = unit.to_int()
     if (c >= 'a' && c <= 'z') ||
       (c >= 'A' && c <= 'Z') ||
       (c >= '0' && c <= '9') ||
