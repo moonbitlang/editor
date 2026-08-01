@@ -74,14 +74,11 @@ fn workspace_file_tree() -> @file_tree.FileTree {
 /// directories-before-files default. Everything else keeps that default.
 fn workspace_entry_rank(stat : @workspace.WorkspaceStat) -> Int {
   guard stat.kind is File else { return 0 }
-  if stat.name == "README" || stat.name.has_prefix("README.") {
-    -3
-  } else if stat.name == "pkg.generated.mbti" {
-    -2
-  } else if stat.name == "moon.pkg" {
-    -1
-  } else {
-    0
+  match stat.name {
+    "README" | [.. "README.", ..] => -3
+    "pkg.generated.mbti" => -2
+    "moon.pkg" => -1
+    _ => 0
   }
 }
 
