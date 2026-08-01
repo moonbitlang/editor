@@ -18,6 +18,32 @@ flowchart LR
 Fresh codecs are seeded with `null`, `plaintext`, `moonbit`, `javascript`,
 `typescript`, and `json`.
 
+Its `Debug` representation is the ordered language array: an array index is the
+numeric id for the language at that index. The redundant reverse map and next-id
+counter are intentionally omitted.
+
+```mbt check
+///|
+test "codec Debug output is the numeric-id table" {
+  let codec = @services.LanguageIdCodec()
+  codec.register("rust") |> ignore
+  debug_inspect(
+    codec,
+    content=(
+      #|[
+      #|  "null",
+      #|  "plaintext",
+      #|  "moonbit",
+      #|  "javascript",
+      #|  "typescript",
+      #|  "json",
+      #|  "rust",
+      #|]
+    ),
+  )
+}
+```
+
 ```mbt check
 ///|
 test "a fresh codec is seeded with the built-in languages" {

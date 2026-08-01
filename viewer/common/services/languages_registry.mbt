@@ -25,6 +25,13 @@ struct LanguageIdCodec {
 }
 
 ///|
+/// Shows the ordered numeric-id table. The reverse lookup map and next id are
+/// omitted because both are derived from this array.
+pub impl Debug for LanguageIdCodec with fn to_repr(self) {
+  Repr(self.language_id_to_language)
+}
+
+///|
 pub fn LanguageIdCodec::LanguageIdCodec() -> LanguageIdCodec {
   let codec = {
     language_id_to_language: [],
