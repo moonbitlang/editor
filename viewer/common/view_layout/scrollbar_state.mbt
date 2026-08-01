@@ -25,7 +25,6 @@ pub struct ScrollbarState {
 
 ///|
 /// Creates scrollbar geometry state for one axis.
-#alias(new)
 pub fn ScrollbarState::ScrollbarState(
   arrow_size? : Double = 0.0,
   scrollbar_size~ : Double,

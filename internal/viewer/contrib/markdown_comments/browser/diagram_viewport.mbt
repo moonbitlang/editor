@@ -163,7 +163,6 @@ pub struct MarkdownCommentDiagramViewports {
 ///
 /// Disposal walks the owned controllers in reverse and restores every borrowed
 /// wrapper attribute and inline style before the caller replaces the target.
-#alias(new)
 pub fn MarkdownCommentDiagramViewports::MarkdownCommentDiagramViewports(
   target : @rdom.Element,
   on_size_changed : () -> Unit,

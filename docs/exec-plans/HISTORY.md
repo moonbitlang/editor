@@ -608,13 +608,11 @@ contracts and two open provider traits. Mouse-target factories became
 package-private local methods on the foreign browser target type, and the
 controller's test-only boundary became white-box.
 
-Ninety product constructors plus the internal browser-test context now use
-canonical `Type(...)` construction with compatibility entry points declared as
-non-deprecated `#alias(new)` aliases for downstream source compatibility.
-The two prefix-sum implementations use `ArrayView[Int]` primary constructors,
-copy their inputs, and retain `new(Array[Int])` compatibility wrappers;
-selected private read-only helpers also accept views without broad public
-signature churn.
+Ninety product constructors plus the internal browser-test context now expose
+only canonical `Type(...)` construction; the legacy `new` aliases have been
+removed. The two prefix-sum implementations likewise expose only their
+`ArrayView[Int]` primary constructors and copy their inputs; selected private
+read-only helpers also accept views without broad public signature churn.
 
 Twelve concrete browser runtime, scrollbar, testing, and contribution packages
 moved below `internal/viewer/**`. Root `viewer`, public `viewer/browser`, and

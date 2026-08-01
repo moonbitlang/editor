@@ -16,7 +16,6 @@ pub struct ContiguousMultilineTokensBuilder {
 ///|
 /// Creates an empty collector.
 /// Source: `contiguousMultilineTokensBuilder.ts:23-25`.
-#alias(new)
 pub fn ContiguousMultilineTokensBuilder::ContiguousMultilineTokensBuilder() -> ContiguousMultilineTokensBuilder {
   { tokens: [] }
 }

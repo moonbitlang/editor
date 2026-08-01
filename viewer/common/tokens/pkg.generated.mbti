@@ -52,7 +52,6 @@ pub struct ContiguousMultilineTokens {
   start_line_number_ : Int
   tokens : Array[Array[UInt]]
 }
-#alias(new)
 pub fn ContiguousMultilineTokens::ContiguousMultilineTokens(Int, Array[Array[UInt]]) -> Self
 pub fn ContiguousMultilineTokens::append_line_tokens(Self, Array[UInt]) -> Unit
 pub fn ContiguousMultilineTokens::end_line_number(Self) -> Int
@@ -63,7 +62,6 @@ pub fn ContiguousMultilineTokens::start_line_number(Self) -> Int
 pub struct ContiguousMultilineTokensBuilder {
   tokens : Array[ContiguousMultilineTokens]
 }
-#alias(new)
 pub fn ContiguousMultilineTokensBuilder::ContiguousMultilineTokensBuilder() -> Self
 pub fn ContiguousMultilineTokensBuilder::add(Self, Int, Array[UInt]) -> Unit
 pub fn ContiguousMultilineTokensBuilder::finalize(Self) -> Array[ContiguousMultilineTokens]
@@ -73,7 +71,6 @@ pub struct ContiguousTokensStore {
   mut len : Int
   language_id_codec : @services.LanguageIdCodec
 }
-#alias(new)
 pub fn ContiguousTokensStore::ContiguousTokensStore(@services.LanguageIdCodec) -> Self
 pub fn ContiguousTokensStore::flush(Self) -> Unit
 pub fn ContiguousTokensStore::get_tokens(Self, String, Int, String) -> LineTokens
@@ -95,7 +92,6 @@ pub struct InsertedToken {
   text : String
   token_metadata : UInt
 }
-#alias(new)
 pub fn InsertedToken::InsertedToken(Int, String, UInt) -> Self
 
 pub struct LineTokens {
@@ -104,7 +100,6 @@ pub struct LineTokens {
   text : String
   language_id_codec : @services.LanguageIdCodec
 }
-#alias(new)
 pub fn LineTokens::LineTokens(Array[UInt], String, @services.LanguageIdCodec) -> Self
 pub fn LineTokens::convert_to_end_offset(Array[UInt], Int) -> Unit
 pub fn LineTokens::create_empty(String, @services.LanguageIdCodec) -> Self

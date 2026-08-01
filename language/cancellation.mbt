@@ -176,7 +176,6 @@ pub struct CancellationTokenSource {
 /// child. `schedule` adapts VS Code's zero-delay shortcut event to the host;
 /// the host-neutral default delivers inline, while JS hosts or tests may inject
 /// a disposable next-turn scheduler.
-#alias(new)
 pub fn CancellationTokenSource::CancellationTokenSource(
   parent? : CancellationToken,
   schedule? : (() -> Unit) -> @base_common.Disposable = schedule_cancellation_inline,

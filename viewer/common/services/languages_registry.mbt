@@ -25,7 +25,6 @@ struct LanguageIdCodec {
 }
 
 ///|
-#alias(new)
 pub fn LanguageIdCodec::LanguageIdCodec() -> LanguageIdCodec {
   let codec = {
     language_id_to_language: [],

@@ -58,7 +58,6 @@ pub struct AgentFeedbackInputWidget {
 }
 
 ///|
-#alias(new)
 pub fn AgentFeedbackInputWidget::AgentFeedbackInputWidget(
   host : AgentFeedbackInputWidgetHost,
 ) -> AgentFeedbackInputWidget {

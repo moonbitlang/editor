@@ -21,7 +21,6 @@ pub(all) struct Change {
 
 pub struct DefaultLinesDiffComputer {
 } derive(Eq, @debug.Debug)
-#alias(new)
 pub fn DefaultLinesDiffComputer::DefaultLinesDiffComputer() -> Self
 pub fn DefaultLinesDiffComputer::compute_diff(Self, Array[String], Array[String], LinesDiffComputerOptions) -> LinesDiff
 

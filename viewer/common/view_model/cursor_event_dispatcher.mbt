@@ -83,7 +83,6 @@ pub struct ViewZonesChangedEvent {
 
 ///|
 /// Creates one source-shaped ViewZones change event.
-#alias(new)
 pub fn ViewZonesChangedEvent::ViewZonesChangedEvent() -> ViewZonesChangedEvent {
   { kind: ViewZonesChanged }
 }
@@ -104,7 +103,6 @@ pub struct HiddenAreasChangedOutgoingEvent {
 
 ///|
 /// Creates one source-shaped hidden-area change event.
-#alias(new)
 pub fn HiddenAreasChangedOutgoingEvent::HiddenAreasChangedOutgoingEvent() -> HiddenAreasChangedOutgoingEvent {
   { kind: HiddenAreasChanged }
 }
@@ -129,7 +127,6 @@ pub struct ModelTokensChangedOutgoingEvent {
 
 ///|
 /// Builds the distinct outgoing model-token wrapper.
-#alias(new)
 pub fn ModelTokensChangedOutgoingEvent::ModelTokensChangedOutgoingEvent(
   event : @model.ModelTokensChangedEvent,
 ) -> ModelTokensChangedOutgoingEvent {

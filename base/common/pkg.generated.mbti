@@ -133,7 +133,6 @@ pub struct CharacterClassifier {
   map : Map[Int, Int]
   default_value : Int
 }
-#alias(new)
 pub fn CharacterClassifier::CharacterClassifier(Int) -> Self
 pub fn CharacterClassifier::clear(Self) -> Unit
 pub fn CharacterClassifier::get(Self, Int) -> Int
@@ -142,7 +141,6 @@ pub fn CharacterClassifier::set(Self, Int, Int) -> Unit
 pub struct CharacterSet {
   actual : CharacterClassifier
 }
-#alias(new)
 pub fn CharacterSet::CharacterSet() -> Self
 pub fn CharacterSet::add(Self, Int) -> Unit
 pub fn CharacterSet::clear(Self) -> Unit
@@ -157,7 +155,6 @@ pub fn Disposable::from(() -> Unit) -> Self
 pub struct Emitter[T] {
   // private fields
 }
-#alias(new)
 pub fn[T] Emitter::Emitter() -> Self[T]
 pub fn[T] Emitter::dispose(Self[T]) -> Unit
 pub fn[T] Emitter::event(Self[T], (T) -> Unit) -> Disposable
@@ -167,7 +164,6 @@ pub fn[T] Emitter::has_listeners(Self[T]) -> Bool
 pub struct ExtUri {
   // private fields
 }
-#alias(new)
 pub fn ExtUri::ExtUri((Uri) -> Bool) -> Self
 pub fn ExtUri::add_trailing_path_separator(Self, Uri, sep? : String) -> Uri
 pub fn ExtUri::basename(Self, Uri, suffix? : String) -> String
@@ -210,7 +206,6 @@ pub fn LineRange::to_string(Self) -> String
 pub struct LineRangeSet {
   normalized_ranges : Array[LineRange]
 }
-#alias(new)
 pub fn LineRangeSet::LineRangeSet(normalized_ranges? : Array[LineRange]) -> Self
 pub fn LineRangeSet::add_range(Self, LineRange) -> Unit
 pub fn LineRangeSet::contains(Self, Int) -> Bool
@@ -222,7 +217,6 @@ pub fn LineRangeSet::to_string(Self) -> String
 pub struct MicrotaskEmitter[T] {
   // private fields
 }
-#alias(new)
 pub fn[T] MicrotaskEmitter::MicrotaskEmitter(merge? : (Array[T]) -> T, schedule? : (() -> Unit) -> Unit) -> Self[T]
 pub fn[T] MicrotaskEmitter::dispose(Self[T]) -> Unit
 pub fn[T] MicrotaskEmitter::event(Self[T], (T) -> Unit) -> Disposable

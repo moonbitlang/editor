@@ -14,7 +14,6 @@ pub struct Cursor {
 
 ///|
 /// A fresh cursor collapsed at the document origin.
-#alias(new)
 pub fn Cursor::Cursor() -> Cursor {
   let origin = @base_common.Position::Position(1, 1)
   {

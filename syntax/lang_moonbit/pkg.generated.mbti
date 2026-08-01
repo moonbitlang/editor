@@ -12,7 +12,6 @@ import {
 // Types and methods
 pub struct MoonbitTokenizer {
 }
-#alias(new)
 pub fn MoonbitTokenizer::MoonbitTokenizer() -> Self
 pub impl @syntax.LineTokenizer for MoonbitTokenizer
 

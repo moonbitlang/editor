@@ -33,11 +33,6 @@ pub fn PrefixSumComputer::PrefixSumComputer(values : ArrayView[Int]) -> Self {
 }
 
 ///|
-pub fn PrefixSumComputer::new(values : Array[Int]) -> Self {
-  PrefixSumComputer(values[:])
-}
-
-///|
 pub fn PrefixSumComputer::get_count(self : Self) -> Int {
   self.values.length()
 }
@@ -220,11 +215,6 @@ pub fn ConstantTimePrefixSumComputer::ConstantTimePrefixSumComputer(
     prefix_sum: [],
     index_by_sum: [],
   }
-}
-
-///|
-pub fn ConstantTimePrefixSumComputer::new(values : Array[Int]) -> Self {
-  ConstantTimePrefixSumComputer(values[:])
 }
 
 ///|

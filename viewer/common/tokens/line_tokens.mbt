@@ -42,7 +42,6 @@ pub struct LineTokens {
 }
 
 ///|
-#alias(new)
 pub fn LineTokens::LineTokens(
   tokens : Array[UInt],
   text : String,
@@ -183,7 +182,6 @@ pub struct InsertedToken {
 }
 
 ///|
-#alias(new)
 pub fn InsertedToken::InsertedToken(
   offset : Int,
   text : String,

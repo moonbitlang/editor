@@ -278,7 +278,6 @@ fn IntervalNode::set_right(self : IntervalNode, v : IntervalNode) -> Unit {
 
 ///|
 /// `IntervalNode` constructor (`intervalTree.ts:166-195`).
-#alias(new)
 pub fn IntervalNode::IntervalNode(
   id : String,
   start : Int,
@@ -415,7 +414,6 @@ pub struct IntervalTree {
 }
 
 ///|
-#alias(new)
 pub fn IntervalTree::IntervalTree() -> IntervalTree {
   { root: sentinel, request_normalize_delta: false }
 }

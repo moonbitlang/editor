@@ -31,7 +31,6 @@ pub struct SingleCursorState {
 
 ///|
 /// Builds a cursor state from an explicit anchor range and active position.
-#alias(new)
 pub fn SingleCursorState::SingleCursorState(
   selection_start_start : @base_common.Position,
   selection_start_end : @base_common.Position,

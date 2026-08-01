@@ -67,7 +67,6 @@ pub fn wall_clock_now_ms() -> Double
 pub struct GlobalPointerMoveMonitor {
   // private fields
 }
-#alias(new)
 pub fn GlobalPointerMoveMonitor::GlobalPointerMoveMonitor() -> Self
 pub fn GlobalPointerMoveMonitor::dispose(Self) -> Unit
 pub fn GlobalPointerMoveMonitor::is_monitoring(Self) -> Bool
@@ -91,7 +90,6 @@ pub struct StandardMouseEvent {
   timestamp : Double
   default_prevented : Bool
 }
-#alias(new)
 pub fn StandardMouseEvent::StandardMouseEvent(@dom.MouseEvent) -> Self
 pub fn StandardMouseEvent::prevent_default(Self) -> Unit
 pub fn StandardMouseEvent::stop_propagation(Self) -> Unit

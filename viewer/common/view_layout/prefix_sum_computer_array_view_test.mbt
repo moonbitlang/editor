@@ -35,10 +35,10 @@ test "prefix sum constructors own a copy of their input view" {
 }
 
 ///|
-test "array compatibility constructors remain available" {
-  assert_eq(@view_layout.PrefixSumComputer::new([1, 2, 3]).get_total_sum(), 6)
+test "array literals use canonical view constructors" {
+  assert_eq(@view_layout.PrefixSumComputer([1, 2, 3]).get_total_sum(), 6)
   assert_eq(
-    @view_layout.ConstantTimePrefixSumComputer::new([1, 2, 3]).get_total_sum(),
+    @view_layout.ConstantTimePrefixSumComputer([1, 2, 3]).get_total_sum(),
     6,
   )
 }

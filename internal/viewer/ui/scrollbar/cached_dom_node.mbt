@@ -38,7 +38,6 @@ pub struct CachedDomNode {
 
 ///|
 /// `FastDomNode` constructor (`fastDomNode.ts:38-40`).
-#alias(new)
 pub fn CachedDomNode::CachedDomNode(dom_node : @rdom.Element) -> CachedDomNode {
   {
     dom_node,

@@ -38,7 +38,6 @@ pub struct StandardMouseEvent {
 }
 
 ///|
-#alias(new)
 pub fn StandardMouseEvent::StandardMouseEvent(
   e : @rdom.MouseEvent,
 ) -> StandardMouseEvent {

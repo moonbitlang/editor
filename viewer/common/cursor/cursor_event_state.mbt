@@ -8,7 +8,6 @@ pub struct CursorState {
 
 ///|
 /// Retains a complete model/view pair.
-#alias(new)
 pub fn CursorState::CursorState(
   model_state : SingleCursorState,
   view_state : SingleCursorState,
@@ -24,7 +23,6 @@ pub struct PartialModelCursorState {
 } derive(Eq, Debug)
 
 ///|
-#alias(new)
 pub fn PartialModelCursorState::PartialModelCursorState(
   model_state : SingleCursorState,
 ) -> PartialModelCursorState {
@@ -39,7 +37,6 @@ pub struct PartialViewCursorState {
 } derive(Eq, Debug)
 
 ///|
-#alias(new)
 pub fn PartialViewCursorState::PartialViewCursorState(
   view_state : SingleCursorState,
 ) -> PartialViewCursorState {

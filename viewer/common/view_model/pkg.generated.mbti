@@ -94,7 +94,6 @@ pub struct DecorationToRender {
 pub struct HiddenAreasChangedOutgoingEvent {
   kind : OutgoingViewModelEventKind
 } derive(@debug.Debug)
-#alias(new)
 pub fn HiddenAreasChangedOutgoingEvent::HiddenAreasChangedOutgoingEvent() -> Self
 pub fn HiddenAreasChangedOutgoingEvent::is_no_op(Self) -> Bool
 
@@ -156,14 +155,12 @@ pub struct ModelTokensChangedOutgoingEvent {
   kind : OutgoingViewModelEventKind
   event : @model.ModelTokensChangedEvent
 }
-#alias(new)
 pub fn ModelTokensChangedOutgoingEvent::ModelTokensChangedOutgoingEvent(@model.ModelTokensChangedEvent) -> Self
 pub fn ModelTokensChangedOutgoingEvent::is_no_op(Self) -> Bool
 
 pub struct MonospaceLineBreaksComputerFactory {
   // private fields
 }
-#alias(new)
 pub fn MonospaceLineBreaksComputerFactory::MonospaceLineBreaksComputerFactory(String, String) -> Self
 pub fn MonospaceLineBreaksComputerFactory::create() -> Self
 pub fn MonospaceLineBreaksComputerFactory::create_line_breaks_computer(Self, font_info~ : @config.FontInfo, tab_size~ : Int, wrapping_column~ : Int, wrapping_indent~ : @editor_api.WrappingIndent, word_break? : WordBreak) -> LineBreaksComputer
@@ -207,7 +204,6 @@ pub struct SimpleMoveArguments {
   select : Bool
   value : Int
 } derive(Eq, @debug.Debug)
-#alias(new)
 pub fn SimpleMoveArguments::SimpleMoveArguments(SimpleMoveDirection, CursorMoveUnit, Bool, Int) -> Self
 
 pub(all) enum SimpleMoveDirection {
@@ -324,7 +320,6 @@ pub struct ViewModelLinesFromProjectedModel {
   mut hidden_areas_decoration_ids : Array[String]
   // private fields
 }
-#alias(new)
 pub fn ViewModelLinesFromProjectedModel::ViewModelLinesFromProjectedModel(@model.TextModel, font_info~ : @config.FontInfo, tab_size~ : Int, wrapping_column~ : Int, wrapping_indent~ : @editor_api.WrappingIndent) -> Self
 pub fn ViewModelLinesFromProjectedModel::convert_model_position_to_view_position(Self, Int, Int, affinity? : @model.PositionAffinity, allow_zero_line_number? : Bool, below_hidden_ranges? : Bool) -> @common.Position
 pub fn ViewModelLinesFromProjectedModel::convert_model_range_to_view_range(Self, @common.Range, affinity? : @model.PositionAffinity) -> @common.Range
@@ -371,7 +366,6 @@ pub struct ViewTokensChangedRange {
 pub struct ViewZonesChangedEvent {
   kind : OutgoingViewModelEventKind
 } derive(@debug.Debug)
-#alias(new)
 pub fn ViewZonesChangedEvent::ViewZonesChangedEvent() -> Self
 pub fn ViewZonesChangedEvent::is_no_op(Self) -> Bool
 

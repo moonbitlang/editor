@@ -32,7 +32,6 @@ pub struct AgentFeedbackService {
   enabled_resources : Map[String, Bool]
   mut next_feedback_handle : Int
 }
-#alias(new)
 pub fn AgentFeedbackService::AgentFeedbackService() -> Self
 pub fn AgentFeedbackService::accept_feedback(Self, @common.Uri, String) -> Unit
 pub fn AgentFeedbackService::add_feedback(Self, @common.Uri, @common.Range, String, kind? : @agent_feedback_api.AgentFeedbackKind, state? : @agent_feedback_api.AgentFeedbackState) -> @agent_feedback_api.AgentFeedback

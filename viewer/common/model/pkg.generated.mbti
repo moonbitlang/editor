@@ -56,7 +56,6 @@ pub struct GuidesTextModelPart {
   indent_size : Int
   off_side : Bool
 }
-#alias(new)
 pub fn GuidesTextModelPart::GuidesTextModelPart(TextSnapshot, tab_size? : Int, indent_size? : Int, off_side? : Bool) -> Self
 pub fn GuidesTextModelPart::get_active_indent_guide(Self, Int, Int, Int) -> ActiveIndentGuideInfo
 pub fn GuidesTextModelPart::get_lines_indent_guides(Self, Int, Int) -> Array[Int]
@@ -92,7 +91,6 @@ pub(all) struct IntervalNode {
   mut range : @common.Range?
   // private fields
 }
-#alias(new)
 pub fn IntervalNode::IntervalNode(String, Int, Int) -> Self
 pub fn IntervalNode::detach(Self) -> Unit
 pub fn IntervalNode::left(Self) -> Self
@@ -107,7 +105,6 @@ pub struct IntervalTree {
   mut root : IntervalNode
   mut request_normalize_delta : Bool
 }
-#alias(new)
 pub fn IntervalTree::IntervalTree() -> Self
 pub fn IntervalTree::collect_nodes_from_owner(Self, Int) -> Array[IntervalNode]
 pub fn IntervalTree::collect_nodes_post_order(Self) -> Array[IntervalNode]

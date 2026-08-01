@@ -16,7 +16,6 @@ pub struct JavascriptTokenizer {}
 
 ///|
 /// Creates the JavaScript tokenizer.
-#alias(new)
 #warnings("-unnecessary_annotation")
 pub fn JavascriptTokenizer::JavascriptTokenizer() -> JavascriptTokenizer {
   JavascriptTokenizer::{  }

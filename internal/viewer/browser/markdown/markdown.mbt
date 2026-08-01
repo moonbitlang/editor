@@ -22,7 +22,6 @@ pub(all) struct MarkdownRenderOptions {
 /// runs during synchronous Markdown conversion; image loads and successful
 /// Mermaid commits may invoke the size callback later. The `new` spelling
 /// remains only as the repository's deprecated constructor alias.
-#alias(new)
 pub fn MarkdownRenderOptions::MarkdownRenderOptions(
   language_id? : String,
   base_uri? : @base_common.Uri,

@@ -48,7 +48,6 @@ pub struct EditorDomMouseEvent {
   pos : PageCoordinates
   // private fields
 }
-#alias(new)
 pub fn EditorDomMouseEvent::EditorDomMouseEvent(@dom.MouseEvent, Bool, @dom.Element) -> Self
 pub fn EditorDomMouseEvent::editor_pos(Self) -> EditorPagePosition
 pub fn EditorDomMouseEvent::prevent_default(Self) -> Unit
@@ -64,7 +63,6 @@ pub(all) struct EditorMouseEvent {
 pub struct EditorMouseEventFactory {
   // private fields
 }
-#alias(new)
 pub fn EditorMouseEventFactory::EditorMouseEventFactory(@dom.Element) -> Self
 pub fn EditorMouseEventFactory::on_context_menu(Self, @dom.Element, (EditorDomMouseEvent) -> Unit) -> @common.Disposable
 pub fn EditorMouseEventFactory::on_mouse_down(Self, @dom.Element, (EditorDomMouseEvent) -> Unit) -> @common.Disposable
@@ -83,7 +81,6 @@ pub struct EditorPagePosition {
 pub struct GlobalEditorPointerMoveMonitor {
   // private fields
 }
-#alias(new)
 pub fn GlobalEditorPointerMoveMonitor::GlobalEditorPointerMoveMonitor(@dom.Element) -> Self
 pub fn GlobalEditorPointerMoveMonitor::dispose(Self) -> Unit
 pub fn GlobalEditorPointerMoveMonitor::start_monitoring(Self, @dom.Element, Int, Int, (EditorDomMouseEvent) -> Unit, (@dom.Event?) -> Unit) -> Unit

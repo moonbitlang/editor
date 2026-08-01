@@ -7,7 +7,6 @@ pub struct PlainTokenizer {}
 
 ///|
 /// Creates the stateless fallback tokenizer.
-#alias(new)
 #warnings("-unnecessary_annotation")
 pub fn PlainTokenizer::PlainTokenizer() -> PlainTokenizer {
   PlainTokenizer::{  }

@@ -26,7 +26,6 @@ let next_hover_participant_owner_id : Ref[Int] = Ref(0)
 ///|
 /// Mints one logical participant identity. A factory that rebuilds handles for
 /// separate input/compute passes must retain and reuse this value across them.
-#alias(new)
 pub fn HoverParticipantOwner::HoverParticipantOwner() -> HoverParticipantOwner {
   next_hover_participant_owner_id.val += 1
   { id: next_hover_participant_owner_id.val }

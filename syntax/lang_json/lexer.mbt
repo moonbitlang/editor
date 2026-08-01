@@ -7,7 +7,6 @@ struct JsonTokenizer {}
 
 ///|
 /// Creates the JSON/JSONC tokenizer.
-#alias(new)
 #warnings("-unnecessary_annotation")
 pub fn JsonTokenizer::JsonTokenizer() -> JsonTokenizer {
   JsonTokenizer::{  }

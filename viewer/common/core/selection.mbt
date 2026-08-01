@@ -26,7 +26,6 @@ pub struct Selection {
 ///|
 /// Builds a selection from its anchor (`selection_start`) and active
 /// (`position`) endpoints without reordering them; the orientation is kept.
-#alias(new)
 pub fn Selection::Selection(
   selection_start : @base_common.Position,
   position : @base_common.Position,

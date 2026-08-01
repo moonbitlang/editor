@@ -138,7 +138,6 @@ pub struct LineRangeSet {
 }
 
 ///|
-#alias(new)
 pub fn LineRangeSet::LineRangeSet(
   normalized_ranges? : Array[LineRange] = [],
 ) -> LineRangeSet {

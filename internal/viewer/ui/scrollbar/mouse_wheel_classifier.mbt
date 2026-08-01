@@ -28,7 +28,6 @@ pub struct MouseWheelClassifier {
 }
 
 ///|
-#alias(new)
 pub fn MouseWheelClassifier::MouseWheelClassifier() -> MouseWheelClassifier {
   { capacity: 5, memory: [], front: -1, rear: -1 }
 }

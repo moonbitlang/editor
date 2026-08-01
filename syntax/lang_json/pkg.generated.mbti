@@ -11,7 +11,6 @@ import {
 
 // Types and methods
 type JsonTokenizer
-#alias(new)
 pub fn JsonTokenizer::JsonTokenizer() -> Self
 pub impl @syntax.LineTokenizer for JsonTokenizer
 

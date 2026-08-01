@@ -40,7 +40,6 @@ pub struct DefinitionPeekWidget {
 /// presentation-owned overlay before mounting a nested Viewer into
 /// `get_preview_host()`. Code uses a separate blank ViewZone as the layout
 /// spacer; Markdown uses its projection overlay.
-#alias(new)
 pub fn DefinitionPeekWidget::DefinitionPeekWidget(
   callbacks : DefinitionPeekWidgetCallbacks,
 ) -> DefinitionPeekWidget {

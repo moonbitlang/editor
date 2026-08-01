@@ -45,7 +45,6 @@ pub struct AgentFeedbackEditorWidget {
   mut start_line : Int
   // private fields
 }
-#alias(new)
 pub fn AgentFeedbackEditorWidget::AgentFeedbackEditorWidget(AgentFeedbackEditorWidgetHost, String, Array[@agent_feedback.SessionEditorComment], Map[String, String], focused_reply? : String) -> Self
 pub fn AgentFeedbackEditorWidget::anchor_line(Self) -> Int
 pub fn AgentFeedbackEditorWidget::clear_focus(Self) -> Unit
@@ -94,7 +93,6 @@ pub struct AgentFeedbackInputWidget {
   action : @dom.Element
   mut showing_alt : Bool
 }
-#alias(new)
 pub fn AgentFeedbackInputWidget::AgentFeedbackInputWidget(AgentFeedbackInputWidgetHost) -> Self
 pub fn AgentFeedbackInputWidget::auto_size(Self) -> Unit
 pub fn AgentFeedbackInputWidget::clear_input(Self) -> Unit

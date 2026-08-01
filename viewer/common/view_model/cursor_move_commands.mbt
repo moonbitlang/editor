@@ -67,7 +67,6 @@ pub struct SimpleMoveArguments {
 } derive(Eq, Debug)
 
 ///|
-#alias(new)
 pub fn SimpleMoveArguments::SimpleMoveArguments(
   direction : SimpleMoveDirection,
   unit : CursorMoveUnit,
