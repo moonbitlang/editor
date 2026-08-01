@@ -40,8 +40,8 @@ fn is_word_break(code : Int) -> Bool {
   if code == 32 || code == 9 {
     return true
   }
-  for i in 0..<usual_word_separators.length() {
-    if usual_word_separators[i].to_int() == code {
+  for unit in usual_word_separators.code_units() {
+    if unit.to_int() == code {
       return true
     }
   }

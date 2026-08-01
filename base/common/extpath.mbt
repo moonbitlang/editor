@@ -8,8 +8,8 @@
 /// extpath.ts:71).
 fn replace_path_separators(os_path : String, sep : String) -> String {
   let sb = StringBuilder::new()
-  for i in 0..<os_path.length() {
-    let code = os_path[i].to_int()
+  for unit in os_path.code_units() {
+    let code = unit.to_int()
     if is_path_separator(code) {
       sb.write_string(sep)
     } else {

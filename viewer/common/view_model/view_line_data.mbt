@@ -224,8 +224,8 @@ fn line_decorations_for_line(
 
 ///|
 fn is_basic_ascii(text : String) -> Bool {
-  for i in 0..<text.length() {
-    if text[i].to_int() > 127 {
+  for unit in text.code_units() {
+    if unit.to_int() > 127 {
       return false
     }
   }

@@ -3,10 +3,11 @@
 /// lowest-level shared package, so model/view code shares one definition.
 ///
 /// These are UTF-16 code-unit algorithms, which is what JavaScript strings are
-/// and what Monaco's offsets count. `String::at` (`s[i]`) already yields a
-/// `UInt16` code unit, so the scanners below stay in that type instead of
-/// widening every read to `Int`. Only values that leave the code-unit domain —
-/// a comparator result, a public `Int` predicate argument — convert.
+/// and what Monaco's offsets count. String indexing and `String::code_units`
+/// both yield `UInt16` code units, so the scanners below stay in that type
+/// instead of widening every read to `Int`. Only values that leave the
+/// code-unit domain — a comparator result, a public `Int` predicate argument —
+/// convert.
 
 ///|
 /// The first code unit outside ASCII, above which case folding needs the full
@@ -34,8 +35,7 @@ pub fn is_low_surrogate(char_code : Int) -> Bool {
 /// `U+FE70..U+FEFF`); supplementary-plane RTL is not detected, matching the
 /// viewer's existing simplified port.
 pub fn contains_rtl(text : String) -> Bool {
-  for i in 0..<text.length() {
-    let code = text[i]
+  for code in text.code_units() {
     if (code >= 0x0590 && code <= 0x08ff) ||
       (code >= 0xfb1d && code <= 0xfdff) ||
       (code >= 0xfe70 && code <= 0xfeff) {
