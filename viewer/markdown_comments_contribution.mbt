@@ -389,18 +389,23 @@ fn render_markdown_comment_presentations(
   let diagram_viewports_slot : Ref[
     @markdown_comments_browser.MarkdownCommentDiagramViewports?,
   ] = Ref(None)
-  let on_size_changed = () => {
+  // Renderer notifications include asynchronous Mermaid commits, so reconcile
+  // before measuring. Diagram viewport and fold interactions only change
+  // geometry; keep their pointer-driven path on the already-coalesced size
+  // observer instead of rescanning the rendered Markdown tree per event.
+  let on_rendered_size_changed = () => {
     match diagram_viewports_slot.val {
       Some(diagram_viewports) => diagram_viewports.refresh()
       None => ()
     }
     size_observer.request_measure()
   }
+  let on_interaction_size_changed = () => size_observer.request_measure()
   let rendered_markdown = render_markdown_comment_body(
     model,
     markdown,
     dom.full,
-    on_size_changed,
+    on_rendered_size_changed,
     mermaid_theme,
   )
   let (preview_rendered_markdown, fold_lifetime) = match
@@ -410,10 +415,12 @@ fn render_markdown_comment_presentations(
         model,
         preview_markdown,
         dom.preview,
-        on_size_changed,
+        on_rendered_size_changed,
         mermaid_theme,
       )
-      let lifetime = dom.enable_folding(fold_expanded, on_size_changed)
+      let lifetime = dom.enable_folding(
+        fold_expanded, on_interaction_size_changed,
+      )
       (Some(preview), Some(lifetime))
     }
     None => {
@@ -423,7 +430,7 @@ fn render_markdown_comment_presentations(
   }
   let diagram_viewports = @markdown_comments_browser.MarkdownCommentDiagramViewports(
     rendered_markdown.element,
-    on_size_changed,
+    on_interaction_size_changed,
   )
   diagram_viewports_slot.val = Some(diagram_viewports)
   (
