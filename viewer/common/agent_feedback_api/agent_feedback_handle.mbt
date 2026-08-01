@@ -25,7 +25,7 @@ pub struct AgentFeedbackHandle {
 ///|
 /// Constructs a handle from the complete required callback floor. Captured
 /// backing state and its lifecycle remain owned by the caller.
-#alias(new, deprecated)
+#alias(new)
 pub fn AgentFeedbackHandle::AgentFeedbackHandle(
   on_did_change_feedback~ : ((AgentFeedbackChangeEvent) -> Unit) -> @base_common.Disposable,
   on_did_change_navigation~ : ((@base_common.Uri) -> Unit) -> @base_common.Disposable,

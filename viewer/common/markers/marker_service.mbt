@@ -268,7 +268,7 @@ pub struct MarkerService {
 /// change event's `MicrotaskEmitter` (`markerService.ts:154-156` hardcodes
 /// `queueMicrotask`; the default here flushes inline — see the deviation note
 /// on `@base_common.MicrotaskEmitter`).
-#alias(new, deprecated)
+#alias(new)
 pub fn MarkerService::MarkerService(
   schedule? : (() -> Unit) -> Unit,
 ) -> MarkerService {

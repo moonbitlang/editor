@@ -46,7 +46,7 @@ pub struct ContiguousTokensStore {
 ///|
 /// Creates an empty store retaining the shared language-id codec.
 /// Source: `contiguousTokensStore.ts:24-28`.
-#alias(new, deprecated)
+#alias(new)
 pub fn ContiguousTokensStore::ContiguousTokensStore(
   language_id_codec : @services.LanguageIdCodec,
 ) -> ContiguousTokensStore {

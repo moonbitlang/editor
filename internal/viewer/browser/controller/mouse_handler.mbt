@@ -157,7 +157,7 @@ pub struct MouseHandler {
 }
 
 ///|
-#alias(new, deprecated)
+#alias(new)
 pub fn MouseHandler::MouseHandler(
   view_helper : PointerHandlerHelper,
 ) -> MouseHandler {
@@ -860,7 +860,7 @@ pub struct MouseDownState {
 const CLEAR_MOUSE_DOWN_COUNT_TIME : Double = 400.0 // ms
 
 ///|
-#alias(new, deprecated)
+#alias(new)
 pub fn MouseDownState::MouseDownState() -> MouseDownState {
   {
     alt_key_flag: false,

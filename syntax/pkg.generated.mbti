@@ -51,7 +51,7 @@ pub(all) struct LineToken {
 
 pub struct PlainTokenizer {
 }
-#alias(new, deprecated)
+#alias(new)
 pub fn PlainTokenizer::PlainTokenizer() -> Self
 pub impl LineTokenizer for PlainTokenizer
 
@@ -63,7 +63,7 @@ pub struct TokenizationChangedEvent {
 pub struct TokenizationRegistry {
   // private fields
 }
-#alias(new, deprecated)
+#alias(new)
 pub fn TokenizationRegistry::TokenizationRegistry() -> Self
 pub fn TokenizationRegistry::get(Self, String) -> &LineTokenizer?
 pub fn TokenizationRegistry::get_color_map(Self) -> Array[String]?

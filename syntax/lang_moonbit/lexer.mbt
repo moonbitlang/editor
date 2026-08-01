@@ -17,7 +17,7 @@ pub struct MoonbitTokenizer {}
 
 ///|
 /// Creates the MoonBit tokenizer.
-#alias(new, deprecated)
+#alias(new)
 #warnings("-unnecessary_annotation")
 pub fn MoonbitTokenizer::MoonbitTokenizer() -> MoonbitTokenizer {
   MoonbitTokenizer::{  }

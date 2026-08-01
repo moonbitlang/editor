@@ -19,7 +19,7 @@ pub(all) enum ContextMenuEntry {
 pub struct ContextMenuWidget {
   // private fields
 }
-#alias(new, deprecated)
+#alias(new)
 pub fn ContextMenuWidget::ContextMenuWidget(ContextMenuWidgetCallbacks) -> Self
 pub fn ContextMenuWidget::dispose(Self) -> Unit
 pub fn ContextMenuWidget::get_dom_node(Self) -> @dom.Element

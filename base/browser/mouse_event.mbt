@@ -38,7 +38,7 @@ pub struct StandardMouseEvent {
 }
 
 ///|
-#alias(new, deprecated)
+#alias(new)
 pub fn StandardMouseEvent::StandardMouseEvent(
   e : @rdom.MouseEvent,
 ) -> StandardMouseEvent {

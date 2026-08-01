@@ -610,7 +610,7 @@ controller's test-only boundary became white-box.
 
 Ninety product constructors plus the internal browser-test context now use
 canonical `Type(...)` construction with compatibility entry points declared as
-`#alias(new, deprecated)`.
+non-deprecated `#alias(new)` aliases for downstream source compatibility.
 The two prefix-sum implementations use `ArrayView[Int]` primary constructors,
 copy their inputs, and retain `new(Array[Int])` compatibility wrappers;
 selected private read-only helpers also accept views without broad public

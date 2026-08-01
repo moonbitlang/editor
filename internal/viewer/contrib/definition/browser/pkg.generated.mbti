@@ -17,7 +17,7 @@ pub let definition_peek_height_in_lines : Int
 pub struct DefinitionMessageWidget {
   // private fields
 }
-#alias(new, deprecated)
+#alias(new)
 pub fn DefinitionMessageWidget::DefinitionMessageWidget() -> Self
 pub fn DefinitionMessageWidget::content_widget_handle(Self) -> @view.ContentWidgetHandle
 pub fn DefinitionMessageWidget::dispose(Self) -> Unit
@@ -29,7 +29,7 @@ pub fn DefinitionMessageWidget::show_at(Self, @common.Position) -> Unit
 pub struct DefinitionPeekWidget {
   // private fields
 }
-#alias(new, deprecated)
+#alias(new)
 pub fn DefinitionPeekWidget::DefinitionPeekWidget(DefinitionPeekWidgetCallbacks) -> Self
 pub fn DefinitionPeekWidget::dispose(Self) -> Unit
 pub fn DefinitionPeekWidget::focus(Self) -> Unit

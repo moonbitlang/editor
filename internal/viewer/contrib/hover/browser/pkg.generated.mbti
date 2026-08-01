@@ -84,7 +84,7 @@ pub struct ContentHoverWidget {
   mut position_preference : @view.ContentWidgetPositionPreference?
   // private fields
 }
-#alias(new, deprecated)
+#alias(new)
 pub fn ContentHoverWidget::ContentHoverWidget(ContentHoverWidgetHost) -> Self
 pub fn ContentHoverWidget::content_widget_handle(Self) -> @view.ContentWidgetHandle
 pub fn ContentHoverWidget::dispose(Self) -> Unit

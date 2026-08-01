@@ -25,7 +25,7 @@ pub fn CancellationToken::on_cancellation_requested(Self, () -> Unit, disposable
 pub struct CancellationTokenSource {
   // private fields
 }
-#alias(new, deprecated)
+#alias(new)
 pub fn CancellationTokenSource::CancellationTokenSource(parent? : CancellationToken, schedule? : (() -> Unit) -> @common.Disposable) -> Self
 pub fn CancellationTokenSource::cancel(Self) -> Unit
 pub fn CancellationTokenSource::dispose(Self, cancel? : Bool) -> Unit

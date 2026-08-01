@@ -86,7 +86,7 @@ pub struct ScrollState {
 } derive(Eq, Debug)
 
 ///|
-#alias(new, deprecated)
+#alias(new)
 pub fn ScrollState::ScrollState(
   force_integer_values~ : Bool,
   width : Double,
@@ -258,7 +258,7 @@ pub struct SmoothScrollingUpdate {
 } derive(Eq, Debug)
 
 ///|
-#alias(new, deprecated)
+#alias(new)
 pub fn SmoothScrollingUpdate::SmoothScrollingUpdate(
   scroll_left : Double,
   scroll_top : Double,
@@ -280,7 +280,7 @@ pub struct SmoothScrollingOperation {
 }
 
 ///|
-#alias(new, deprecated)
+#alias(new)
 pub fn SmoothScrollingOperation::SmoothScrollingOperation(
   from : SmoothScrollPosition,
   to : SmoothScrollPosition,
@@ -456,7 +456,7 @@ pub struct Scrollable {
 }
 
 ///|
-#alias(new, deprecated)
+#alias(new)
 pub fn Scrollable::Scrollable(
   force_integer_values~ : Bool,
   smooth_scroll_duration? : Double = 0.0,
@@ -745,7 +745,7 @@ pub struct EditorScrollDimensions {
 } derive(Eq, Debug)
 
 ///|
-#alias(new, deprecated)
+#alias(new)
 pub fn EditorScrollDimensions::EditorScrollDimensions(
   width : Double,
   content_width : Double,
@@ -783,7 +783,7 @@ pub struct EditorScrollable {
 }
 
 ///|
-#alias(new, deprecated)
+#alias(new)
 pub fn EditorScrollable::EditorScrollable(
   smooth_scroll_duration : Double,
   schedule_at_next_animation_frame : (() -> Unit) -> @base_common.Disposable,

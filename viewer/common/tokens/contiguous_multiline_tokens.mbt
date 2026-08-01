@@ -17,7 +17,7 @@ pub struct ContiguousMultilineTokens {
 ///|
 /// Retains the caller's line order and encoded token arrays.
 /// Source: `contiguousMultilineTokens.ts:62-65`.
-#alias(new, deprecated)
+#alias(new)
 pub fn ContiguousMultilineTokens::ContiguousMultilineTokens(
   start_line_number : Int,
   tokens : Array[Array[UInt]],

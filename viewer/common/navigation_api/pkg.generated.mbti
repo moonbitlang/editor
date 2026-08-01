@@ -16,7 +16,7 @@ import {
 pub struct LocationOpenerHandle {
   // private fields
 }
-#alias(new, deprecated)
+#alias(new)
 pub fn LocationOpenerHandle::LocationOpenerHandle(open~ : async (OpenLocationRequest) -> Bool noraise) -> Self
 pub async fn LocationOpenerHandle::open(Self, OpenLocationRequest) -> Bool noraise
 
@@ -34,7 +34,7 @@ pub(all) struct OpenLocationRequest {
 pub struct TextModelReference {
   // private fields
 }
-#alias(new, deprecated)
+#alias(new)
 pub fn TextModelReference::TextModelReference(@model.TextModel, release~ : () -> Unit) -> Self
 pub fn TextModelReference::dispose(Self) -> Unit
 pub fn TextModelReference::model(Self) -> @model.TextModel
@@ -42,7 +42,7 @@ pub fn TextModelReference::model(Self) -> @model.TextModel
 pub struct TextModelResolverHandle {
   // private fields
 }
-#alias(new, deprecated)
+#alias(new)
 pub fn TextModelResolverHandle::TextModelResolverHandle(resolve~ : async (@common.Uri, @language.CancellationToken) -> TextModelReference? noraise) -> Self
 pub async fn TextModelResolverHandle::resolve(Self, @common.Uri, @language.CancellationToken) -> TextModelReference? noraise
 

@@ -74,7 +74,7 @@ pub struct ComputedHover {
 pub struct ContentHoverComputer {
   participants : Array[HoverParticipantHandle]
 }
-#alias(new, deprecated)
+#alias(new)
 pub fn ContentHoverComputer::ContentHoverComputer(HoverParticipantServices) -> Self
 pub async fn ContentHoverComputer::compute_async(Self, @model.TextModel, HoverAnchor, source? : HoverStartSource, token? : @language.CancellationToken, is_current? : () -> Bool) -> ComputedHover? noraise
 pub async fn ContentHoverComputer::compute_async_each(Self, @model.TextModel, HoverAnchor, source? : HoverStartSource, token? : @language.CancellationToken, is_current? : () -> Bool, run_tasks? : async (Array[async () -> Unit]) -> Unit, emit~ : (Array[HoverPart]) -> Unit) -> Unit noraise
@@ -145,7 +145,7 @@ pub fn HoverController::widget_visible(Self) -> Bool
 pub struct HoverDebouncer {
   // private fields
 } derive(Eq, @debug.Debug)
-#alias(new, deprecated)
+#alias(new)
 pub fn HoverDebouncer::HoverDebouncer(default_delay_ms? : Int) -> Self
 pub fn HoverDebouncer::cancel(Self) -> Self
 pub fn HoverDebouncer::schedule(Self, HoverOperationOptions, delay_ms? : Int) -> (Int, Self)
@@ -191,7 +191,7 @@ pub struct HoverOperationOptions {
   source : HoverStartSource
   insist_on_keeping_hover_visible : Bool
 } derive(Eq, @debug.Debug)
-#alias(new, deprecated)
+#alias(new)
 pub fn HoverOperationOptions::HoverOperationOptions(HoverAnchor, should_focus? : Bool, source? : HoverStartSource, insist_on_keeping_hover_visible? : Bool) -> Self
 
 pub enum HoverOperationStartEffect {
@@ -219,13 +219,13 @@ pub fn HoverParticipantHandle::HoverParticipantHandle(Int, (HoverComputeContext)
 pub struct HoverParticipantOwner {
   // private fields
 } derive(Eq, @debug.Debug)
-#alias(new, deprecated)
+#alias(new)
 pub fn HoverParticipantOwner::HoverParticipantOwner() -> Self
 
 pub struct HoverParticipantRegistry {
   entries : Array[(HoverParticipantServices) -> HoverParticipantHandle]
 }
-#alias(new, deprecated)
+#alias(new)
 pub fn HoverParticipantRegistry::HoverParticipantRegistry() -> Self
 pub fn HoverParticipantRegistry::build_all(Self, HoverParticipantServices) -> Array[HoverParticipantHandle]
 pub fn HoverParticipantRegistry::get_all(Self) -> Array[(HoverParticipantServices) -> HoverParticipantHandle]
@@ -295,14 +295,14 @@ pub struct HoverWidgetView {
 pub struct MarkdownHoverParticipant {
   // private fields
 }
-#alias(new, deprecated)
+#alias(new)
 pub fn MarkdownHoverParticipant::MarkdownHoverParticipant(@languages.LanguageHandle) -> Self
 pub fn MarkdownHoverParticipant::hover_participant_handle(Self) -> HoverParticipantHandle
 
 pub struct MarkerHoverParticipant {
   // private fields
 }
-#alias(new, deprecated)
+#alias(new)
 pub fn MarkerHoverParticipant::MarkerHoverParticipant(@markers.MarkerDecorationsHandle) -> Self
 pub fn MarkerHoverParticipant::hover_participant_handle(Self) -> HoverParticipantHandle
 
@@ -311,7 +311,7 @@ pub struct MouseCloserState {
   mut initial_pos_y : Double?
   mut closest_distance : Double?
 }
-#alias(new, deprecated)
+#alias(new)
 pub fn MouseCloserState::MouseCloserState() -> Self
 pub fn MouseCloserState::is_mouse_getting_closer(Self, Double, Double, Double, Double, Double, Double) -> Bool
 pub fn MouseCloserState::reset(Self) -> Unit

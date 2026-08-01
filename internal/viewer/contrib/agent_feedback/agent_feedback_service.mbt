@@ -42,7 +42,7 @@ pub struct AgentFeedbackService {
 
 ///|
 /// Creates an empty feedback store.
-#alias(new, deprecated)
+#alias(new)
 pub fn AgentFeedbackService::AgentFeedbackService() -> AgentFeedbackService {
   {
     did_change_feedback: Emitter(),

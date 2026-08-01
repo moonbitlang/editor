@@ -26,7 +26,7 @@ pub struct ExtUri {
 }
 
 ///|
-#alias(new, deprecated)
+#alias(new)
 pub fn ExtUri::ExtUri(ignore_path_casing : (Uri) -> Bool) -> ExtUri {
   { ignore_path_casing_fn: ignore_path_casing }
 }

@@ -59,7 +59,7 @@ pub struct ContextMenuWidget {
 }
 
 ///|
-#alias(new, deprecated)
+#alias(new)
 pub fn ContextMenuWidget::ContextMenuWidget(
   callbacks : ContextMenuWidgetCallbacks,
 ) -> ContextMenuWidget {

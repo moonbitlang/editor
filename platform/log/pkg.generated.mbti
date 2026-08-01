@@ -39,7 +39,7 @@ pub struct LogService {
   level : LogLevel
   logger : &Logger
 }
-#alias(new, deprecated)
+#alias(new)
 pub fn LogService::LogService(level? : LogLevel, logger? : &Logger) -> Self
 pub fn LogService::debug(Self, String, String, details? : Array[(String, String)]) -> Unit
 pub fn LogService::error(Self, String, String, details? : Array[(String, String)]) -> Unit
@@ -54,7 +54,7 @@ pub struct MemoryLogger {
   entries : Array[LogEntry]
   flush_count : @ref.Ref[Int]
 }
-#alias(new, deprecated)
+#alias(new)
 pub fn MemoryLogger::MemoryLogger() -> Self
 pub fn MemoryLogger::entries(Self) -> Array[LogEntry]
 pub fn MemoryLogger::flush_count(Self) -> Int
@@ -63,13 +63,13 @@ pub impl Logger for MemoryLogger
 pub struct MultiplexLogger {
   loggers : Array[&Logger]
 }
-#alias(new, deprecated)
+#alias(new)
 pub fn MultiplexLogger::MultiplexLogger(Array[&Logger]) -> Self
 pub impl Logger for MultiplexLogger
 
 pub struct NullLogger {
 }
-#alias(new, deprecated)
+#alias(new)
 pub fn NullLogger::NullLogger() -> Self
 pub impl Logger for NullLogger
 

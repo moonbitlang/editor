@@ -21,7 +21,7 @@ pub struct CharacterClassifier {
 }
 
 ///|
-#alias(new, deprecated)
+#alias(new)
 pub fn CharacterClassifier::CharacterClassifier(
   default_value : Int,
 ) -> CharacterClassifier {
@@ -75,7 +75,7 @@ pub struct CharacterSet {
 }
 
 ///|
-#alias(new, deprecated)
+#alias(new)
 pub fn CharacterSet::CharacterSet() -> CharacterSet {
   { actual: CharacterClassifier(0) }
 }

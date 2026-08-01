@@ -29,7 +29,7 @@ pub struct CharacterMapping {
   length : Int
   entries : Array[CharacterMappingEntry]
 } derive(Eq, @debug.Debug)
-#alias(new, deprecated)
+#alias(new)
 pub fn CharacterMapping::CharacterMapping(Int) -> Self
 pub fn CharacterMapping::column_horizontal_offset(Self, Int, space_width~ : Double) -> Double
 pub fn CharacterMapping::get_column(Self, DomPosition, Int) -> Int
@@ -87,13 +87,13 @@ pub struct EditorScrollDimensions {
   content_height : Double
   scroll_height : Double
 } derive(Eq, @debug.Debug)
-#alias(new, deprecated)
+#alias(new)
 pub fn EditorScrollDimensions::EditorScrollDimensions(Double, Double, Double, Double) -> Self
 
 pub struct EditorScrollable {
   // private fields
 }
-#alias(new, deprecated)
+#alias(new)
 pub fn EditorScrollable::EditorScrollable(Double, (() -> Unit) -> @common.Disposable, () -> Double) -> Self
 pub fn EditorScrollable::dimensions(Self) -> ScrollDimensions
 pub fn EditorScrollable::dispose(Self) -> Unit
@@ -119,7 +119,7 @@ pub struct EditorWhitespace {
   min_width : Int
   mut prefix_sum : Double
 } derive(Eq, @debug.Debug)
-#alias(new, deprecated)
+#alias(new)
 pub fn EditorWhitespace::EditorWhitespace(String, Int, Int, Int, Int) -> Self
 
 pub(all) enum ForeignElementType {
@@ -175,7 +175,7 @@ pub(all) struct LineWindow {
 pub struct LinesLayout {
   // private fields
 }
-#alias(new, deprecated)
+#alias(new)
 pub fn LinesLayout::LinesLayout(Int, Int, Int, Int) -> Self
 pub fn LinesLayout::change_whitespace(Self, (WhitespaceChangeAccessor) -> Unit raise?) -> Bool raise?
 pub fn LinesLayout::find_insertion_index(Array[EditorWhitespace], Int, Int) -> Int
@@ -346,7 +346,7 @@ pub struct ScrollState {
   scroll_height : Double
   scroll_top : Double
 } derive(Eq, @debug.Debug)
-#alias(new, deprecated)
+#alias(new)
 pub fn ScrollState::ScrollState(force_integer_values~ : Bool, Double, Double, Double, Double, Double, Double) -> Self
 pub fn ScrollState::create_scroll_event(Self, Self, Bool) -> ScrollChange
 pub fn ScrollState::equals(Self, Self) -> Bool
@@ -356,7 +356,7 @@ pub fn ScrollState::with_scroll_position(Self, ScrollPositionUpdate) -> Self
 pub struct Scrollable {
   // private fields
 }
-#alias(new, deprecated)
+#alias(new)
 pub fn Scrollable::Scrollable(force_integer_values~ : Bool, smooth_scroll_duration? : Double, schedule_at_next_animation_frame? : (() -> Unit) -> @common.Disposable, now? : () -> Double) -> Self
 pub fn Scrollable::dimensions(Self) -> ScrollDimensions
 pub fn Scrollable::dispose(Self) -> Unit
@@ -376,7 +376,7 @@ pub fn Scrollable::validate_scroll_position(Self, ScrollPositionUpdate) -> Scrol
 pub struct ScrollbarState {
   // private fields
 }
-#alias(new, deprecated)
+#alias(new)
 pub fn ScrollbarState::ScrollbarState(arrow_size? : Double, scrollbar_size~ : Double, opposite_scrollbar_size? : Double) -> Self
 pub fn ScrollbarState::clone(Self) -> Self
 pub fn ScrollbarState::desired_position_from_delta(Self, Double) -> Double
@@ -409,7 +409,7 @@ pub struct SmoothScrollingOperation {
   mut scroll_left_animation : (Double) -> Double
   mut scroll_top_animation : (Double) -> Double
 }
-#alias(new, deprecated)
+#alias(new)
 pub fn SmoothScrollingOperation::SmoothScrollingOperation(SmoothScrollPosition, SmoothScrollPosition, Double, Double) -> Self
 pub fn SmoothScrollingOperation::accept_scroll_dimensions(Self, ScrollState) -> Unit
 pub fn SmoothScrollingOperation::combine(Self, SmoothScrollPosition, SmoothScrollPosition, Double, Double) -> Self
@@ -422,7 +422,7 @@ pub struct SmoothScrollingUpdate {
   scroll_top : Double
   is_done : Bool
 } derive(Eq, @debug.Debug)
-#alias(new, deprecated)
+#alias(new)
 pub fn SmoothScrollingUpdate::SmoothScrollingUpdate(Double, Double, Bool) -> Self
 
 pub(all) enum TextDirection {
@@ -444,7 +444,7 @@ pub struct ViewLayout {
   scrollable : EditorScrollable
   // private fields
 }
-#alias(new, deprecated)
+#alias(new)
 pub fn ViewLayout::ViewLayout(line_height~ : Int, line_count? : Int, smooth_scrolling? : Bool, is_viewport_wrapping? : Bool, vertical_scrollbar_width? : Double, horizontal_scrollbar_height? : Double, schedule_at_next_animation_frame? : (() -> Unit) -> @common.Disposable, now? : () -> Double) -> Self
 pub fn ViewLayout::big_numbers_delta_for_window(Self, LineWindow) -> Int
 pub fn ViewLayout::change_whitespace(Self, (WhitespaceChangeAccessor) -> Unit raise?) -> Bool raise?

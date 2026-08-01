@@ -80,7 +80,7 @@ pub struct FoldingModel {
 }
 
 ///|
-#alias(new, deprecated)
+#alias(new)
 pub fn FoldingModel::FoldingModel(
   text_model : @model.TextModel,
   decoration_access : FoldingDecorationAccess,

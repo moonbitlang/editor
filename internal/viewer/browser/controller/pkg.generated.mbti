@@ -36,7 +36,7 @@ pub struct HitTestContext {
   last_render_data : PointerHandlerLastRenderData
   // private fields
 }
-#alias(new, deprecated)
+#alias(new)
 pub fn HitTestContext::HitTestContext(@view_model.ViewModel, PointerHandlerHelper, PointerHandlerLastRenderData) -> Self
 pub fn HitTestContext::find_attribute(Self, @dom.Element, String) -> String?
 pub fn HitTestContext::get_current_scroll_left(Self) -> Double
@@ -63,7 +63,7 @@ pub struct HitTestRequest {
   mouse_content_horizontal_offset : Double
   // private fields
 }
-#alias(new, deprecated)
+#alias(new)
 pub fn HitTestRequest::HitTestRequest(HitTestContext, @browser.EditorPagePosition, @browser.PageCoordinates, @browser.CoordinatesRelativeToEditor, @dom.Element?) -> Self
 pub fn HitTestRequest::fulfill_content_empty(Self, @common.Position, @browser.MouseTargetContentEmptyData) -> @browser.MouseTarget
 pub fn HitTestRequest::fulfill_content_text(Self, @common.Position, @common.Range?, @browser.MouseTargetContentTextData) -> @browser.MouseTarget
@@ -97,7 +97,7 @@ pub(all) struct MouseDispatchData {
 pub struct MouseDownState {
   // private fields
 }
-#alias(new, deprecated)
+#alias(new)
 pub fn MouseDownState::MouseDownState() -> Self
 pub fn MouseDownState::alt_key(Self) -> Bool
 pub fn MouseDownState::count(Self) -> Int
@@ -112,7 +112,7 @@ pub fn MouseDownState::try_set_count(Self, Int, @common.Position, now? : Double)
 pub struct MouseHandler {
   // private fields
 }
-#alias(new, deprecated)
+#alias(new)
 pub fn MouseHandler::MouseHandler(PointerHandlerHelper) -> Self
 pub fn MouseHandler::cancel_selection(Self) -> Unit
 pub fn MouseHandler::dispose(Self) -> Unit
@@ -124,7 +124,7 @@ pub fn MouseHandler::hook_scrollable_scrollbar_input(Self, @scrollbar.Scrollable
 pub struct MouseTargetFactory {
   // private fields
 }
-#alias(new, deprecated)
+#alias(new)
 pub fn MouseTargetFactory::MouseTargetFactory(PointerHandlerHelper) -> Self
 pub fn MouseTargetFactory::create_mouse_target(Self, PointerHandlerLastRenderData, @browser.EditorPagePosition, @browser.PageCoordinates, @browser.CoordinatesRelativeToEditor, @dom.Element?) -> @browser.MouseTarget
 pub fn MouseTargetFactory::get_mouse_column(Self, @browser.CoordinatesRelativeToEditor) -> Int

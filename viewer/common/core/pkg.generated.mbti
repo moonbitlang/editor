@@ -34,7 +34,7 @@ pub struct Selection {
   selection_start : @common.Position
   position : @common.Position
 } derive(Eq, @debug.Debug)
-#alias(new, deprecated)
+#alias(new)
 pub fn Selection::Selection(@common.Position, @common.Position) -> Self
 pub fn Selection::direction(Self) -> SelectionDirection
 pub fn Selection::end(Self) -> @common.Position

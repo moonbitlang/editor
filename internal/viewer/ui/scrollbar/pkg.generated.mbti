@@ -23,7 +23,7 @@ pub fn number_as_pixels(CssLength) -> String
 pub struct CachedDomNode {
   // private fields
 }
-#alias(new, deprecated)
+#alias(new)
 pub fn CachedDomNode::CachedDomNode(@dom.Element) -> Self
 pub fn CachedDomNode::element(Self) -> @dom.Element
 pub fn CachedDomNode::set_contain(Self, String) -> Unit
@@ -43,7 +43,7 @@ pub(all) enum CssLength {
 pub struct MouseWheelClassifier {
   // private fields
 }
-#alias(new, deprecated)
+#alias(new)
 pub fn MouseWheelClassifier::MouseWheelClassifier() -> Self
 pub fn MouseWheelClassifier::accept(Self, Double, Double, Double) -> Unit
 pub fn MouseWheelClassifier::accept_standard_wheel_event(Self, StandardWheelEvent) -> Unit
@@ -73,7 +73,7 @@ pub struct ScrollableElementDom {
   mut hide_timeout : @common.Disposable?
   mut disposed : Bool
 }
-#alias(new, deprecated)
+#alias(new)
 pub fn ScrollableElementDom::ScrollableElementDom(String, vertical_size? : Double, horizontal_size? : Double, content? : @dom.Element) -> Self
 pub fn ScrollableElementDom::desired_position_from_track(Self, vertical~ : Bool, @dom.MouseEvent) -> Double
 pub fn ScrollableElementDom::dispose(Self) -> Unit
@@ -110,7 +110,7 @@ pub struct StandardWheelEvent {
   delta_x : Double
   delta_y : Double
 }
-#alias(new, deprecated)
+#alias(new)
 pub fn StandardWheelEvent::StandardWheelEvent(@dom.WheelEvent) -> Self
 
 // Type aliases

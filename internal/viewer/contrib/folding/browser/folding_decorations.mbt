@@ -203,7 +203,7 @@ pub struct FoldingDecorationProvider {
 }
 
 ///|
-#alias(new, deprecated)
+#alias(new)
 pub fn FoldingDecorationProvider::FoldingDecorationProvider(
   model : @model.TextModel,
   owner_id? : Int = 0,

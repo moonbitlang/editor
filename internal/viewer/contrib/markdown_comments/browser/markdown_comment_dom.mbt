@@ -23,7 +23,7 @@ pub(all) struct MarkdownCommentDom {
 ///|
 /// Creates the required outer/content shape for one normalized half-open line
 /// range. Projection and ViewZone registration remain root responsibilities.
-#alias(new, deprecated)
+#alias(new)
 pub fn MarkdownCommentDom::MarkdownCommentDom(
   start_line_number : Int,
   end_line_number_exclusive : Int,

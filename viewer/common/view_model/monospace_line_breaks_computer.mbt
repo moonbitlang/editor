@@ -92,7 +92,7 @@ pub struct MonospaceLineBreaksComputerFactory {
 }
 
 ///|
-#alias(new, deprecated)
+#alias(new)
 pub fn MonospaceLineBreaksComputerFactory::MonospaceLineBreaksComputerFactory(
   break_before_chars : String,
   break_after_chars : String,

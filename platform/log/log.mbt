@@ -32,7 +32,7 @@ pub struct NullLogger {}
 
 ///|
 /// Creates a sink that ignores logs and flushes.
-#alias(new, deprecated)
+#alias(new)
 #warnings("-unnecessary_annotation")
 pub fn NullLogger::NullLogger() -> NullLogger {
   NullLogger::{  }
@@ -59,7 +59,7 @@ pub struct MemoryLogger {
 
 ///|
 /// Creates an empty in-memory log sink.
-#alias(new, deprecated)
+#alias(new)
 pub fn MemoryLogger::MemoryLogger() -> MemoryLogger {
   { entries: [], flush_count: Ref(0) }
 }
@@ -96,7 +96,7 @@ pub struct MultiplexLogger {
 
 ///|
 /// Creates a logger fan-out over the supplied sinks.
-#alias(new, deprecated)
+#alias(new)
 pub fn MultiplexLogger::MultiplexLogger(
   loggers : Array[&Logger],
 ) -> MultiplexLogger {
@@ -138,7 +138,7 @@ pub struct LogHandle {
 
 ///|
 /// Creates a log service with an optional threshold and sink.
-#alias(new, deprecated)
+#alias(new)
 pub fn LogService::LogService(
   level? : LogLevel = Info,
   logger? : &Logger = NullLogger(),

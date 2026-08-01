@@ -121,7 +121,7 @@ pub struct TokenizationRegistry {
 ///|
 /// Creates an empty tokenization registry with no color map, matching
 /// `vscode/src/vs/editor/common/tokenizationRegistry.ts:20-24`.
-#alias(new, deprecated)
+#alias(new)
 pub fn TokenizationRegistry::TokenizationRegistry() -> TokenizationRegistry {
   {
     tokenizers: Map([]),

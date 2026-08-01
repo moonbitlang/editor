@@ -15,7 +15,7 @@ pub struct CursorsController {
 ///|
 /// Builds a controller at the document origin and captures the model's
 /// internal content version, never its caller-owned host metadata version.
-#alias(new, deprecated)
+#alias(new)
 pub fn CursorsController::CursorsController(
   model : @model.TextModel,
   context : CursorContext,
