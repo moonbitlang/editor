@@ -58,7 +58,7 @@ pub fn LineTokens::LineTokens(
 ///|
 /// The default metadata value (no font style, default fg/bg colors).
 pub fn LineTokens::default_token_metadata() -> TokenMetadata {
-  TokenMetadata::from_uint(
+  TokenMetadata(
     ((FONT_STYLE_NONE << METADATA_FONT_STYLE_OFFSET) |
     (COLOR_ID_DEFAULT_FOREGROUND << METADATA_FOREGROUND_OFFSET) |
     (COLOR_ID_DEFAULT_BACKGROUND << METADATA_BACKGROUND_OFFSET)).reinterpret_as_uint(),
@@ -275,7 +275,7 @@ pub fn LineTokens::get_metadata(
   self : LineTokens,
   token_index : Int,
 ) -> TokenMetadata {
-  TokenMetadata::from_uint(self.tokens[(token_index << 1) + 1])
+  TokenMetadata(self.tokens[(token_index << 1) + 1])
 }
 
 ///|

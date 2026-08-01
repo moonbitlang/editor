@@ -129,8 +129,7 @@ fn ContiguousTokensStore::massage_tokens(
   if line_text_length == 0 {
     let has_different_language_id = match tokens {
       Some(words) if words.length() > 1 =>
-        TokenMetadata::from_uint(words[1]).get_language_id() !=
-        encoded_language_id
+        TokenMetadata(words[1]).get_language_id() != encoded_language_id
       _ => false
     }
     if !has_different_language_id {
