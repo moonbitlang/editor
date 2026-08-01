@@ -79,7 +79,7 @@ to show every recipe.
 ## Validation
 
 ```sh
-moon check --target all --warn-list +73
+moon check --target all --warn-list +73+prefer_readonly_array
 moon fmt --check
 just test
 just build

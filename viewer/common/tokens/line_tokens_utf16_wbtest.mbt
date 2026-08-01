@@ -33,7 +33,9 @@ test "LineTokens raw UTF-16 token content preserves lone surrogate matrix" {
     text,
     LanguageIdCodec(),
   )
-  let expected = [0xD800, 0xDBFF, 0xDC00, 0xDFFF, 0xFEFF, 0x41]
+  let expected : ReadOnlyArray[Int] = [
+    0xD800, 0xDBFF, 0xDC00, 0xDFFF, 0xFEFF, 0x41,
+  ]
   for index in 0..<expected.length() {
     assert_utf16_units(tokens.get_token_text(index), [expected[index]])
     let slice = tokens.slice_and_inflate(index, index + 1, 0)

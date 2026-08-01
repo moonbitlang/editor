@@ -620,7 +620,7 @@ test "ViewZones preserves raw height callbacks through retained ToInt32" {
   let raw_not_a_number = 0.0 / 0.0
   let raw_positive_infinity = 1.0 / 0.0
   let raw_negative_infinity = -1.0 / 0.0
-  let ids = [
+  let ids : ReadOnlyArray[String] = [
     fixture.add_height_zone(0, Some(99.0), Some(3.75), precedence),
     fixture.add_height_zone(1, Some(1.5), None, lines_only),
     fixture.add_height_zone(2, None, None, default_height),
@@ -652,7 +652,9 @@ test "ViewZones preserves raw height callbacks through retained ToInt32" {
   assert_true(not_a_number.val.is_nan())
   assert_true(positive_infinity.val.is_pos_inf())
   assert_true(negative_infinity.val.is_neg_inf())
-  let expected_retained_heights = [3, 30, 20, 0, 0, 7, -7, 0, 0, 0]
+  let expected_retained_heights : ReadOnlyArray[Int] = [
+    3, 30, 20, 0, 0, 7, -7, 0, 0, 0,
+  ]
   for i in 0..<ids.length() {
     assert_eq(fixture.whitespace(ids[i]).height, expected_retained_heights[i])
   }
