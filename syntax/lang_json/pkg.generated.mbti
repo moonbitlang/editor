@@ -10,8 +10,7 @@ import {
 // Errors
 
 // Types and methods
-pub struct JsonTokenizer {
-}
+type JsonTokenizer
 #alias(new, deprecated)
 pub fn JsonTokenizer::JsonTokenizer() -> Self
 pub impl @syntax.LineTokenizer for JsonTokenizer
