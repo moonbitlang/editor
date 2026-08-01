@@ -5,9 +5,9 @@ tokenization and view-line rendering.
 
 A rendered line can carry hundreds of tokens, and a document can carry hundreds
 of thousands of lines. The storage representation remains two `UInt` words per
-token in a flat array, and every read is an index computation. The opaque
+token in a flat array, and every read is an index computation. The
 `TokenMetadata` newtype marks semantic API boundaries without changing that raw
-interleaved layout.
+interleaved layout or hiding its scalar representation.
 
 ## Type map
 
@@ -149,7 +149,7 @@ The offsets are public, so a caller can compose a raw word, wrap it as
 ```mbt check
 ///|
 test "a metadata word round-trips through the published offsets" {
-  let metadata = @tokens.TokenMetadata::from_uint(
+  let metadata = @tokens.TokenMetadata(
     (2U << @tokens.METADATA_LANGUAGEID_OFFSET) |
     (
       @tokens.STANDARD_TOKEN_TYPE_COMMENT.reinterpret_as_uint() <<
@@ -184,7 +184,7 @@ consumes; the font-style bits become named booleans.
 ```mbt check
 ///|
 test "presentation decodes the font-style bits into booleans" {
-  let styled = @tokens.TokenMetadata::from_uint(
+  let styled = @tokens.TokenMetadata(
     (
       (@tokens.FONT_STYLE_ITALIC | @tokens.FONT_STYLE_UNDERLINE).reinterpret_as_uint() <<
       @tokens.METADATA_FONT_STYLE_OFFSET
@@ -301,9 +301,9 @@ test "tokens are addressed by index, and offsets are exclusive ends" {
   let codec = @services.LanguageIdCodec()
   let line = @tokens.LineTokens::create_from_text_and_metadata(
     [
-      ("let", @tokens.TokenMetadata::from_uint(1U)),
-      (" ", @tokens.TokenMetadata::from_uint(0U)),
-      ("x", @tokens.TokenMetadata::from_uint(2U)),
+      ("let", TokenMetadata(1U)),
+      (" ", TokenMetadata(0U)),
+      ("x", TokenMetadata(2U)),
     ],
     codec,
   )
@@ -339,9 +339,9 @@ test "offset lookup maps a column into a token index" {
   let codec = @services.LanguageIdCodec()
   let line = @tokens.LineTokens::create_from_text_and_metadata(
     [
-      ("let", @tokens.TokenMetadata::from_uint(1U)),
-      (" ", @tokens.TokenMetadata::from_uint(0U)),
-      ("x", @tokens.TokenMetadata::from_uint(2U)),
+      ("let", TokenMetadata(1U)),
+      (" ", TokenMetadata(0U)),
+      ("x", TokenMetadata(2U)),
     ],
     codec,
   )
@@ -364,9 +364,9 @@ test "slicing produces a view over the same underlying tokens" {
   let codec = @services.LanguageIdCodec()
   let line = @tokens.LineTokens::create_from_text_and_metadata(
     [
-      ("hello", @tokens.TokenMetadata::from_uint(1U)),
-      (" ", @tokens.TokenMetadata::from_uint(0U)),
-      ("world", @tokens.TokenMetadata::from_uint(2U)),
+      ("hello", TokenMetadata(1U)),
+      (" ", TokenMetadata(0U)),
+      ("world", TokenMetadata(2U)),
     ],
     codec,
   )
@@ -392,11 +392,11 @@ line's token stream without the model ever containing that text.
 test "injected text splices new tokens into a copy" {
   let codec = @services.LanguageIdCodec()
   let line = @tokens.LineTokens::create_from_text_and_metadata(
-    [("value", @tokens.TokenMetadata::from_uint(1U))],
+    [("value", TokenMetadata(1U))],
     codec,
   )
   let with_hint = line.with_inserted([
-    InsertedToken(5, " : Int", @tokens.TokenMetadata::from_uint(3U)),
+    InsertedToken(5, " : Int", TokenMetadata(3U)),
   ])
   debug_inspect(
     (
@@ -539,10 +539,7 @@ retain lone surrogates or either half of a valid pair, matching Monaco strings.
 test "a slice may split a surrogate pair, matching Monaco strings" {
   let codec = @services.LanguageIdCodec()
   let line = @tokens.LineTokens::create_from_text_and_metadata(
-    [
-      ("😀", @tokens.TokenMetadata::from_uint(1U)),
-      ("x", @tokens.TokenMetadata::from_uint(2U)),
-    ],
+    [("😀", TokenMetadata(1U)), ("x", TokenMetadata(2U))],
     codec,
   )
   // The emoji is two UTF-16 units, so offset 1 is inside it.

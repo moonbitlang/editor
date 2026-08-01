@@ -4,7 +4,7 @@
 
 ///|
 fn decoded_metadata(raw : UInt) -> @common_tokens.TokenMetadata {
-  @common_tokens.TokenMetadata::from_uint(raw)
+  TokenMetadata(raw)
 }
 
 ///|

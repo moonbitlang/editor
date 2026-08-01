@@ -100,16 +100,10 @@ pub const METADATA_FOREGROUND_OFFSET : Int = 15
 pub const METADATA_BACKGROUND_OFFSET : Int = 24
 
 ///|
-/// One packed 32-bit token metadata word. The representation stays private so
-/// semantic APIs cannot accidentally accept an offset or another arbitrary
-/// `UInt`; encoded token arrays unwrap only at their raw storage seams.
-struct TokenMetadata(UInt) derive(Eq)
-
-///|
-/// Wraps one raw encoded metadata word.
-pub fn TokenMetadata::from_uint(raw : UInt) -> TokenMetadata {
-  TokenMetadata(raw)
-}
+/// One packed 32-bit token metadata word. The distinct type keeps semantic APIs
+/// from accidentally accepting offsets or unrelated `UInt` values while its
+/// public scalar representation remains available at raw storage seams.
+pub(all) struct TokenMetadata(UInt) derive(Eq)
 
 ///|
 /// Returns the raw word for flat encoded-token storage or transport.

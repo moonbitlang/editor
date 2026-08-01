@@ -133,9 +133,8 @@ pub struct SliceLineTokens {
 
 type SyntacticLineTokens
 
-type TokenMetadata derive(Eq)
+pub(all) struct TokenMetadata(UInt) derive(Eq)
 pub fn TokenMetadata::contains_balanced_brackets(Self) -> Bool
-pub fn TokenMetadata::from_uint(UInt) -> Self
 pub fn TokenMetadata::get_background(Self) -> Int
 pub fn TokenMetadata::get_class_name_from_metadata(Self) -> String
 pub fn TokenMetadata::get_font_style(Self) -> Int

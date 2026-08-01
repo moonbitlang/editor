@@ -11,7 +11,7 @@ test "TokenMetadata owns semantic decoding while preserving the raw word" {
     ) |
     (11U << @tokens.METADATA_FOREGROUND_OFFSET) |
     (200U << @tokens.METADATA_BACKGROUND_OFFSET)
-  let metadata = @tokens.TokenMetadata::from_uint(raw)
+  let metadata = @tokens.TokenMetadata(raw)
   assert_eq(metadata.to_uint(), raw)
   assert_eq(metadata.get_language_id(), 7)
   assert_eq(metadata.get_token_type(), @tokens.STANDARD_TOKEN_TYPE_STRING)
