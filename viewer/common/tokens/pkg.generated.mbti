@@ -2,6 +2,7 @@
 package "moonbitlang/editor/viewer/common/tokens"
 
 import {
+  "moonbitlang/core/debug",
   "moonbitlang/editor/viewer/common/services",
 }
 
@@ -58,7 +59,7 @@ pub struct ContiguousTokensStoreUpdate {
 type InsertedToken
 pub fn InsertedToken::InsertedToken(Int, String, TokenMetadata) -> Self
 
-type LineTokens
+type LineTokens derive(@debug.Debug)
 pub fn LineTokens::LineTokens(Array[UInt], String, @services.LanguageIdCodec) -> Self
 pub fn LineTokens::convert_to_end_offset(Array[UInt], Int) -> Unit
 pub fn LineTokens::default_token_metadata() -> TokenMetadata
