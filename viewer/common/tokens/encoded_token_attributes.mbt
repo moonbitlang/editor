@@ -103,7 +103,7 @@ pub const METADATA_BACKGROUND_OFFSET : Int = 24
 /// One packed 32-bit token metadata word. The representation stays private so
 /// semantic APIs cannot accidentally accept an offset or another arbitrary
 /// `UInt`; encoded token arrays unwrap only at their raw storage seams.
-pub struct TokenMetadata(UInt) derive(Eq)
+struct TokenMetadata(UInt) derive(Eq)
 
 ///|
 /// Wraps one raw encoded metadata word.
