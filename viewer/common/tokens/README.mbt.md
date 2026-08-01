@@ -7,6 +7,119 @@ A rendered line can carry hundreds of tokens, and a document can carry hundreds
 of thousands of lines. Nothing here allocates a struct per token: a token is two
 `UInt` words in a flat array, and every read is an index computation.
 
+## Type map
+
+```mermaid
+classDiagram
+  direction TB
+
+  namespace Metadata {
+    class TokenMetadata {
+      <<utility>>
+      +get_language_id(metadata) Int
+      +get_class_name_from_metadata(metadata) String
+      +get_presentation_from_metadata(metadata) TokenPresentation
+    }
+    class TokenPresentation {
+      +foreground Int
+      +italic Bool
+      +bold Bool
+      +underline Bool
+      +strikethrough Bool
+    }
+  }
+
+  namespace LineViews {
+    class LineTokens {
+      <<struct>>
+      -tokens Array~UInt~
+      -text String
+      +slice_zero_copy(range) ViewLineTokens
+      +with_inserted(tokens) LineTokens
+      +get_class_name(index) String
+    }
+    class SliceLineTokens {
+      <<opaque>>
+      -source LineTokens
+      -start_offset Int
+      -end_offset Int
+    }
+    class ViewLineTokens {
+      <<enumeration>>
+      Full(LineTokens)
+      Slice(SliceLineTokens)
+    }
+    class InsertedToken {
+      <<struct>>
+      +offset Int
+      +text String
+      +token_metadata UInt
+    }
+  }
+
+  namespace Storage {
+    class ContiguousMultilineTokensBuilder {
+      <<struct>>
+      +add(line_number, line_tokens)
+      +finalize() Array~ContiguousMultilineTokens~
+    }
+    class ContiguousMultilineTokens {
+      <<struct>>
+      +start_line_number() Int
+      +end_line_number() Int
+      +get_line_tokens(line_number) Array~UInt~
+    }
+    class ContiguousTokensStore {
+      <<struct>>
+      +get_tokens(language_id, line_index, text) LineTokens
+      +set_multiline_tokens(batches, language_id, get_line_length) ContiguousTokensStoreUpdate
+    }
+    class SyntacticLineTokens {
+      <<internal>>
+      Missing
+      Empty
+      Words(Array~UInt~)
+    }
+    class ContiguousTokensStoreUpdate {
+      <<struct>>
+      +changes Array~ContiguousTokensStoreChange~
+    }
+    class ContiguousTokensStoreChange {
+      <<struct>>
+      +from_line_number Int
+      +to_line_number Int
+    }
+  }
+
+  class LanguageIdCodec {
+    <<external>>
+  }
+
+  TokenMetadata ..> TokenPresentation : produces
+  LineTokens --> LanguageIdCodec : decodes language ids with
+  LineTokens ..> TokenMetadata : decodes packed metadata with
+  LineTokens ..> InsertedToken : splices
+  LineTokens ..> SliceLineTokens : creates zero-copy view
+  SliceLineTokens --> LineTokens : reads source
+  ViewLineTokens *-- LineTokens : Full
+  ViewLineTokens *-- SliceLineTokens : Slice
+
+  ContiguousMultilineTokensBuilder *-- ContiguousMultilineTokens : builds batches
+  ContiguousTokensStore *-- SyntacticLineTokens : stores one slot per line
+  ContiguousTokensStore ..> ContiguousMultilineTokens : applies batches
+  ContiguousTokensStore --> LineTokens : returns passive view
+  ContiguousTokensStore --> LanguageIdCodec : retains
+  ContiguousTokensStoreUpdate *-- ContiguousTokensStoreChange : reports
+```
+
+Read the diagram from storage toward presentation: builders group adjacent
+tokenized lines, `ContiguousTokensStore` retains their packed words,
+`LineTokens` exposes one complete line, and `ViewLineTokens` presents either
+that full line or a zero-copy `SliceLineTokens` window after wrapping. Both line
+forms decode their metadata through `TokenMetadata`; `LanguageIdCodec` is the
+only type shown from another package. The namespaces above are visual groups,
+not MoonBit namespaces—all of these token types belong to this one package.
+
 ## The packed metadata word
 
 ```mermaid
