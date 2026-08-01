@@ -525,9 +525,17 @@ test('public Viewer replaces whole-line source with themed Markdown while model 
     // Source presentation is owned per block and shows the exact model text,
     // including MoonBit comment syntax, without changing a sibling block.
     const firstSourceToggle = zones.nth(0).getByRole('button', {
-      name: 'Show original source',
+      name: 'Original source',
     });
     await expect(firstSourceToggle).toHaveAttribute('aria-pressed', 'false');
+    await expect(firstSourceToggle).toHaveAttribute(
+      'title',
+      'Show original source',
+    );
+    expect(
+      await zones.nth(0).locator(content).evaluate((element) =>
+        Number.parseFloat(getComputedStyle(element).paddingRight)),
+    ).toBeGreaterThanOrEqual(40);
     await firstSourceToggle.click();
     await expect(zones.nth(0)).toHaveAttribute('data-source-visible', 'true');
     await expect(zones.nth(0).locator('h1')).toBeHidden();
@@ -541,11 +549,13 @@ test('public Viewer replaces whole-line source with themed Markdown while model 
     );
     await expect(zones.nth(1)).toHaveAttribute('data-source-visible', 'false');
     await expect(zones.nth(1).locator('h2')).toBeVisible();
-    const showRendered = zones.nth(0).getByRole('button', {
-      name: 'Show rendered documentation',
-    });
-    await showRendered.focus();
-    await showRendered.press('Enter');
+    await expect(firstSourceToggle).toHaveAttribute('aria-pressed', 'true');
+    await expect(firstSourceToggle).toHaveAttribute(
+      'title',
+      'Show rendered documentation',
+    );
+    await firstSourceToggle.focus();
+    await firstSourceToggle.press('Enter');
     await expect(zones.nth(0)).toHaveAttribute('data-source-visible', 'false');
     await expect(zones.nth(0).locator('h1')).toBeVisible();
 
@@ -1265,6 +1275,9 @@ test('interactive Diago controls pan zoom fit resize and keep sibling state inde
 
     const handle = large.locator(diagramResizeHandle);
     await handle.scrollIntoViewIfNeeded();
+    await handle.evaluate((element) =>
+      element.scrollIntoView({ block: 'center', inline: 'nearest' }),
+    );
     await settle(page);
     const heightBeforePointer = (await viewportGeometry(large)).wrapperHeight;
     const zoneHeightBeforePointer = await large.evaluate(
@@ -1506,7 +1519,7 @@ test('same-key replacement retains zone identity, reflows, and reconciles add re
     expect(oldContent).not.toBeNull();
     expect(oldHeading).not.toBeNull();
     await page.locator(middleSelector).getByRole('button', {
-      name: 'Show original source',
+      name: 'Original source',
     }).click();
     await expect(page.locator(middleSelector)).toHaveAttribute(
       'data-source-visible',
@@ -1556,7 +1569,7 @@ test('same-key replacement retains zone identity, reflows, and reconciles add re
     ).toContainText('/// ## Middle updated');
     await expect(page.locator(`${middleSelector} h2`)).toBeHidden();
     await page.locator(middleSelector).getByRole('button', {
-      name: 'Show rendered documentation',
+      name: 'Original source',
     }).click();
     await expect(page.locator(middleSelector)).toHaveAttribute(
       'data-source-visible',

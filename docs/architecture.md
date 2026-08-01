@@ -384,6 +384,9 @@ lines, its source and expanded-state toggle lifetimes, its diagram-viewport
 group, and the existing size observer. The source toggle is per block, keeps
 the model projection unchanged, survives same-range content replacement, and
 restores the block's prior documentation-fold state when rendering resumes.
+Its stable accessible name and pressed state describe the selected
+presentation; rendered content reserves the control's trailing hit area, and
+the control remains bounded by even a one-line separator ViewZone.
 Newly mounted item-delimited multi-line
 API documentation from a foldable provider registration starts on the
 first-line preview; ordinary Markdown and

@@ -189,17 +189,20 @@ test('renders MoonBit documentation comments through the real workbench', async 
   await expect(full).toBeHidden();
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   const showSource = markdown.getByRole('button', {
-    name: 'Show original source',
+    name: 'Original source',
   });
+  await expect(showSource).toHaveAttribute('title', 'Show original source');
   await showSource.click();
   await expect(markdown).toHaveAttribute('data-source-visible', 'true');
   await expect(
     markdown.locator('.moonbit-viewer-markdown-comment-source'),
   ).toContainText('/// # Fixture entry point');
   await expect(preview).toBeHidden();
-  await markdown.getByRole('button', {
-    name: 'Show rendered documentation',
-  }).click();
+  await expect(showSource).toHaveAttribute(
+    'title',
+    'Show rendered documentation',
+  );
+  await showSource.click();
   await expect(markdown).toHaveAttribute('data-source-visible', 'false');
   // Source inspection is orthogonal to API-doc folding.
   await expect(markdown).toHaveAttribute('data-documentation-expanded', 'false');
@@ -291,6 +294,20 @@ test('renders undocumented MoonBit item anchors as horizontal separators', async
   await expect(marginToggles.nth(0)).toBeHidden();
   await expect(marginToggles.nth(1)).toBeHidden();
   const firstBox = await first.boundingBox();
+  const firstSourceToggle = first.getByRole('button', {
+    name: 'Original source',
+  });
+  const firstSourceToggleBox = await firstSourceToggle.boundingBox();
+  expect(firstSourceToggleBox).not.toBeNull();
+  expect(firstSourceToggleBox.y).toBeGreaterThanOrEqual(firstBox.y - 1);
+  expect(firstSourceToggleBox.y + firstSourceToggleBox.height).toBeLessThanOrEqual(
+    firstBox.y + firstBox.height + 1,
+  );
+  expect(
+    await first.locator('.moonbit-viewer-markdown-comment-content').evaluate(
+      (element) => Number.parseFloat(getComputedStyle(element).paddingRight),
+    ),
+  ).toBeGreaterThanOrEqual(40);
   const firstCodeLineBox = await page
     .locator('.view-line[data-line="2"]')
     .boundingBox();

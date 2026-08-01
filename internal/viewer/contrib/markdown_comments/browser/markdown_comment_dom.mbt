@@ -60,7 +60,7 @@ pub fn MarkdownCommentDom::MarkdownCommentDom(
   )
   source_toggle.set_attribute("type", "button")
   source_toggle.set_attribute("aria-pressed", "false")
-  source_toggle.set_attribute("aria-label", "Show original source")
+  source_toggle.set_attribute("aria-label", "Original source")
   source_toggle.set_attribute("title", "Show original source")
   // A textual code mark remains legible if the optional codicon font is not
   // installed by an embedder.
@@ -147,7 +147,6 @@ pub fn MarkdownCommentDom::enable_source_toggle(
         "false"
       },
     )
-    self.source_toggle.set_attribute("aria-label", label)
     self.source_toggle.set_attribute("title", label)
   }
   apply_state()

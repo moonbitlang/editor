@@ -10,7 +10,11 @@ Every block also retains an escaped, tokenized target containing the exact
 original model lines. Its accessible in-content control switches only that
 block between rendered Markdown and source; same-range replacement refreshes
 the target while preserving the reader's choice, and returning to Markdown
-restores the prior documentation-fold state.
+restores the prior documentation-fold state. The toggle keeps the stable
+accessible name `Original source`, reports the selected presentation through
+`aria-pressed`, and uses its tooltip for the next action. Rendered content
+always reserves its trailing hit area, while a one-line separator constrains
+the control to the existing ViewZone height.
 Item-delimited multi-line API documents whose provider registration opted
 into folding start on the preview. Two affordances drive one fold state: a
 mouse-only gutter chevron that reuses the code-folding `.cldr` codicons and

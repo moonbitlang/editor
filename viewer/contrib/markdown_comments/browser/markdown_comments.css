@@ -25,12 +25,13 @@
 
 /* Vertical and trailing padding belong to the measured inner target, so
  * offsetHeight includes every content-space contribution used for ViewZone
- * relayout. The leading edge stays flush with the editor's source rail. */
+ * relayout. The leading edge stays flush with the editor's source rail; the
+ * trailing reserve keeps every rendered block clear of its source control. */
 .moonbit-viewer-markdown-comment-content {
   box-sizing: border-box;
   /* The pinned outer already ends at the vertical scrollbar rail. */
   width: 100%;
-  padding: 6px 12px 8px 0;
+  padding: 6px 40px 8px 0;
   overflow-wrap: anywhere;
   user-select: text;
   -webkit-user-select: text;
@@ -101,7 +102,9 @@
 
 .moonbit-viewer-markdown-comment-source-toggle {
   position: absolute;
-  top: 6px;
+  /* Keep the 22px control top-aligned in ordinary blocks, but shrink and
+   * recenter it when a one-line separator ViewZone is shorter than that. */
+  top: max(0px, min(6px, calc((100% - 22px) / 2)));
   right: 6px;
   z-index: 2;
   display: inline-flex;
@@ -110,6 +113,7 @@
   box-sizing: border-box;
   min-width: 28px;
   height: 22px;
+  max-height: 100%;
   padding: 0 4px;
   border: 0;
   border-radius: 3px;

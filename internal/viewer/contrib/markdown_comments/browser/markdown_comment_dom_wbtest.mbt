@@ -421,7 +421,7 @@ test "MarkdownCommentDom creates the stable half-open ViewZone target shape" {
   assert_eq(markdown_comment_test_attribute(dom.toggle, "hidden"), "")
   assert_eq(
     markdown_comment_test_attribute(dom.source_toggle, "aria-label"),
-    "Show original source",
+    "Original source",
   )
   assert_eq(
     markdown_comment_test_attribute(dom.source_toggle, "aria-pressed"),
@@ -468,6 +468,10 @@ test "MarkdownCommentDom toggles one source target independently and releases li
   )
   assert_eq(
     markdown_comment_test_attribute(dom.source_toggle, "aria-label"),
+    "Original source",
+  )
+  assert_eq(
+    markdown_comment_test_attribute(dom.source_toggle, "title"),
     "Show original source",
   )
 
@@ -488,6 +492,10 @@ test "MarkdownCommentDom toggles one source target independently and releases li
   )
   assert_eq(
     markdown_comment_test_attribute(dom.source_toggle, "aria-label"),
+    "Original source",
+  )
+  assert_eq(
+    markdown_comment_test_attribute(dom.source_toggle, "title"),
     "Show rendered documentation",
   )
 
