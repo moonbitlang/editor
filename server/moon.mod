@@ -10,6 +10,8 @@ supported_targets = "native+wasm"
 
 preferred_target = "wasm"
 
+warnings = "+prefer_readonly_array"
+
 import {
   "moonbitlang/editor@0.3.0",
   "moonbitlang/async@0.20.3",
