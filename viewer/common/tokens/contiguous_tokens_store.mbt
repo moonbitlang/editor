@@ -13,7 +13,7 @@
 ///|
 /// One initialized or uninitialized syntactic-token slot.
 /// Source: `contiguousTokensStore.ts:20` and `contiguousTokensEditing.ts:8`.
-enum SyntacticLineTokens {
+priv enum SyntacticLineTokens {
   Missing
   Empty
   Words(Array[UInt])
@@ -37,7 +37,7 @@ pub struct ContiguousTokensStoreUpdate {
 ///|
 /// Per-model contiguous syntactic token storage.
 /// Source: `contiguousTokensStore.ts:19-22`.
-pub struct ContiguousTokensStore {
+struct ContiguousTokensStore {
   line_tokens : Array[SyntacticLineTokens]
   mut len : Int
   language_id_codec : @services.LanguageIdCodec
@@ -63,7 +63,8 @@ pub fn ContiguousTokensStore::flush(self : ContiguousTokensStore) -> Unit {
 ///|
 /// True when the physical per-line array is nonempty.
 /// Source: `contiguousTokensStore.ts:35-37`.
-pub fn ContiguousTokensStore::has_tokens(self : ContiguousTokensStore) -> Bool {
+#warnings("-unused_value")
+fn ContiguousTokensStore::has_tokens(self : ContiguousTokensStore) -> Bool {
   self.line_tokens.length() > 0
 }
 
@@ -172,7 +173,7 @@ fn ContiguousTokensStore::ensure_line(
 /// Stores one normalized line. Equality is checked only when requested; the
 /// unchecked suffix lane always reports false.
 /// Source: `contiguousTokensStore.ts:117-127`.
-pub fn ContiguousTokensStore::set_tokens(
+fn ContiguousTokensStore::set_tokens(
   self : ContiguousTokensStore,
   top_level_language_id : String,
   line_index : Int,
