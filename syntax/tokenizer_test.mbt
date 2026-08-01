@@ -22,9 +22,8 @@ impl @syntax.LineTokenizer for BlockCommentToy with fn tokenize_line(
   state,
 ) {
   let tokens : Array[@syntax.LineToken] = []
-  let mut at = 0
-  let mut in_comment = state == toy_comment
-  while at < line_text.length() {
+  let in_comment = for at = 0, in_comment = state == toy_comment; at <
+                      line_text.length(); {
     if in_comment {
       let close = find_marker(line_text, at, '*', '/')
       let end = match close {
@@ -32,17 +31,15 @@ impl @syntax.LineTokenizer for BlockCommentToy with fn tokenize_line(
         None => line_text.length()
       }
       tokens.push({ start: at, end, tag: Comment })
-      in_comment = close is None
-      at = end
+      continue end, close is None
     } else {
       match find_marker(line_text, at, '/', '*') {
-        Some(index) => {
-          in_comment = true
-          at = index
-        }
-        None => at = line_text.length()
+        Some(index) => continue index, true
+        None => continue line_text.length(), false
       }
     }
+  } nobreak {
+    in_comment
   }
   (tokens, if in_comment { toy_comment } else { toy_code })
 }

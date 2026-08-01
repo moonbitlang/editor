@@ -21,17 +21,18 @@ exactly as the model's whole-document sweep does.
 
 ```mbt check
 ///|
-/// Renders each token as `text|tag`, carrying state line to line.
-fn annotate(lines : Array[String]) -> Array[String] {
-  let tokenizer : &@syntax.LineTokenizer = @lang_moonbit.MoonbitTokenizer()
+/// Renders each token as `text|tag`, carrying tokenizer state line to line.
+fn annotate(
+  tokenizer : &@syntax.LineTokenizer,
+  lines : ArrayView[String],
+) -> Array[String] {
   let rendered = []
-  let mut state = tokenizer.initial_state()
-  for line in lines {
+  for line in lines; state = tokenizer.initial_state() {
     let (tokens, next_state) = tokenizer.tokenize_line(line, state)
     for token in tokens {
       rendered.push("\{line[token.start:token.end].to_owned()}|\{token.tag}")
     }
-    state = next_state
+    continue next_state
   }
   rendered
 }
@@ -46,7 +47,9 @@ heuristic (`@syntax.is_capitalized`) is what promotes an identifier to `Type`.
 ///|
 test "declarations separate keywords, types, and values" {
   debug_inspect(
-    annotate(["pub fn parse(input : String) -> Int {"]),
+    annotate(@lang_moonbit.MoonbitTokenizer(), [
+      "pub fn parse(input : String) -> Int {",
+    ]),
     content=(
       #|[
       #|  "pub|Keyword",
@@ -74,7 +77,9 @@ render differently from dead code.
 ///|
 test "doc comments and ordinary comments carry different tags" {
   debug_inspect(
-    annotate(["/// Adds two numbers.", "// TODO: overflow", "///|"]),
+    annotate(@lang_moonbit.MoonbitTokenizer(), [
+      "/// Adds two numbers.", "// TODO: overflow", "///|",
+    ]),
     content=(
       #|[
       #|  "/// Adds two numbers.|CommentDoc",
@@ -93,7 +98,9 @@ mis-escaped literal is visible without re-lexing the string body.
 ///|
 test "escapes and interpolation are separate tokens inside a string" {
   debug_inspect(
-    annotate(["let greeting = \"hi \\{name}\\n\""]),
+    annotate(@lang_moonbit.MoonbitTokenizer(), [
+      "let greeting = \"hi \\{name}\\n\"",
+    ]),
     content=(
       #|[
       #|  "let|Keyword",
@@ -117,7 +124,9 @@ snapshot literal inside this very file tokenizes cleanly.
 ///|
 test "multiline string rows are recognized per line" {
   debug_inspect(
-    annotate(["  #|literal row", "  $|interpolated \\{x}"]),
+    annotate(@lang_moonbit.MoonbitTokenizer(), [
+      "  #|literal row", "  $|interpolated \\{x}",
+    ]),
     content=(
       #|[
       #|  "#|literal row|String",
@@ -138,7 +147,9 @@ being smeared into neighbouring identifier tokens.
 ///|
 test "package references and attributes keep their structure" {
   debug_inspect(
-    annotate(["#deprecated", "let v = @base_common.Position(1, 1)"]),
+    annotate(@lang_moonbit.MoonbitTokenizer(), [
+      "#deprecated", "let v = @base_common.Position(1, 1)",
+    ]),
     content=(
       #|[
       #|  "#deprecated|Attribute",

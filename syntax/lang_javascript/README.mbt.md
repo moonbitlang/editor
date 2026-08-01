@@ -14,17 +14,18 @@ with genuinely *nested* multi-line constructs.
 
 ```mbt check
 ///|
-/// Renders each token as `text|tag`, carrying state line to line.
-fn annotate(lines : Array[String]) -> Array[String] {
-  let tokenizer : &@syntax.LineTokenizer = @lang_javascript.JavascriptTokenizer()
+/// Renders each token as `text|tag`, carrying tokenizer state line to line.
+fn annotate(
+  tokenizer : &@syntax.LineTokenizer,
+  lines : ArrayView[String],
+) -> Array[String] {
   let rendered = []
-  let mut state = tokenizer.initial_state()
-  for line in lines {
+  for line in lines; state = tokenizer.initial_state() {
     let (tokens, next_state) = tokenizer.tokenize_line(line, state)
     for token in tokens {
       rendered.push("\{line[token.start:token.end].to_owned()}|\{token.tag}")
     }
-    state = next_state
+    continue next_state
   }
   rendered
 }
@@ -36,7 +37,9 @@ fn annotate(lines : Array[String]) -> Array[String] {
 ///|
 test "declarations separate keywords, identifiers, and literals" {
   debug_inspect(
-    annotate(["export const answer = compute(42, \"text\");"]),
+    annotate(@lang_javascript.JavascriptTokenizer(), [
+      "export const answer = compute(42, \"text\");",
+    ]),
     content=(
       #|[
       #|  "export|Keyword",
@@ -78,7 +81,9 @@ A block comment survives the line boundary:
 ///|
 test "block comments carry across lines" {
   debug_inspect(
-    annotate(["/* start", " * middle", " */ const x = 1;"]),
+    annotate(@lang_javascript.JavascriptTokenizer(), [
+      "/* start", " * middle", " */ const x = 1;",
+    ]),
     content=(
       #|[
       #|  "/* start|Comment",
@@ -101,7 +106,9 @@ So does an open template literal, including its interpolation holes:
 ///|
 test "template literals span lines and keep interpolations separate" {
   debug_inspect(
-    annotate(["const t = `line one ${", "  value", "} line two`;"]),
+    annotate(@lang_javascript.JavascriptTokenizer(), [
+      "const t = `line one ${", "  value", "} line two`;",
+    ]),
     content=(
       #|[
       #|  "const|Keyword",

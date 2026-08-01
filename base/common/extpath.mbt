@@ -66,17 +66,16 @@ pub fn get_root(path : String, sep? : String) -> String {
       // UNC candidate \\localhost\shares\ddd
       //               ^^^^^^^^^^^^^^^^^^^
       if !is_path_separator(char_code_at(path, 2)) {
-        let mut pos = 3
-        let start = pos
-        while pos < len {
+        let start = 3
+        let pos = for pos in start..<len {
           if is_path_separator(char_code_at(path, pos)) {
-            break
+            break pos
           }
-          pos += 1
+        } nobreak {
+          len
         }
         if start != pos && !is_path_separator(char_code_at(path, pos + 1)) {
-          pos += 1
-          while pos < len {
+          for pos in (pos + 1)..<len {
             if is_path_separator(char_code_at(path, pos)) {
               // consume this separator
               return replace_path_separators(
@@ -84,7 +83,6 @@ pub fn get_root(path : String, sep? : String) -> String {
                 sep,
               )
             }
-            pos += 1
           }
         }
       }
@@ -111,14 +109,11 @@ pub fn get_root(path : String, sep? : String) -> String {
   // check for URI
   // scheme://authority/path
   // ^^^^^^^^^^^^^^^^^^^
-  let mut pos = path.find("://").unwrap_or(-1)
-  if pos != -1 {
-    pos += 3 // 3 -> "://".length
-    while pos < len {
+  if path.find("://") is Some(scheme_end) {
+    for pos in (scheme_end + 3)..<len {
       if is_path_separator(char_code_at(path, pos)) {
         return js_slice(path, 0, end=pos + 1) // consume this separator
       }
-      pos += 1
     }
   }
   ""
