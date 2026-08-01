@@ -78,12 +78,12 @@ fn MarkerDecorations::update(
   let matched_entries = Array::make(self.entries.length(), false)
   let added : Array[Marker] = []
   for marker in markers {
-    let mut matched_index = -1
-    for index in 0..<self.entries.length() {
+    let matched_index = for index in 0..<self.entries.length() {
       if !matched_entries[index] && self.entries[index].0 == marker {
-        matched_index = index
-        break
+        break index
       }
+    } nobreak {
+      -1
     }
     if matched_index >= 0 {
       matched_entries[matched_index] = true

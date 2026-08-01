@@ -301,11 +301,10 @@ fn EditorConfigurationSnapshot::line_numbers_width(
 
 ///|
 fn digit_count(value : Int) -> Int {
-  let mut value = value
-  let mut result = 0
-  while value > 0 {
-    value = value / 10
-    result += 1
+  let result = for value = value, result = 0; value > 0; {
+    continue value / 10, result + 1
+  } nobreak {
+    result
   }
   result.max(1)
 }

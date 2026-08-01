@@ -69,13 +69,17 @@ pub fn view_line_span_of_model_line(
   model_line_of : (Int) -> Int,
 ) -> (Int, Int) {
   let model_line = model_line_of(view_line_number)
-  let mut first = view_line_number
-  while first > 1 && model_line_of(first - 1) == model_line {
-    first -= 1
+  let first = for first = view_line_number; first > 1 &&
+                 model_line_of(first - 1) == model_line; {
+    continue first - 1
+  } nobreak {
+    first
   }
-  let mut last = view_line_number
-  while last < line_count && model_line_of(last + 1) == model_line {
-    last += 1
+  let last = for last = view_line_number; last < line_count &&
+                model_line_of(last + 1) == model_line; {
+    continue last + 1
+  } nobreak {
+    last
   }
   (first, last)
 }

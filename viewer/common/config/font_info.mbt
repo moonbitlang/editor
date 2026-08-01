@@ -218,34 +218,37 @@ fn wrap_in_quotes(font_family : String) -> String {
 /// `0500` or `500suffix` from leaking into CSS variation syntax.
 fn parse_decimal_prefix(value : String) -> String {
   let view = value.view()
-  let mut index = 0
-  while index < value.length() {
+  let index = for index = 0; index < value.length(); {
     let code = view.unsafe_get(index).to_int()
     if is_ecmascript_whitespace(code) {
-      index = index + 1
+      continue index + 1
     } else {
-      break
+      break index
     }
+  } nobreak {
+    index
   }
-  let mut sign = 1
-  if index < value.length() {
+  let (sign, index) = if index < value.length() {
     let code = view.unsafe_get(index).to_int()
     if code == 0x2D {
-      sign = -1
-      index = index + 1
+      (-1, index + 1)
     } else if code == 0x2B {
-      index = index + 1
+      (1, index + 1)
+    } else {
+      (1, index)
     }
+  } else {
+    (1, index)
   }
   let digit_start = index
-  let mut result = 0.0
-  while index < value.length() {
+  let (index, result) = for index = index, result = 0.0; index < value.length(); {
     let code = view.unsafe_get(index).to_int()
     if code < 0x30 || code > 0x39 {
-      break
+      break (index, result)
     }
-    result = result * 10.0 + (code - 0x30).to_double()
-    index = index + 1
+    continue index + 1, result * 10.0 + (code - 0x30).to_double()
+  } nobreak {
+    (index, result)
   }
   if index == digit_start {
     "NaN"

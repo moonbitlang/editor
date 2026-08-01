@@ -447,15 +447,16 @@ fn ViewModelLinesFromProjectedModel::get_view_line_info(
   let prefix_sums = self.projected_model_line_line_counts
   // Greatest model-line index whose first view line is at or before
   // `view_index`.
-  let mut low = 0
-  let mut high = self.model_line_projections.length() - 1
-  while low < high {
+  let low = for low = 0, high = self.model_line_projections.length() - 1; low <
+               high; {
     let mid = (low + high + 1) / 2
     if prefix_sums[mid] <= view_index {
-      low = mid
+      continue mid, high
     } else {
-      high = mid - 1
+      continue low, mid - 1
     }
+  } nobreak {
+    low
   }
   {
     model_line_number: low + 1,
@@ -709,21 +710,24 @@ pub fn ViewModelLinesFromProjectedModel::convert_model_position_to_view_position
     max=self.model_line_projections.length(),
   )
   let input_column = valid_position.column
-  let mut line_index = input_line_number - 1
-  let mut line_index_changed = false
-  if below_hidden_ranges {
-    while line_index < self.model_line_projections.length() &&
-          !self.model_line_projections[line_index].is_visible() {
-      line_index += 1
-      line_index_changed = true
+  let original_line_index = input_line_number - 1
+  let line_index = if below_hidden_ranges {
+    for line_index = original_line_index; line_index <
+       self.model_line_projections.length() &&
+       !self.model_line_projections[line_index].is_visible(); {
+      continue line_index + 1
+    } nobreak {
+      line_index
     }
   } else {
-    while line_index > 0 &&
-          !self.model_line_projections[line_index].is_visible() {
-      line_index -= 1
-      line_index_changed = true
+    for line_index = original_line_index; line_index > 0 &&
+       !self.model_line_projections[line_index].is_visible(); {
+      continue line_index - 1
+    } nobreak {
+      line_index
     }
   }
+  let line_index_changed = line_index != original_line_index
   if line_index == 0 && !self.model_line_projections[line_index].is_visible() {
     // Could not reach a real line
     return Position(if allow_zero_line_number { 0 } else { 1 }, 1)
