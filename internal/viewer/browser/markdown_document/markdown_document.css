@@ -22,17 +22,34 @@
   overscroll-behavior: contain;
 }
 
-/* The article flows across the full viewport like the source it replaces —
- * the reading surface reserves no centered measure or side margins (and the
- * pointer therefore never leaves the article sideways while inside the
- * viewport). Modest padding keeps text off the edges. */
+/* The article remains the full-width source and pointer surface. Individual
+ * prose blocks use a centered reading measure below, while diagrams, code,
+ * and tables retain the full inner width. */
 .moonbit-viewer-markdown-document-article {
+  --markdown-prose-measure: 640px;
+
   box-sizing: border-box;
   min-height: 100%;
   padding: 16px 24px 64px;
   font-size: 16px;
   line-height: 1.6;
   overflow-wrap: anywhere;
+}
+
+.moonbit-viewer-markdown-document-article
+  > :where(h1, h2, h3, h4, h5, h6, p, ul, ol, dl, hr, details) {
+  max-width: var(--markdown-prose-measure);
+  margin-inline: auto;
+}
+
+/* Preserve the browser's familiar quote inset inside the same outer measure.
+ * Nested code and diagrams still fill the quote rather than receiving a
+ * second prose constraint. */
+.moonbit-viewer-markdown-document-article > blockquote {
+  box-sizing: border-box;
+  max-width: var(--markdown-prose-measure);
+  margin-inline: auto;
+  padding-inline: 40px;
 }
 
 /* Keep the document hierarchy readable without letting headings dominate the
