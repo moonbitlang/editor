@@ -1,5 +1,6 @@
 ///|
-/// Host-neutral filesystem/provider protocol retained as an extension contract.
+/// Root-relative source path accepted from UI or protocol input after
+/// normalization rejects absolute paths, parent traversal, and NUL bytes.
 struct SourcePath {
   value : String
 } derive(Eq, Debug)
