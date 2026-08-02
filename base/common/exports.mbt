@@ -122,46 +122,56 @@ pub fn Win32::resolve(path_segments : Array[String]) -> String {
 }
 
 ///|
+/// Normalizes a Win32 path, including the relative-colon guard from
+/// `path.ts:346`/CVE-2024-36139.
 pub fn Win32::normalize(path : String) -> String {
   Win32::normalize_impl(path)
 }
 
 ///|
+/// Reports whether `path` is absolute under Win32 path rules.
 pub fn Win32::is_absolute(path : String) -> Bool {
   Win32::is_absolute_impl(path)
 }
 
 ///|
+/// Joins Win32 path fragments while preserving an initial UNC double slash.
 pub fn Win32::join(paths : Array[String]) -> String {
   Win32::join_impl(paths)
 }
 
 ///|
+/// Computes the case-insensitive Win32 relative path from `from` to `to`.
 pub fn Win32::relative(from : String, to : String) -> String {
   Win32::relative_impl(from, to)
 }
 
 ///|
+/// Returns the directory component of a Win32 path.
 pub fn Win32::dirname(path : String) -> String {
   Win32::dirname_impl(path)
 }
 
 ///|
+/// Returns the final Win32 path component, removing `suffix` when it matches.
 pub fn Win32::basename(path : String, suffix? : String) -> String {
   Win32::basename_impl(path, suffix?)
 }
 
 ///|
+/// Returns the extension of the final Win32 path component.
 pub fn Win32::extname(path : String) -> String {
   Win32::extname_impl(path)
 }
 
 ///|
+/// Returns the Win32 path separator (`\\`).
 pub fn Win32::sep() -> String {
   Win32::sep_impl()
 }
 
 ///|
+/// Returns the Win32 path-list delimiter (`;`).
 pub fn Win32::delimiter() -> String {
   Win32::delimiter_impl()
 }
@@ -174,46 +184,55 @@ pub fn Posix::resolve(path_segments : Array[String]) -> String {
 }
 
 ///|
+/// Normalizes a POSIX path.
 pub fn Posix::normalize(path : String) -> String {
   Posix::normalize_impl(path)
 }
 
 ///|
+/// Reports whether `path` is absolute under POSIX path rules.
 pub fn Posix::is_absolute(path : String) -> Bool {
   Posix::is_absolute_impl(path)
 }
 
 ///|
+/// Joins POSIX path fragments and normalizes the result.
 pub fn Posix::join(paths : Array[String]) -> String {
   Posix::join_impl(paths)
 }
 
 ///|
+/// Computes the POSIX relative path from `from` to `to`.
 pub fn Posix::relative(from : String, to : String) -> String {
   Posix::relative_impl(from, to)
 }
 
 ///|
+/// Returns the directory component of a POSIX path.
 pub fn Posix::dirname(path : String) -> String {
   Posix::dirname_impl(path)
 }
 
 ///|
+/// Returns the final POSIX path component, removing `suffix` when it matches.
 pub fn Posix::basename(path : String, suffix? : String) -> String {
   Posix::basename_impl(path, suffix?)
 }
 
 ///|
+/// Returns the extension of the final POSIX path component.
 pub fn Posix::extname(path : String) -> String {
   Posix::extname_impl(path)
 }
 
 ///|
+/// Returns the POSIX path separator (`/`).
 pub fn Posix::sep() -> String {
   Posix::sep_impl()
 }
 
 ///|
+/// Returns the POSIX path-list delimiter (`:`).
 pub fn Posix::delimiter() -> String {
   Posix::delimiter_impl()
 }
@@ -224,12 +243,17 @@ pub fn Posix::delimiter() -> String {
 pub let ext_uri : ExtUri = ext_uri_impl
 
 ///|
+/// Resource identity policy that ignores file-path case only on hosts where
+/// file paths are case-insensitive.
 pub let ext_uri_biased_ignore_path_case : ExtUri = ext_uri_biased_ignore_path_case_impl
 
 ///|
+/// Resource identity policy that always ignores URI path casing.
 pub let ext_uri_ignore_path_case : ExtUri = ext_uri_ignore_path_case_impl
 
 ///|
+/// Compares two URIs using this identity policy and the ported lexical string
+/// ordering.
 pub fn ExtUri::compare(
   self : ExtUri,
   uri1 : Uri,
@@ -240,6 +264,7 @@ pub fn ExtUri::compare(
 }
 
 ///|
+/// Tests two optional URIs for equality under this identity policy.
 pub fn ExtUri::is_equal(
   self : ExtUri,
   uri1 : Uri?,
@@ -250,6 +275,7 @@ pub fn ExtUri::is_equal(
 }
 
 ///|
+/// Builds the stable comparison key used by resource maps.
 pub fn ExtUri::get_comparison_key(
   self : ExtUri,
   uri : Uri,
@@ -259,11 +285,13 @@ pub fn ExtUri::get_comparison_key(
 }
 
 ///|
+/// Reports whether this policy ignores the URI path component's casing.
 pub fn ExtUri::ignore_path_casing(self : ExtUri, uri : Uri) -> Bool {
   self.ignore_path_casing_impl(uri)
 }
 
 ///|
+/// Tests whether `parent_candidate` is equal to or a parent of `base`.
 pub fn ExtUri::is_equal_or_parent(
   self : ExtUri,
   base : Uri,
@@ -274,6 +302,7 @@ pub fn ExtUri::is_equal_or_parent(
 }
 
 ///|
+/// Joins path fragments onto the resource URI.
 pub fn ExtUri::join_path(
   self : ExtUri,
   resource : Uri,
@@ -283,11 +312,13 @@ pub fn ExtUri::join_path(
 }
 
 ///|
+/// Returns the path basename, falling back to the URI authority when needed.
 pub fn ExtUri::basename_or_authority(self : ExtUri, resource : Uri) -> String {
   self.basename_or_authority_impl(resource)
 }
 
 ///|
+/// Returns the basename of the URI path component.
 pub fn ExtUri::basename(
   self : ExtUri,
   resource : Uri,
@@ -297,36 +328,44 @@ pub fn ExtUri::basename(
 }
 
 ///|
+/// Returns the extension of the URI path component.
 pub fn ExtUri::extname(self : ExtUri, resource : Uri) -> String {
   self.extname_impl(resource)
 }
 
 ///|
+/// Returns a URI representing the resource's directory.
 pub fn ExtUri::dirname(self : ExtUri, resource : Uri) -> Uri {
   self.dirname_impl(resource)
 }
 
 ///|
+/// Resolves `.` and `..` elements in the resource path.
 pub fn ExtUri::normalize_path(self : ExtUri, resource : Uri) -> Uri {
   self.normalize_path_impl(resource)
 }
 
 ///|
+/// Returns the relative path from `from` to `to`, or `None` when their
+/// schemes or authorities are incompatible.
 pub fn ExtUri::relative_path(self : ExtUri, from : Uri, to : Uri) -> String? {
   self.relative_path_impl(from, to)
 }
 
 ///|
+/// Resolves an absolute or relative POSIX/Win32 path against a base URI.
 pub fn ExtUri::resolve_path(self : ExtUri, base : Uri, path : String) -> Uri {
   self.resolve_path_impl(base, path)
 }
 
 ///|
+/// Reports whether the URI path is absolute.
 pub fn ExtUri::is_absolute_path(self : ExtUri, resource : Uri) -> Bool {
   self.is_absolute_path_impl(resource)
 }
 
 ///|
+/// Tests two URI authorities for equality under the resource policy.
 pub fn ExtUri::is_equal_authority(
   self : ExtUri,
   a1 : String,
@@ -336,6 +375,7 @@ pub fn ExtUri::is_equal_authority(
 }
 
 ///|
+/// Reports whether the URI path has a trailing path separator.
 pub fn ExtUri::has_trailing_path_separator(
   self : ExtUri,
   resource : Uri,
@@ -345,6 +385,7 @@ pub fn ExtUri::has_trailing_path_separator(
 }
 
 ///|
+/// Removes a trailing path separator without removing the URI's first slash.
 pub fn ExtUri::remove_trailing_path_separator(
   self : ExtUri,
   resource : Uri,
@@ -360,26 +401,32 @@ pub fn CharacterSet::CharacterSet() -> CharacterSet {
 }
 
 ///|
+/// Adds `char_code` to the set.
 pub fn CharacterSet::add(self : CharacterSet, char_code : Int) -> Unit {
   self.add_impl(char_code)
 }
 
 ///|
+/// Reports whether `char_code` belongs to the set.
 pub fn CharacterSet::has(self : CharacterSet, char_code : Int) -> Bool {
   self.has_impl(char_code)
 }
 
 ///|
+/// Tests whether `other` is contained in this range; equal ranges count as
+/// contained.
 pub fn Range::contains_range(self : Range, other : Range) -> Bool {
   self.contains_range_impl(other)
 }
 
 ///|
+/// Tests whether `other` starts after and ends before this range.
 pub fn Range::strict_contains_range(self : Range, other : Range) -> Bool {
   self.strict_contains_range_impl(other)
 }
 
 ///|
+/// Tests whether two ranges overlap; touching ranges do not intersect.
 pub fn Range::are_intersecting(a : Range, b : Range) -> Bool {
   Range::are_intersecting_impl(a, b)
 }
