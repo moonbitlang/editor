@@ -20,13 +20,19 @@ flowchart LR
 tree.expand(directory_uri)      // triggers one resolve
 tree.on_select(uri => workbench.open_document(uri))
 
-// Level order is host policy: a negative rank leads its level.
-@file_tree.FileTree(provider, on_open~, rank=stat => match stat.name {
-  "README.md" => -3
-  "pkg.generated.mbti" => -2
-  "moon.pkg" => -1
-  _ => 0
-})
+// Level order is host policy: a negative rank leads its level, and the
+// comparator orders otherwise equal entries.
+@file_tree.FileTree(
+  provider,
+  on_open~,
+  rank=stat => match stat.name {
+    "README.md" => -3
+    "pkg.generated.mbti" => -2
+    "moon.pkg" => -1
+    _ => 0
+  },
+  compare=(left, right) => left.name.lexical_compare(right.name),
+)
 ```
 
 ## Contract
@@ -34,12 +40,12 @@ tree.on_select(uri => workbench.open_document(uri))
 - Directories start collapsed. First expansion calls
   `WorkspaceTreeProvider.resolve` for exactly one level; successful children are
   cached and ordered directories-first. Collapse/re-expand reuses the cache.
-- Level order is the host's policy, passed as `rank~`: entries render by
-  ascending rank, and equal ranks fall back to directories-before-files and then
-  to the provider's order. The default ranks everything alike; a negative rank
-  pins a name above the directories (the workbench pins `README*`, then
-  `pkg.generated.mbti`, then `moon.pkg`) and a positive one sinks it below the
-  files.
+- Level order is the host's policy, passed as `rank~` and `compare~`: entries
+  render by ascending rank, then directories-before-files, then the comparator.
+  Exact ties keep the provider's order. The defaults rank and compare everything
+  alike; a negative rank pins a name above the directories (the workbench pins
+  `README*`, then `pkg.generated.mbti`, then `moon.pkg`) and a positive one sinks
+  it below the files. The workbench comparator orders names lexicographically.
 - A failed resolve leaves an empty `resolve-failed` row; the next
   collapse/re-expand retries.
 - `set_active` selects a URI and resolves/expands its ancestor chain
@@ -48,8 +54,8 @@ tree.on_select(uri => workbench.open_document(uri))
 - Clicking a file reports its URI through `on_open`; the host owns reads and
   editor selection.
 
-Public API: `FileTree::FileTree(provider, on_open~, rank?)`, `view`, `refresh`,
-and `set_active` (see `pkg.generated.mbti`). Stable test selectors include
+Public API: `FileTree::FileTree(provider, on_open~, rank?, compare?)`, `view`,
+`refresh`, and `set_active` (see `pkg.generated.mbti`). Stable test selectors include
 `workspace-item`, `workspace-folder`/`workspace-file`, `is-selected`,
 `data-workspace-id`, `data-workspace-kind`, and the ARIA expansion/selection
 attributes.

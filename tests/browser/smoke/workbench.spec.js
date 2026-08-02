@@ -1,5 +1,23 @@
 import { expect, test } from '../support/test.js';
 
+async function renderedWorkspaceLevel(page, prefix) {
+  return page.locator('.workspace-sidebar [data-workspace-id]').evaluateAll(
+    (rows, levelPrefix) =>
+      rows
+        .filter((row) => {
+          const id = row.getAttribute('data-workspace-id') ?? '';
+          if (!id.startsWith(levelPrefix)) return false;
+          const relative = id.slice(levelPrefix.length);
+          return relative.length > 0 && !relative.includes('/');
+        })
+        .map((row) => ({
+          name: row.querySelector('.workspace-label')?.textContent?.trim() ?? '',
+          kind: row.getAttribute('data-workspace-kind'),
+        })),
+    prefix,
+  );
+}
+
 test('defaults to the dark theme and persists the toggled choice', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('.editor-shell')).toHaveAttribute('data-theme', 'dark');
@@ -28,4 +46,37 @@ test('renders explorer rows with twisties and file icons', async ({ page }) => {
       '[data-workspace-id="readonly-remote://workspace/src/main.mbt"] .workspace-file-icon svg',
     ),
   ).toBeVisible();
+});
+
+test('orders rendered explorer names lexicographically within policy groups', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await expect(page.locator('.editor-shell')).toHaveAttribute('data-status', 'ready');
+
+  const root = await renderedWorkspaceLevel(page, 'readonly-remote://workspace/');
+  expect(root[0]).toEqual({ name: 'README.md', kind: 'file' });
+  const rootDirectories = root.filter((entry) => entry.kind === 'folder');
+  const rootFiles = root.slice(1).filter((entry) => entry.kind === 'file');
+  expect(root.slice(1)).toEqual([...rootDirectories, ...rootFiles]);
+  expect(rootDirectories.map((entry) => entry.name)).toEqual(
+    rootDirectories.map((entry) => entry.name).sort(),
+  );
+  expect(rootFiles.map((entry) => entry.name)).toEqual(
+    rootFiles.map((entry) => entry.name).sort(),
+  );
+
+  // This level distinguishes lexical order from String::compare shortlex:
+  // `main.mbt` is shorter than `errors.mbt`, but must render after it.
+  const src = await renderedWorkspaceLevel(
+    page,
+    'readonly-remote://workspace/src/',
+  );
+  expect(src[0]).toEqual({ name: 'moon.pkg', kind: 'file' });
+  expect(src.slice(1).map((entry) => entry.name)).toEqual(
+    src
+      .slice(1)
+      .map((entry) => entry.name)
+      .sort(),
+  );
 });

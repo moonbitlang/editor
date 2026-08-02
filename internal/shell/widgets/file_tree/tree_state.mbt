@@ -41,17 +41,23 @@ priv enum RevealStep {
 
 ///|
 /// Builds a node from a resolved stat. Children render in the level order
-/// `rank` describes (see `TreeNode::from_stats`).
+/// `rank` and `compare` describe (see `TreeNode::from_stats`).
 fn TreeNode::from_stat(
   stat : @workspace.WorkspaceStat,
   expanded~ : Bool,
   rank~ : (@workspace.WorkspaceStat) -> Int,
+  compare? : (@workspace.WorkspaceStat, @workspace.WorkspaceStat) -> Int = (
+    _left,
+    _right,
+  ) => 0,
 ) -> TreeNode {
   {
     uri: stat.uri,
     name: stat.name,
     kind: stat.kind,
-    children: stat.children.map(stats => TreeNode::from_stats(stats, rank~)),
+    children: stat.children.map(stats => {
+      TreeNode::from_stats(stats, rank~, compare~)
+    }),
     expanded,
     resolve_failed: false,
   }
@@ -59,12 +65,13 @@ fn TreeNode::from_stat(
 
 ///|
 /// Orders one resolved directory level: ascending `rank` first, then
-/// directories before files, then the provider's own order. `Array::sort_by`
-/// is unstable, so the source position is the last sort key rather than an
-/// assumed tie-break.
+/// directories before files, then the host comparator, and finally the
+/// provider's own order. `Array::sort_by` is unstable, so the source position
+/// is the last sort key rather than an assumed tie-break.
 fn TreeNode::from_stats(
   stats : Array[@workspace.WorkspaceStat],
   rank~ : (@workspace.WorkspaceStat) -> Int,
+  compare~ : (@workspace.WorkspaceStat, @workspace.WorkspaceStat) -> Int,
 ) -> @vec.Vector[TreeNode] {
   let ranks = stats.map(rank)
   let order = Array::makei(stats.length(), index => index)
@@ -73,14 +80,20 @@ fn TreeNode::from_stats(
       0 =>
         match
           kind_rank(stats[left].kind).compare(kind_rank(stats[right].kind)) {
-          0 => left.compare(right)
+          0 =>
+            match compare(stats[left], stats[right]) {
+              0 => left.compare(right)
+              by_host => by_host
+            }
           by_kind => by_kind
         }
       by_rank => by_rank
     }
   })
   Vector(
-    order.map(index => TreeNode::from_stat(stats[index], expanded=false, rank~)),
+    order.map(index => {
+      TreeNode::from_stat(stats[index], expanded=false, rank~, compare~)
+    }),
   )
 }
 
@@ -100,18 +113,24 @@ fn TreeNode::with_resolved(
   uri : @base_common.Uri,
   stat : @workspace.WorkspaceStat,
   rank~ : (@workspace.WorkspaceStat) -> Int,
+  compare? : (@workspace.WorkspaceStat, @workspace.WorkspaceStat) -> Int = (
+    _left,
+    _right,
+  ) => 0,
 ) -> TreeNode? {
   if self.uri == uri {
     return Some({
       ..self,
-      children: stat.children.map(stats => TreeNode::from_stats(stats, rank~)),
+      children: stat.children.map(stats => {
+        TreeNode::from_stats(stats, rank~, compare~)
+      }),
       resolve_failed: false,
     })
   }
   guard self.children is Some(children) else { return None }
   for index in 0..<children.length() {
     let child = children[index]
-    if child.with_resolved(uri, stat, rank~) is Some(next) {
+    if child.with_resolved(uri, stat, rank~, compare~) is Some(next) {
       return Some({ ..self, children: Some(children.set(index, next)) })
     }
   }
