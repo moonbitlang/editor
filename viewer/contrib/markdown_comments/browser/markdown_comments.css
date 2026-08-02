@@ -272,10 +272,13 @@
 
 .moonbit-viewer-markdown-comment-content blockquote {
   padding: 6px 10px;
-  border-left: 3px solid
-    color-mix(in srgb, var(--vscode-focusBorder, currentColor) 55%, transparent);
+  border-left: 3px solid var(--vscode-focusBorder, currentColor);
   border-radius: 0 4px 4px 0;
-  background: color-mix(in srgb, currentColor 5%, transparent);
+  background: color-mix(
+    in srgb,
+    currentColor 7%,
+    var(--vscode-editor-background)
+  );
   color: var(--vscode-descriptionForeground, var(--vscode-editor-foreground));
 }
 

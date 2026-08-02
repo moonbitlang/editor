@@ -22,6 +22,42 @@ const diagramControls = '.moonbit-viewer-markdown-diagram-controls';
 const mermaidCdnUrl =
   'https://cdn.jsdelivr.net/npm/mermaid@11.16.0/dist/mermaid.esm.min.mjs';
 
+function relativeLuminance(color) {
+  const channels = color.map((channel) => {
+    const value = channel / 255;
+    return value <= 0.04045
+      ? value / 12.92
+      : ((value + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+}
+
+function contrastRatio(left, right) {
+  const first = relativeLuminance(left);
+  const second = relativeLuminance(right);
+  return (Math.max(first, second) + 0.05) / (Math.min(first, second) + 0.05);
+}
+
+async function calloutColors(locator) {
+  return locator.evaluate((element) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1;
+    canvas.height = 1;
+    const context = canvas.getContext('2d', { willReadFrequently: true });
+    const resolveColor = (value) => {
+      context.clearRect(0, 0, 1, 1);
+      context.fillStyle = value;
+      context.fillRect(0, 0, 1, 1);
+      return Array.from(context.getImageData(0, 0, 1, 1).data.slice(0, 3));
+    };
+    const style = getComputedStyle(element);
+    return {
+      background: resolveColor(style.backgroundColor),
+      border: resolveColor(style.borderLeftColor),
+    };
+  });
+}
+
 const fakeMarkdownDocumentMermaidModule = `
   let currentTheme = '';
 
@@ -406,9 +442,6 @@ test('presents Markdown blockquotes as subtle callouts', async ({ page }) => {
   await expect(quote).toHaveCSS('border-left-width', '3px');
   await expect(quote).toHaveCSS('border-top-right-radius', '6px');
   await expect(quote).toHaveCSS('padding-top', '12px');
-  expect(await quote.evaluate((element) =>
-    getComputedStyle(element).backgroundColor
-  )).not.toBe('rgba(0, 0, 0, 0)');
   await expect(quote.locator(':scope > :first-child')).toHaveCSS(
     'margin-top',
     '0px',
@@ -417,6 +450,29 @@ test('presents Markdown blockquotes as subtle callouts', async ({ page }) => {
     'margin-bottom',
     '0px',
   );
+
+  await quote.evaluate((element) => {
+    const nested = document.createElement('blockquote');
+    nested.dataset.nestedCalloutProbe = 'true';
+    const paragraph = document.createElement('p');
+    paragraph.textContent = 'Nested callout';
+    nested.appendChild(paragraph);
+    element.appendChild(nested);
+  });
+  const nested = quote.locator('[data-nested-callout-probe="true"]');
+  await expect(nested).toHaveCSS('border-left-width', '3px');
+  await expect(nested).toHaveCSS('padding-left', '12px');
+
+  for (const theme of ['dark', 'light']) {
+    await page.locator('.markdown-document-shell').evaluate(
+      (shell, value) => shell.setAttribute('data-theme', value),
+      theme,
+    );
+    const colors = await calloutColors(quote);
+    expect(contrastRatio(colors.border, colors.background)).toBeGreaterThanOrEqual(
+      3,
+    );
+  }
 });
 
 test('mounts zoom and drag controls for D2 and Mermaid in Markdown documents', async ({

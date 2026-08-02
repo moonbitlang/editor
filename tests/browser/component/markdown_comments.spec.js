@@ -1027,11 +1027,36 @@ test('uses the same subtle callout treatment in Markdown comments', async ({
     await expect(quote).toHaveCSS('border-left-width', '3px');
     await expect(quote).toHaveCSS('border-top-right-radius', '4px');
     await expect(quote).toHaveCSS('padding-top', '6px');
-    expect(await quote.evaluate((element) =>
-      getComputedStyle(element).backgroundColor
-    )).not.toBe('rgba(0, 0, 0, 0)');
     await expect(quote.locator('p')).toHaveCSS('margin-top', '0px');
     await expect(quote.locator('p')).toHaveCSS('margin-bottom', '0px');
+    for (const theme of ['dark', 'light']) {
+      await page.locator('.markdown-comments-shell').evaluate(
+        (shell, value) => shell.setAttribute('data-theme', value),
+        theme,
+      );
+      const colors = await quote.evaluate((element) => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 1;
+        canvas.height = 1;
+        const context = canvas.getContext('2d', { willReadFrequently: true });
+        const resolveColor = (value) => {
+          context.clearRect(0, 0, 1, 1);
+          context.fillStyle = value;
+          context.fillRect(0, 0, 1, 1);
+          return Array.from(
+            context.getImageData(0, 0, 1, 1).data.slice(0, 3),
+          );
+        };
+        const style = getComputedStyle(element);
+        return {
+          background: resolveColor(style.backgroundColor),
+          border: resolveColor(style.borderLeftColor),
+        };
+      });
+      expect(
+        contrastRatio(colors.border, colors.background),
+      ).toBeGreaterThanOrEqual(3);
+    }
   } finally {
     reporter.dispose();
   }

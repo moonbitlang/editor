@@ -45,23 +45,29 @@
 /* Preserve the browser's familiar quote inset inside the same outer measure.
  * Nested code and diagrams still fill the quote rather than receiving a
  * second prose constraint. */
-.moonbit-viewer-markdown-document-article > blockquote {
+.moonbit-viewer-markdown-document-article blockquote {
   box-sizing: border-box;
-  max-width: var(--markdown-prose-measure);
-  margin-inline: auto;
-  padding-block: 12px;
-  padding-inline: 40px;
-  border-left: 3px solid
-    color-mix(in srgb, var(--vscode-focusBorder, currentColor) 55%, transparent);
+  padding: 12px;
+  border-left: 3px solid var(--vscode-focusBorder, currentColor);
   border-radius: 0 6px 6px 0;
-  background: color-mix(in srgb, currentColor 5%, transparent);
+  background: color-mix(
+    in srgb,
+    currentColor 7%,
+    var(--vscode-editor-background)
+  );
 }
 
-.moonbit-viewer-markdown-document-article > blockquote > :first-child {
+.moonbit-viewer-markdown-document-article > blockquote {
+  max-width: var(--markdown-prose-measure);
+  margin-inline: auto;
+  padding-inline: 40px;
+}
+
+.moonbit-viewer-markdown-document-article blockquote > :first-child {
   margin-top: 0;
 }
 
-.moonbit-viewer-markdown-document-article > blockquote > :last-child {
+.moonbit-viewer-markdown-document-article blockquote > :last-child {
   margin-bottom: 0;
 }
 
