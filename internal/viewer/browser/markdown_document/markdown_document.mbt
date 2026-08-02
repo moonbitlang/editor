@@ -1159,10 +1159,14 @@ pub fn MarkdownDocumentView::set_toc_entries(
   }
   if entries.length() >= 3 {
     self.toc_nav.set_attribute("data-toc-visible", "true")
+    self.toc_toggle.set_attribute(
+      "aria-label",
+      "Contents, \{entries.length()} sections",
+    )
     // textContent assignment already replaces every child.
     self.toc_toggle.set_property(
       "textContent",
-      @js.Value::cast_from("Contents \u{00b7} \{entries.length()} sections"),
+      @js.Value::cast_from("Contents \u{00b7} \{entries.length()}"),
     )
   } else {
     self.toc_nav.set_attribute("data-toc-visible", "false")

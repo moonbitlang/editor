@@ -293,35 +293,58 @@
   outline-offset: 2px;
 }
 
-/* Pinned table-of-contents bar. A sibling of the viewport, never an article
+/* Pinned table-of-contents panel. A sibling of the viewport, never an article
    child: article child indexes are projection ordinals the folding and
    source-anchor machinery depends on. */
-/* Overlaid, not in flow: the bar must never move the viewport. The hover
+/* Overlaid, not in flow: the panel must never move the viewport. The hover
    overlay and caret math assume the viewport starts at the root's top, and a
-   bar in normal flow would also clip the 100%-height viewport at the bottom
+   panel in normal flow would also clip the 100%-height viewport at the bottom
    of the fixed-height root. */
 .moonbit-viewer-markdown-toc {
   display: none;
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
+  top: 4px;
+  left: 8px;
   z-index: 30;
+  box-sizing: border-box;
   flex-direction: column;
-  background: inherit;
-  border-bottom: 1px solid rgba(128, 128, 128, 0.25);
+  width: max-content;
+  max-width: calc(100% - 16px);
+  overflow: hidden;
+  background: var(
+    --vscode-editorWidget-background,
+    var(--vscode-editor-background, #ffffff)
+  );
+  border: 1px solid
+    var(--vscode-widget-border, rgba(128, 128, 128, 0.35));
+  border-radius: 7px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
   font-size: 0.85em;
+}
+
+.moonbit-viewer-markdown-document[data-theme="dark"]
+  .moonbit-viewer-markdown-toc {
+  background: var(
+    --vscode-editorWidget-background,
+    var(--vscode-editor-background, #1e1e1e)
+  );
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.34);
 }
 
 .moonbit-viewer-markdown-toc[data-toc-visible="true"] {
   display: flex;
 }
 
+.moonbit-viewer-markdown-toc[data-toc-expanded="true"] {
+  width: min(320px, calc(100% - 16px));
+}
+
 .moonbit-viewer-markdown-toc-toggle {
   display: flex;
   align-items: center;
   gap: 0.4em;
-  padding: 0.35em 0.9em;
+  min-height: 26px;
+  padding: 0.2em 0.65em;
   border: none;
   background: transparent;
   color: inherit;
@@ -352,9 +375,11 @@
 .moonbit-viewer-markdown-toc-list {
   display: none;
   margin: 0;
-  padding: 0 0 0.4em 0;
+  padding: 0.2em 0 0.35em;
+  border-top: 1px solid
+    var(--vscode-widget-border, rgba(128, 128, 128, 0.25));
   list-style: none;
-  max-height: 14em;
+  max-height: min(14em, calc(100vh - 4em));
   overflow-y: auto;
 }
 
@@ -366,7 +391,7 @@
 .moonbit-viewer-markdown-toc-row {
   display: block;
   width: 100%;
-  padding: 0.15em 0.9em;
+  padding: 0.2em 0.75em;
   border: none;
   background: transparent;
   color: inherit;
@@ -383,4 +408,10 @@
 .moonbit-viewer-markdown-toc-toggle:hover {
   opacity: 1;
   background: rgba(128, 128, 128, 0.12);
+}
+
+.moonbit-viewer-markdown-toc-row:focus-visible,
+.moonbit-viewer-markdown-toc-toggle:focus-visible {
+  outline: 1px solid currentColor;
+  outline-offset: -2px;
 }
