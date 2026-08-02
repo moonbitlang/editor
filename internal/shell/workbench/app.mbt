@@ -15,6 +15,8 @@ priv struct WorkbenchModel {
   status : String
   status_message : String
   theme : String
+  /// Whether the shell allocates a grid column to the workspace explorer.
+  explorer_visible : Bool
   document : WorkbenchDocumentView?
   line_count : Int
   diagnostics : Array[@language.Diagnostic]
@@ -51,6 +53,7 @@ priv enum WorkbenchMsg {
   ActiveDocumentRead(@workspace.DocumentReadResult, DocumentViewState)
   ActiveDocumentChanged(@workspace.DocumentChange)
   ViewerEvent(WorkbenchViewerEvent)
+  ToggleExplorer
   ToggleTheme
   WindowResized
   OpenRepoPicker
@@ -315,6 +318,7 @@ fn initial_workbench_model() -> WorkbenchModel {
     status: "loading",
     status_message: "",
     theme: stored_theme(),
+    explorer_visible: true,
     document: None,
     line_count: 0,
     diagnostics: [],
@@ -393,6 +397,14 @@ fn workbench_update(
     ActiveDocumentChanged(change) =>
       active_document_change_update(model, change)
     ViewerEvent(event) => viewer_event_update(model, event)
+    ToggleExplorer =>
+      (
+        @cmd.custom_cmd(
+          _ => workbench_viewer().layout(),
+          kind=@cmd.after_render,
+        ),
+        { ..model, explorer_visible: !model.explorer_visible },
+      )
     ToggleTheme => {
       let theme = if model.theme == "light" { "dark" } else { "light" }
       (
@@ -842,8 +854,8 @@ fn view_workbench(
   tree_html : @html.Html,
 ) -> @html.Html {
   let children : Array[@html.Html] = [
-    view_topbar(model),
-    @html.div(class="editor-main", [
+    view_topbar(emit, model),
+    @html.div(class=editor_main_class(model), [
       view_sidebar(emit, model, tree_html),
       // The stable viewer host: the viewer attaches its imperative DOM
       // into this element after mount, and the shell must never render
@@ -864,6 +876,7 @@ fn shell_attrs(model : WorkbenchModel) -> @html.Attrs {
   let mut attrs = @html.Attrs::build()
   attrs = attrs.data_set("status", model.status)
   attrs = attrs.data_set("theme", model.theme)
+  attrs = attrs.data_set("explorer-visible", model.explorer_visible.to_string())
   attrs = attrs.data_set("line-count", line_count_string(model))
   match model.document {
     Some(document) => attrs = attrs.data_set("source-uri", document.uri)
@@ -873,11 +886,42 @@ fn shell_attrs(model : WorkbenchModel) -> @html.Attrs {
 }
 
 ///|
-fn view_topbar(model : WorkbenchModel) -> @html.Html {
+fn editor_main_class(model : WorkbenchModel) -> String {
+  if model.explorer_visible {
+    "editor-main"
+  } else {
+    "editor-main is-explorer-hidden"
+  }
+}
+
+///|
+fn view_topbar(
+  emit : @rabbita.Emit[WorkbenchMsg],
+  model : WorkbenchModel,
+) -> @html.Html {
+  let explorer_action = if model.explorer_visible {
+    "Hide Explorer"
+  } else {
+    "Show Explorer"
+  }
   @html.div(class="topbar", [
-    @html.div(class="source-title", [
-      @html.strong(document_title(model)),
-      @html.span(document_meta(model)),
+    @html.div(class="topbar-leading", [
+      @html.button(
+        type_="button",
+        class="topbar-action",
+        title=explorer_action,
+        on_click=emit(ToggleExplorer),
+        attrs=@html.Attrs::build()
+          .data_set("action", "toggle-explorer")
+          .aria_label(explorer_action)
+          .aria_controls("workspace-explorer")
+          .aria_expanded(model.explorer_visible.to_string()),
+        icon_sidebar(),
+      ),
+      @html.div(class="source-title", [
+        @html.strong(document_title(model)),
+        @html.span(document_meta(model)),
+      ]),
     ]),
     @html.div(
       class="source-status source-status-" + model.status,
@@ -891,11 +935,13 @@ fn view_topbar(model : WorkbenchModel) -> @html.Html {
 /// tree itself is the embedded explorer widget value.
 fn view_sidebar(
   emit : @rabbita.Emit[WorkbenchMsg],
-  _model : WorkbenchModel,
+  model : WorkbenchModel,
   tree_html : @html.Html,
 ) -> @html.Html {
   @html.aside(
+    id="workspace-explorer",
     class="workspace-sidebar",
+    hidden=!model.explorer_visible,
     attrs=@html.Attrs::build().aria_label("Workspace files"),
     [
       @html.div(class="workspace-title", [
