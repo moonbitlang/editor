@@ -245,7 +245,7 @@ pub fn LineTokens::get_metadata(
 
 ///|
 fn LineTokens::get_class_name(self : LineTokens, token_index : Int) -> String {
-  self.get_metadata(token_index).get_class_name_from_metadata()
+  self.get_metadata(token_index).get_class_name()
 }
 
 ///|
@@ -254,7 +254,7 @@ fn LineTokens::get_inline_style(
   token_index : Int,
   color_map : Array[String],
 ) -> String {
-  self.get_metadata(token_index).get_inline_style_from_metadata(color_map)
+  self.get_metadata(token_index).get_inline_style(color_map)
 }
 
 ///|

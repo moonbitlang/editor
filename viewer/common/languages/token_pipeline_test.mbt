@@ -57,9 +57,7 @@ test "JSON tokens flow from lexer spans to rendered HTML" {
           source[start:end].to_owned(),
           start,
           end,
-          @tokens.TokenMetadata::get_class_name_from_metadata(
-            line_tokens.get_metadata(i),
-          ),
+          @tokens.TokenMetadata::get_class_name(line_tokens.get_metadata(i)),
         )
       }
     ],

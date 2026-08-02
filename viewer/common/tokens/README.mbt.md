@@ -29,7 +29,7 @@ classDiagram
     <<typed scalar>>
     +TokenMetadata(raw) TokenMetadata
     +to_uint() UInt
-    +get_class_name_from_metadata(metadata) String
+    +get_class_name() String
   }
 
   class LineTokens {
@@ -136,10 +136,7 @@ test "a production-shaped metadata word resolves to its token class" {
       @tokens.COLOR_ID_DEFAULT_BACKGROUND.reinterpret_as_uint() <<
       @tokens.METADATA_BACKGROUND_OFFSET
     )
-  inspect(
-    @tokens.TokenMetadata(metadata).get_class_name_from_metadata(),
-    content="mtk7",
-  )
+  inspect(@tokens.TokenMetadata(metadata).get_class_name(), content="mtk7")
 }
 ```
 

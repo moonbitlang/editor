@@ -147,9 +147,7 @@ fn TokenMetadata::get_background(self : TokenMetadata) -> Int {
 
 ///|
 /// Returns the Monaco-compatible token CSS class list.
-pub fn TokenMetadata::get_class_name_from_metadata(
-  self : TokenMetadata,
-) -> String {
+pub fn TokenMetadata::get_class_name(self : TokenMetadata) -> String {
   let foreground = self.get_foreground()
   let mut class_name = "mtk\{foreground.to_string()}"
   let font_style = self.get_font_style()
@@ -170,7 +168,7 @@ pub fn TokenMetadata::get_class_name_from_metadata(
 
 ///|
 /// Returns the inline CSS presentation for the supplied color map.
-fn TokenMetadata::get_inline_style_from_metadata(
+fn TokenMetadata::get_inline_style(
   self : TokenMetadata,
   color_map : Array[String],
 ) -> String {

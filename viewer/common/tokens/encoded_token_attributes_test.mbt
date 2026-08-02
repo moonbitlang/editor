@@ -34,5 +34,5 @@ test "TokenMetadata owns semantic decoding while preserving the raw word" {
     ((raw >> @tokens.METADATA_BACKGROUND_OFFSET) & 0xffU).reinterpret_as_int(),
     200,
   )
-  assert_eq(metadata.get_class_name_from_metadata(), "mtk11 mtkb")
+  assert_eq(metadata.get_class_name(), "mtk11 mtkb")
 }
