@@ -1,9 +1,6 @@
 .workspace-sidebar {
-  width: 280px;
-  min-width: 200px;
-  max-width: min(50vw, 420px);
+  min-width: 0;
   overflow: auto;
-  resize: horizontal;
   border-right: 1px solid var(--vscode-sideBar-border);
   background: var(--vscode-sideBar-background);
   color: var(--vscode-sideBar-foreground);
@@ -60,7 +57,7 @@
 .workspace-item {
   position: relative;
   width: 100%;
-  height: 20px;
+  height: 22px;
   padding: 0 8px 0 calc(var(--depth, 0) * 8px);
   display: flex;
   align-items: center;
@@ -68,7 +65,7 @@
   background: transparent;
   color: inherit;
   font: inherit;
-  line-height: 20px;
+  line-height: 22px;
   text-align: left;
   cursor: pointer;
 }
@@ -172,13 +169,4 @@
 
 .workspace-sidebar::-webkit-scrollbar-corner {
   background: transparent;
-}
-
-@media (max-width: 680px) {
-  .workspace-sidebar {
-    width: 148px;
-    min-width: 0;
-    max-width: none;
-    resize: none;
-  }
 }

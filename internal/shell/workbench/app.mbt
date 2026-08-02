@@ -113,6 +113,15 @@ fn dispatch_workbench_msg(msg : WorkbenchMsg) -> Unit {
 let viewer_cell : Ref[@viewer.Viewer?] = Ref(None)
 
 ///|
+/// Workbench-only layout hooks live for the mounted page. Keeping the
+/// lifetimes here makes reinstallation idempotent for browser harnesses that
+/// mount the shell more than once in one document.
+let viewer_host_resize_observer : Ref[@base_common.Disposable?] = Ref(None)
+
+///|
+let explorer_resize_dispose : Ref[(() -> Unit)?] = Ref(None)
+
+///|
 priv struct WorkbenchServices {
   viewer : @viewer.ViewerServices
   languages : @languages.Languages
@@ -303,8 +312,116 @@ pub fn mount_app() -> Unit {
 /// Creates the imperative viewer inside the shell-rendered host element and
 /// gives it keyboard focus (the viewer owns its own key handling).
 fn attach_workbench_viewer() -> Unit {
-  workbench_viewer().focus()
+  let viewer = workbench_viewer()
+  install_workbench_resize_hooks(viewer)
+  viewer.focus()
 }
+
+///|
+/// Keeps the Viewer layout synchronized with every host-box change, including
+/// Explorer splitter gestures that do not emit a window resize event.
+fn install_workbench_resize_hooks(viewer : @viewer.Viewer) -> Unit {
+  match viewer_host_resize_observer.val {
+    Some(observer) => observer.dispose()
+    None => ()
+  }
+  match explorer_resize_dispose.val {
+    Some(dispose) => dispose()
+    None => ()
+  }
+  guard @rdom.document().query_selector(".viewer-host").to_option()
+    is Some(host) else {
+    return
+  }
+  viewer_host_resize_observer.val = @base_browser.observe_element_resize(host, () => {
+    viewer.layout()
+  })
+  explorer_resize_dispose.val = Some(install_explorer_resize_handle())
+}
+
+///|
+/// Installs the pointer and keyboard branches of the accessible Explorer
+/// splitter. Width is stored on the grid rather than the sidebar element, so
+/// the mobile grid can override it without fighting a native inline width.
+extern "js" fn install_explorer_resize_handle() -> () -> Unit =
+  #| () => {
+  #|   const main = globalThis.document?.querySelector?.('.editor-main');
+  #|   const sidebar = globalThis.document?.querySelector?.('#workspace-explorer');
+  #|   const handle = globalThis.document?.querySelector?.('[data-action="resize-explorer"]');
+  #|   if (!main || !sidebar || !handle) return () => {};
+  #|   const ownerWindow = handle.ownerDocument?.defaultView ?? globalThis;
+  #|   const minWidth = 200;
+  #|   const maximumWidth = () => Math.max(
+  #|     minWidth,
+  #|     Math.min(420, Math.floor((ownerWindow.innerWidth || 840) * 0.5)),
+  #|   );
+  #|   let width = Math.round(sidebar.getBoundingClientRect().width) || 280;
+  #|   let activePointerId = null;
+  #|   let startX = 0;
+  #|   let startWidth = width;
+  #|   let savedCursor = '';
+  #|   let savedUserSelect = '';
+  #|   const applyWidth = (next) => {
+  #|     width = Math.max(minWidth, Math.min(maximumWidth(), Math.round(next)));
+  #|     main.style.setProperty('--explorer-width', `${width}px`);
+  #|     handle.setAttribute('aria-valuenow', String(width));
+  #|     handle.setAttribute('aria-valuemax', String(maximumWidth()));
+  #|   };
+  #|   const finishDrag = (event) => {
+  #|     if (activePointerId === null) return;
+  #|     if (event?.pointerId !== undefined && event.pointerId !== activePointerId) return;
+  #|     try { handle.releasePointerCapture?.(activePointerId); } catch (_error) {}
+  #|     activePointerId = null;
+  #|     ownerWindow.removeEventListener('pointermove', moveDrag);
+  #|     ownerWindow.removeEventListener('pointerup', finishDrag);
+  #|     ownerWindow.removeEventListener('pointercancel', finishDrag);
+  #|     handle.ownerDocument.body.style.cursor = savedCursor;
+  #|     handle.ownerDocument.body.style.userSelect = savedUserSelect;
+  #|   };
+  #|   const moveDrag = (event) => {
+  #|     if (event.pointerId !== activePointerId) return;
+  #|     applyWidth(startWidth + event.clientX - startX);
+  #|   };
+  #|   const startDrag = (event) => {
+  #|     if (event.button !== 0 || ownerWindow.matchMedia?.('(max-width: 680px)').matches) return;
+  #|     event.preventDefault();
+  #|     activePointerId = event.pointerId;
+  #|     startX = event.clientX;
+  #|     startWidth = width;
+  #|     savedCursor = handle.ownerDocument.body.style.cursor;
+  #|     savedUserSelect = handle.ownerDocument.body.style.userSelect;
+  #|     handle.ownerDocument.body.style.cursor = 'ew-resize';
+  #|     handle.ownerDocument.body.style.userSelect = 'none';
+  #|     try { handle.setPointerCapture?.(event.pointerId); } catch (_error) {}
+  #|     ownerWindow.addEventListener('pointermove', moveDrag);
+  #|     ownerWindow.addEventListener('pointerup', finishDrag);
+  #|     ownerWindow.addEventListener('pointercancel', finishDrag);
+  #|   };
+  #|   const onKeyDown = (event) => {
+  #|     let next = width;
+  #|     if (event.key === 'ArrowLeft') next -= 10;
+  #|     else if (event.key === 'ArrowRight') next += 10;
+  #|     else if (event.key === 'Home') next = minWidth;
+  #|     else if (event.key === 'End') next = maximumWidth();
+  #|     else return;
+  #|     event.preventDefault();
+  #|     applyWidth(next);
+  #|   };
+  #|   const onWindowResize = () => {
+  #|     handle.setAttribute('aria-valuemax', String(maximumWidth()));
+  #|     if (!ownerWindow.matchMedia?.('(max-width: 680px)').matches) applyWidth(width);
+  #|   };
+  #|   applyWidth(width);
+  #|   handle.addEventListener('pointerdown', startDrag);
+  #|   handle.addEventListener('keydown', onKeyDown);
+  #|   ownerWindow.addEventListener('resize', onWindowResize);
+  #|   return () => {
+  #|     finishDrag();
+  #|     handle.removeEventListener('pointerdown', startDrag);
+  #|     handle.removeEventListener('keydown', onKeyDown);
+  #|     ownerWindow.removeEventListener('resize', onWindowResize);
+  #|   };
+  #| }
 
 ///|
 /// Lifts a plain viewer call into the shell's command system.
@@ -857,6 +974,7 @@ fn view_workbench(
     view_topbar(emit, model),
     @html.div(class=editor_main_class(model), [
       view_sidebar(emit, model, tree_html),
+      view_explorer_resize_handle(),
       // The stable viewer host: the viewer attaches its imperative DOM
       // into this element after mount, and the shell must never render
       // vdom children into it (Rabbita's diff would not know them).
@@ -971,6 +1089,25 @@ fn view_sidebar(
       ]),
       tree_html,
     ],
+  )
+}
+
+///|
+fn view_explorer_resize_handle() -> @html.Html {
+  @html.div(
+    class="workspace-resize-handle",
+    attrs=@html.Attrs::build()
+      .data_set("action", "resize-explorer")
+      .role("separator")
+      .tabindex(0)
+      .title("Resize Explorer")
+      .aria_label("Resize Explorer")
+      .aria_controls("workspace-explorer")
+      .aria_orientation("vertical")
+      .aria_valuemin("200")
+      .aria_valuemax("420")
+      .aria_valuenow("280"),
+    ([] : Array[@html.Html]),
   )
 }
 

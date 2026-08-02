@@ -63,7 +63,7 @@ test('toggles the explorer without giving up its editor space', async ({ page })
   await expect(explorer).toBeVisible();
 });
 
-test('keeps the explorer compact and lets its desktop width resize', async ({
+test('keeps the explorer compact and exposes an accessible splitter', async ({
   page,
 }) => {
   await page.goto('/');
@@ -76,10 +76,26 @@ test('keeps the explorer compact and lets its desktop width resize', async ({
   const viewerHost = page.locator('.viewer-host');
   const title = explorer.locator('.workspace-title');
   const rows = explorer.locator('.workspace-item');
-  await expect(explorer).toHaveCSS('resize', 'horizontal');
   await expect(explorer).toHaveCSS('width', '280px');
   await expect(title).toHaveCSS('height', '30px');
-  await expect(rows.first()).toHaveCSS('height', '20px');
+  await expect(rows.first()).toHaveCSS('height', '22px');
+
+  const splitter = page.locator('[data-action="resize-explorer"]');
+  await expect(splitter).toHaveAttribute('role', 'separator');
+  await expect(splitter).toHaveAttribute('tabindex', '0');
+  await expect(splitter).toHaveAttribute('aria-controls', 'workspace-explorer');
+  await expect(splitter).toHaveAttribute('aria-orientation', 'vertical');
+  await expect(splitter).toHaveAttribute('aria-valuemin', '200');
+  await expect(splitter).toHaveAttribute('aria-valuemax', '420');
+  await expect(splitter).toHaveAttribute('aria-valuenow', '280');
+
+  await page.locator(
+    '[data-workspace-id="readonly-remote://workspace/README.md"]',
+  ).click();
+  const markdownRoot = viewerHost.locator(
+    '.moonbit-viewer-markdown-document',
+  );
+  await expect(markdownRoot).toBeVisible();
 
   const before = await page.locator('.editor-main').evaluate((main) => {
     const sidebar = main.querySelector('#workspace-explorer')
@@ -87,9 +103,10 @@ test('keeps the explorer compact and lets its desktop width resize', async ({
     const viewer = main.querySelector('.viewer-host').getBoundingClientRect();
     return { sidebarWidth: sidebar.width, viewerLeft: viewer.left };
   });
-  await explorer.evaluate((element) => {
-    element.style.width = '340px';
-  });
+
+  await splitter.focus();
+  await splitter.press('ArrowRight');
+  await expect(splitter).toHaveAttribute('aria-valuenow', '290');
   const after = await page.locator('.editor-main').evaluate((main) => {
     const sidebar = main.querySelector('#workspace-explorer')
       .getBoundingClientRect();
@@ -100,17 +117,44 @@ test('keeps the explorer compact and lets its desktop width resize', async ({
       viewerLeft: viewer.left,
     };
   });
-  expect(after.sidebarWidth).toBe(340);
-  expect(after.viewerLeft - before.viewerLeft).toBeCloseTo(60, 1);
-  expect(after.viewerLeft).toBeCloseTo(after.sidebarRight, 1);
+  expect(after.sidebarWidth).toBe(290);
+  expect(after.viewerLeft - before.viewerLeft).toBeCloseTo(10, 1);
+  expect(after.viewerLeft - after.sidebarRight).toBeCloseTo(4, 1);
 
-  await explorer.evaluate((element) => {
-    element.style.width = '';
-  });
+  const splitterBox = await splitter.boundingBox();
+  await page.mouse.move(
+    splitterBox.x + splitterBox.width / 2,
+    splitterBox.y + splitterBox.height / 2,
+  );
+  await page.mouse.down();
+  await page.mouse.move(
+    splitterBox.x + splitterBox.width / 2 + 50,
+    splitterBox.y + splitterBox.height / 2,
+    { steps: 5 },
+  );
+  await page.mouse.up();
+  await expect(splitter).toHaveAttribute('aria-valuenow', '340');
+  await expect.poll(() =>
+    page.locator('.editor-main').evaluate((main) => {
+      const host = main.querySelector('.viewer-host').getBoundingClientRect();
+      const root = main.querySelector('.moonbit-viewer-markdown-document')
+        .getBoundingClientRect();
+      return Math.abs(host.width - root.width);
+    })
+  ).toBeLessThan(1);
+
   await page.setViewportSize({ width: 640, height: 700 });
   await expect(explorer).toHaveCSS('width', '148px');
-  await expect(explorer).toHaveCSS('resize', 'none');
+  await expect(splitter).toBeHidden();
   await expect(viewerHost).toBeVisible();
+  await expect.poll(() =>
+    page.locator('.editor-main').evaluate((main) => {
+      const host = main.querySelector('.viewer-host').getBoundingClientRect();
+      const root = main.querySelector('.moonbit-viewer-markdown-document')
+        .getBoundingClientRect();
+      return Math.abs(host.width - root.width);
+    })
+  ).toBeLessThan(1);
 });
 
 test('renders explorer rows with twisties and file icons', async ({ page }) => {
