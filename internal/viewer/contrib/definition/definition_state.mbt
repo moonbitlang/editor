@@ -2,7 +2,7 @@
 /// Immutable identity for the token under a definition-link gesture. The
 /// browser target is reduced to model coordinates before entering this
 /// DOM-free package. Every field is part of the freshness contract.
-pub(all) struct DefinitionTargetFingerprint {
+struct DefinitionTargetFingerprint {
   model_identity : Int
   model_generation : Int
   model_version_id : Int
@@ -10,6 +10,22 @@ pub(all) struct DefinitionTargetFingerprint {
   word_range : @base_common.Range
   word : String
 } derive(Eq, Debug)
+
+///|
+/// The model position captured by this target.
+pub fn DefinitionTargetFingerprint::position(
+  self : DefinitionTargetFingerprint,
+) -> @base_common.Position {
+  self.position
+}
+
+///|
+/// The complete word range captured by this target.
+pub fn DefinitionTargetFingerprint::word_range(
+  self : DefinitionTargetFingerprint,
+) -> @base_common.Range {
+  self.word_range
+}
 
 ///|
 pub fn DefinitionTargetFingerprint::from_model(
