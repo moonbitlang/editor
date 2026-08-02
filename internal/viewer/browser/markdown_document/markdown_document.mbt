@@ -526,16 +526,28 @@ fn MarkdownDocumentView::post_render(self : MarkdownDocumentView) -> Unit {
       // Keep ordinary tokenized presentation but remove every source-bearing
       // affordance from the mismatched block.
       block_element.remove_attribute("data-markdown-semantic")
+      let downgrade_attributes = markdown_semantic_line_downgrade_attributes()
       for line in block_lines {
-        line.element.remove_attribute("data-markdown-block-index")
-        line.element.remove_attribute("data-markdown-code-line")
-        line.element.remove_attribute("data-markdown-source-line")
-        line.element.remove_attribute("data-markdown-source-start")
-        line.element.remove_attribute("data-markdown-source-end")
+        for attribute in downgrade_attributes {
+          line.element.remove_attribute(attribute)
+        }
       }
     }
   }
   self.semantic_dom = semantic_dom
+}
+
+///|
+/// Every line-level affordance that must disappear when decoded DOM text no
+/// longer matches its source projection. Keeping this list centralized makes
+/// visual and accessibility additions participate in the same fail-closed
+/// downgrade as semantic coordinates.
+fn markdown_semantic_line_downgrade_attributes() -> Array[String] {
+  [
+    "data-markdown-block-index", "data-markdown-code-line", "data-markdown-source-line",
+    "data-markdown-source-start", "data-markdown-source-end", "data-markdown-phrase-divider",
+    "role", "aria-label",
+  ]
 }
 
 ///|

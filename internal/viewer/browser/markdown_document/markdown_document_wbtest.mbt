@@ -292,6 +292,15 @@ test "semantic wrapper fails closed when shared tokenizer line shape drifts" {
 }
 
 ///|
+test "semantic downgrade removes phrase-divider visual and accessibility state" {
+  assert_eq(markdown_semantic_line_downgrade_attributes(), [
+    "data-markdown-block-index", "data-markdown-code-line", "data-markdown-source-line",
+    "data-markdown-source-start", "data-markdown-source-end", "data-markdown-phrase-divider",
+    "role", "aria-label",
+  ])
+}
+
+///|
 test "document Mermaid theme follows the active presentation theme" {
   assert_true(markdown_document_mermaid_theme("light") == Light)
   assert_true(markdown_document_mermaid_theme("dark") == Dark)
