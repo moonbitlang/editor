@@ -753,7 +753,7 @@ fn install_cursor_test_injected_text(
         "",
         description="cursor injected-text fixture",
         show_if_collapsed=true,
-        after=InjectedTextOptions(content),
+        after=@model.InjectedTextOptions(content),
       ),
     },
   ])

@@ -252,7 +252,7 @@ test "ViewZones forwards every affinity at wrap and injected-text boundaries" {
         "",
         description="injected-boundary",
         show_if_collapsed=true,
-        after=InjectedTextOptions(
+        after=@model.InjectedTextOptions(
           "XXXX",
           inline_class_name="injected-boundary",
           attached_index=0,

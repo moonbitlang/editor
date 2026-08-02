@@ -537,15 +537,16 @@ fn injection_options_for_projected_line(
   for part in projected_line.parts {
     match part.kind {
       InjectedSegment(class_name~, ..) =>
-        options.push({
-          content: projected_line.text[part.start:part.end].to_owned(),
-          inline_class_name: if class_name == "" {
-            None
-          } else {
-            Some(class_name)
-          },
-          attached_index: -1,
-        })
+        options.push(
+          @model.InjectedTextOptions(
+            projected_line.text[part.start:part.end].to_owned(),
+            inline_class_name?=if class_name == "" {
+              None
+            } else {
+              Some(class_name)
+            },
+          ),
+        )
       SourceSegment(_) => ()
     }
   }
@@ -560,8 +561,8 @@ fn resolve_injection_options(
 ) -> Array[ResolvedInjectedTextOptions] {
   options.map(option => {
     ResolvedInjectedTextOptions(
-      content=option.content,
-      inline_class_name?=option.inline_class_name,
+      content=option.content(),
+      inline_class_name?=option.inline_class_name(),
       // DEFERRED: the canonical model option has no
       // inlineClassNameAffectsLetterSpacing field.
       inline_class_name_affects_letter_spacing=false,
@@ -763,7 +764,7 @@ fn inserted_tokens_from_injection_data(
     inserts.push(
       InsertedToken(
         injection_offsets[index],
-        options.content,
+        options.content(),
         @tokens.LineTokens::default_token_metadata(),
       ),
     )

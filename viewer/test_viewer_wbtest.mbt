@@ -60,6 +60,9 @@ fn with_test_viewer(
 /// fake DOM is still live and restores every global synchronously.
 extern "js" fn install_mounted_test_browser() -> Unit =
   #| () => {
+  #|   const depth = globalThis.__mountedTestBrowserDepth ?? 0;
+  #|   globalThis.__mountedTestBrowserDepth = depth + 1;
+  #|   if (depth > 0) return;
   #|   const voidTags = new Set([
   #|     "AREA", "BASE", "BR", "COL", "EMBED", "HR", "IMG", "INPUT",
   #|     "LINK", "META", "PARAM", "SOURCE", "TRACK", "WBR",
@@ -213,6 +216,7 @@ extern "js" fn install_mounted_test_browser() -> Unit =
   #|         right: 100, bottom: 100, width: 100, height: 100,
   #|       };
   #|     }
+  #|     getClientRects() { return [this.getBoundingClientRect()]; }
   #|   }
   #|   class MountedTestFragment {
   #|     constructor(ownerDocument) {
@@ -338,6 +342,10 @@ extern "js" fn install_mounted_test_browser() -> Unit =
 ///|
 extern "js" fn restore_mounted_test_browser() -> Unit =
   #| () => {
+  #|   const depth = globalThis.__mountedTestBrowserDepth ?? 0;
+  #|   if (depth === 0) return;
+  #|   globalThis.__mountedTestBrowserDepth = depth - 1;
+  #|   if (depth > 1) return;
   #|   while (globalThis.__mountedTestFrames.size > 0) {
   #|     const pending = Array.from(globalThis.__mountedTestFrames.values());
   #|     globalThis.__mountedTestFrames.clear();
@@ -379,6 +387,7 @@ extern "js" fn restore_mounted_test_browser() -> Unit =
   #|   delete globalThis.__mountedTestFrames;
   #|   delete globalThis.__mountedTestTimerNextId;
   #|   delete globalThis.__mountedTestTimers;
+  #|   delete globalThis.__mountedTestBrowserDepth;
   #| }
 
 ///|
@@ -726,13 +735,24 @@ test "model change fires before outgoing owner decorations are swept" {
   let decorations_seen_in_event = Ref(-1)
   let subscription = viewer.on_did_change_model(_ => {
     decorations_seen_in_event.val = model
-      .get_all_decorations(owner_id=viewer.editor_id)
+      .get_decorations_in_range(
+        model.get_full_model_range(),
+        owner_id=viewer.editor_id,
+      )
       .length()
   })
 
   viewer.set_model(None)
   assert_eq(decorations_seen_in_event.val, 1)
-  assert_eq(model.get_all_decorations(owner_id=viewer.editor_id).length(), 0)
+  assert_eq(
+    model
+    .get_decorations_in_range(
+      model.get_full_model_range(),
+      owner_id=viewer.editor_id,
+    )
+    .length(),
+    0,
+  )
   subscription.dispose()
   viewer.dispose()
   model.dispose()
@@ -823,12 +843,8 @@ test "tokenizer registration stays passive until explicit demand" {
   assert_eq(calls.val, 0)
   assert_eq(model.tokenization.token_count(), 2)
   assert_eq(calls.val, 0)
-  let demand_view = model.on_before_attached()
-  demand_view.set_visible_lines(
-    [{ start_line_number: 1, end_line_number: 2 }],
-    true,
-  )
-  model.on_before_detached(demand_view)
+  viewer.test_set_viewport(width=800.0, height=180.0)
+  viewer.test_view_model().visible_lines_stabilized()
   assert_eq(model.tokenization.token_count(), 4)
   assert_eq(calls.val, 2)
   // Deregistration resets back to passive fallback without a lexer call.

@@ -323,18 +323,25 @@ fn Viewer::current_markdown_browser_data(self : Viewer) -> MarkdownBrowserData? 
 
 ///|
 /// Shared first half of the original ModelData order.
-fn ModelData::dispose_listeners_and_attached_view(self : ModelData) -> Unit {
+fn ModelData::dispose_listeners_and_attached_view(
+  self : ModelData,
+  after_model_detached : () -> Unit,
+) -> Unit {
   for listener in self.listeners_to_remove {
     listener.dispose()
   }
   self.model.on_before_detached(self.attached_view)
+  after_model_detached()
 }
 
 ///|
 /// Preserve Monaco's existing Code/headless order exactly: listeners,
 /// attached-view handle, browser View when present, then ViewModel.
-fn ModelData::dispose_code_or_headless(self : ModelData) -> Unit {
-  self.dispose_listeners_and_attached_view()
+fn ModelData::dispose_code_or_headless(
+  self : ModelData,
+  after_model_detached : () -> Unit,
+) -> Unit {
+  self.dispose_listeners_and_attached_view(after_model_detached)
   match self.browser {
     Some(browser) => browser.dispose()
     None => ()
@@ -356,7 +363,10 @@ fn ModelData::dispose_markdown_presentation(self : ModelData) -> Unit {
 /// Remaining `ModelData` teardown (`cew:2133-2141`) after root Viewer has
 /// removed the disposed presentation subtree: remove swap-scoped listeners,
 /// release the attached-view handle, then unregister the ViewModel.
-fn ModelData::dispose_after_markdown_root(self : ModelData) -> Unit {
-  self.dispose_listeners_and_attached_view()
+fn ModelData::dispose_after_markdown_root(
+  self : ModelData,
+  after_model_detached : () -> Unit,
+) -> Unit {
+  self.dispose_listeners_and_attached_view(after_model_detached)
   self.view_model.dispose()
 }

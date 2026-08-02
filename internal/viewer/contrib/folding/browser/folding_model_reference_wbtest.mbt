@@ -94,7 +94,10 @@ fn TestDecorationProvider::get_decorations(
   self : TestDecorationProvider,
 ) -> Array[(Int, String)] {
   let res : Array[(Int, String)] = []
-  for decoration in self.model.get_all_decorations() {
+  for
+    decoration in self.model.get_decorations_in_range(
+      self.model.get_full_model_range(),
+    ) {
     match decoration.options.description {
       "test-hidden" => res.push((decoration.range.start_line_number, "hidden"))
       "test-collapsed" =>

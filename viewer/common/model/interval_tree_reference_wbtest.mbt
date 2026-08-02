@@ -1,4 +1,4 @@
-///| Faithful conformance port of vscode's `intervalTree.test.ts` (pinned
+///| White-box conformance port of vscode's `intervalTree.test.ts` (pinned
 /// `vscode/` checked-in submodule):
 /// `vscode/src/vs/editor/test/common/model/intervalTree.test.ts`.
 ///
@@ -89,8 +89,8 @@ priv enum Op {
 ///|
 priv struct TestState {
   oracle : Oracle
-  tree : @model.IntervalTree
-  tree_nodes : Array[@model.IntervalNode?]
+  tree : IntervalTree
+  tree_nodes : Array[IntervalNode?]
   oracle_nodes : Array[Interval?]
   /// Replays the source ctor's commented-out `FORCE_OVERFLOWING_TEST:
   /// this.delta = start` line, which is how Monaco exercises the delta
@@ -114,7 +114,7 @@ fn TestState::accept_op(self : TestState, op : Op) -> Unit raise {
   match op {
     Insert(begin, end) => {
       // ids allocate sequentially (source: ++this._lastNodeId indexes the slot)
-      let node = @model.IntervalNode("", begin, end)
+      let node = IntervalNode("", begin, end)
       if self.forced_delta {
         node.delta = begin // FORCE_OVERFLOWING_TEST: this.delta = start
       }
@@ -276,51 +276,51 @@ fn assert_pairs_eq(
 // #region Assertion (intervalTree.test.ts:856-912)
 
 ///|
-fn same_interval_node(
-  left : @model.IntervalNode,
-  right : @model.IntervalNode,
+fn reference_same_interval_node(
+  left : IntervalNode,
+  right : IntervalNode,
 ) -> Bool {
   left.same(right)
 }
 
 ///|
-fn assert_tree_invariants(t : @model.IntervalTree) -> Unit raise {
-  assert_true(@model.get_node_color(@model.sentinel) is Black)
-  assert_true(same_interval_node(@model.sentinel.parent(), @model.sentinel))
-  assert_true(same_interval_node(@model.sentinel.left(), @model.sentinel))
-  assert_true(same_interval_node(@model.sentinel.right(), @model.sentinel))
-  assert_eq(@model.sentinel.start, 0)
-  assert_eq(@model.sentinel.end, 0)
-  assert_eq(@model.sentinel.delta, 0)
-  assert_true(same_interval_node(t.root.parent(), @model.sentinel))
+fn assert_tree_invariants(t : IntervalTree) -> Unit raise {
+  assert_true(get_node_color(sentinel) is Black)
+  assert_true(reference_same_interval_node(sentinel.parent(), sentinel))
+  assert_true(reference_same_interval_node(sentinel.left(), sentinel))
+  assert_true(reference_same_interval_node(sentinel.right(), sentinel))
+  assert_eq(sentinel.start, 0)
+  assert_eq(sentinel.end, 0)
+  assert_eq(sentinel.delta, 0)
+  assert_true(reference_same_interval_node(t.root.parent(), sentinel))
   assert_valid_tree(t)
 }
 
 ///|
-fn depth(n : @model.IntervalNode) -> Int raise {
-  if same_interval_node(n, @model.sentinel) {
+fn depth(n : IntervalNode) -> Int raise {
+  if reference_same_interval_node(n, sentinel) {
     // The leafs are black
     return 1
   }
   assert_eq(depth(n.left()), depth(n.right()))
-  (if @model.get_node_color(n) is Black { 1 } else { 0 }) + depth(n.left())
+  (if get_node_color(n) is Black { 1 } else { 0 }) + depth(n.left())
 }
 
 ///|
-fn assert_valid_node(n : @model.IntervalNode, delta : Int) -> Unit raise {
-  if same_interval_node(n, @model.sentinel) {
+fn assert_valid_node(n : IntervalNode, delta : Int) -> Unit raise {
+  if reference_same_interval_node(n, sentinel) {
     return
   }
   let l = n.left()
   let r = n.right()
-  if @model.get_node_color(n) is Red {
-    assert_true(@model.get_node_color(l) is Black)
-    assert_true(@model.get_node_color(r) is Black)
+  if get_node_color(n) is Red {
+    assert_true(get_node_color(l) is Black)
+    assert_true(get_node_color(r) is Black)
   }
   let mut expected_max_end = n.end
-  if !same_interval_node(l, @model.sentinel) {
+  if !reference_same_interval_node(l, sentinel) {
     assert_true(
-      @model.interval_compare(
+      interval_compare(
         l.start + delta,
         l.end + delta,
         n.start + delta,
@@ -332,9 +332,9 @@ fn assert_valid_node(n : @model.IntervalNode, delta : Int) -> Unit raise {
       expected_max_end = l.max_end
     }
   }
-  if !same_interval_node(r, @model.sentinel) {
+  if !reference_same_interval_node(r, sentinel) {
     assert_true(
-      @model.interval_compare(
+      interval_compare(
         n.start + delta,
         n.end + delta,
         r.start + delta + n.delta,
@@ -352,11 +352,11 @@ fn assert_valid_node(n : @model.IntervalNode, delta : Int) -> Unit raise {
 }
 
 ///|
-fn assert_valid_tree(t : @model.IntervalTree) -> Unit raise {
-  if same_interval_node(t.root, @model.sentinel) {
+fn assert_valid_tree(t : IntervalTree) -> Unit raise {
+  if reference_same_interval_node(t.root, sentinel) {
     return
   }
-  assert_true(@model.get_node_color(t.root) is Black)
+  assert_true(get_node_color(t.root) is Black)
   assert_eq(depth(t.root.left()), depth(t.root.right()))
   assert_valid_node(t.root, 0)
 }
@@ -631,8 +631,8 @@ test "seeded fuzz (getRandomInt loop, seeds 11111/22222/33333/44444/55555)" {
 // #region suite "searching" (the Cormen tree)
 
 ///|
-fn create_cormen_tree() -> @model.IntervalTree {
-  let r = @model.IntervalTree()
+fn create_cormen_tree() -> IntervalTree {
+  let r = IntervalTree()
   let data = [
     (16, 21),
     (8, 9),
@@ -647,7 +647,7 @@ fn create_cormen_tree() -> @model.IntervalTree {
   ]
   for interval in data {
     let (start, end) = interval
-    let node = @model.IntervalNode("", start, end)
+    let node = IntervalNode("", start, end)
     r.insert(node)
   }
   r
@@ -655,7 +655,7 @@ fn create_cormen_tree() -> @model.IntervalTree {
 
 ///|
 fn assert_interval_search(
-  t : @model.IntervalTree,
+  t : IntervalTree,
   start : Int,
   end : Int,
   expected : Array[(Int, Int)],

@@ -71,9 +71,7 @@ pub enum ModelRawChange {
 
 ///|
 /// Each class's `changeType` member (`textModelEvents.ts:234,309,381,407,445`).
-pub fn ModelRawChange::change_type(
-  self : ModelRawChange,
-) -> RawContentChangedType {
+fn ModelRawChange::change_type(self : ModelRawChange) -> RawContentChangedType {
   match self {
     ModelRawFlush => Flush
     ModelRawLineChanged(..) => LineChanged
@@ -110,7 +108,7 @@ pub fn ModelRawContentChangedEvent::contains_event(
 
 ///|
 /// `ModelRawContentChangedEvent.merge` (`textModelEvents.ts:493-499`).
-pub fn ModelRawContentChangedEvent::merge(
+fn ModelRawContentChangedEvent::merge(
   a : ModelRawContentChangedEvent,
   b : ModelRawContentChangedEvent,
 ) -> ModelRawContentChangedEvent {
@@ -121,20 +119,6 @@ pub fn ModelRawContentChangedEvent::merge(
     is_redoing: a.is_redoing || b.is_redoing,
   }
 }
-
-///|
-/// `IModelContentChange` (`model/mirrorTextModel.ts`): one change entry of
-/// the public content-changed payload.
-pub struct ModelContentChange {
-  /// The range that got replaced.
-  range : @base_common.Range
-  /// The offset of the range that got replaced.
-  range_offset : Int
-  /// The length of the range that got replaced.
-  range_length : Int
-  /// The new text for the range.
-  text : String
-} derive(Debug)
 
 ///|
 /// The public `IModelContentChangedEvent` (`textModelEvents.ts:42-85`) minus
@@ -163,7 +147,7 @@ pub struct InternalModelContentChangeEvent {
 
 ///|
 /// `InternalModelContentChangeEvent.merge` (`textModelEvents.ts:568-572`).
-pub fn InternalModelContentChangeEvent::merge(
+fn InternalModelContentChangeEvent::merge(
   self : InternalModelContentChangeEvent,
   other : InternalModelContentChangeEvent,
 ) -> InternalModelContentChangeEvent {

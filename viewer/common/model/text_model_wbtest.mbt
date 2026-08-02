@@ -1,6 +1,7 @@
 ///|
+/// White-box text-model coverage.
 test "text snapshot normalizes lf and crlf before deriving offsets" {
-  let doc = @model.TextSnapshot("one\ntwo\r\nthree")
+  let doc = TextSnapshot("one\ntwo\r\nthree")
   assert_eq(
     doc.text,
     (
@@ -18,7 +19,7 @@ test "text snapshot normalizes lf and crlf before deriving offsets" {
 
 ///|
 test "text snapshot handles lonely cr" {
-  let doc = @model.TextSnapshot("one\rtwo\r\rthree\r")
+  let doc = TextSnapshot("one\rtwo\r\rthree\r")
   assert_eq(doc.line_count(), 5)
   assert_eq(doc.line_text(0), "one")
   assert_eq(doc.line_text(1), "two")
@@ -35,7 +36,7 @@ test "text snapshot handles lonely cr" {
 
 ///|
 test "offset and position use utf16 code units" {
-  let doc = @model.TextSnapshot("a😊\n中")
+  let doc = TextSnapshot("a😊\n中")
   assert_eq(doc.get_length(), 5)
   let pos = doc.get_position_at(3)
   assert_eq(pos.line_number, 1)
@@ -45,7 +46,7 @@ test "offset and position use utf16 code units" {
 
 ///|
 test "text model owns uri and version identity" {
-  let model = @model.TextModel(
+  let model = TextModel(
     try! @base_common.Uri::from(
       scheme="inmemory",
       authority="model",
@@ -64,7 +65,7 @@ test "text model owns uri and version identity" {
   assert_eq(model.revision, "rev-3")
   assert_eq(model.snapshot().text, "pub fn main {}\n")
   assert_true(model.same(model))
-  let same_document = @model.TextModel(
+  let same_document = TextModel(
     model.uri,
     model.display_name,
     model.language_id,
@@ -77,7 +78,7 @@ test "text model owns uri and version identity" {
 
 ///|
 test "dispose fires on_will_dispose once and flips is_disposed" {
-  let model = @model.TextModel(
+  let model = TextModel(
     try! @base_common.Uri::from(
       scheme="inmemory",
       authority="model",

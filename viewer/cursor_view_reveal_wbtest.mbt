@@ -12,7 +12,7 @@ test "cursor navigation reveal keeps the authoritative injected-text view positi
         "",
         description="cursor reveal ambiguity",
         show_if_collapsed=true,
-        after=InjectedTextOptions(
+        after=@model.InjectedTextOptions(
           "some very very very very very very very very long text",
         ),
       ),

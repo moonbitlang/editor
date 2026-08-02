@@ -153,8 +153,8 @@ fn projection_assert_masks(
 test "projected injection decorations complete before token read with exact callback values" {
   let callback_order : Array[String] = []
   let callback_model_lines : Array[Int] = []
-  let model_injection_options = [
-    @model.InjectedTextOptions("ABCDE", inline_class_name="ctx-class"),
+  let model_injection_options : Array[@model.InjectedTextOptions] = [
+    InjectedTextOptions("ABCDE", inline_class_name="ctx-class"),
   ]
   let injection_options = [
     ResolvedInjectedTextOptions::ResolvedInjectedTextOptions(

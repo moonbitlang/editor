@@ -199,9 +199,9 @@ impl @language.HoverProvider for DeferredAsyncFeatureProvider with fn provide_ho
     None
   } else {
     let offset = model.get_offset_at(position)
-    let end_offset = Int::min(offset + 1, model.snapshot.text.length())
+    let end_offset = Int::min(offset + 1, model.snapshot.get_value().length())
     Some({
-      range: model.get_range_at(offset, end_offset),
+      range: model.snapshot.range_of(OffsetRange(offset, end_offset)),
       contents: [PlainText(outcome)],
     })
   }
@@ -278,7 +278,7 @@ fn async_feature_state_json(
     "pending": (harness.calls.length() - settled).to_json(),
     "resolveReports": reports.length().to_json(),
     "reports": Json::array(reports.map(report => report.to_json())),
-    "attached": @viewer_testing.has_model(viewer.get_id()).to_json(),
+    "attached": viewer.get_model().is_some().to_json(),
     "disposed": disposed.val.to_json(),
     "currentModelId": current_model_id.to_json(),
     "currentUri": current_uri.to_json(),

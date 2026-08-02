@@ -31,6 +31,9 @@ struct Viewer {
   /// layout identity behind one configuration transition owner.
   configuration : EditorConfigurationState
   did_change_model : @base_common.Emitter[@editor_api.ModelChangedEvent]
+  /// Package-private lifecycle diagnostic fired immediately after the
+  /// outgoing model's `on_before_detached` transition.
+  did_detach_model_for_diagnostics : @base_common.Emitter[Unit]
   /// Monaco's `onDidChangeModelContent` (`cew:105`), re-fired from the
   /// installed model's public content event by the `attach_model`
   /// subscription.
@@ -170,6 +173,7 @@ fn Viewer::Viewer(
       initial_height~,
     ),
     did_change_model: Emitter(),
+    did_detach_model_for_diagnostics: Emitter(),
     did_change_model_content: Emitter(),
     did_change_cursor_position: Emitter(),
     did_change_cursor_selection: Emitter(),
@@ -243,6 +247,19 @@ fn Viewer::set_hover_host_for_test(
 /// by a white-box test build; retain it in the ordinary library build too.
 let _hover_scheduler_test_seam_anchor : Unit = ignore(
   (Viewer::set_hover_host_for_test, Viewer::start_showing_hover_at_range),
+)
+
+///|
+fn Viewer::on_did_detach_model_for_diagnostics(
+  self : Viewer,
+  listener : () -> Unit,
+) -> @base_common.Disposable {
+  self.did_detach_model_for_diagnostics.event(_ => listener())
+}
+
+///|
+let _model_detach_diagnostics_test_seam_anchor : Unit = ignore(
+  Viewer::on_did_detach_model_for_diagnostics,
 )
 
 ///|
@@ -666,13 +683,17 @@ fn Viewer::detach_model(self : Viewer) -> @model.TextModel? {
         }
         Headless => ()
       }
-      model_data.dispose_after_markdown_root()
+      model_data.dispose_after_markdown_root(() => {
+        self.did_detach_model_for_diagnostics.fire(())
+      })
     }
     Some(Code(code)) => {
       let root = code.view.root
       // Keep the pre-existing Code order: listener -> attached-view -> View ->
       // ViewModel, followed by root removal.
-      model_data.dispose_code_or_headless()
+      model_data.dispose_code_or_headless(() => {
+        self.did_detach_model_for_diagnostics.fire(())
+      })
       match self.mount {
         Mounted(mounted) => {
           mounted.container.remove_attribute("data-mode-id")
@@ -684,7 +705,10 @@ fn Viewer::detach_model(self : Viewer) -> @model.TextModel? {
         Headless => ()
       }
     }
-    None => model_data.dispose_code_or_headless()
+    None =>
+      model_data.dispose_code_or_headless(() => {
+        self.did_detach_model_for_diagnostics.fire(())
+      })
   }
   self.model_slot.clear_current_after_dispose()
   self.configuration.reset_model_line_counts()
@@ -869,6 +893,7 @@ pub fn Viewer::dispose(self : Viewer) -> Unit {
   self.configuration.clear_measure_request()
   self.scroll_dirty = false
   self.did_change_model.dispose()
+  self.did_detach_model_for_diagnostics.dispose()
   self.did_change_model_content.dispose()
   self.did_change_cursor_position.dispose()
   self.did_change_cursor_selection.dispose()

@@ -47,7 +47,7 @@ const CLASS_NAME_EDITOR_ERROR_DECORATION : String = "squiggly-error"
 
 ///|
 /// `NodeColor` (`intervalTree.ts:24-27`).
-pub enum NodeColor {
+priv enum NodeColor {
   Black
   Red
 } derive(Eq, Debug)
@@ -136,7 +136,7 @@ fn next_interval_node_identity() -> Int {
 
 ///|
 /// `getNodeColor` (`intervalTree.ts:81-83`).
-pub fn get_node_color(node : IntervalNode) -> NodeColor {
+fn get_node_color(node : IntervalNode) -> NodeColor {
   if (node.metadata & COLOR_MASK) >> COLOR_OFFSET == 1 {
     Red
   } else {
@@ -227,8 +227,8 @@ fn set_collapse_on_replace_edit(node : IntervalNode, value : Bool) -> Unit {
 /// visited, isForValidation, stickiness, collapseOnReplaceEdit, isMargin, and
 /// affectsFont. Link fields are `IntervalNode?` behind unwrap accessors (see
 /// header deviation note); everything else matches the source field list.
-pub(all) struct IntervalNode {
-  priv identity : Int
+priv struct IntervalNode {
+  identity : Int
   mut metadata : Int
   mut parent_ : IntervalNode?
   mut left_ : IntervalNode?
@@ -247,7 +247,7 @@ pub(all) struct IntervalNode {
 }
 
 ///|
-pub fn IntervalNode::parent(self : IntervalNode) -> IntervalNode {
+fn IntervalNode::parent(self : IntervalNode) -> IntervalNode {
   self.parent_.unwrap()
 }
 
@@ -257,7 +257,7 @@ fn IntervalNode::set_parent(self : IntervalNode, v : IntervalNode) -> Unit {
 }
 
 ///|
-pub fn IntervalNode::left(self : IntervalNode) -> IntervalNode {
+fn IntervalNode::left(self : IntervalNode) -> IntervalNode {
   self.left_.unwrap()
 }
 
@@ -267,7 +267,7 @@ fn IntervalNode::set_left(self : IntervalNode, v : IntervalNode) -> Unit {
 }
 
 ///|
-pub fn IntervalNode::right(self : IntervalNode) -> IntervalNode {
+fn IntervalNode::right(self : IntervalNode) -> IntervalNode {
   self.right_.unwrap()
 }
 
@@ -278,7 +278,7 @@ fn IntervalNode::set_right(self : IntervalNode, v : IntervalNode) -> Unit {
 
 ///|
 /// `IntervalNode` constructor (`intervalTree.ts:166-195`).
-pub fn IntervalNode::IntervalNode(
+fn IntervalNode::IntervalNode(
   id : String,
   start : Int,
   end : Int,
@@ -320,7 +320,7 @@ pub fn IntervalNode::IntervalNode(
 
 ///|
 /// Whether two handles name the same stable interval-tree node.
-pub fn IntervalNode::same(self : IntervalNode, other : IntervalNode) -> Bool {
+fn IntervalNode::same(self : IntervalNode, other : IntervalNode) -> Bool {
   self.identity == other.identity
 }
 
@@ -331,7 +331,7 @@ fn same_interval_node(left : IntervalNode, right : IntervalNode) -> Bool {
 
 ///|
 /// `reset` (`intervalTree.ts:197-205`).
-pub fn IntervalNode::reset(
+fn IntervalNode::reset(
   self : IntervalNode,
   version_id : Int,
   start : Int,
@@ -351,7 +351,7 @@ pub fn IntervalNode::reset(
 /// `setOptions` (`intervalTree.ts:207-219`). Derives the packed metadata bits
 /// from the decoration options. `affectsFont` is passed `false` — font
 /// decorations are out of scope (see header).
-pub fn IntervalNode::set_options(
+fn IntervalNode::set_options(
   self : IntervalNode,
   options : ModelDecorationOptions,
 ) -> Unit {
@@ -371,7 +371,7 @@ pub fn IntervalNode::set_options(
 
 ///|
 /// `setCachedOffsets` (`intervalTree.ts:221-228`).
-pub fn IntervalNode::set_cached_offsets(
+fn IntervalNode::set_cached_offsets(
   self : IntervalNode,
   absolute_start : Int,
   absolute_end : Int,
@@ -387,7 +387,7 @@ pub fn IntervalNode::set_cached_offsets(
 
 ///|
 /// `detach` (`intervalTree.ts:230-234`).
-pub fn IntervalNode::detach(self : IntervalNode) -> Unit {
+fn IntervalNode::detach(self : IntervalNode) -> Unit {
   self.parent_ = None
   self.left_ = None
   self.right_ = None
@@ -397,7 +397,7 @@ pub fn IntervalNode::detach(self : IntervalNode) -> Unit {
 /// `SENTINEL` (`intervalTree.ts:237-241`): the shared self-linked black nil
 /// node. Like the source it is deliberately mutable — deletion temporarily
 /// parents it into the tree and `reset_sentinel` re-zeros it.
-pub let sentinel : IntervalNode = init_sentinel()
+let sentinel : IntervalNode = init_sentinel()
 
 ///|
 fn init_sentinel() -> IntervalNode {
@@ -408,19 +408,19 @@ fn init_sentinel() -> IntervalNode {
 
 ///|
 /// `IntervalTree` (`intervalTree.ts:243-346`).
-pub struct IntervalTree {
+priv struct IntervalTree {
   mut root : IntervalNode
   mut request_normalize_delta : Bool
 }
 
 ///|
-pub fn IntervalTree::IntervalTree() -> IntervalTree {
+fn IntervalTree::IntervalTree() -> IntervalTree {
   { root: sentinel, request_normalize_delta: false }
 }
 
 ///|
 /// `intervalSearch` (`intervalTree.ts:253-258`).
-pub fn IntervalTree::interval_search(
+fn IntervalTree::interval_search(
   self : IntervalTree,
   start : Int,
   end : Int,
@@ -441,7 +441,7 @@ pub fn IntervalTree::interval_search(
 
 ///|
 /// `search` (`intervalTree.ts:260-265`).
-pub fn IntervalTree::search(
+fn IntervalTree::search(
   self : IntervalTree,
   filter_owner_id : Int,
   filter_out_validation : Bool,
@@ -461,7 +461,7 @@ pub fn IntervalTree::search(
 ///|
 /// `collectNodesFromOwner` (`intervalTree.ts:270-272`). Will not set
 /// `cached_absolute_start` nor `cached_absolute_end` on the returned nodes!
-pub fn IntervalTree::collect_nodes_from_owner(
+fn IntervalTree::collect_nodes_from_owner(
   self : IntervalTree,
   owner_id : Int,
 ) -> Array[IntervalNode] {
@@ -471,7 +471,7 @@ pub fn IntervalTree::collect_nodes_from_owner(
 ///|
 /// `collectNodesPostOrder` (`intervalTree.ts:277-279`). Will not set
 /// `cached_absolute_start` nor `cached_absolute_end` on the returned nodes!
-pub fn IntervalTree::collect_nodes_post_order(
+fn IntervalTree::collect_nodes_post_order(
   self : IntervalTree,
 ) -> Array[IntervalNode] {
   collect_nodes_post_order(self)
@@ -479,14 +479,14 @@ pub fn IntervalTree::collect_nodes_post_order(
 
 ///|
 /// `insert` (`intervalTree.ts:281-284`).
-pub fn IntervalTree::insert(self : IntervalTree, node : IntervalNode) -> Unit {
+fn IntervalTree::insert(self : IntervalTree, node : IntervalNode) -> Unit {
   ignore(rb_tree_insert(self, node))
   self.normalize_delta_if_necessary()
 }
 
 ///|
 /// `delete` (`intervalTree.ts:286-289`).
-pub fn IntervalTree::delete(self : IntervalTree, node : IntervalNode) -> Unit {
+fn IntervalTree::delete(self : IntervalTree, node : IntervalNode) -> Unit {
   rb_tree_delete(self, node)
   self.normalize_delta_if_necessary()
 }
@@ -494,7 +494,7 @@ pub fn IntervalTree::delete(self : IntervalTree, node : IntervalNode) -> Unit {
 ///|
 /// `resolveNode` (`intervalTree.ts:291-304`): walk to the root summing
 /// right-child deltas, then cache the absolute offsets on the node.
-pub fn IntervalTree::resolve_node(
+fn IntervalTree::resolve_node(
   self : IntervalTree,
   node : IntervalNode,
   cached_version_id : Int,
@@ -515,9 +515,7 @@ pub fn IntervalTree::resolve_node(
 
 ///|
 /// `getAllInOrder` (`intervalTree.ts:335-337`).
-pub fn IntervalTree::get_all_in_order(
-  self : IntervalTree,
-) -> Array[IntervalNode] {
+fn IntervalTree::get_all_in_order(self : IntervalTree) -> Array[IntervalNode] {
   self.search(0, false, false, 0, false)
 }
 
@@ -1186,7 +1184,7 @@ fn compute_max_end(node : IntervalNode) -> Int {
 
 ///|
 /// `recomputeMaxEnd` (`intervalTree.ts:1253-1255`).
-pub fn recompute_max_end(node : IntervalNode) -> Unit {
+fn recompute_max_end(node : IntervalNode) -> Unit {
   node.max_end = compute_max_end(node)
 }
 
@@ -1211,7 +1209,7 @@ fn recompute_max_end_walk_to_root(node : IntervalNode) -> Unit {
 
 ///|
 /// `intervalCompare` (`intervalTree.ts:1275-1280`): start-major, end-minor.
-pub fn interval_compare(
+fn interval_compare(
   a_start : Int,
   a_end : Int,
   b_start : Int,
