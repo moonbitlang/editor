@@ -113,7 +113,9 @@ test "line addressing handles all three terminators" {
   debug_inspect(
     (
       doc.line_count(),
-      (0).until(doc.line_count()).map(index => doc.line_text(index)).collect(),
+      [
+        for index in 0..<doc.line_count() => doc.line_text(index)
+      ],
       doc.length(),
     ),
     content=(
