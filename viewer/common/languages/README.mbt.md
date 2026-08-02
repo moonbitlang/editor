@@ -85,7 +85,7 @@ async test "hover_at returns the first non-empty result in registry priority" {
   })
   |> ignore
   let model = doc_model("fn main {}\n")
-  let hover = registry.hover_at(model, 1, log)
+  let hover = registry.language_handle(log.log_handle()).hover_at(model, 1)
   debug_inspect(
     hover.map(h => h.contents),
     content=(
@@ -112,7 +112,7 @@ async test "a disposed registration cannot win a race it is no longer in" {
   registration.dispose()
   let model = doc_model("fn main {}\n")
   debug_inspect(
-    registry.hover_at(model, 1, log) is Some(_),
+    registry.language_handle(log.log_handle()).hover_at(model, 1) is Some(_),
     content=(
       #|false
     ),
@@ -134,7 +134,7 @@ async test "a non-matching selector is never consulted" {
   |> ignore
   let model = doc_model("fn main {}\n")
   debug_inspect(
-    registry.hover_at(model, 1, log) is Some(_),
+    registry.language_handle(log.log_handle()).hover_at(model, 1) is Some(_),
     content=(
       #|false
     ),
@@ -192,9 +192,18 @@ test "None, Some([]), and Some(blocks) are three different answers" {
   |> ignore
   debug_inspect(
     (
-      unregistered.markdown_comment_provider_result(model, log),
-      silent.markdown_comment_provider_result(model, log),
-      answering.markdown_comment_provider_result(model, log),
+      unregistered
+      .language_handle(log.log_handle())
+      .markdown_comment_provider_render_result(model)
+      .map(result => result.blocks),
+      silent
+      .language_handle(log.log_handle())
+      .markdown_comment_provider_render_result(model)
+      .map(result => result.blocks),
+      answering
+      .language_handle(log.log_handle())
+      .markdown_comment_provider_render_result(model)
+      .map(result => result.blocks),
     ),
     content=(
       #|(
@@ -272,8 +281,12 @@ test "configuration round-trips, and an unset language reads back empty" {
   })
   debug_inspect(
     (
-      registry.get_language_configuration("moonbit").comments,
-      registry.get_language_configuration("never-configured").comments,
+      registry
+      .language_handle(@log.LogService(logger=@log.NullLogger()).log_handle())
+      .get_language_configuration("moonbit").comments,
+      registry
+      .language_handle(@log.LogService(logger=@log.NullLogger()).log_handle())
+      .get_language_configuration("never-configured").comments,
     ),
     content=(
       #|(
@@ -341,7 +354,10 @@ test "folding markers are whole-line predicates" {
       }),
     }),
   })
-  let rules = registry.get_language_configuration("moonbit").folding_rules
+  let log = @log.LogService(logger=@log.NullLogger())
+  let rules = registry
+    .language_handle(log.log_handle())
+    .get_language_configuration("moonbit").folding_rules
   debug_inspect(
     rules.map(r => {
       (

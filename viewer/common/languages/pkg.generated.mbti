@@ -55,17 +55,10 @@ pub fn LanguageHandle::get_language_configuration(Self, String) -> LanguageConfi
 pub fn LanguageHandle::has_definition_provider(Self, @model.TextModel) -> Bool
 pub async fn LanguageHandle::hover_at(Self, @model.TextModel, Int, token? : @language.CancellationToken) -> @language.Hover? noraise
 pub fn LanguageHandle::markdown_comment_provider_render_result(Self, @model.TextModel) -> MarkdownCommentProviderResult?
-pub fn LanguageHandle::markdown_comment_provider_result(Self, @model.TextModel) -> Array[@language.MarkdownCommentBlock]?
 
 type Languages
 pub fn Languages::Languages() -> Self
-pub async fn Languages::definition_at(Self, @model.TextModel, Int, @log.LogService, token? : @language.CancellationToken, run_tasks? : async (Array[async () -> Unit]) -> Unit) -> Array[@language.Location] noraise
-pub async fn Languages::document_symbols(Self, @model.TextModel, @log.LogService) -> Array[@language.DocumentSymbol] noraise
-pub fn Languages::get_language_configuration(Self, String) -> LanguageConfiguration
-pub fn Languages::has_definition_provider(Self, @model.TextModel) -> Bool
-pub async fn Languages::hover_at(Self, @model.TextModel, Int, @log.LogService, token? : @language.CancellationToken) -> @language.Hover? noraise
 pub fn Languages::language_handle(Self, @log.LogHandle) -> LanguageHandle
-pub fn Languages::markdown_comment_provider_result(Self, @model.TextModel, @log.LogService) -> Array[@language.MarkdownCommentBlock]?
 pub fn Languages::register_definition_provider(Self, @language.LanguageSelector, &@language.DefinitionProvider) -> @common.Disposable
 pub fn Languages::register_document_symbol_provider(Self, @language.LanguageSelector, &@language.DocumentSymbolProvider) -> @common.Disposable
 pub fn Languages::register_hover_provider(Self, @language.LanguageSelector, &@language.HoverProvider) -> @common.Disposable
@@ -73,13 +66,13 @@ pub fn Languages::register_markdown_comment_provider(Self, @language.LanguageSel
 pub fn Languages::set_language_configuration(Self, String, LanguageConfiguration) -> Unit
 pub fn Languages::set_tokens_provider(Self, String, &@syntax.LineTokenizer) -> @common.Disposable
 
-pub(all) struct LineCommentRule {
+pub struct LineCommentRule {
   comment : String
-  no_indent : Bool
+  // private fields
 } derive(Eq, @debug.Debug)
 pub fn LineCommentRule::LineCommentRule(String, no_indent? : Bool) -> Self
 
-pub(all) struct MarkdownCommentProviderResult {
+pub struct MarkdownCommentProviderResult {
   blocks : Array[@language.MarkdownCommentBlock]
   foldable : Bool
 }

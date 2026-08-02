@@ -34,7 +34,7 @@ test "marker decorations expose squiggles and marker hover lookup" {
   let decorations = MarkerDecorationsService(markers.marker_service_handle())
   decorations.on_model_added(model)
   // Squiggles now live in the model's decoration storage.
-  let stored = model.get_all_decorations()
+  let stored = marker_model_decorations(model)
   assert_eq(stored.length(), 1)
   assert_true(stored[0].options.class_name == "squiggly-warning")
   assert_true(stored[0].range == Range(1, 3, 1, 9))

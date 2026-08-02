@@ -198,7 +198,9 @@ test "explicit services stay borrowed after Viewer disposal" {
   assert_false(backings.services.disposed)
   let model = test_model("alpha")
   seed_lifecycle_marker(backings.markers, model)
-  let lease = backings.marker_decorations.acquire_model(model)
+  let lease = backings.marker_decorations
+    .marker_decorations_handle()
+    .acquire_model(model)
   assert_eq(model.get_all_decorations().length(), 1)
   lease.dispose()
   model.dispose()
@@ -222,7 +224,9 @@ test "MarkerStore makes only its generated decorations bundle-owned" {
   assert_true(services.owned_agent_feedback is None)
   let model = test_model("alpha")
   seed_lifecycle_marker(backings.markers, model)
-  let lease = generated_decorations.acquire_model(model)
+  let lease = generated_decorations
+    .marker_decorations_handle()
+    .acquire_model(model)
   assert_eq(model.get_all_decorations().length(), 1)
   let marker_deliveries = Ref(0)
   let subscription = backings.markers.on_did_change_markers(_ => {
@@ -266,7 +270,9 @@ test "Decorations leaves every caller handle live after bundle disposal" {
 
   let model = test_model("alpha")
   seed_lifecycle_marker(backings.markers, model)
-  let lease = backings.marker_decorations.acquire_model(model)
+  let lease = backings.marker_decorations
+    .marker_decorations_handle()
+    .acquire_model(model)
   assert_eq(model.get_all_decorations().length(), 1)
   backings.agent_feedback.set_feedback_enabled(model.uri, true)
   assert_true(feedback_handle.is_feedback_enabled(model.uri))
@@ -410,7 +416,9 @@ test "omitted services are owned and Viewer disposal is idempotent" {
   assert_eq(marker_deliveries.val, 0)
   assert_eq(feedback_deliveries.val, 0)
   let later_model = test_model("later")
-  let late_lease = owned_marker_decorations.acquire_model(later_model)
+  let late_lease = owned_marker_decorations
+    .marker_decorations_handle()
+    .acquire_model(later_model)
   assert_eq(later_model.get_all_decorations().length(), 0)
   late_lease.dispose()
   marker_subscription.dispose()
