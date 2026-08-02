@@ -8,12 +8,6 @@ let diagram_content_class = "moonbit-viewer-markdown-diagram-content"
 let diagram_controls_class = "moonbit-viewer-markdown-diagram-controls"
 
 ///|
-let diagram_kind_class = "moonbit-viewer-markdown-diagram-kind"
-
-///|
-let diagram_scale_class = "moonbit-viewer-markdown-diagram-scale"
-
-///|
 let diagram_resize_handle_class = "moonbit-viewer-markdown-diagram-resize-handle"
 
 ///|
@@ -81,7 +75,6 @@ priv struct MarkdownDiagramViewport {
   content : @rdom.Element
   svg : @rdom.Element
   controls : @rdom.Element
-  scale_indicator : @rdom.Element
   pan_button : @rdom.Element
   zoom_out_button : @rdom.Element
   zoom_in_button : @rdom.Element
@@ -333,14 +326,6 @@ fn mount_diagram_viewport_in_environment(
   let language = element_attribute_or_empty(wrapper, "data-diagram-language")
   let diagram_name = if language == "mermaid" { "Mermaid" } else { "D2" }
   controls.set_attribute("aria-label", "\{diagram_name} diagram controls")
-  let kind = owner_document.create_element("span")
-  kind.set_attribute("class", diagram_kind_class)
-  kind.set_attribute("aria-hidden", "true")
-  kind.set_inner_html(diagram_name)
-  let scale_indicator = owner_document.create_element("span")
-  scale_indicator.set_attribute("class", diagram_scale_class)
-  scale_indicator.set_attribute("aria-label", "Zoom level")
-  scale_indicator.set_inner_html("100%")
   let pan_button = create_diagram_button(
     owner_document,
     "moonbit-viewer-markdown-diagram-pan",
@@ -357,10 +342,8 @@ fn mount_diagram_viewport_in_environment(
   let fit_button = create_diagram_button(
     owner_document, "moonbit-viewer-markdown-diagram-fit", "Fit diagram", "codicon-screen-normal",
   )
-  controls.append_child(kind.as_node())
   controls.append_child(pan_button.as_node())
   controls.append_child(zoom_out_button.as_node())
-  controls.append_child(scale_indicator.as_node())
   controls.append_child(zoom_in_button.as_node())
   controls.append_child(fit_button.as_node())
   let resize_handle = owner_document.create_element("div")
@@ -375,7 +358,6 @@ fn mount_diagram_viewport_in_environment(
     content,
     svg,
     controls,
-    scale_indicator,
     pan_button,
     zoom_out_button,
     zoom_in_button,
@@ -819,8 +801,6 @@ fn MarkdownDiagramViewport::apply_transform(
     "transform",
     "translate(\{self.translate_x}px, \{self.translate_y}px) scale(\{self.scale})",
   )
-  let percent = (self.scale * 100.0).round().to_int()
-  self.scale_indicator.set_inner_html("\{percent}%")
 }
 
 ///|
