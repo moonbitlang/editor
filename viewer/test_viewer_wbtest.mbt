@@ -216,6 +216,7 @@ extern "js" fn install_mounted_test_browser() -> Unit =
   #|         right: 100, bottom: 100, width: 100, height: 100,
   #|       };
   #|     }
+  #|     getClientRects() { return [this.getBoundingClientRect()]; }
   #|   }
   #|   class MountedTestFragment {
   #|     constructor(ownerDocument) {
