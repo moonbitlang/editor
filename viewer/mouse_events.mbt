@@ -117,11 +117,11 @@ fn Viewer::emit_mouse_move(
   let converted = self.convert_mouse_target(target)
   self.did_mouse_move.fire({ event, target: converted })
   let client = event.pos.to_client_coordinates()
-  self.record_hover_pointer(client.client_x, client.client_y, {
-    ctrl: event.ctrl_key,
-    meta: event.meta_key,
-    alt: event.alt_key,
-  })
+  self.record_hover_pointer(
+    client.client_x,
+    client.client_y,
+    @hover.EventModifiers(event.ctrl_key, event.meta_key, event.alt_key),
+  )
   self.on_editor_mouse_move(converted)
 }
 

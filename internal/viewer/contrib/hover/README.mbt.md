@@ -13,7 +13,7 @@ flowchart LR
   OP -->|sync parts| VIEW["HoverView"]
   OP -->|streamed async parts| VIEW
   VIEW --> W["…/hover/browser<br>widget + Markdown bridge"]
-  A -->|"anchor_can_adopt"| KEEP["reuse the visible result"]
+  A -->|"private anchor adoption"| KEEP["reuse the visible result"]
 ```
 
 ## Trigger policy
@@ -25,147 +25,36 @@ is the modifier the multi-cursor setting does **not** use. With multi-cursor on
 Alt, hover triggers on Ctrl/Meta; with multi-cursor on Ctrl or Meta, hover
 triggers on Alt. The two features therefore never contend for the same key.
 
-```mbt check
-///|
-test "the keyboard-modifier mode borrows the multi-cursor modifier" {
-  // These enums are read-only: values come from the configuration strings.
-  let on = @hover.HoverEnabled::from_config("on")
-  let off = @hover.HoverEnabled::from_config("off")
-  let on_modifier = @hover.HoverEnabled::from_config("onKeyboardModifier")
-  let alt_modifier = @hover.MultiCursorModifier::from_config("alt", mac=false)
-  let ctrl_modifier = @hover.MultiCursorModifier::from_config(
-    "ctrlCmd",
-    mac=false,
-  )
-  let none = @hover.EventModifiers::none()
-  let alt : @hover.EventModifiers = { ctrl: false, meta: false, alt: true }
-  let ctrl : @hover.EventModifiers = { ctrl: true, meta: false, alt: false }
-  debug_inspect(
-    (
-      // always on / always off ignore modifiers entirely
-      @hover.should_show_hover(on, alt_modifier, none),
-      @hover.should_show_hover(off, alt_modifier, alt),
-      // on-modifier: no modifier held never triggers
-      @hover.should_show_hover(on_modifier, alt_modifier, none),
-      // multi-cursor is Alt, so Alt is taken and does NOT trigger hover...
-      @hover.should_show_hover(on_modifier, alt_modifier, alt),
-      // ...while Ctrl, which multi-cursor does not use, does
-      @hover.should_show_hover(on_modifier, alt_modifier, ctrl),
-      // and with multi-cursor on Ctrl the roles swap
-      @hover.should_show_hover(on_modifier, ctrl_modifier, ctrl),
-      @hover.should_show_hover(on_modifier, ctrl_modifier, alt),
-    ),
-    content=(
-      #|(true, false, false, false, true, false, true)
-    ),
-  )
-}
-```
+`HoverEnabled` and `MultiCursorModifier` are opaque outside this package. Their
+string parsers and the modifier-selection helper are package-private because
+the root Viewer currently consumes only the package's resolved settings.
+Executable coverage for the parser and complement rule lives in
+`hover_interaction_wbtest.mbt`.
 
-Both option values are parsed from their configuration strings. `"ctrlCmd"`
-resolves to Meta on macOS and Ctrl elsewhere — and by the complement rule above,
-either way the *hover* trigger becomes Alt.
-
-```mbt check
-///|
-test "config strings resolve, including the macOS ctrlCmd split" {
-  debug_inspect(
-    (
-      ["on", "off", "onKeyboardModifier", "nonsense"].map(raw => {
-        @hover.should_show_hover(
-          @hover.HoverEnabled::from_config(raw),
-          @hover.MultiCursorModifier::from_config("alt", mac=false),
-          { ctrl: false, meta: false, alt: true },
-        )
-      }),
-      // On macOS "ctrlCmd" is Meta, so Meta is taken and Alt triggers hover.
-      @hover.should_show_hover(
-        @hover.HoverEnabled::from_config("onKeyboardModifier"),
-        @hover.MultiCursorModifier::from_config("ctrlCmd", mac=true),
-        { ctrl: false, meta: true, alt: false },
-      ),
-      @hover.should_show_hover(
-        @hover.HoverEnabled::from_config("onKeyboardModifier"),
-        @hover.MultiCursorModifier::from_config("ctrlCmd", mac=true),
-        { ctrl: false, meta: false, alt: true },
-      ),
-      // Elsewhere it is Ctrl, and Alt still triggers hover.
-      @hover.should_show_hover(
-        @hover.HoverEnabled::from_config("onKeyboardModifier"),
-        @hover.MultiCursorModifier::from_config("ctrlCmd", mac=false),
-        { ctrl: false, meta: false, alt: true },
-      ),
-    ),
-    content=(
-      #|([true, false, false, true], false, true, true)
-    ),
-  )
-}
-```
+Internally, both option values are parsed from their configuration strings.
+`"ctrlCmd"` resolves to Meta on macOS and Ctrl elsewhere — and by the
+complement rule above, either way the *hover* trigger becomes Alt.
 
 ## Anchors and adoption
 
-`HoverAnchor` models range and injected-text foreign-element anchors. The
-adoption helpers decide whether an already visible hover survives a pointer
-move, which is what stops the widget from flickering as the pointer travels
-inside the same word.
-
-```mbt check
-///|
-fn range_anchor(start_column : Int, end_column : Int) -> @hover.HoverAnchor {
-  HoverRangeAnchor(
-    priority=0,
-    range=Range(1, start_column, 1, end_column),
-    initial_mouse_pos_x=None,
-    initial_mouse_pos_y=None,
-  )
-}
-
-///|
-test "an anchor adopts a move that stays inside its range" {
-  let shown = range_anchor(5, 12)
-  let inside = range_anchor(6, 11)
-  let elsewhere = range_anchor(40, 44)
-  debug_inspect(
-    (
-      @hover.hover_anchor_equals(shown, shown),
-      @hover.hover_anchor_equals(shown, inside),
-      @hover.hover_anchor_can_adopt(shown, inside),
-      @hover.hover_anchor_can_adopt(shown, elsewhere),
-      shown.range(),
-      shown.supports_marker_hover(),
-    ),
-    content=(
-      #|(
-      #|  true,
-      #|  false,
-      #|  true,
-      #|  true,
-      #|  {
-      #|    start_line_number: 1,
-      #|    start_column: 5,
-      #|    end_line_number: 1,
-      #|    end_column: 12,
-      #|  },
-      #|  false,
-      #|)
-    ),
-  )
-}
-```
+`HoverAnchor` is the public value passed across the browser boundary; callers
+may inspect its priority. Range extraction, marker support, equality, and
+adoption are package-private decisions used by the controller. They decide
+whether an already visible hover survives a pointer move, which stops the
+widget from flickering as the pointer travels inside the same word. This
+behavior is covered directly inside the owning package; the executable cases
+live in
+`hover_anchor_wbtest.mbt` and `hover_reconciliation_wbtest.mbt`.
 
 ## Geometry helpers
 
-The widget needs to know when the pointer has genuinely left it, allowing for a
-tolerance band. Those predicates are pure arithmetic and live here rather than
-in the browser package.
+The public `mouse_within_element` predicate decides whether a pointer is inside
+the hover's padded hit area. It remains compile-checked here because the root
+Viewer calls it directly.
 
 ```mbt check
 ///|
-test "pointer-versus-widget geometry is pure arithmetic" {
-  // The two argument orders differ: `mouse_within_element` takes the box first
-  // and the point last, while `compute_distance_from_point_to_rectangle` takes
-  // the point first. Both describe a 100x40 box at (10, 20).
+test "pointer-versus-widget hit geometry is public arithmetic" {
   debug_inspect(
     (
       // well inside; far outside; and inside the box but within the
@@ -173,20 +62,17 @@ test "pointer-versus-widget geometry is pure arithmetic" {
       @hover.mouse_within_element(10.0, 20.0, 100.0, 40.0, 60.0, 40.0),
       @hover.mouse_within_element(10.0, 20.0, 100.0, 40.0, 500.0, 40.0),
       @hover.mouse_within_element(10.0, 20.0, 100.0, 40.0, 11.0, 40.0),
-      // distance is 0 anywhere inside, and grows once outside
-      @hover.compute_distance_from_point_to_rectangle(
-        60.0, 40.0, 10.0, 20.0, 100.0, 40.0,
-      ),
-      @hover.compute_distance_from_point_to_rectangle(
-        130.0, 40.0, 10.0, 20.0, 100.0, 40.0,
-      ),
     ),
     content=(
-      #|(true, false, false, 0, 20)
+      #|(true, false, false)
     ),
   )
 }
 ```
+
+The controller's getting-closer heuristic also needs point-to-rectangle
+distance. That helper is package-private; `hover_widget_geometry_wbtest.mbt`
+records its argument order and executable boundary cases.
 
 ## Keeping or rescheduling
 
@@ -221,31 +107,31 @@ test "keep and reschedule are separate pure decisions" {
 
 ## Contract
 
-- `HoverAnchor` models range and injected-text foreign-element anchors.
-  Foreign anchors carry an explicit editor-scoped participant-owner identity;
-  equality/adoption/filter helpers decide whether a visible result survives a
-  pointer move without conflating rebuilt participants or separate Viewers.
-- `HoverOperation` and `HoverController` are the pure delayed-operation state
-  machine. Typed start modes/sources preserve the source branches;
+- `HoverAnchor` models range and injected-text foreign-element anchors at the
+  browser boundary. Foreign anchors carry an opaque editor-scoped participant
+  owner; package-private equality/adoption/filter helpers decide whether a
+  visible result survives a pointer move without conflating rebuilt
+  participants or separate Viewers.
+- `HoverOperation` exposes only the state needed by its host, while
+  `HoverController` owns the private delayed-operation transitions. Typed start
+  modes/sources preserve the source branches;
   `HoverRequestStamp` combines stable model identity, internal content
   version, monotonic generation, and caller token. Sync and streamed async
-  parts are merged into `HoverView`/`HoverWidgetView`; content invalidation can
-  cancel pending work while preserving an already shown view. The browser/root
-  host owns clearable timers and executes the requested computations.
-- `HoverParticipantHandle` is a value-level adapter with required ordinal and
-  synchronous computation plus independently optional anchor suggestion,
-  asynchronous computation, and loading-message callbacks.
-  `HoverParticipantRegistry` builds participants from
-  `HoverParticipantServices`; the process-wide registry currently installs
-  marker and language-Markdown participants.
-- `ContentHoverComputer` runs those participants. Marker tooltips are
-  synchronous; registered language hover providers are asynchronous. The
-  caller token/freshness predicate guard both sides of each await, and an
-  injected task runner lets the browser merge participant results in completion
-  order without a multi-target runtime dependency. The browser sibling reuses
-  this computer for semantic Markdown rows while keeping the original
-  `TextModel` as provider identity; projected fence text is never a synthetic
-  model.
+  parts are merged into a private `HoverView` and exposed as a
+  `HoverWidgetView`; content invalidation can cancel pending work while
+  preserving an already shown view. The browser/root host owns clearable timers
+  and executes the request-stamped computations.
+- `HoverParticipantHandle` exposes only the optional anchor suggestion needed
+  by the browser event bridge. Its ordinal, compute callbacks, construction,
+  concrete participants, and process-wide registry are package-private.
+  `ContentHoverComputer` is the opaque public computation
+  boundary built from `HoverParticipantServices`; it runs synchronous marker
+  and asynchronous language-hover participants. Caller token/freshness checks
+  guard both sides of each await, and an injected task runner lets the browser
+  merge participant results in completion order without a multi-target runtime
+  dependency. The browser sibling reuses the computer for semantic Markdown
+  rows while keeping the original `TextModel` as provider identity; projected
+  fence text is never a synthetic model.
 - `render_hover_code_block` preserves hover's synchronous compatibility
   surface while delegating fenced/active-language selection and editor-token
   HTML to `internal/viewer/markdown`'s shared override. This package neither

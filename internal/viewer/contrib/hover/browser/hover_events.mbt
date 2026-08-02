@@ -106,7 +106,7 @@ pub fn hover_on_event(
 /// typeof detail.horizontalDistanceToText === 'number' && … < epsilon`,
 /// with no lower bound: the distance is `>= 0` by construction). Candidates
 /// sort by descending priority. `target.range` is already model-space.
-pub fn find_anchor_candidates(
+fn find_anchor_candidates(
   participants : Array[@hover.HoverParticipantHandle],
   target : @editor_browser.MouseTarget,
   typical_halfwidth_character_width : Double,
@@ -114,24 +114,130 @@ pub fn find_anchor_candidates(
   initial_mouse_pos_y? : Double,
 ) -> Array[@hover.HoverAnchor] {
   let anchor_candidates : Array[@hover.HoverAnchor] = []
-  let injected_text = match target {
+  let injected_text = hover_target_injected_text(target)
+  let target_range = target.range()
+  append_suggested_anchors_from(
+    anchor_candidates,
+    participants,
+    participant => participant.suggest_hover_anchor,
+    injected_text,
+    target_range,
+    initial_mouse_pos_x,
+    initial_mouse_pos_y,
+  )
+  finish_anchor_candidates(
+    anchor_candidates, target, typical_halfwidth_character_width, initial_mouse_pos_x,
+    initial_mouse_pos_y,
+  )
+}
+
+///|
+/// The callback-level core of `find_anchor_candidates`. Keeping this seam in
+/// the owning browser package lets white-box tests cover absent and present
+/// participant suggestions without making participant constructors or foreign
+/// anchor internals part of the public interface.
+fn find_anchor_candidates_from_suggestions(
+  suggestions : Array[
+    ((@view_model.InjectedText?, @base_common.Range, Double?, Double?) -> @hover.HoverAnchor?)?,
+  ],
+  target : @editor_browser.MouseTarget,
+  typical_halfwidth_character_width : Double,
+  initial_mouse_pos_x? : Double,
+  initial_mouse_pos_y? : Double,
+) -> Array[@hover.HoverAnchor] {
+  let anchor_candidates : Array[@hover.HoverAnchor] = []
+  let injected_text = hover_target_injected_text(target)
+  let target_range = target.range()
+  append_suggested_anchors_from(
+    anchor_candidates,
+    suggestions,
+    suggestion => suggestion,
+    injected_text,
+    target_range,
+    initial_mouse_pos_x,
+    initial_mouse_pos_y,
+  )
+  finish_anchor_candidates(
+    anchor_candidates, target, typical_halfwidth_character_width, initial_mouse_pos_x,
+    initial_mouse_pos_y,
+  )
+}
+
+///|
+fn hover_target_injected_text(
+  target : @editor_browser.MouseTarget,
+) -> @view_model.InjectedText? {
+  match target {
     MouseTargetContentText(detail~, ..) => detail.injected_text
     _ => None
   }
-  let target_range = target.range()
-  for participant in participants {
-    match (target_range, participant.suggest_hover_anchor) {
-      (Some(range), Some(suggest_hover_anchor)) =>
-        match
-          suggest_hover_anchor(
-            injected_text, range, initial_mouse_pos_x, initial_mouse_pos_y,
-          ) {
-          Some(anchor) => anchor_candidates.push(anchor)
-          None => ()
-        }
-      _ => ()
-    }
+}
+
+///|
+/// The single iteration path used by both live participant handles and the
+/// callback-level white-box seam. It adds no intermediate array on pointer
+/// movement.
+fn[T] append_suggested_anchors_from(
+  anchor_candidates : Array[@hover.HoverAnchor],
+  items : Array[T],
+  suggestion_of : (T) -> ((
+    @view_model.InjectedText?,
+    @base_common.Range,
+    Double?,
+    Double?,
+  ) -> @hover.HoverAnchor?)?,
+  injected_text : @view_model.InjectedText?,
+  target_range : @base_common.Range?,
+  initial_mouse_pos_x : Double?,
+  initial_mouse_pos_y : Double?,
+) -> Unit {
+  for item in items {
+    append_suggested_anchor(
+      anchor_candidates,
+      suggestion_of(item),
+      injected_text,
+      target_range,
+      initial_mouse_pos_x,
+      initial_mouse_pos_y,
+    )
   }
+}
+
+///|
+fn append_suggested_anchor(
+  anchor_candidates : Array[@hover.HoverAnchor],
+  suggestion : ((
+    @view_model.InjectedText?,
+    @base_common.Range,
+    Double?,
+    Double?,
+  ) -> @hover.HoverAnchor?)?,
+  injected_text : @view_model.InjectedText?,
+  target_range : @base_common.Range?,
+  initial_mouse_pos_x : Double?,
+  initial_mouse_pos_y : Double?,
+) -> Unit {
+  match (target_range, suggestion) {
+    (Some(range), Some(suggest_hover_anchor)) =>
+      match
+        suggest_hover_anchor(
+          injected_text, range, initial_mouse_pos_x, initial_mouse_pos_y,
+        ) {
+        Some(anchor) => anchor_candidates.push(anchor)
+        None => ()
+      }
+    _ => ()
+  }
+}
+
+///|
+fn finish_anchor_candidates(
+  anchor_candidates : Array[@hover.HoverAnchor],
+  target : @editor_browser.MouseTarget,
+  typical_halfwidth_character_width : Double,
+  initial_mouse_pos_x : Double?,
+  initial_mouse_pos_y : Double?,
+) -> Array[@hover.HoverAnchor] {
   match target {
     MouseTargetContentText(range~, ..) =>
       anchor_candidates.push(

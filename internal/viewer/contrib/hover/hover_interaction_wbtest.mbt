@@ -14,6 +14,14 @@ fn mods(
 }
 
 ///|
+test "empty event modifiers clear every carried input flag" {
+  let empty = EventModifiers::none()
+  assert_false(empty.ctrl)
+  assert_false(empty.meta)
+  assert_false(empty.alt)
+}
+
+///|
 test "isMousePositionWithinElement insets the box by the 3px padding ring" {
   // Box at (100,50) sized 200×100; the 3px ring on every side reads as outside.
   let inside = mouse_within_element(100.0, 50.0, 200.0, 100.0, 150.0, 80.0)
@@ -100,6 +108,7 @@ test "shouldKeepHoverWidgetVisible tracks the pointer-on-widget flag" {
 ///|
 test "hover settings default to enabled-on, sticky, 300ms hiding delay" {
   let settings = HoverSettings::defaults()
+  assert_true(settings.enabled is HoverEnabledOn)
   assert_true(
     should_show_hover(
       settings.enabled,

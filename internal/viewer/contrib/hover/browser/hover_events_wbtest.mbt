@@ -55,15 +55,9 @@ test "find_anchor_candidates: a content-text hit yields the priority-0 range anc
 ///|
 test "find_anchor_candidates only calls present participant suggestions" {
   let owner = @hover.HoverParticipantOwner()
-  let without_suggestion = @hover.HoverParticipantHandle(10, _ctx => [])
-  let with_suggestion = @hover.HoverParticipantHandle(20, _ctx => [], suggest_hover_anchor=(
-    _injected_text,
-    range,
-    mouse_x,
-    mouse_y,
-  ) => {
+  let with_suggestion = Some((_injected_text, range, mouse_x, mouse_y) => {
     Some(
-      HoverForeignElementAnchor(
+      @hover.HoverForeignElementAnchor(
         priority=20,
         owner~,
         injected_text_index=0,
@@ -74,8 +68,8 @@ test "find_anchor_candidates only calls present participant suggestions" {
       ),
     )
   })
-  let candidates = find_anchor_candidates(
-    [without_suggestion, with_suggestion],
+  let candidates = find_anchor_candidates_from_suggestions(
+    [None, with_suggestion],
     text_target(2, 4),
     10.0,
     initial_mouse_pos_x=12.0,
@@ -83,9 +77,10 @@ test "find_anchor_candidates only calls present participant suggestions" {
   )
   assert_eq(candidates.length(), 2)
   match candidates[0] {
-    HoverForeignElementAnchor(priority~, owner=actual_owner, ..) => {
+    HoverForeignElementAnchor(priority~, owner=actual_owner, range~, ..) => {
       assert_eq(priority, 20)
       assert_true(actual_owner == owner)
+      assert_true(range == Range(2, 4, 2, 4))
     }
     _ => fail("expected participant-suggested foreign anchor first")
   }
