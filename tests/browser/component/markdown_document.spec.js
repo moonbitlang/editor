@@ -309,24 +309,38 @@ test('mounts zoom and drag controls for D2 and Mermaid in Markdown documents', a
     );
     await expect(d2.getByRole('button')).toHaveCount(4);
     await expect(mermaid.getByRole('button')).toHaveCount(4);
+    await expect(
+      d2.getByRole('toolbar', { name: 'D2 diagram controls' }),
+    ).toBeVisible();
+    await expect(
+      mermaid.getByRole('toolbar', { name: 'Mermaid diagram controls' }),
+    ).toBeVisible();
+    await expect(d2.locator('.moonbit-viewer-markdown-diagram-kind')).toHaveText(
+      'D2',
+    );
+    await expect(
+      mermaid.locator('.moonbit-viewer-markdown-diagram-kind'),
+    ).toHaveText('Mermaid');
 
     await expect(d2).toHaveCSS('z-index', '0');
     await expect(d2.locator(diagramControls)).toHaveCSS(
       'pointer-events',
-      'none',
-    );
-    await d2.hover();
-    await expect(d2.locator(diagramControls)).toHaveCSS('opacity', '1');
-    await expect(d2.locator(diagramControls)).toHaveCSS(
-      'pointer-events',
       'auto',
     );
+    await expect(d2.locator(diagramControls)).toHaveCSS('opacity', '0.9');
 
+    await d2.hover();
     const beforeZoom = await diagramTransform(d2);
+    await expect(d2.locator('.moonbit-viewer-markdown-diagram-scale')).toHaveText(
+      `${Math.round(beforeZoom.scale * 100)}%`,
+    );
     await d2.getByRole('button', { name: 'Zoom in' }).click();
     await expect
       .poll(async () => (await diagramTransform(d2)).scale)
       .toBeGreaterThan(beforeZoom.scale);
+    await expect(d2.locator('.moonbit-viewer-markdown-diagram-scale')).not.toHaveText(
+      `${Math.round(beforeZoom.scale * 100)}%`,
+    );
 
     const panToggle = d2.getByRole('button', { name: 'Toggle pan mode' });
     await panToggle.click();
