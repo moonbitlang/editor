@@ -128,12 +128,12 @@ test('keeps the explorer compact and exposes an accessible splitter', async ({
 
   const splitterBox = await splitter.boundingBox();
   await page.mouse.move(
-    splitterBox.x + splitterBox.width / 2,
+    splitterBox.x - 6,
     splitterBox.y + splitterBox.height / 2,
   );
   await page.mouse.down();
   await page.mouse.move(
-    splitterBox.x + splitterBox.width / 2 + 50,
+    splitterBox.x - 6 + 50,
     splitterBox.y + splitterBox.height / 2,
     { steps: 5 },
   );
@@ -163,6 +163,7 @@ test('keeps the explorer compact and exposes an accessible splitter', async ({
 
   // A mobile-first load must retain the desktop default instead of treating
   // the responsive 148px column as the user's preferred width.
+  await page.setViewportSize({ width: 390, height: 700 });
   await page.reload();
   await expect(page.locator('.editor-shell')).toHaveAttribute(
     'data-status',

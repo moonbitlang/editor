@@ -355,6 +355,7 @@ extern "js" fn install_explorer_resize_handle() -> () -> Unit =
   #|     minWidth,
   #|     Math.min(420, Math.floor((ownerWindow.innerWidth || 840) * 0.5)),
   #|   );
+  #|   const isMobile = () => ownerWindow.matchMedia?.('(max-width: 680px)').matches ?? false;
   #|   let width = Math.round(Number.parseFloat(
   #|     ownerWindow.getComputedStyle?.(main).getPropertyValue('--explorer-width'),
   #|   )) || 280;
@@ -385,7 +386,7 @@ extern "js" fn install_explorer_resize_handle() -> () -> Unit =
   #|     applyWidth(startWidth + event.clientX - startX);
   #|   };
   #|   const startDrag = (event) => {
-  #|     if (event.button !== 0 || ownerWindow.matchMedia?.('(max-width: 680px)').matches) return;
+  #|     if (event.button !== 0 || isMobile()) return;
   #|     event.preventDefault();
   #|     activePointerId = event.pointerId;
   #|     startX = event.clientX;
@@ -410,10 +411,19 @@ extern "js" fn install_explorer_resize_handle() -> () -> Unit =
   #|     applyWidth(next);
   #|   };
   #|   const onWindowResize = () => {
-  #|     handle.setAttribute('aria-valuemax', String(maximumWidth()));
-  #|     if (!ownerWindow.matchMedia?.('(max-width: 680px)').matches) applyWidth(width);
+  #|     if (isMobile()) {
+  #|       handle.setAttribute('aria-valuemax', String(Math.max(width, maximumWidth())));
+  #|     } else {
+  #|       applyWidth(width);
+  #|     }
   #|   };
-  #|   applyWidth(width);
+  #|   if (isMobile()) {
+  #|     main.style.setProperty('--explorer-width', `${width}px`);
+  #|     handle.setAttribute('aria-valuenow', String(width));
+  #|     handle.setAttribute('aria-valuemax', String(Math.max(width, maximumWidth())));
+  #|   } else {
+  #|     applyWidth(width);
+  #|   }
   #|   handle.addEventListener('pointerdown', startDrag);
   #|   handle.addEventListener('keydown', onKeyDown);
   #|   ownerWindow.addEventListener('resize', onWindowResize);
