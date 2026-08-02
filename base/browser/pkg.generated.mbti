@@ -88,8 +88,6 @@ pub struct StandardMouseEvent {
   default_prevented : Bool
 }
 pub fn StandardMouseEvent::StandardMouseEvent(@dom.MouseEvent) -> Self
-pub fn StandardMouseEvent::prevent_default(Self) -> Unit
-pub fn StandardMouseEvent::stop_propagation(Self) -> Unit
 
 // Type aliases
 

@@ -68,16 +68,6 @@ pub fn StandardMouseEvent::StandardMouseEvent(
 }
 
 ///|
-pub fn StandardMouseEvent::prevent_default(self : StandardMouseEvent) -> Unit {
-  self.browser_event.prevent_default()
-}
-
-///|
-pub fn StandardMouseEvent::stop_propagation(self : StandardMouseEvent) -> Unit {
-  self.browser_event.stop_propagation()
-}
-
-///|
 /// FFI gap-fill: the vendored `@rdom` `IsUIEvent` exposes no `detail`.
 extern "js" fn ui_event_detail(e : @rdom.MouseEvent) -> Int =
   #| (e) => e.detail | 0
