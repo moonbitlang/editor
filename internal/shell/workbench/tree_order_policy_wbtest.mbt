@@ -31,3 +31,31 @@ test "explorer order pins package overview files above the default" {
   // Directories keep the default rank even when named like an overview file.
   assert_eq(entry_rank("README", Directory), entry_rank("src", Directory))
 }
+
+///|
+test "explorer filename order is lexicographic rather than shortlex" {
+  let root : @workspace.WorkspaceStat = {
+    uri: try! @base_common.Uri::parse("readonly-remote://workspace"),
+    name: "workspace",
+    kind: Directory,
+    children: Some([
+      {
+        uri: try! @base_common.Uri::parse("readonly-remote://workspace/z"),
+        name: "z",
+        kind: File,
+        children: None,
+      },
+      {
+        uri: try! @base_common.Uri::parse("readonly-remote://workspace/aa"),
+        name: "aa",
+        kind: File,
+        children: None,
+      },
+    ]),
+  }
+  let ordered = order_workspace_stat_children(root)
+  assert_eq(
+    ordered.children.map(children => children.map(child => child.name)),
+    Some(["aa", "z"]),
+  )
+}

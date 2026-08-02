@@ -54,11 +54,12 @@ if accepts(payload, current_model_identity) {
   stable, childless `.viewer-host`. After the first paint `Viewer::create`
   mounts the imperative editor into that element.
 - `RemoteWorkspaceTreeProvider` maps one-level resolves to protocol requests.
-  On connect/reconnect the tree refreshes; a bounded depth-first walk auto-opens
-  the first MoonBit file (otherwise the first file). Explorer order is a
-  reference-host policy passed to the widget as `rank~`: every level leads with
-  its README (any extension), then `pkg.generated.mbti`, then `moon.pkg`, then
-  the widget's directories-before-files default.
+  Its explorer-only provider view orders filenames lexicographically without
+  changing the raw order used by auto-open. On connect/reconnect the tree
+  refreshes; a bounded depth-first walk auto-opens the first MoonBit file
+  (otherwise the first file). Explorer rank policy then leads every level with
+  its README (any extension), `pkg.generated.mbti`, and `moon.pkg`, followed by
+  directories before files in UTF-16 code-unit lexicographic name order.
 - `RemoteDocumentProvider` maps read/watch/close to protocol packets. Active URI
   and generation guards discard stale async results. Every snapshot becomes a
   new `TextModel`; reloads save/restore viewer scroll state, while user opens
