@@ -22,6 +22,42 @@ const diagramControls = '.moonbit-viewer-markdown-diagram-controls';
 const mermaidCdnUrl =
   'https://cdn.jsdelivr.net/npm/mermaid@11.16.0/dist/mermaid.esm.min.mjs';
 
+function relativeLuminance(color) {
+  const channels = color.map((channel) => {
+    const value = channel / 255;
+    return value <= 0.04045
+      ? value / 12.92
+      : ((value + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+}
+
+function contrastRatio(left, right) {
+  const first = relativeLuminance(left);
+  const second = relativeLuminance(right);
+  return (Math.max(first, second) + 0.05) / (Math.min(first, second) + 0.05);
+}
+
+async function calloutColors(locator) {
+  return locator.evaluate((element) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1;
+    canvas.height = 1;
+    const context = canvas.getContext('2d', { willReadFrequently: true });
+    const resolveColor = (value) => {
+      context.clearRect(0, 0, 1, 1);
+      context.fillStyle = value;
+      context.fillRect(0, 0, 1, 1);
+      return Array.from(context.getImageData(0, 0, 1, 1).data.slice(0, 3));
+    };
+    const style = getComputedStyle(element);
+    return {
+      background: resolveColor(style.backgroundColor),
+      border: resolveColor(style.borderLeftColor),
+    };
+  });
+}
+
 const fakeMarkdownDocumentMermaidModule = `
   let currentTheme = '';
 
@@ -336,6 +372,7 @@ test('centers prose without narrowing wide Markdown content', async ({
       ':scope > [data-measure-probe="quote"]',
     ));
     const quoteContentWidth = quote.width -
+      Number.parseFloat(quoteStyle.borderLeftWidth) -
       Number.parseFloat(quoteStyle.paddingLeft) -
       Number.parseFloat(quoteStyle.paddingRight);
     const quoteParagraph = articleNode.querySelector(
@@ -391,8 +428,102 @@ test('centers prose without narrowing wide Markdown content', async ({
       rightInset: quote.right - paragraph.right,
     };
   });
-  expect(narrowQuote.leftInset).toBeCloseTo(40, 1);
+  expect(narrowQuote.leftInset).toBeCloseTo(43, 1);
   expect(narrowQuote.rightInset).toBeCloseTo(40, 1);
+});
+
+test('presents Markdown blockquotes as subtle callouts', async ({ page }) => {
+  await page.goto('/browser-tests/component.html?markdownDocument=1');
+  await page.waitForFunction(() =>
+    Boolean(globalThis.__markdownDocumentControls),
+  );
+
+  const quote = page.locator(`${article} > blockquote`);
+  await expect(quote).toHaveCSS('border-left-width', '3px');
+  await expect(quote).toHaveCSS('border-top-right-radius', '6px');
+  await expect(quote).toHaveCSS('padding-top', '12px');
+  await expect(quote.locator(':scope > :first-child')).toHaveCSS(
+    'margin-top',
+    '0px',
+  );
+  await expect(quote.locator(':scope > :last-child')).toHaveCSS(
+    'margin-bottom',
+    '0px',
+  );
+
+  await quote.evaluate((element) => {
+    const nested = document.createElement('blockquote');
+    nested.dataset.nestedCalloutProbe = 'true';
+    const paragraph = document.createElement('p');
+    paragraph.textContent = 'Nested callout';
+    nested.appendChild(paragraph);
+    element.appendChild(nested);
+  });
+  const nested = quote.locator('[data-nested-callout-probe="true"]');
+  await expect(nested).toHaveCSS('border-left-width', '3px');
+  await expect(nested).toHaveCSS('padding-left', '12px');
+
+  for (const theme of ['dark', 'light']) {
+    await page.locator('.markdown-document-shell').evaluate(
+      (shell, value) => shell.setAttribute('data-theme', value),
+      theme,
+    );
+    const colors = await calloutColors(quote);
+    expect(contrastRatio(colors.border, colors.background)).toBeGreaterThanOrEqual(
+      3,
+    );
+  }
+
+  await page.evaluate(() => {
+    for (const theme of ['dark', 'light']) {
+      const root = document.createElement('div');
+      root.className = 'moonbit-viewer-markdown-document';
+      root.dataset.theme = theme;
+      root.dataset.fallbackCalloutRoot = theme;
+      const article = document.createElement('article');
+      article.className = 'moonbit-viewer-markdown-document-article';
+      const quote = document.createElement('blockquote');
+      quote.dataset.fallbackCallout = theme;
+      quote.textContent = `${theme} fallback callout`;
+      article.appendChild(quote);
+      root.appendChild(article);
+      document.body.appendChild(root);
+    }
+  });
+  for (const theme of ['dark', 'light']) {
+    const fallback = page.locator(`[data-fallback-callout="${theme}"]`);
+    const colors = await calloutColors(fallback);
+    expect(contrastRatio(colors.border, colors.background)).toBeGreaterThanOrEqual(
+      3,
+    );
+  }
+
+  await page.evaluate(() =>
+    globalThis.__markdownDocumentControls.resizeHost(320),
+  );
+  const nestedGeometry = await quote.evaluate((element) => {
+    const nested = element.querySelector('[data-nested-callout-probe="true"]');
+    const outerRect = element.getBoundingClientRect();
+    const outerStyle = getComputedStyle(element);
+    const nestedRect = nested.getBoundingClientRect();
+    const nestedStyle = getComputedStyle(nested);
+    return {
+      availableWidth: outerRect.width -
+        Number.parseFloat(outerStyle.borderLeftWidth) -
+        Number.parseFloat(outerStyle.paddingLeft) -
+        Number.parseFloat(outerStyle.paddingRight),
+      nestedWidth: nestedRect.width,
+      nestedContentWidth: nestedRect.width -
+        Number.parseFloat(nestedStyle.borderLeftWidth) -
+        Number.parseFloat(nestedStyle.paddingLeft) -
+        Number.parseFloat(nestedStyle.paddingRight),
+    };
+  });
+  expect(nestedGeometry.nestedWidth).toBeCloseTo(
+    nestedGeometry.availableWidth,
+    1,
+  );
+  expect(nestedGeometry.nestedContentWidth).toBeGreaterThan(150);
 });
 
 test('mounts zoom and drag controls for D2 and Mermaid in Markdown documents', async ({

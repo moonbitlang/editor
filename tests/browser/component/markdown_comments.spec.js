@@ -443,6 +443,26 @@ function contrastRatio(left, right) {
   return (Math.max(first, second) + 0.05) / (Math.min(first, second) + 0.05);
 }
 
+async function calloutColors(locator) {
+  return locator.evaluate((element) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1;
+    canvas.height = 1;
+    const context = canvas.getContext('2d', { willReadFrequently: true });
+    const resolveColor = (value) => {
+      context.clearRect(0, 0, 1, 1);
+      context.fillStyle = value;
+      context.fillRect(0, 0, 1, 1);
+      return Array.from(context.getImageData(0, 0, 1, 1).data.slice(0, 3));
+    };
+    const style = getComputedStyle(element);
+    return {
+      background: resolveColor(style.backgroundColor),
+      border: resolveColor(style.borderLeftColor),
+    };
+  });
+}
+
 async function markdownPalette(page, theme) {
   await page
     .locator('.markdown-comments-shell')
@@ -1003,6 +1023,65 @@ test('keeps the Markdown surface distinct from source and fenced code in both th
       expect(
         contrastRatio(palette.foreground, palette.markdown),
       ).toBeGreaterThanOrEqual(4.5);
+    }
+  } finally {
+    reporter.dispose();
+  }
+});
+
+test('uses the same subtle callout treatment in Markdown comments', async ({
+  page,
+}, testInfo) => {
+  const reporter = await mountMarkdownComments(page, testInfo);
+  try {
+    const commentContent = page.locator(zone).first().locator(content);
+    await commentContent.evaluate((element) => {
+      const quote = document.createElement('blockquote');
+      quote.dataset.calloutProbe = 'true';
+      const paragraph = document.createElement('p');
+      paragraph.textContent = 'A docstring callout.';
+      quote.appendChild(paragraph);
+      element.appendChild(quote);
+    });
+    const quote = commentContent.locator('[data-callout-probe="true"]');
+    await expect(quote).toHaveCSS('border-left-width', '3px');
+    await expect(quote).toHaveCSS('border-top-right-radius', '4px');
+    await expect(quote).toHaveCSS('padding-top', '6px');
+    await expect(quote.locator('p')).toHaveCSS('margin-top', '0px');
+    await expect(quote.locator('p')).toHaveCSS('margin-bottom', '0px');
+    for (const theme of ['dark', 'light']) {
+      await page.locator('.markdown-comments-shell').evaluate(
+        (shell, value) => shell.setAttribute('data-theme', value),
+        theme,
+      );
+      const colors = await calloutColors(quote);
+      expect(
+        contrastRatio(colors.border, colors.background),
+      ).toBeGreaterThanOrEqual(3);
+    }
+
+    await page.evaluate(() => {
+      for (const theme of ['dark', 'light']) {
+        const root = document.createElement('div');
+        root.dataset.theme = theme;
+        const content = document.createElement('div');
+        content.className = 'moonbit-viewer-markdown-comment-content';
+        const quote = document.createElement('blockquote');
+        quote.dataset.fallbackCommentCallout = theme;
+        quote.textContent = `${theme} fallback comment callout`;
+        content.appendChild(quote);
+        root.appendChild(content);
+        document.body.appendChild(root);
+      }
+    });
+    for (const theme of ['dark', 'light']) {
+      const fallback = page.locator(
+        `[data-fallback-comment-callout="${theme}"]`,
+      );
+      const colors = await calloutColors(fallback);
+      expect(
+        contrastRatio(colors.border, colors.background),
+      ).toBeGreaterThanOrEqual(3);
     }
   } finally {
     reporter.dispose();
