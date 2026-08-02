@@ -52,7 +52,10 @@ if accepts(payload, current_model_identity) {
   separator.
 - Rabbita owns topbar/sidebar/status/diagnostics/theme state and renders one
   stable, childless `.viewer-host`. After the first paint `Viewer::create`
-  mounts the imperative editor into that element.
+  mounts the imperative editor into that element. The topbar's persistent
+  Explorer control removes or restores the sidebar grid column and explicitly
+  lays out the Viewer after the shell render; hiding the explorer never changes
+  the active document or file-tree state.
 - `RemoteWorkspaceTreeProvider` maps one-level resolves to protocol requests.
   On connect/reconnect the tree refreshes; a bounded depth-first walk uses the
   raw provider order to auto-open the first MoonBit file (otherwise the first

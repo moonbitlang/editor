@@ -36,3 +36,15 @@ fn icon_color_mode() -> @html.Html {
     ),
   ])
 }
+
+///|
+/// Split-pane outline representing the workspace explorer sidebar.
+fn icon_sidebar() -> @html.Html {
+  icon_svg("icon-sidebar", [
+    @svg.path(
+      d="M2.5 1.5 H13.5 A1 1 0 0 1 14.5 2.5 V13.5 A1 1 0 0 1 13.5 14.5 H2.5 A1 1 0 0 1 1.5 13.5 V2.5 A1 1 0 0 1 2.5 1.5 Z M2.5 2.5 V13.5 H5.5 V2.5 Z M6.5 2.5 V13.5 H13.5 V2.5 Z",
+      fill="currentColor",
+      attrs=@svg.Attrs::build().fill_rule("evenodd"),
+    ),
+  ])
+}

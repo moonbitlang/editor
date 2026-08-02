@@ -32,6 +32,37 @@ test('defaults to the dark theme and persists the toggled choice', async ({ page
   await expect(page.locator('.editor-shell')).toHaveAttribute('data-theme', 'dark');
 });
 
+test('toggles the explorer without giving up its editor space', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('.editor-shell')).toHaveAttribute('data-status', 'ready');
+
+  const toggle = page.locator('[data-action="toggle-explorer"]');
+  const explorer = page.locator('#workspace-explorer');
+  const viewerHost = page.locator('.viewer-host');
+  const initialWidth = await viewerHost.evaluate((element) =>
+    element.getBoundingClientRect().width,
+  );
+
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(toggle).toHaveAttribute('aria-label', 'Show Explorer');
+  await expect(explorer).toBeHidden();
+  await expect(page.locator('.editor-shell')).toHaveAttribute(
+    'data-explorer-visible',
+    'false',
+  );
+  const hiddenWidth = await viewerHost.evaluate((element) =>
+    element.getBoundingClientRect().width,
+  );
+  expect(hiddenWidth).toBeGreaterThan(initialWidth + 150);
+
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await expect(toggle).toHaveAttribute('aria-label', 'Hide Explorer');
+  await expect(explorer).toBeVisible();
+});
+
 test('renders explorer rows with twisties and file icons', async ({ page }) => {
   await page.goto('/');
 

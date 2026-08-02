@@ -24,6 +24,10 @@ body {
   grid-template-columns: minmax(180px, 240px) minmax(0, 1fr);
 }
 
+.editor-main.is-explorer-hidden {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .topbar {
   min-height: 35px;
   padding: 6px 16px;
@@ -42,6 +46,36 @@ body {
   display: flex;
   align-items: baseline;
   gap: 10px;
+}
+
+.topbar-leading {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.topbar-action {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--vscode-icon-foreground);
+  cursor: pointer;
+}
+
+.topbar-action:hover {
+  background: var(--vscode-list-hoverBackground);
+}
+
+.topbar-action:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
 }
 
 .source-title strong {
