@@ -1,4 +1,263 @@
 ///|
+/// Host-neutral filesystem/provider protocol retained as an extension contract.
+struct SourcePath {
+  value : String
+} derive(Eq, Debug)
+
+///|
+/// Validation failures for user-facing source paths and document URIs.
+pub(all) enum SourceError {
+  MissingPath
+  InvalidPath
+} derive(Eq, Debug)
+
+///|
+/// Result wrapper used instead of raising while normalizing source paths.
+pub enum SourcePathResult {
+  ParsedSourcePath(SourcePath)
+  SourcePathError(SourceError)
+} derive(Eq, Debug)
+
+///|
+/// Raw file text plus metadata needed to construct a `DocumentSnapshot`.
+struct DocumentContent {
+  text : String
+  display_name : String
+  language_id : String
+  revision : String
+} derive(Debug)
+
+///|
+/// Builds file content while allowing providers to omit derived metadata.
+pub fn DocumentContent::DocumentContent(
+  text : String,
+  display_name? : String = "",
+  language_id? : String = "",
+  revision? : String = "",
+) -> DocumentContent {
+  { text, display_name, language_id, revision }
+}
+
+///|
+/// Stable protocol/debug label for source validation failures.
+pub fn SourceError::to_string(self : SourceError) -> String {
+  match self {
+    MissingPath => "MissingPath"
+    InvalidPath => "InvalidPath"
+  }
+}
+
+///|
+/// Normalizes a user-provided workspace path into a safe root-relative path.
+pub fn SourcePath::normalize_root_relative_path(
+  raw_path : String,
+) -> SourcePathResult {
+  if raw_path == "" {
+    return SourcePathError(MissingPath)
+  }
+  if contains_null(raw_path) {
+    return SourcePathError(InvalidPath)
+  }
+  let slash_path = raw_path.replace_all(old="\\", new="/")
+  if slash_path.has_prefix("/") ||
+    slash_path.has_prefix("//") ||
+    is_windows_drive_path(slash_path) {
+    return SourcePathError(InvalidPath)
+  }
+
+  let segments = []
+  for segment_view in slash_path.split("/") {
+    let segment = segment_view.to_owned()
+    if segment == ".." {
+      return SourcePathError(InvalidPath)
+    }
+    if segment != "" && segment != "." {
+      segments.push(segment)
+    }
+  }
+  guard segments is [first, ..] else { return SourcePathError(InvalidPath) }
+  let normalized = for i in 1..<segments.length(); normalized = first {
+    continue "\{normalized}/\{segments[i]}"
+  } nobreak {
+    normalized
+  }
+  ParsedSourcePath({ value: normalized })
+}
+
+///|
+/// Returns the normalized root-relative path string.
+pub fn SourcePath::to_string(self : SourcePath) -> String {
+  self.value
+}
+
+///|
+/// Display label for a source path; currently the normalized path itself.
+pub fn SourcePath::display_name(self : SourcePath) -> String {
+  self.value
+}
+
+///|
+/// Text of one logical line without its line break.
+pub fn DocumentSnapshot::line_text(
+  self : DocumentSnapshot,
+  line : Int,
+) -> String {
+  let start = self.line_start_offset(line)
+  let end = self.line_end_offset(line)
+  self.text[start:end].to_owned()
+}
+
+///|
+/// Host-neutral error codes used by file providers and remote workspace
+/// responses.
+pub(all) enum FileSystemProviderErrorCode {
+  FileNotFound
+  FileExists
+  FileNotADirectory
+  IsDirectory
+  NoPermissions
+  Unavailable
+  InvalidUri
+  InvalidData
+} derive(Eq, Debug)
+
+///|
+/// File-provider failure with optional URI context.
+pub struct FileSystemProviderError {
+  code : FileSystemProviderErrorCode
+  message : String
+  uri : @base_common.Uri?
+} derive(Debug)
+
+///|
+/// Document-level failure with optional URI context.
+pub struct DocumentError {
+  code : FileSystemProviderErrorCode
+  message : String
+  uri : @base_common.Uri?
+} derive(Debug)
+
+///|
+/// Provider read result without exceptions, so browser and native providers can
+/// share the same contract.
+pub(all) enum FileReadResult {
+  FileReadOk(DocumentContent)
+  FileReadError(FileSystemProviderError)
+} derive(Debug)
+
+///|
+/// File-watch event kind. Providers may coalesce events before delivering
+/// them.
+pub(all) enum FileChangeType {
+  Created
+  Changed
+  Deleted
+} derive(Eq, Debug)
+
+///|
+/// One changed document URI reported by a file watch.
+pub(all) struct FileChange {
+  uri : @base_common.Uri
+  change_type : FileChangeType
+} derive(Debug)
+
+///|
+/// Watch behavior requested from a provider.
+pub struct WatchOptions {
+  recursive : Bool
+  excludes : Array[String]
+} derive(Debug)
+
+///|
+/// Disposable watch handle. Calling `dispose` must stop future callbacks for
+/// that watch when the provider can do so.
+pub(all) struct FileWatch {
+  dispose : () -> Unit
+}
+
+///|
+/// Host filesystem abstraction for readonly document loading and file-change
+/// notifications.
+pub(open) trait FileSystemProvider {
+  fn scheme(Self) -> String
+  async fn read_file(Self, @base_common.Uri) -> FileReadResult
+  fn watch(Self, @base_common.Uri, WatchOptions, (Array[FileChange]) -> Unit) -> FileWatch
+}
+
+///|
+/// Default non-recursive watch with no excludes.
+pub fn WatchOptions::default() -> WatchOptions {
+  { recursive: false, excludes: [] }
+}
+
+///|
+/// Stops the watch through the provider-supplied disposer.
+pub fn FileWatch::dispose(self : FileWatch) -> Unit {
+  (self.dispose)()
+}
+
+///|
+/// Converts a document error back to the lower-level error shape when protocol
+/// adapters need the existing provider-code JSON format.
+pub fn DocumentError::to_file_system_error(
+  self : DocumentError,
+) -> FileSystemProviderError {
+  { code: self.code, message: self.message, uri: self.uri }
+}
+
+///|
+/// Derives a snapshot from provider content, filling display name, language id,
+/// and revision when they are absent.
+pub fn DocumentSnapshot::from_content(
+  uri : @base_common.Uri,
+  content : DocumentContent,
+) -> DocumentSnapshot {
+  DocumentSnapshot(
+    uri,
+    content.display_name,
+    content.language_id,
+    content.revision,
+    content.text,
+  )
+}
+
+///|
+/// JSON shape for document read results.
+pub impl ToJson for DocumentReadResult with fn to_json(self) {
+  match self {
+    DocumentLoaded(document) => { "ok": true, "document": document.to_json() }
+    DocumentNotFound(uri) =>
+      { "ok": false, "notFound": true, "uri": uri.to_string().to_json() }
+    DocumentReadFailed(error) => { "ok": false, "error": error.to_json() }
+  }
+}
+
+///|
+/// JSON shape for provider errors, including HTTP-like status for the native
+/// reference server.
+pub impl ToJson for FileSystemProviderError with fn to_json(self) {
+  let fields : Map[String, Json] = {
+    "code": self.code.to_string().to_json(),
+    "message": self.message.to_json(),
+    "status": self.status().to_json(),
+  }
+  if self.uri is Some(uri) {
+    fields["uri"] = uri.to_string().to_json()
+    fields["displayName"] = @base_common.basename_or_authority(uri).to_json()
+  }
+  Json::object(fields)
+}
+
+///|
+/// JSON shape for watch events.
+pub impl ToJson for FileChange with fn to_json(self) {
+  {
+    "uri": self.uri.to_string().to_json(),
+    "type": self.change_type.to_string().to_json(),
+  }
+}
+
+///|
 /// Document-provider adapters retained as the documented host-neutral
 /// workspace contract.
 pub async fn read_document(

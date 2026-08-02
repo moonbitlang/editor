@@ -34,8 +34,6 @@ pub struct DocumentError {
   uri : @common.Uri?
 } derive(@debug.Debug)
 pub fn DocumentError::DocumentError(FileSystemProviderErrorCode, String, uri? : @common.Uri) -> Self
-pub fn DocumentError::from_file_system_error(FileSystemProviderError) -> Self
-pub fn DocumentError::status(Self) -> Int
 pub fn DocumentError::to_file_system_error(Self) -> FileSystemProviderError
 pub impl ToJson for DocumentError
 
@@ -78,7 +76,6 @@ pub(all) enum FileChangeType {
   Changed
   Deleted
 } derive(Eq, @debug.Debug)
-pub fn FileChangeType::to_string(Self) -> String
 
 pub(all) enum FileReadResult {
   FileReadOk(DocumentContent)
@@ -91,7 +88,6 @@ pub struct FileSystemProviderError {
   uri : @common.Uri?
 } derive(@debug.Debug)
 pub fn FileSystemProviderError::FileSystemProviderError(FileSystemProviderErrorCode, String, uri? : @common.Uri) -> Self
-pub fn FileSystemProviderError::status(Self) -> Int
 pub impl ToJson for FileSystemProviderError
 
 pub(all) enum FileSystemProviderErrorCode {
