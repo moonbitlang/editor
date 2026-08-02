@@ -1061,14 +1061,9 @@ test('uses the same subtle callout treatment in Markdown comments', async ({
     }
 
     await page.evaluate(() => {
-      for (const [theme, foreground] of [
-        ['dark', '#d4d4d4'],
-        ['light', '#1f2328'],
-      ]) {
+      for (const theme of ['dark', 'light']) {
         const root = document.createElement('div');
         root.dataset.theme = theme;
-        root.style.setProperty('--vscode-editor-foreground', foreground);
-        root.style.setProperty('--vscode-descriptionForeground', foreground);
         const content = document.createElement('div');
         content.className = 'moonbit-viewer-markdown-comment-content';
         const quote = document.createElement('blockquote');

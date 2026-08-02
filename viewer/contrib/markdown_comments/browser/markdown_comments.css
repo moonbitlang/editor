@@ -279,12 +279,19 @@
     currentColor 7%,
     var(--vscode-editor-background, #ffffff)
   );
-  color: var(--vscode-descriptionForeground, var(--vscode-editor-foreground));
+  color: var(
+    --vscode-descriptionForeground,
+    var(--vscode-editor-foreground, #1f2328)
+  );
 }
 
 [data-theme="dark"]
   .moonbit-viewer-markdown-comment-content
   blockquote {
+  color: var(
+    --vscode-descriptionForeground,
+    var(--vscode-editor-foreground, #d4d4d4)
+  );
   background: color-mix(
     in srgb,
     currentColor 7%,
