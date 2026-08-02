@@ -1,7 +1,7 @@
 ///|
 /// One native pointer hit on a source-bearing semantic code line. The source
 /// offset is in the original Markdown model, not in rendered fence text.
-pub(all) struct MarkdownSemanticPointerHit {
+pub struct MarkdownSemanticPointerHit {
   line : MarkdownSemanticCodeLineDom
   source_offset : Int
   pointer_x : Double
