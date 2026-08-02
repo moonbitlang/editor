@@ -1564,6 +1564,7 @@ test('same-key replacement retains zone identity, reflows, and reconciles add re
     const oldPanPressed = await oldPanButton.evaluate((button) =>
       button.getAttribute('aria-pressed'));
     const initialDiagramGeometry = await viewportGeometry(initialDiagram);
+    await initialDiagram.hover();
     await initialDiagram.locator('[aria-label="Zoom in"]').click();
     const initialResizeHandle = initialDiagram.locator(diagramResizeHandle);
     await initialResizeHandle.focus();
@@ -1905,6 +1906,7 @@ test('model detach replacement reattach and Viewer disposal release every render
     expect(retainedPanButton).not.toBeNull();
     const retainedPanPressed = await retainedPanButton.evaluate((button) =>
       button.getAttribute('aria-pressed'));
+    await initialDiagram.hover();
     await initialDiagram.locator('[aria-label="Zoom in"]').click();
 
     await control(page, 'detach');
@@ -2047,6 +2049,7 @@ test('renders exact Mermaid fences through the pinned CDN module and rerenders t
     const initialInteractiveGeometry = await viewportGeometry(
       interactiveMermaid,
     );
+    await interactiveMermaid.hover();
     await interactiveMermaid.getByRole('button', { name: 'Zoom in' }).click();
     expect((await viewportGeometry(interactiveMermaid)).scale).toBeGreaterThan(
       initialInteractiveGeometry.scale,
