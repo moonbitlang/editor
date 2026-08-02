@@ -292,6 +292,47 @@ test('uses a restrained, stable Markdown type scale', async ({ page }) => {
   }
 });
 
+test('centers prose without narrowing wide Markdown content', async ({
+  page,
+}) => {
+  await page.goto('/browser-tests/component.html?markdownDocument=1');
+  await page.waitForFunction(() =>
+    Boolean(globalThis.__markdownDocumentControls),
+  );
+  await page.evaluate(() =>
+    globalThis.__markdownDocumentControls.resizeHost(1000),
+  );
+  await expect(page.locator(host)).toHaveCSS('width', '1000px');
+
+  const geometry = await page.locator(article).evaluate((articleNode) => {
+    const articleRect = articleNode.getBoundingClientRect();
+    const articleStyle = getComputedStyle(articleNode);
+    const contentLeft = articleRect.left + Number.parseFloat(articleStyle.paddingLeft);
+    const contentWidth = articleRect.width -
+      Number.parseFloat(articleStyle.paddingLeft) -
+      Number.parseFloat(articleStyle.paddingRight);
+    const paragraph = articleNode.querySelector(':scope > p').getBoundingClientRect();
+    const code = articleNode.querySelector(
+      ':scope > .moonbit-viewer-markdown-code-block',
+    ).getBoundingClientRect();
+    return {
+      contentLeft,
+      contentWidth,
+      contentCenter: contentLeft + contentWidth / 2,
+      paragraphLeft: paragraph.left,
+      paragraphWidth: paragraph.width,
+      paragraphCenter: paragraph.left + paragraph.width / 2,
+      codeLeft: code.left,
+      codeWidth: code.width,
+    };
+  });
+
+  expect(geometry.paragraphWidth).toBeLessThan(geometry.contentWidth - 200);
+  expect(geometry.paragraphCenter).toBeCloseTo(geometry.contentCenter, 1);
+  expect(geometry.codeLeft).toBeCloseTo(geometry.contentLeft, 1);
+  expect(geometry.codeWidth).toBeCloseTo(geometry.contentWidth, 1);
+});
+
 test('mounts zoom and drag controls for D2 and Mermaid in Markdown documents', async ({
   page,
 }, testInfo) => {
@@ -323,6 +364,23 @@ test('mounts zoom and drag controls for D2 and Mermaid in Markdown documents', a
 
     const viewports = page.locator(`${article} ${diagramViewport}`);
     await expect(viewports).toHaveCount(2);
+    const diagramWidths = await page.locator(article).evaluate((articleNode) => {
+      const articleRect = articleNode.getBoundingClientRect();
+      const articleStyle = getComputedStyle(articleNode);
+      const contentWidth = articleRect.width -
+        Number.parseFloat(articleStyle.paddingLeft) -
+        Number.parseFloat(articleStyle.paddingRight);
+      return {
+        contentWidth,
+        widths: Array.from(
+          articleNode.querySelectorAll('.moonbit-viewer-markdown-diagram-viewport'),
+          (viewportNode) => viewportNode.getBoundingClientRect().width,
+        ),
+      };
+    });
+    for (const width of diagramWidths.widths) {
+      expect(width).toBeCloseTo(diagramWidths.contentWidth, 1);
+    }
     const d2 = page.locator(
       `${article} [data-diagram-language="diago"]${diagramViewport}`,
     );
