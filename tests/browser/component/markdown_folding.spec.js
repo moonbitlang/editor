@@ -150,6 +150,57 @@ test('auto-fold seeds the bulky deep section and real clicks fold and reveal', a
   expect(await projectionGeneration(page)).toBe(generationBefore);
 });
 
+test('section fold controls occupy the left heading gutter', async ({
+  page,
+}, testInfo) => {
+  await openFoldingScenario(page, testInfo);
+  const controls = page.locator(toggle);
+  await expect(controls).toHaveCount(4);
+
+  const geometry = await controls.nth(1).evaluate((button) => {
+    const heading = button.parentElement;
+    const articleNode = heading.closest(
+      '.moonbit-viewer-markdown-document-article',
+    );
+    const textNode = Array.from(heading.childNodes).find(
+      (node) => node.nodeType === Node.TEXT_NODE && node.textContent.trim(),
+    );
+    const textRange = document.createRange();
+    textRange.selectNodeContents(textNode);
+    const buttonRect = button.getBoundingClientRect();
+    const headingRect = heading.getBoundingClientRect();
+    const articleRect = articleNode.getBoundingClientRect();
+    const textRect = textRange.getBoundingClientRect();
+    return {
+      articleLeft: articleRect.left,
+      buttonBottom: buttonRect.bottom,
+      buttonHeight: buttonRect.height,
+      buttonLeft: buttonRect.left,
+      buttonRight: buttonRect.right,
+      buttonTop: buttonRect.top,
+      buttonWidth: buttonRect.width,
+      firstLineBottom:
+        headingRect.top +
+        Number.parseFloat(getComputedStyle(heading).lineHeight),
+      headingLeft: headingRect.left,
+      headingTop: headingRect.top,
+      textLeft: textRect.left,
+    };
+  });
+
+  expect(geometry.buttonWidth).toBe(24);
+  expect(geometry.buttonHeight).toBe(24);
+  expect(geometry.buttonLeft).toBeGreaterThanOrEqual(
+    geometry.articleLeft - 0.5,
+  );
+  expect(geometry.buttonRight).toBeLessThanOrEqual(geometry.headingLeft + 0.5);
+  expect(geometry.buttonTop).toBeGreaterThanOrEqual(geometry.headingTop - 0.5);
+  expect(geometry.buttonBottom).toBeLessThanOrEqual(
+    geometry.firstLineBottom + 0.5,
+  );
+  expect(geometry.textLeft).toBeCloseTo(geometry.headingLeft, 1);
+});
+
 test('a pending hover never lands on content collapsed or rewritten under it', async ({ page }, testInfo) => {
   await openFoldingScenario(page, testInfo);
   const facts = await foldFacts(page);
