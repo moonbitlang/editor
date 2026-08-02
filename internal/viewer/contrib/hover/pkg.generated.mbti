@@ -141,12 +141,11 @@ pub fn HoverController::widget_view(Self) -> HoverWidgetView?
 pub fn HoverController::widget_view_with_loading(Self, HoverPart?) -> HoverWidgetView?
 pub fn HoverController::widget_visible(Self) -> Bool
 
-type HoverDebouncer derive(Eq)
+type HoverDebouncer derive(Eq, @debug.Debug)
 pub fn HoverDebouncer::HoverDebouncer(default_delay_ms? : Int) -> Self
 pub fn HoverDebouncer::cancel(Self) -> Self
 pub fn HoverDebouncer::schedule(Self, HoverOperationOptions, delay_ms? : Int) -> (Int, Self)
 pub fn HoverDebouncer::take(Self, Int) -> (HoverOperationOptions?, Self)
-pub impl @debug.Debug for HoverDebouncer
 
 pub(all) enum HoverEffect {
   HoverNoEffect
@@ -212,9 +211,8 @@ pub struct HoverParticipantHandle {
 }
 pub fn HoverParticipantHandle::HoverParticipantHandle(Int, (HoverComputeContext) -> Array[HoverPart], suggest_hover_anchor? : (@view_model.InjectedText?, @common.Range, Double?, Double?) -> HoverAnchor?, compute_async? : async (HoverComputeContext, @language.CancellationToken) -> Array[HoverPart] noraise, create_loading_message? : (HoverAnchor) -> HoverPart?) -> Self
 
-type HoverParticipantOwner derive(Eq)
+type HoverParticipantOwner derive(Eq, @debug.Debug)
 pub fn HoverParticipantOwner::HoverParticipantOwner() -> Self
-pub impl @debug.Debug for HoverParticipantOwner
 
 pub struct HoverParticipantRegistry {
   entries : Array[(HoverParticipantServices) -> HoverParticipantHandle]

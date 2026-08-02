@@ -22,19 +22,7 @@ struct CursorRenderData {
   padding_left : Double
   width : Double
   height : Int
-} derive(Eq)
-
-///|
-/// Structural diagnostics without publishing an inherent `to_repr` method.
-pub impl Debug for CursorRenderData with fn to_repr(self) {
-  Repr::record({
-    "top": Repr(self.top),
-    "left": Repr(self.left),
-    "padding_left": Repr(self.padding_left),
-    "width": Repr(self.width),
-    "height": Repr(self.height),
-  })
-}
+} derive(Eq, Debug)
 
 ///|
 /// Public cursor owner for controller callers. Package-local lifecycle code

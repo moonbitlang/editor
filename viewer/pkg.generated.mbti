@@ -122,7 +122,7 @@ pub fn Viewer::set_value(Self, String) -> Unit
 pub fn Viewer::toggle_markdown_section_at(Self, Int) -> Bool
 pub fn Viewer::update_options(Self, ViewerOptions) -> Unit
 
-type ViewerOptions derive(Eq)
+type ViewerOptions derive(Eq, @debug.Debug)
 pub fn ViewerOptions::ViewerOptions(soft_wrap? : Bool, tab_size? : Int, wrapping_indent? : @editor_api.WrappingIndent, render_whitespace? : @editor_api.RenderWhitespace, render_control_characters? : Bool, render_line_highlight? : @editor_api.RenderLineHighlight, render_line_highlight_only_when_focus? : Bool, render_validation_decorations? : @editor_api.RenderValidationDecorations, theme? : String, placeholder? : String, line_decorations_width? : Int, line_numbers_min_chars? : Int, folding? : Bool, show_folding_controls? : @editor_api.ShowFoldingControls, folding_highlight? : Bool, folding_maximum_regions? : Int, unfold_on_click_after_end_of_line? : Bool, smooth_scrolling? : Bool, show_unused? : Bool, show_deprecated? : Bool, font_family? : String, font_weight? : String, font_size? : Double, line_height? : Double, letter_spacing? : Double) -> Self
 pub fn ViewerOptions::default() -> Self
 pub fn ViewerOptions::line_height(Self) -> Double
@@ -139,14 +139,12 @@ pub fn ViewerOptions::with_render_whitespace(Self, @editor_api.RenderWhitespace)
 pub fn ViewerOptions::with_soft_wrap(Self, Bool) -> Self
 pub fn ViewerOptions::with_tab_size(Self, Int) -> Self
 pub fn ViewerOptions::with_theme(Self, String) -> Self
-pub impl @debug.Debug for ViewerOptions
 
 type ViewerServices
 pub fn ViewerServices::ViewerServices(languages? : @languages.LanguageHandle, markers? : @markers.MarkerDecorationsSource, agent_feedback? : @agent_feedback_api.AgentFeedbackHandle, location_opener? : @navigation_api.LocationOpenerHandle, text_model_resolver? : @navigation_api.TextModelResolverHandle, quick_diff? : @quick_diff_api.QuickDiffHandle, log_service? : @log.LogHandle) -> Self
 pub fn ViewerServices::dispose(Self) -> Unit
 
-type ViewerViewState
-pub impl @debug.Debug for ViewerViewState
+type ViewerViewState derive(@debug.Debug)
 
 // Type aliases
 
