@@ -1,18 +1,18 @@
 ///|
 /// One fixed-position context-menu anchor in visual-viewport coordinates.
-priv struct ContextMenuPoint {
+struct ContextMenuPoint {
   x : Double
   y : Double
 }
 
 ///|
-priv struct ContextMenuSize {
+struct ContextMenuSize {
   width : Double
   height : Double
 }
 
 ///|
-priv struct ContextMenuRect {
+struct ContextMenuRect {
   left : Double
   top : Double
   right : Double

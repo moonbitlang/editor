@@ -10,35 +10,15 @@ import {
 }
 
 // Values
-pub fn clean_class_name(String) -> String
-
 pub fn compute_indent_level(String, Int) -> Int
 
 pub fn default_token_color_map() -> Array[String]
 
-pub fn get_node_color(IntervalNode) -> NodeColor
-
-pub fn get_word_at_text(Int, String, Int) -> WordAtPosition?
-
-pub fn interval_compare(Int, Int, Int, Int) -> Int
-
 pub fn line_tokens_from_lexer_tokens(String, Array[@syntax.LineToken], @services.LanguageIdCodec, language_id? : Int) -> @tokens.LineTokens
-
-pub fn recompute_max_end(IntervalNode) -> Unit
-
-pub let sentinel : IntervalNode
-
-pub let usual_word_separators : String
 
 // Errors
 
 // Types and methods
-pub struct ActiveIndentGuideInfo {
-  start_line_number : Int
-  end_line_number : Int
-  indent : Int
-} derive(Eq, @debug.Debug)
-
 type AttachedViewImpl
 pub fn AttachedViewImpl::set_visible_lines(Self, Array[VisibleLineRange], Bool) -> Unit
 
@@ -47,16 +27,6 @@ type DecorationsTrees
 type DidChangeContentEmitter
 
 type DidChangeDecorationsEmitter
-
-pub struct GuidesTextModelPart {
-  text_model : TextSnapshot
-  tab_size : Int
-  indent_size : Int
-  off_side : Bool
-}
-pub fn GuidesTextModelPart::GuidesTextModelPart(TextSnapshot, tab_size? : Int, indent_size? : Int, off_side? : Bool) -> Self
-pub fn GuidesTextModelPart::get_active_indent_guide(Self, Int, Int, Int) -> ActiveIndentGuideInfo
-pub fn GuidesTextModelPart::get_lines_indent_guides(Self, Int, Int) -> Array[Int]
 
 pub(all) struct InjectedTextOptions {
   content : String
@@ -69,61 +39,13 @@ pub struct InternalModelContentChangeEvent {
   raw_content_changed_event : ModelRawContentChangedEvent
   content_changed_event : ModelContentChangedEvent
 } derive(@debug.Debug)
-pub fn InternalModelContentChangeEvent::merge(Self, Self) -> Self
-
-pub(all) struct IntervalNode {
-  mut metadata : Int
-  mut parent_ : IntervalNode?
-  mut left_ : IntervalNode?
-  mut right_ : IntervalNode?
-  mut start : Int
-  mut end : Int
-  mut delta : Int
-  mut max_end : Int
-  id : String
-  mut owner_id : Int
-  mut options : ModelDecorationOptions?
-  mut cached_version_id : Int
-  mut cached_absolute_start : Int
-  mut cached_absolute_end : Int
-  mut range : @common.Range?
-  // private fields
-}
-pub fn IntervalNode::IntervalNode(String, Int, Int) -> Self
-pub fn IntervalNode::detach(Self) -> Unit
-pub fn IntervalNode::left(Self) -> Self
-pub fn IntervalNode::parent(Self) -> Self
-pub fn IntervalNode::reset(Self, Int, Int, Int, @common.Range?) -> Unit
-pub fn IntervalNode::right(Self) -> Self
-pub fn IntervalNode::same(Self, Self) -> Bool
-pub fn IntervalNode::set_cached_offsets(Self, Int, Int, Int) -> Unit
-pub fn IntervalNode::set_options(Self, ModelDecorationOptions) -> Unit
-
-pub struct IntervalTree {
-  mut root : IntervalNode
-  mut request_normalize_delta : Bool
-}
-pub fn IntervalTree::IntervalTree() -> Self
-pub fn IntervalTree::collect_nodes_from_owner(Self, Int) -> Array[IntervalNode]
-pub fn IntervalTree::collect_nodes_post_order(Self) -> Array[IntervalNode]
-pub fn IntervalTree::delete(Self, IntervalNode) -> Unit
-pub fn IntervalTree::get_all_in_order(Self) -> Array[IntervalNode]
-pub fn IntervalTree::insert(Self, IntervalNode) -> Unit
-pub fn IntervalTree::interval_search(Self, Int, Int, Int, Bool, Bool, Int, Bool) -> Array[IntervalNode]
-pub fn IntervalTree::resolve_node(Self, IntervalNode, Int) -> Unit
-pub fn IntervalTree::search(Self, Int, Bool, Bool, Int, Bool) -> Array[IntervalNode]
 
 pub(all) enum MinimapPosition {
   Inline
   Gutter
 } derive(Eq, @debug.Debug)
 
-pub struct ModelContentChange {
-  range : @common.Range
-  range_offset : Int
-  range_length : Int
-  text : String
-} derive(@debug.Debug)
+type ModelContentChange derive(@debug.Debug)
 
 pub struct ModelContentChangedEvent {
   changes : Array[ModelContentChange]
@@ -204,7 +126,6 @@ pub enum ModelRawChange {
   ModelRawLinesInserted(from_line_number~ : Int, from_line_number_post_edit~ : Int, count~ : Int)
   ModelRawEOLChanged
 } derive(@debug.Debug)
-pub fn ModelRawChange::change_type(Self) -> RawContentChangedType
 
 pub struct ModelRawContentChangedEvent {
   changes : Array[ModelRawChange]
@@ -213,7 +134,6 @@ pub struct ModelRawContentChangedEvent {
   is_redoing : Bool
 } derive(@debug.Debug)
 pub fn ModelRawContentChangedEvent::contains_event(Self, RawContentChangedType) -> Bool
-pub fn ModelRawContentChangedEvent::merge(Self, Self) -> Self
 
 pub(all) struct ModelTokensChangedEvent {
   semantic_tokens_applied : Bool
@@ -224,11 +144,6 @@ pub(all) struct ModelTokensChangedRange {
   from_line_number : Int
   to_line_number : Int
 }
-
-pub enum NodeColor {
-  Black
-  Red
-} derive(Eq, @debug.Debug)
 
 pub(all) enum OverviewRulerLane {
   Left
@@ -262,10 +177,6 @@ pub struct TextModel {
   mut snapshot : TextSnapshot
   tokenization : TokenizationTextModelPart
   on_will_dispose : @common.Emitter[Unit]
-  mut delta_decoration_call_cnt : Int
-  mut last_decoration_id : Int
-  mut decorations : Map[String, IntervalNode]
-  mut decorations_tree : DecorationsTrees
   on_did_change_decorations : DidChangeDecorationsEmitter
   // private fields
 }
@@ -273,49 +184,31 @@ pub fn TextModel::TextModel(@common.Uri, String, String, Int, String, String) ->
 pub fn[T] TextModel::change_decorations(Self, (ModelDecorationsChangeAccessor) -> T, owner_id? : Int) -> T
 pub fn TextModel::delta_decorations(Self, Array[String], Array[ModelDeltaDecoration], owner_id? : Int) -> Array[String]
 pub fn TextModel::dispose(Self) -> Unit
-pub fn TextModel::equals_text_snapshot(Self, TextSnapshot) -> Bool
-pub fn TextModel::get_all_decorations(Self, owner_id? : Int, filter_out_validation? : Bool, filter_font_decorations? : Bool) -> Array[ModelDecoration]
-pub fn TextModel::get_all_margin_decorations(Self, owner_id? : Int) -> Array[ModelDecoration]
 pub fn TextModel::get_attached_editor_count(Self) -> Int
-pub fn TextModel::get_decoration_options(Self, String) -> ModelDecorationOptions?
 pub fn TextModel::get_decoration_range(Self, String) -> @common.Range?
 pub fn TextModel::get_decorations_in_range(Self, @common.Range, owner_id? : Int, filter_out_validation? : Bool, filter_font_decorations? : Bool, only_margin_decorations? : Bool) -> Array[ModelDecoration]
-pub fn TextModel::get_eol(Self) -> String
 pub fn TextModel::get_full_model_range(Self) -> @common.Range
 pub fn TextModel::get_injected_text_decorations(Self, owner_id? : Int) -> Array[ModelDecoration]
-pub fn TextModel::get_injected_text_in_interval(Self, Int, Int, owner_id? : Int) -> Array[ModelDecoration]
 pub fn TextModel::get_language_id(Self) -> String
 pub fn TextModel::get_line_content(Self, Int) -> String
 pub fn TextModel::get_line_count(Self) -> Int
 pub fn TextModel::get_line_decorations(Self, Int, owner_id? : Int, filter_out_validation? : Bool, filter_font_decorations? : Bool) -> Array[ModelDecoration]
 pub fn TextModel::get_line_first_non_whitespace_column(Self, Int) -> Int
 pub fn TextModel::get_line_last_non_whitespace_column(Self, Int) -> Int
-pub fn TextModel::get_line_length(Self, Int) -> Int
 pub fn TextModel::get_line_max_column(Self, Int) -> Int
 pub fn TextModel::get_line_min_column(Self, Int) -> Int
 pub fn TextModel::get_lines_content(Self) -> Array[String]
-pub fn TextModel::get_lines_decorations(Self, Int, Int, owner_id? : Int, filter_out_validation? : Bool, filter_font_decorations? : Bool, only_margin_decorations? : Bool) -> Array[ModelDecoration]
 pub fn TextModel::get_offset_at(Self, @common.Position) -> Int
-pub fn TextModel::get_overview_ruler_decorations(Self, owner_id? : Int, filter_out_validation? : Bool, filter_font_decorations? : Bool) -> Array[ModelDecoration]
 pub fn TextModel::get_position_at(Self, Int) -> @common.Position
 pub fn TextModel::get_range_at(Self, Int, Int) -> @common.Range
 pub fn TextModel::get_value(Self) -> String
 pub fn TextModel::get_value_in_range(Self, @common.Range) -> String
-pub fn TextModel::get_value_length(Self) -> Int
-pub fn TextModel::get_value_length_in_range(Self, @common.Range) -> Int
 pub fn TextModel::get_version_id(Self) -> Int
 pub fn TextModel::get_word_at_position(Self, @common.Position) -> WordAtPosition?
-pub fn TextModel::get_word_until_position(Self, @common.Position) -> WordAtPosition
 pub fn TextModel::identity(Self) -> Int
-pub fn TextModel::is_attached_to_editor(Self) -> Bool
 pub fn TextModel::is_disposed(Self) -> Bool
-pub fn TextModel::is_too_large_for_tokenization(Self) -> Bool
-pub fn TextModel::might_contain_non_basic_ascii(Self) -> Bool
-pub fn TextModel::might_contain_rtl(Self) -> Bool
-pub fn TextModel::modify_position(Self, @common.Position, Int) -> @common.Position
 pub fn TextModel::on_before_attached(Self, scheduler? : TokenizationScheduler) -> AttachedViewImpl
 pub fn TextModel::on_before_detached(Self, AttachedViewImpl) -> Unit
-pub fn TextModel::on_did_change_attached(Self, () -> Unit) -> @common.Disposable
 pub fn TextModel::on_did_change_content(Self, (ModelContentChangedEvent) -> Unit) -> @common.Disposable
 pub fn TextModel::on_did_change_decorations(Self, (ModelDecorationsChangedEvent) -> Unit) -> @common.Disposable
 pub fn TextModel::on_did_change_tokens(Self, (ModelTokensChangedEvent) -> Unit) -> @common.Disposable
@@ -327,34 +220,18 @@ pub fn TextModel::set_value(Self, String) -> Unit
 pub fn TextModel::snapshot(Self) -> TextSnapshot
 pub fn TextModel::validate_position(Self, @common.Position) -> @common.Position
 pub fn TextModel::validate_range(Self, @common.Range) -> @common.Range
-pub fn TextModel::validate_range_relaxed(Self, @common.Range) -> @common.Range
 pub impl @debug.Debug for TextModel
 
-pub struct TextSnapshot {
-  text : String
-  line_starts : Array[Int]
-} derive(@debug.Debug)
+type TextSnapshot derive(@debug.Debug)
 pub fn TextSnapshot::TextSnapshot(String) -> Self
-pub fn TextSnapshot::equals(Self, Self) -> Bool
-pub fn TextSnapshot::get_eol(Self) -> String
 pub fn TextSnapshot::get_length(Self) -> Int
 pub fn TextSnapshot::get_line_content(Self, Int) -> String
 pub fn TextSnapshot::get_line_first_non_whitespace_column(Self, Int) -> Int
-pub fn TextSnapshot::get_line_last_non_whitespace_column(Self, Int) -> Int
-pub fn TextSnapshot::get_line_length(Self, Int) -> Int
 pub fn TextSnapshot::get_line_max_column(Self, Int) -> Int
 pub fn TextSnapshot::get_offset_at(Self, Int, Int) -> Int
-pub fn TextSnapshot::get_position_at(Self, Int) -> @common.Position
 pub fn TextSnapshot::get_value(Self) -> String
-pub fn TextSnapshot::get_value_in_range(Self, @common.Range) -> String
-pub fn TextSnapshot::get_value_length_in_range(Self, @common.Range) -> Int
-pub fn TextSnapshot::line_at_offset(Self, Int) -> Int
 pub fn TextSnapshot::line_count(Self) -> Int
-pub fn TextSnapshot::line_end_offset(Self, Int) -> Int
-pub fn TextSnapshot::line_start_offset(Self, Int) -> Int
 pub fn TextSnapshot::line_text(Self, Int) -> String
-pub fn TextSnapshot::might_contain_non_basic_ascii(Self) -> Bool
-pub fn TextSnapshot::might_contain_rtl(Self) -> Bool
 pub fn TextSnapshot::offset_range_of(Self, @common.Range) -> @common.OffsetRange
 pub fn TextSnapshot::range_of(Self, @common.OffsetRange) -> @common.Range
 pub fn TextSnapshot::slice(Self, @common.OffsetRange) -> String
@@ -375,8 +252,6 @@ pub(all) enum TrackedRangeStickiness {
   GrowsOnlyWhenTypingBefore
   GrowsOnlyWhenTypingAfter
 } derive(Eq, @debug.Debug)
-pub fn TrackedRangeStickiness::from_int(Int) -> Self
-pub fn TrackedRangeStickiness::to_int(Self) -> Int
 
 pub(all) struct VisibleLineRange {
   start_line_number : Int

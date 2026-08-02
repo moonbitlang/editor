@@ -24,47 +24,43 @@ pub fn render_tokenized_code_block(MarkdownCodeBlock, String?) -> String
 // Errors
 
 // Types and methods
-pub(all) struct MarkdownBlockAnchor {
+pub struct MarkdownBlockAnchor {
   index : Int
   source_range : @common.OffsetRange
   rendered_element_index : Int?
-  heading_level : Int?
-  heading_text : String?
+  // private fields
 } derive(Eq, @debug.Debug)
 
-pub(all) struct MarkdownCodeBlock {
+pub struct MarkdownCodeBlock {
   block_index : Int
-  code : String
   language_id : String?
-  full_info_string : String?
-  info_remainder : String?
   block_source_range : @common.OffsetRange
   code_lines : Array[MarkdownCodeLine]
+  // private fields
 } derive(Eq, @debug.Debug)
+pub fn MarkdownCodeBlock::MarkdownCodeBlock(Int, String, String?, String?, String?, @common.OffsetRange, Array[MarkdownCodeLine]) -> Self
 pub fn MarkdownCodeBlock::is_moonbit_check_fence(Self, MarkdownResourceKind) -> Bool
 pub fn MarkdownCodeBlock::project_source_range(Self, @common.OffsetRange) -> Array[MarkdownProjectedCodeRange]
 
-pub(all) struct MarkdownCodeLine {
+pub struct MarkdownCodeLine {
   displayed_text : String
   source_line_number : Int
   source_range : @common.OffsetRange
-  displayed_boundary_to_source_offset : Array[Int?]
+  // private fields
 } derive(Eq, @debug.Debug)
-pub fn MarkdownCodeLine::displayed_boundary_at_source_offset(Self, Int) -> Int?
-pub fn MarkdownCodeLine::project_source_range(Self, @common.OffsetRange) -> @common.OffsetRange?
 pub fn MarkdownCodeLine::source_offset_at_displayed_boundary(Self, Int) -> Int?
 
-pub(all) struct MarkdownDocumentProjection {
+pub struct MarkdownDocumentProjection {
   block_anchors : Array[MarkdownBlockAnchor]
   code_blocks : Array[MarkdownCodeBlock]
 } derive(Eq, @debug.Debug)
 
-pub(all) struct MarkdownProjectedCodeRange {
+pub struct MarkdownProjectedCodeRange {
   line_index : Int
   displayed_range : @common.OffsetRange
 } derive(Eq, @debug.Debug)
 
-pub(all) struct MarkdownRenderFact {
+pub struct MarkdownRenderFact {
   html : String
   has_code_block : Bool
   projection : MarkdownDocumentProjection
@@ -75,23 +71,20 @@ pub(all) enum MarkdownResourceKind {
   MoonBitMarkdown
 } derive(Eq, @debug.Debug)
 
-pub(all) struct MarkdownSection {
+pub struct MarkdownSection {
   heading_anchor_index : Int
-  level : Int
-  body_anchor_indexes : Array[Int]
   source_range : @common.OffsetRange
   body_source_range : @common.OffsetRange?
+  // private fields
 } derive(Eq, @debug.Debug)
 pub fn MarkdownSection::body_rendered_element_indexes(Self, MarkdownDocumentProjection) -> Array[Int]
 pub fn MarkdownSection::is_foldable(Self, MarkdownDocumentProjection) -> Bool
 
-pub(all) struct MarkdownTocEntry {
-  level : Int
+pub struct MarkdownTocEntry {
   depth : Int
   text : String
   source_offset : Int
-  section_index : Int
-  is_foldable : Bool
+  // private fields
 } derive(Eq, @debug.Debug)
 
 // Type aliases

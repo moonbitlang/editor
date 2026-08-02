@@ -13,7 +13,7 @@ pub(all) enum HoverPart {
 ///|
 /// Complete hover result after participant parts have been merged and sorted.
 pub struct ComputedHover {
-  range : @base_common.Range
+  priv range : @base_common.Range
   parts : Array[HoverPart]
 } derive(Eq, Debug)
 
@@ -24,7 +24,7 @@ pub struct ComputedHover {
 /// services they need at construction instead. `line_decorations` is selected
 /// once by the computer and `source` is forwarded unchanged to every
 /// sync/async participant.
-pub struct HoverComputeContext {
+priv struct HoverComputeContext {
   model : @model.TextModel
   anchor : HoverAnchor
   source : HoverStartSource
@@ -95,18 +95,18 @@ pub struct HoverParticipantHandle {
     Double?,
     Double?,
   ) -> HoverAnchor?)?
-  compute_sync : (HoverComputeContext) -> Array[HoverPart]
-  compute_async : (async (HoverComputeContext, @language.CancellationToken) -> Array[
+  priv compute_sync : (HoverComputeContext) -> Array[HoverPart]
+  priv compute_async : (async (HoverComputeContext, @language.CancellationToken) -> Array[
     HoverPart,
   ] noraise)?
-  create_loading_message : ((HoverAnchor) -> HoverPart?)?
+  priv create_loading_message : ((HoverAnchor) -> HoverPart?)?
 }
 
 ///|
 /// Creates an open hover-participant adapter. Optional callbacks preserve
 /// Monaco's absent-member branches; closures capture any concrete participant
 /// state they need at this construction boundary.
-pub fn HoverParticipantHandle::HoverParticipantHandle(
+fn HoverParticipantHandle::HoverParticipantHandle(
   ordinal : Int,
   compute_sync : (HoverComputeContext) -> Array[HoverPart],
   suggest_hover_anchor? : (
@@ -142,13 +142,13 @@ pub(all) struct HoverParticipantServices {
 
 ///|
 /// Hover participant that exposes diagnostics/markers at the anchor range.
-struct MarkerHoverParticipant {
+priv struct MarkerHoverParticipant {
   marker_decorations : @markers.MarkerDecorationsHandle
 }
 
 ///|
 /// Creates the marker hover participant over the marker decorations service.
-pub fn MarkerHoverParticipant::MarkerHoverParticipant(
+fn MarkerHoverParticipant::MarkerHoverParticipant(
   marker_decorations : @markers.MarkerDecorationsHandle,
 ) -> MarkerHoverParticipant {
   { marker_decorations, }
@@ -216,7 +216,7 @@ fn MarkerHoverParticipant::compute_sync(
 ///|
 /// Adapts the marker participant to the generic hover pipeline. Marker hover is
 /// fully synchronous, so the three optional source members remain absent.
-pub fn MarkerHoverParticipant::hover_participant_handle(
+fn MarkerHoverParticipant::hover_participant_handle(
   self : MarkerHoverParticipant,
 ) -> HoverParticipantHandle {
   HoverParticipantHandle(0, ctx => self.compute_sync(ctx))
@@ -224,13 +224,13 @@ pub fn MarkerHoverParticipant::hover_participant_handle(
 
 ///|
 /// Hover participant that queries registered markdown/plaintext hover providers.
-struct MarkdownHoverParticipant {
+priv struct MarkdownHoverParticipant {
   languages : @languages.LanguageHandle
 }
 
 ///|
 /// Creates the markdown hover participant over the language features registry.
-pub fn MarkdownHoverParticipant::MarkdownHoverParticipant(
+fn MarkdownHoverParticipant::MarkdownHoverParticipant(
   languages : @languages.LanguageHandle,
 ) -> MarkdownHoverParticipant {
   { languages, }
@@ -283,7 +283,7 @@ fn MarkdownHoverParticipant::create_loading_message(
 /// Adapts the Markdown participant to the generic hover pipeline. The required
 /// synchronous callback returns no parts, as in Monaco; anchor suggestion is
 /// absent, while async computation and loading-message production are present.
-pub fn MarkdownHoverParticipant::hover_participant_handle(
+fn MarkdownHoverParticipant::hover_participant_handle(
   self : MarkdownHoverParticipant,
 ) -> HoverParticipantHandle {
   HoverParticipantHandle(
@@ -296,7 +296,7 @@ pub fn MarkdownHoverParticipant::hover_participant_handle(
 
 ///|
 /// Coordinates hover participants for one viewer service set.
-pub struct ContentHoverComputer {
+struct ContentHoverComputer {
   participants : Array[HoverParticipantHandle]
 }
 
@@ -308,6 +308,14 @@ pub fn ContentHoverComputer::ContentHoverComputer(
   services : HoverParticipantServices,
 ) -> ContentHoverComputer {
   { participants: hover_participant_registry.build_all(services) }
+}
+
+///|
+/// Returns the participant adapters used by the browser event bridge.
+pub fn ContentHoverComputer::participants(
+  self : ContentHoverComputer,
+) -> Array[HoverParticipantHandle] {
+  self.participants
 }
 
 ///|
@@ -445,7 +453,7 @@ pub async fn ContentHoverComputer::compute_async_each(
 ///|
 /// Union range of accumulated hover parts, falling back to the anchor range
 /// when there are none. The hover widget anchors on this span.
-pub fn hover_parts_range(
+fn hover_parts_range(
   parts : Array[HoverPart],
   fallback : @base_common.Range,
 ) -> @base_common.Range {

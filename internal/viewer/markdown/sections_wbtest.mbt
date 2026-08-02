@@ -1,4 +1,4 @@
-// Section derivation over a real parse. Every case renders actual Markdown
+// White-box section derivation over a real parse. Every case renders actual Markdown
 // rather than hand-building anchors, so these assertions also pin the
 // heading-level retention added to `MarkdownBlockAnchor`.
 
@@ -6,8 +6,8 @@
 /// Renders `source` and describes each derived section as
 /// `level:heading_anchor:[body anchors]:foldable`.
 fn describe_sections(source : String) -> Array[String] {
-  let projection = @markdown.render_markdown(source).projection
-  @markdown.markdown_sections(projection).map(section => {
+  let projection = render_markdown(source).projection
+  markdown_sections(projection).map(section => {
     "level \{section.level} heading@\{section.heading_anchor_index} body\{Repr(section.body_anchor_indexes)} foldable=\{section.is_foldable(projection)}"
   })
 }
@@ -202,8 +202,8 @@ test "the body source range covers the body and excludes the heading" {
     #|
     #|body line
     #|
-  let projection = @markdown.render_markdown(source).projection
-  let sections = @markdown.markdown_sections(projection)
+  let projection = render_markdown(source).projection
+  let sections = markdown_sections(projection)
   guard sections is [section, ..] else { fail("expected one section") }
   let heading = projection.block_anchors[section.heading_anchor_index]
   debug_inspect(
@@ -236,8 +236,8 @@ test "the hidden run is the body's rendered ordinals, never the heading's" {
     #|
     #|# Next
     #|
-  let projection = @markdown.render_markdown(source).projection
-  let sections = @markdown.markdown_sections(projection)
+  let projection = render_markdown(source).projection
+  let sections = markdown_sections(projection)
   guard sections is [first, ..] else { fail("expected a first section") }
   let heading_ordinal = projection.block_anchors[first.heading_anchor_index].rendered_element_index
   debug_inspect(
@@ -266,8 +266,8 @@ test "a code fence inside a section is part of that section's body" {
     #|
     #|# Other
     #|
-  let projection = @markdown.render_markdown(source).projection
-  let sections = @markdown.markdown_sections(projection)
+  let projection = render_markdown(source).projection
+  let sections = markdown_sections(projection)
   guard sections is [example, ..] else { fail("expected the example section") }
   guard projection.code_blocks is [block, ..] else {
     fail("expected one code block")
@@ -296,8 +296,8 @@ test "section lookup by source offset returns the innermost match" {
     #|
     #|inner body
     #|
-  let projection = @markdown.render_markdown(source).projection
-  let sections = @markdown.markdown_sections(projection)
+  let projection = render_markdown(source).projection
+  let sections = markdown_sections(projection)
   guard source.find("inner body") is Some(inner_body_offset) else {
     fail("fixture must contain the inner body")
   }
@@ -305,7 +305,7 @@ test "section lookup by source offset returns the innermost match" {
     fail("fixture must contain the outer body")
   }
   let level_at = offset => {
-    @markdown.markdown_section_at_source_offset(sections, offset).map(section => {
+    markdown_section_at_source_offset(sections, offset).map(section => {
       section.level
     })
   }
@@ -320,9 +320,9 @@ test "section lookup by source offset returns the innermost match" {
 ///|
 /// Renders `source` and pairs each section with its reconciliation key.
 fn describe_keys(source : String) -> Array[String] {
-  let projection = @markdown.render_markdown(source).projection
-  let sections = @markdown.markdown_sections(projection)
-  @markdown.markdown_section_keys(sections, projection, source).map(key => {
+  let projection = render_markdown(source).projection
+  let sections = markdown_sections(projection)
+  markdown_section_keys(sections, projection, source).map(key => {
     key.replace_all(old="\u{1f}", new="|")
   })
 }
@@ -506,9 +506,9 @@ test "a body of only non-rendering anchors is not foldable" {
     #|
     #|# Next
     #|
-  let projection = @markdown.render_markdown(source).projection
+  let projection = render_markdown(source).projection
   debug_inspect(
-    @markdown.markdown_sections(projection).map(section => {
+    markdown_sections(projection).map(section => {
       (
         section.body_anchor_indexes.length(),
         section.body_rendered_element_indexes(projection).length(),
@@ -595,9 +595,7 @@ test "inline markup and setext line breaks do not change a heading's identity" {
 ///|
 /// Renders `source` and describes its TOC as `depth/level indent text`.
 fn describe_toc(source : String) -> Array[String] {
-  @markdown.markdown_table_of_contents(
-    @markdown.render_markdown(source).projection,
-  ).map(entry => {
+  markdown_table_of_contents(render_markdown(source).projection).map(entry => {
     "d\{entry.depth}/h\{entry.level} \{"  ".repeat(entry.depth - 1)}\{entry.text}"
   })
 }
@@ -688,9 +686,9 @@ test "toc rows carry the reveal offset and agree with foldability" {
     #|
     #|# Empty
     #|
-  let projection = @markdown.render_markdown(source).projection
+  let projection = render_markdown(source).projection
   debug_inspect(
-    @markdown.markdown_table_of_contents(projection).map(entry => {
+    markdown_table_of_contents(projection).map(entry => {
       (entry.text, entry.source_offset, entry.is_foldable, entry.section_index)
     }),
     content=(
@@ -763,11 +761,9 @@ test "auto-fold collapses only bulky sections at depth three or deeper" {
     #|
     #|only one paragraph
     #|
-  let projection = @markdown.render_markdown(source).projection
-  let entries = @markdown.markdown_table_of_contents(projection)
-  let collapsed = @markdown.markdown_default_collapsed_sections(
-    projection, source,
-  )
+  let projection = render_markdown(source).projection
+  let entries = markdown_table_of_contents(projection)
+  let collapsed = markdown_default_collapsed_sections(projection, source)
   debug_inspect(
     (
       entries.map(entry => (entry.depth, entry.text)),
@@ -797,17 +793,17 @@ test "the thresholds are tunable and depth gating wins over bulk" {
     #|
     #|body
     #|
-  let projection = @markdown.render_markdown(source).projection
+  let projection = render_markdown(source).projection
   debug_inspect(
     (
-      @markdown.markdown_default_collapsed_sections(projection, source).length(),
-      @markdown.markdown_default_collapsed_sections(
+      markdown_default_collapsed_sections(projection, source).length(),
+      markdown_default_collapsed_sections(
         projection,
         source,
         min_rendered_elements=1,
         min_body_lines=1,
       ).length(),
-      @markdown.markdown_default_collapsed_sections(
+      markdown_default_collapsed_sections(
         projection,
         source,
         min_depth=99,

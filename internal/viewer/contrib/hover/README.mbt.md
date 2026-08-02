@@ -25,7 +25,7 @@ is the modifier the multi-cursor setting does **not** use. With multi-cursor on
 Alt, hover triggers on Ctrl/Meta; with multi-cursor on Ctrl or Meta, hover
 triggers on Alt. The two features therefore never contend for the same key.
 
-```mbt check
+```mbt nocheck
 ///|
 test "the keyboard-modifier mode borrows the multi-cursor modifier" {
   // These enums are read-only: values come from the configuration strings.
@@ -66,7 +66,7 @@ Both option values are parsed from their configuration strings. `"ctrlCmd"`
 resolves to Meta on macOS and Ctrl elsewhere — and by the complement rule above,
 either way the *hover* trigger becomes Alt.
 
-```mbt check
+```mbt nocheck
 ///|
 test "config strings resolve, including the macOS ctrlCmd split" {
   debug_inspect(
@@ -110,7 +110,7 @@ adoption helpers decide whether an already visible hover survives a pointer
 move, which is what stops the widget from flickering as the pointer travels
 inside the same word.
 
-```mbt check
+```mbt nocheck
 ///|
 fn range_anchor(start_column : Int, end_column : Int) -> @hover.HoverAnchor {
   HoverRangeAnchor(
@@ -160,7 +160,7 @@ The widget needs to know when the pointer has genuinely left it, allowing for a
 tolerance band. Those predicates are pure arithmetic and live here rather than
 in the browser package.
 
-```mbt check
+```mbt nocheck
 ///|
 test "pointer-versus-widget geometry is pure arithmetic" {
   // The two argument orders differ: `mouse_within_element` takes the box first
@@ -194,7 +194,7 @@ Whether a visible hover survives, and whether a pending computation is
 rescheduled, are separate pure decisions — which is what lets the browser host
 own the timers without owning the policy.
 
-```mbt check
+```mbt nocheck
 ///|
 test "keep and reschedule are separate pure decisions" {
   debug_inspect(

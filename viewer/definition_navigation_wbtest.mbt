@@ -539,7 +539,7 @@ async test "definition-link arms only a fresh token and stale content clears it"
     _ => fail("fresh resolved link was not armed")
   }
   assert_eq(state.link_decorations.length(), 1)
-  assert_eq(state.link_decorations.get_range(0), Some(target.word_range))
+  assert_eq(state.link_decorations.get_range(0), Some(target.word_range()))
 
   state.link_modifier_down = true
   state.last_pointer_target = Some(target)
@@ -706,7 +706,7 @@ async test "definition-link click does not wait for preview resolution" {
   assert_false(viewer.before_definition_target_mouse_down(Some(target)))
   viewer.on_definition_cursor_selection_changed(true)
   assert_true(state.link_modifier_down)
-  assert_eq(state.definition_mouse_down_line, target.position.line_number)
+  assert_eq(state.definition_mouse_down_line, target.position().line_number)
   match state.link_state {
     LinkIdle => ()
     _ => fail("selection change did not cancel the pending link preview")
@@ -802,7 +802,7 @@ test "plain definition pointer-up preserves the keyboard command anchor" {
     fail("definition contribution was not installed")
   }
   state.last_pointer_target = None
-  state.definition_mouse_down_line = target.position.line_number
+  state.definition_mouse_down_line = target.position().line_number
   assert_false(
     viewer.handle_definition_pointer_up(
       Some(target),

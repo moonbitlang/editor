@@ -30,9 +30,9 @@ for performance investigation and perf-harness changes.
   `document.fonts.ready`, and runs at deviceScaleFactor 1. Its Playwright suite
   compares public Viewer dimensions/positions with DOM Ranges and rendered
   line/widget boxes within the plan's 1 CSS px tolerance. The same scenario
-  also mounts test-only normal and overflowing `ContentWidgets` in a real
+  mounts a public Viewer and its real overflowing hover widget in a
   same-origin iframe whose scroll and viewport deliberately differ from the
-  top window, covering owner-window width/scroll and exact 15px/22px edges.
+  top window, covering owner-window width and scroll behavior.
 - `component.html?markdownDocument=1` mounts two public Viewers over shared
   services and an ordinary `.mbt.md` model. The suite uses real
   Range-derived `page.mouse` positions over semantic nested fence text; it

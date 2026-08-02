@@ -29,16 +29,16 @@ pub struct LinesDiff {
   changes : Array[DetailedLineRangeMapping]
   /// Sorted by original line ranges. The original line ranges and the
   /// modified line ranges must be disjoint (but can be touching).
-  moves : Array[MovedText]
+  priv moves : Array[MovedText]
   /// Indicates if the time out was reached. In that case, the diffs might be
   /// an approximation and the user should be asked to rerun the diff with
   /// more time.
-  hit_timeout : Bool
+  priv hit_timeout : Bool
 } derive(Eq, Debug)
 
 ///|
 /// `MovedText` (`linesDiffComputer.ts:38`).
-pub struct MovedText {
+struct MovedText {
   line_range_mapping : LineRangeMapping
   /// The diff from the original text to the moved text. Must be contained in
   /// the original/modified line range. Can be empty if the text didn't
@@ -47,7 +47,7 @@ pub struct MovedText {
 } derive(Eq, Debug)
 
 ///|
-pub fn MovedText::MovedText(
+fn MovedText::MovedText(
   line_range_mapping : LineRangeMapping,
   changes : Array[DetailedLineRangeMapping],
 ) -> MovedText {
@@ -55,7 +55,7 @@ pub fn MovedText::MovedText(
 }
 
 ///|
-pub fn MovedText::flip(self : MovedText) -> MovedText {
+fn MovedText::flip(self : MovedText) -> MovedText {
   MovedText(
     self.line_range_mapping.flip(),
     self.changes.map(DetailedLineRangeMapping::flip),

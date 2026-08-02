@@ -209,16 +209,16 @@ fn normalize_string(
 ///|
 /// The `win32` namespace of path.ts (D2) — uninhabited namespace type; only
 /// its static-style methods exist.
-pub enum Win32 {}
+enum Win32 {}
 
 ///|
 /// The `posix` namespace of path.ts (D2) — uninhabited namespace type; only
 /// its static-style methods exist.
-pub enum Posix {}
+enum Posix {}
 
 ///|
 /// `path.ts:209 win32.resolve`.
-pub fn Win32::resolve(path_segments : Array[String]) -> String {
+fn Win32::resolve_impl(path_segments : Array[String]) -> String {
   let mut resolved_device = ""
   let mut resolved_tail = ""
   let mut resolved_absolute = false
@@ -366,7 +366,7 @@ pub fn Win32::resolve(path_segments : Array[String]) -> String {
 ///|
 /// `path.ts:346 win32.normalize` (incl. the CVE-2024-36139 relative-colon
 /// guard, path.ts:430-446).
-pub fn Win32::normalize(path : String) -> String {
+fn Win32::normalize_impl(path : String) -> String {
   let len = path.length()
   if len == 0 {
     return "."
@@ -475,7 +475,7 @@ pub fn Win32::normalize(path : String) -> String {
 
 ///|
 /// `path.ts:453 win32.isAbsolute`.
-pub fn Win32::is_absolute(path : String) -> Bool {
+fn Win32::is_absolute_impl(path : String) -> Bool {
   let len = path.length()
   if len == 0 {
     return false
@@ -494,7 +494,7 @@ pub fn Win32::is_absolute(path : String) -> Bool {
 ///|
 /// `path.ts:469 win32.join` (incl. UNC double-slash preservation,
 /// path.ts:506-534).
-pub fn Win32::join(paths : Array[String]) -> String {
+fn Win32::join_impl(paths : Array[String]) -> String {
   if paths is [] {
     return "."
   }
@@ -565,7 +565,7 @@ pub fn Win32::join(paths : Array[String]) -> String {
 /// `path.ts:544 win32.relative` — solves the relative path from `from` to
 /// `to`, lowercase-insensitively; the split-path branch (path.ts:566-600)
 /// handles resolve outputs whose lowercase form changed length.
-pub fn Win32::relative(from : String, to : String) -> String {
+fn Win32::relative_impl(from : String, to : String) -> String {
   if from == to {
     return ""
   }
@@ -726,7 +726,7 @@ fn join_range(parts : ArrayView[String], start : Int, sep : String) -> String {
 
 ///|
 /// `path.ts:733 win32.dirname`.
-pub fn Win32::dirname(path : String) -> String {
+fn Win32::dirname_impl(path : String) -> String {
   let len = path.length()
   if len == 0 {
     return "."
@@ -819,7 +819,7 @@ pub fn Win32::dirname(path : String) -> String {
 ///|
 /// `path.ts:821 win32.basename` (drive-prefix skip + optional suffix
 /// reverse-match).
-pub fn Win32::basename(path : String, suffix? : String) -> String {
+fn Win32::basename_impl(path : String, suffix? : String) -> String {
   let mut start = 0
   let mut end = -1
   let mut matched_slash = true
@@ -910,7 +910,7 @@ pub fn Win32::basename(path : String, suffix? : String) -> String {
 
 ///|
 /// `path.ts:909 win32.extname`.
-pub fn Win32::extname(path : String) -> String {
+fn Win32::extname_impl(path : String) -> String {
   let mut start = 0
   let mut start_dot = -1
   let mut start_part = 0
@@ -975,13 +975,13 @@ pub fn Win32::extname(path : String) -> String {
 
 ///|
 /// `path.ts:1129 win32.sep`.
-pub fn Win32::sep() -> String {
+fn Win32::sep_impl() -> String {
   "\\"
 }
 
 ///|
 /// `path.ts:1130 win32.delimiter`.
-pub fn Win32::delimiter() -> String {
+fn Win32::delimiter_impl() -> String {
   ";"
 }
 
@@ -1001,7 +1001,7 @@ fn posix_cwd() -> String {
 
 ///|
 /// `path.ts:1152 posix.resolve`.
-pub fn Posix::resolve(path_segments : Array[String]) -> String {
+fn Posix::resolve_impl(path_segments : Array[String]) -> String {
   let mut resolved_path = ""
   let mut resolved_absolute = false
   let mut i = path_segments.length() - 1
@@ -1044,7 +1044,7 @@ pub fn Posix::resolve(path_segments : Array[String]) -> String {
 
 ///|
 /// `path.ts:1189 posix.normalize`.
-pub fn Posix::normalize(path : String) -> String {
+fn Posix::normalize_impl(path : String) -> String {
   if path is "" {
     return "."
   }
@@ -1072,13 +1072,13 @@ pub fn Posix::normalize(path : String) -> String {
 
 ///|
 /// `path.ts:1216 posix.isAbsolute`.
-pub fn Posix::is_absolute(path : String) -> Bool {
+fn Posix::is_absolute_impl(path : String) -> Bool {
   path.length() > 0 && char_code_at(path, 0) == char_forward_slash
 }
 
 ///|
 /// `path.ts:1221 posix.join`.
-pub fn Posix::join(paths : Array[String]) -> String {
+fn Posix::join_impl(paths : Array[String]) -> String {
   if paths is [] {
     return "."
   }
@@ -1091,7 +1091,7 @@ pub fn Posix::join(paths : Array[String]) -> String {
 
 ///|
 /// `path.ts:1242 posix.relative`.
-pub fn Posix::relative(from : String, to : String) -> String {
+fn Posix::relative_impl(from : String, to : String) -> String {
   if from == to {
     return ""
   }
@@ -1163,7 +1163,7 @@ pub fn Posix::relative(from : String, to : String) -> String {
 
 ///|
 /// `path.ts:1320 posix.dirname`.
-pub fn Posix::dirname(path : String) -> String {
+fn Posix::dirname_impl(path : String) -> String {
   if path is "" {
     return "."
   }
@@ -1194,7 +1194,7 @@ pub fn Posix::dirname(path : String) -> String {
 
 ///|
 /// `path.ts:1349 posix.basename` (optional suffix reverse-match).
-pub fn Posix::basename(path : String, suffix? : String) -> String {
+fn Posix::basename_impl(path : String, suffix? : String) -> String {
   let mut start = 0
   let mut end = -1
   let mut matched_slash = true
@@ -1276,7 +1276,7 @@ pub fn Posix::basename(path : String, suffix? : String) -> String {
 
 ///|
 /// `path.ts:1429 posix.extname`.
-pub fn Posix::extname(path : String) -> String {
+fn Posix::extname_impl(path : String) -> String {
   let mut start_dot = -1
   let mut start_part = 0
   let mut end = -1
@@ -1330,20 +1330,20 @@ pub fn Posix::extname(path : String) -> String {
 
 ///|
 /// `path.ts:1568 posix.sep`.
-pub fn Posix::sep() -> String {
+fn Posix::sep_impl() -> String {
   "/"
 }
 
 ///|
 /// `path.ts:1569 posix.delimiter`.
-pub fn Posix::delimiter() -> String {
+fn Posix::delimiter_impl() -> String {
   ":"
 }
 
 ///|
 /// Platform-selected `normalize` (path.ts:1577); picked per call via the
 /// D1/D8 seam instead of at module load.
-pub fn normalize(path : String) -> String {
+fn normalize(path : String) -> String {
   if platform_is_win32() {
     Win32::normalize(path)
   } else {
@@ -1353,7 +1353,7 @@ pub fn normalize(path : String) -> String {
 
 ///|
 /// Platform-selected `resolve` (path.ts:1580).
-pub fn resolve(path_segments : Array[String]) -> String {
+fn resolve(path_segments : Array[String]) -> String {
   if platform_is_win32() {
     Win32::resolve(path_segments)
   } else {
@@ -1363,7 +1363,7 @@ pub fn resolve(path_segments : Array[String]) -> String {
 
 ///|
 /// Platform-selected `relative` (path.ts:1581).
-pub fn relative(from : String, to : String) -> String {
+fn relative(from : String, to : String) -> String {
   if platform_is_win32() {
     Win32::relative(from, to)
   } else {
@@ -1383,7 +1383,7 @@ pub fn dirname(path : String) -> String {
 
 ///|
 /// Platform-selected `sep` (path.ts:1588).
-pub fn sep() -> String {
+fn sep() -> String {
   if platform_is_win32() {
     Win32::sep()
   } else {

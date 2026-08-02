@@ -14,7 +14,7 @@ impl @language.HoverProvider for BrowserGeometryHoverProvider with fn provide_ho
   _token,
 ) {
   let offset = model.get_offset_at(position)
-  match model.snapshot.text.find("anchor") {
+  match model.snapshot.get_value().find("anchor") {
     Some(start) =>
       if offset >= start && offset < start + "anchor".length() {
         Some({
@@ -42,199 +42,6 @@ priv struct BrowserGeometryFixture {
 }
 
 ///|
-/// Test-only content widget used to exercise the real ContentWidgets port in
-/// a same-origin iframe whose owner window deliberately disagrees with the
-/// top-level page.
-priv struct BrowserIframeContentWidget {
-  id : String
-  node : @rdom.Element
-  allow_overflow : Bool
-  mut preference : Array[@view.ContentWidgetPositionPreference]
-  mut after_position : String
-  mut after_top : Double
-  mut after_left : Double
-}
-
-///|
-fn BrowserIframeContentWidget::content_widget_handle(
-  self : BrowserIframeContentWidget,
-) -> @view.ContentWidgetHandle {
-  ContentWidgetHandle(
-    () => self.id,
-    () => self.node,
-    () => {
-      Some({
-        position: Some(Position(1, 1)),
-        secondary_position: None,
-        preference: Some(self.preference),
-        position_affinity: None,
-      })
-    },
-    allow_editor_overflow=self.allow_overflow,
-    before_render=() => Some({ width: 80.0, height: 30.0 }),
-    after_render=(position, coordinate) => {
-      self.after_position = match position {
-        Some(Above) => "above"
-        Some(Below) => "below"
-        Some(Exact) => "exact"
-        None => "null"
-      }
-      match coordinate {
-        Some(coordinate) => {
-          self.after_top = coordinate.top
-          self.after_left = coordinate.left
-        }
-        None => {
-          self.after_top = -9999.0
-          self.after_left = -9999.0
-        }
-      }
-    },
-  )
-}
-
-///|
-fn BrowserIframeContentWidget::new(
-  document : @rdom.Document,
-  id : String,
-  allow_overflow : Bool,
-) -> BrowserIframeContentWidget {
-  let node = document.create_element("div")
-  node.set_attribute("data-geometry-owner-widget", id)
-  node.set_attribute(
-    "data-geometry-owner-overflow",
-    if allow_overflow {
-      "true"
-    } else {
-      "false"
-    },
-  )
-  node.set_attribute(
-    "style", "box-sizing:border-box;width:80px;height:30px;background:rgba(0,128,255,.15)",
-  )
-  node.set_inner_html(id)
-  {
-    id,
-    node,
-    allow_overflow,
-    preference: [Exact],
-    after_position: "null",
-    after_top: -9999.0,
-    after_left: -9999.0,
-  }
-}
-
-///|
-priv struct BrowserIframeGeometryFixture {
-  widgets : @view.ContentWidgets
-  normal : BrowserIframeContentWidget
-  overflow : BrowserIframeContentWidget
-  anchor_left : Ref[Double]
-  anchor_top : Ref[Double]
-}
-
-///|
-fn BrowserIframeGeometryFixture::new() -> BrowserIframeGeometryFixture {
-  let document = browser_geometry_create_owner_iframe()
-  guard document.query_selector("#browser-geometry-owner-root").to_option()
-    is Some(root) else {
-    abort("browser geometry owner iframe root is missing")
-  }
-  let widgets = @view.ContentWidgets::ContentWidgets(document, root)
-  let normal_container = widgets.dom_node()
-  normal_container.set_attribute(
-    "style", "position:absolute;top:0;left:0;width:430px;height:300px",
-  )
-  let overflow_container = widgets.overflowing_content_widgets_dom_node()
-  overflow_container.set_attribute(
-    "style", "position:absolute;top:0;left:0;width:430px;height:300px",
-  )
-  root.append_child(normal_container.as_node())
-  root.append_child(overflow_container.as_node())
-  let anchor_left = Ref(20.0)
-  let anchor_top = Ref(50.0)
-  widgets.install_live_view_context(() => (0.0, 430.0), position => {
-    Some(position)
-  })
-  let normal = BrowserIframeContentWidget::new(document, "normal", false)
-  let overflow = BrowserIframeContentWidget::new(document, "overflow", true)
-  widgets.add_widget(normal.content_widget_handle())
-  widgets.set_widget_position(normal.content_widget_handle())
-  widgets.add_widget(overflow.content_widget_handle())
-  widgets.set_widget_position(overflow.content_widget_handle())
-  { widgets, normal, overflow, anchor_left, anchor_top }
-}
-
-///|
-fn BrowserIframeGeometryFixture::context(
-  self : BrowserIframeGeometryFixture,
-) -> @view.ContentWidgetsRenderContext {
-  {
-    vertical_offset_for_line: _ => self.anchor_top.val,
-    line_height_for_line: _ => 20.0,
-    visible_range_for_position: _ => Some(self.anchor_left.val),
-    typical_fullwidth_character_width: 16.0,
-    scroll_top: 0.0,
-    scroll_left: 0.0,
-    viewport_width: 500.0,
-    viewport_height: 360.0,
-  }
-}
-
-///|
-fn BrowserIframeGeometryFixture::capture(
-  _self : BrowserIframeGeometryFixture,
-  widget : BrowserIframeContentWidget,
-) -> Json {
-  let rect = widget.node.get_bounding_client_rect()
-  Json::object({
-    "position": widget.after_position.to_json(),
-    "top": Json::number(widget.after_top),
-    "left": Json::number(widget.after_left),
-    "rectLeft": Json::number(rect.get_left()),
-    "rectTop": Json::number(rect.get_top()),
-    "rectRight": Json::number(rect.get_right()),
-    "rectBottom": Json::number(rect.get_bottom()),
-  })
-}
-
-///|
-fn BrowserIframeGeometryFixture::run_case(
-  self : BrowserIframeGeometryFixture,
-  widget : BrowserIframeContentWidget,
-  left : Double,
-  top : Double,
-  preference : Array[@view.ContentWidgetPositionPreference],
-) -> Json {
-  self.anchor_left.val = left
-  self.anchor_top.val = top
-  widget.preference = preference
-  self.widgets.set_widget_position(widget.content_widget_handle())
-  self.widgets.prepare_render_widgets(self.context())
-  self.widgets.render_widgets(0.0, 0.0)
-  self.capture(widget)
-}
-
-///|
-fn BrowserIframeGeometryFixture::run_matrix(
-  self : BrowserIframeGeometryFixture,
-) -> String {
-  Json::object({
-    "normalExact": self.run_case(self.normal, 20.0, 50.0, [Exact]),
-    // Root page-left=40 and owner scrollX=31. These one-pixel overflow inputs
-    // clamp the rendered edges to exactly 15px and innerWidth-15px.
-    "leftClamp": self.run_case(self.overflow, 5.0, 100.0, [Below]),
-    "rightClamp": self.run_case(self.overflow, 397.0, 100.0, [Below]),
-    // Root page-top=80 and owner scrollY=47. With a 30px widget these anchor
-    // tops put the box exactly on, then one pixel outside, each 22px fit edge.
-    "topEqual": self.run_case(self.overflow, 100.0, 19.0, [Above, Below]),
-    "topOutside": self.run_case(self.overflow, 100.0, 18.0, [Above, Below]),
-    "bottomEqual": self.run_case(self.overflow, 100.0, 255.0, [Below, Above]),
-    "bottomOutside": self.run_case(self.overflow, 100.0, 256.0, [Below, Above]),
-  }).stringify()
-}
-
-///|
 extern "js" fn browser_geometry_create_owner_iframe() -> @rdom.Document =
   #| () => {
   #|   document.getElementById('browser-geometry-owner-frame')?.remove();
@@ -246,6 +53,8 @@ extern "js" fn browser_geometry_create_owner_iframe() -> @rdom.Document =
   #|   frame.style.cssText = 'width:500px;height:360px;border:0;position:absolute;left:620px;top:20px';
   #|   document.body.appendChild(frame);
   #|   const doc = frame.contentDocument;
+  #|   const fonts = document.querySelector('style[data-browser-geometry-fonts]');
+  #|   if (fonts) doc.head.appendChild(fonts.cloneNode(true));
   #|   doc.documentElement.style.cssText = 'margin:0;padding:0;width:1000px;height:900px';
   #|   doc.body.style.cssText = 'margin:0;padding:0;width:1000px;height:900px;position:relative';
   #|   const root = doc.createElement('div');
@@ -278,7 +87,7 @@ fn browser_geometry_source(hidden_widest : Bool) -> String {
     "line_16",
     "line_17",
     "fold_header_\{"W".repeat(12)}",
-    "  fold_child_one",
+    "  fold_child_anchor",
     "  fold_child_two",
     "after_fold",
     "line_22",
@@ -490,7 +299,26 @@ fn run_browser_geometry_test() -> Unit {
     let proportional = BrowserGeometryFixture::new(
       "proportional", "Geometry Proportional", proportional_host,
     )
-    let iframe_geometry = BrowserIframeGeometryFixture::new()
+    let iframe_document = browser_geometry_create_owner_iframe()
+    guard iframe_document
+      .query_selector("#browser-geometry-owner-root")
+      .to_option()
+      is Some(iframe_host) else {
+      ctx.fail("browser geometry owner iframe root is missing")
+      ctx.finish()
+      return
+    }
+    let iframe = BrowserGeometryFixture::new(
+      "iframe", "Geometry Mono", iframe_host,
+    )
+    let iframe_overlay = iframe_document.create_element("div")
+    iframe_overlay.set_attribute(
+      "data-browser-geometry-owner-widget", "overlay",
+    )
+    iframe_overlay.set_attribute("style", "width:80px;height:30px")
+    iframe.viewer.add_overlay_widget(
+      @viewer.overlay_widget("browser-geometry-owner-overlay", iframe_overlay),
+    )
     let fixture = name => browser_geometry_fixture_for(name, mono, proportional)
     install_browser_geometry_controls(
       (name, line, column) => fixture(name).state_json(line, column),
@@ -507,19 +335,8 @@ fn run_browser_geometry_test() -> Unit {
       name => fixture(name).viewer.focus(),
       (name, wide) => fixture(name).set_injected_text(wide),
       (name, enabled) => fixture(name).set_hidden_widest(enabled),
-      (name, hidden) => {
-        @viewer_testing.set_hidden_areas(
-          fixture(name).viewer.get_id(),
-          if hidden {
-            [Range(3, 1, 3, 1)]
-          } else {
-            []
-          },
-          source="browser-geometry",
-        )
-        |> ignore
-      },
-      () => iframe_geometry.run_matrix(),
+      name => fixture(name).viewer.fold_top_level(),
+      (line, column) => iframe.state_json(line, column),
     )
     poll_browser_geometry_ready(ctx, 120)
   })
@@ -577,11 +394,11 @@ extern "js" fn install_browser_geometry_controls(
   focus : (String) -> Unit,
   set_injected : (String, Bool) -> Unit,
   set_hidden_widest : (String, Bool) -> Unit,
-  set_anchor_hidden : (String, Bool) -> Unit,
-  iframe_geometry : () -> String,
+  fold_top_level : (String) -> Unit,
+  iframe_state_json : (Int, Int) -> String,
 ) -> Unit =
   #| (stateJson, setWrap, setScroll, setPosition, focus, setInjected,
-  #|  setHiddenWidest, setAnchorHidden, iframeGeometry) => {
+  #|  setHiddenWidest, foldTopLevel, iframeStateJson) => {
   #|   globalThis.__browserGeometryControls = Object.freeze({
   #|     state(name, line = 3, column = 6) {
   #|       return JSON.parse(stateJson(name, line, column));
@@ -592,9 +409,9 @@ extern "js" fn install_browser_geometry_controls(
   #|     focus,
   #|     set_injected: setInjected,
   #|     set_hidden_widest: setHiddenWidest,
-  #|     set_anchor_hidden: setAnchorHidden,
-  #|     iframe_geometry() {
-  #|       return JSON.parse(iframeGeometry());
+  #|     fold_top_level: foldTopLevel,
+  #|     iframe_state(line = 3, column = 6) {
+  #|       return JSON.parse(iframeStateJson(line, column));
   #|     },
   #|     font_status() {
   #|       return {

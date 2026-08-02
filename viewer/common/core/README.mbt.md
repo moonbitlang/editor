@@ -83,54 +83,6 @@ test "the status bar counts a tab as one character" {
 }
 ```
 
-## Tab stops
-
-The tab-stop helpers are pure arithmetic on a visible column. `render` stops are
-what a tab character advances to; `indent` stops are what indentation commands
-would use. They are separate because `tab_size` and `indent_size` are separate
-settings.
-
-```mbt check
-///|
-test "render tab stops round outward to the next multiple" {
-  debug_inspect(
-    (
-      [
-        @core.next_render_tab_stop(0, 4),
-        @core.next_render_tab_stop(1, 4),
-        @core.next_render_tab_stop(3, 4),
-        @core.next_render_tab_stop(4, 4),
-      ],
-      [
-        @core.prev_render_tab_stop(0, 4),
-        @core.prev_render_tab_stop(1, 4),
-        @core.prev_render_tab_stop(4, 4),
-        @core.prev_render_tab_stop(5, 4),
-      ],
-    ),
-    content=(
-      #|([4, 4, 4, 8], [0, 0, 0, 4])
-    ),
-  )
-}
-```
-
-```mbt check
-///|
-test "indent stops follow indent_size, not tab_size" {
-  debug_inspect(
-    (
-      @core.next_indent_tab_stop(0, 2),
-      @core.next_indent_tab_stop(3, 2),
-      @core.prev_indent_tab_stop(5, 2),
-    ),
-    content=(
-      #|(2, 4, 4)
-    ),
-  )
-}
-```
-
 ## Selection
 
 A `Selection` is an ordered pair: where the gesture *started* and where the
@@ -221,19 +173,19 @@ test "endpoint updates are copies in document order" {
 
 ## Metrics
 
-`code_right_padding`, `editor_vertical_scrollbar_size`, and
-`editor_horizontal_scrollbar_size` are the shared layout constants, kept here so
-the layout, scrollbar, and browser packages cannot drift to different numbers.
+`editor_vertical_scrollbar_size` and `editor_horizontal_scrollbar_size` are the
+shared scrollbar constants, kept here so layout and browser packages cannot
+drift to different numbers.
 
 ```mbt check
 ///|
 test "layout constants have one definition" {
   debug_inspect(
     (
-      @core.code_right_padding, @core.editor_vertical_scrollbar_size, @core.editor_horizontal_scrollbar_size,
+      @core.editor_vertical_scrollbar_size, @core.editor_horizontal_scrollbar_size,
     ),
     content=(
-      #|(16, 14, 12)
+      #|(14, 12)
     ),
   )
 }

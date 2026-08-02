@@ -45,19 +45,25 @@ pub fn Range::is_empty(self : Range) -> Bool {
 
 ///|
 /// Test if `range` is empty.
-pub fn Range::is_empty_range(range : Range) -> Bool {
+fn Range::is_empty_range(range : Range) -> Bool {
   range.start_line_number == range.end_line_number &&
   range.start_column == range.end_column
 }
 
 ///|
 /// Test if position is in this range. If the position is at the edges, returns true.
-pub fn Range::contains_position(self : Range, position : Position) -> Bool {
+fn Range::contains_position_impl(self : Range, position : Position) -> Bool {
   Range::contains_position_in(self, position)
 }
 
 ///|
-pub fn Range::contains_position_in(range : Range, position : Position) -> Bool {
+/// Test if position is in this range. If the position is at the edges, returns true.
+pub fn Range::contains_position(self : Range, position : Position) -> Bool {
+  self.contains_position_impl(position)
+}
+
+///|
+fn Range::contains_position_in(range : Range, position : Position) -> Bool {
   if position.line_number < range.start_line_number ||
     position.line_number > range.end_line_number {
     return false
@@ -75,10 +81,7 @@ pub fn Range::contains_position_in(range : Range, position : Position) -> Bool {
 
 ///|
 /// Test if position is strictly in this range (edges excluded).
-pub fn Range::strict_contains_position(
-  range : Range,
-  position : Position,
-) -> Bool {
+fn Range::strict_contains_position(range : Range, position : Position) -> Bool {
   if position.line_number < range.start_line_number ||
     position.line_number > range.end_line_number {
     return false
@@ -96,12 +99,12 @@ pub fn Range::strict_contains_position(
 
 ///|
 /// Test if `other` is in this range. If equal, returns true.
-pub fn Range::contains_range(self : Range, other : Range) -> Bool {
+fn Range::contains_range_impl(self : Range, other : Range) -> Bool {
   Range::contains_range_in(self, other)
 }
 
 ///|
-pub fn Range::contains_range_in(range : Range, other_range : Range) -> Bool {
+fn Range::contains_range_in(range : Range, other_range : Range) -> Bool {
   if other_range.start_line_number < range.start_line_number ||
     other_range.end_line_number < range.start_line_number {
     return false
@@ -123,15 +126,12 @@ pub fn Range::contains_range_in(range : Range, other_range : Range) -> Bool {
 
 ///|
 /// Test if `other` is strictly in this range (must start after and end before).
-pub fn Range::strict_contains_range(self : Range, other : Range) -> Bool {
+fn Range::strict_contains_range_impl(self : Range, other : Range) -> Bool {
   Range::strict_contains_range_in(self, other)
 }
 
 ///|
-pub fn Range::strict_contains_range_in(
-  range : Range,
-  other_range : Range,
-) -> Bool {
+fn Range::strict_contains_range_in(range : Range, other_range : Range) -> Bool {
   if other_range.start_line_number < range.start_line_number ||
     other_range.end_line_number < range.start_line_number {
     return false
@@ -153,12 +153,18 @@ pub fn Range::strict_contains_range_in(
 
 ///|
 /// A reunion of the two ranges (smallest start, largest end).
-pub fn Range::plus_range(self : Range, other : Range) -> Range {
+fn Range::plus_range_impl(self : Range, other : Range) -> Range {
   Range::plus_range_of(self, other)
 }
 
 ///|
-pub fn Range::plus_range_of(a : Range, b : Range) -> Range {
+/// A reunion of the two ranges (smallest start, largest end).
+pub fn Range::plus_range(self : Range, other : Range) -> Range {
+  self.plus_range_impl(other)
+}
+
+///|
+fn Range::plus_range_of(a : Range, b : Range) -> Range {
   let mut start_line_number = 0
   let mut start_column = 0
   let mut end_line_number = 0
@@ -188,12 +194,18 @@ pub fn Range::plus_range_of(a : Range, b : Range) -> Range {
 
 ///|
 /// An intersection of the two ranges, or `None` if they do not intersect.
-pub fn Range::intersect_ranges(self : Range, other : Range) -> Range? {
+fn Range::intersect_ranges_impl(self : Range, other : Range) -> Range? {
   Range::intersect_ranges_of(self, other)
 }
 
 ///|
-pub fn Range::intersect_ranges_of(a : Range, b : Range) -> Range? {
+/// An intersection of the two ranges, or `None` if they do not intersect.
+pub fn Range::intersect_ranges(self : Range, other : Range) -> Range? {
+  self.intersect_ranges_impl(other)
+}
+
+///|
+fn Range::intersect_ranges_of(a : Range, b : Range) -> Range? {
   let mut result_start_line_number = a.start_line_number
   let mut result_start_column = a.start_column
   let mut result_end_line_number = a.end_line_number
@@ -230,13 +242,13 @@ pub fn Range::intersect_ranges_of(a : Range, b : Range) -> Range? {
 
 ///|
 /// Test if this range equals `other`.
-pub fn Range::equals_range(self : Range, other : Range) -> Bool {
+fn Range::equals_range(self : Range, other : Range) -> Bool {
   self == other
 }
 
 ///|
 /// The end position (after or equal to the start position).
-pub fn Range::get_end_position(self : Range) -> Position {
+fn Range::get_end_position(self : Range) -> Position {
   Position(self.end_line_number, self.end_column)
 }
 
@@ -258,7 +270,7 @@ pub fn Range::set_end_position(
 
 ///|
 /// New range with this range's end and the given start position.
-pub fn Range::set_start_position(
+fn Range::set_start_position(
   self : Range,
   start_line_number : Int,
   start_column : Int,
@@ -268,7 +280,7 @@ pub fn Range::set_start_position(
 
 ///|
 /// New empty range at this range's start.
-pub fn Range::collapse_to_start(self : Range) -> Range {
+fn Range::collapse_to_start(self : Range) -> Range {
   Range(
     self.start_line_number,
     self.start_column,
@@ -279,7 +291,7 @@ pub fn Range::collapse_to_start(self : Range) -> Range {
 
 ///|
 /// New empty range at this range's end.
-pub fn Range::collapse_to_end(self : Range) -> Range {
+fn Range::collapse_to_end(self : Range) -> Range {
   Range(
     self.end_line_number,
     self.end_column,
@@ -290,7 +302,7 @@ pub fn Range::collapse_to_end(self : Range) -> Range {
 
 ///|
 /// Moves the range by the given number of lines.
-pub fn Range::delta(self : Range, line_count : Int) -> Range {
+fn Range::delta(self : Range, line_count : Int) -> Range {
   Range(
     self.start_line_number + line_count,
     self.start_column,
@@ -301,7 +313,7 @@ pub fn Range::delta(self : Range, line_count : Int) -> Range {
 
 ///|
 /// Test if this range starts and ends on the same line.
-pub fn Range::is_single_line(self : Range) -> Bool {
+fn Range::is_single_line(self : Range) -> Bool {
   self.start_line_number == self.end_line_number
 }
 
@@ -327,7 +339,7 @@ pub fn Range::are_intersecting_or_touching(a : Range, b : Range) -> Bool {
 
 ///|
 /// Test if the two ranges are intersecting. Touching ranges are not intersecting.
-pub fn Range::are_intersecting(a : Range, b : Range) -> Bool {
+fn Range::are_intersecting_impl(a : Range, b : Range) -> Bool {
   if a.end_line_number < b.start_line_number ||
     (a.end_line_number == b.start_line_number && a.end_column <= b.start_column) {
     return false
@@ -356,7 +368,7 @@ pub fn Range::compare_ranges_using_starts(a : Range, b : Range) -> Int {
 
 ///|
 /// Compare ranges by end position, then start position.
-pub fn Range::compare_ranges_using_ends(a : Range, b : Range) -> Int {
+fn Range::compare_ranges_using_ends(a : Range, b : Range) -> Int {
   if a.end_line_number == b.end_line_number {
     if a.end_column == b.end_column {
       if a.start_line_number == b.start_line_number {
@@ -371,7 +383,7 @@ pub fn Range::compare_ranges_using_ends(a : Range, b : Range) -> Int {
 
 ///|
 /// Test if the range spans multiple lines.
-pub fn Range::spans_multiple_lines(range : Range) -> Bool {
+fn Range::spans_multiple_lines(range : Range) -> Bool {
   range.end_line_number > range.start_line_number
 }
 

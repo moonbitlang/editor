@@ -121,16 +121,17 @@ test "lines with unresolved feedback refuse the add glyph" {
       #|gamma
     ),
     (viewer, service) => {
+      let feedback = service.agent_feedback_handle()
       service.set_feedback_enabled(test_model_uri(), true)
-      let item = service.add_feedback(
+      let item = feedback.add_feedback(
         test_model_uri(),
         Range(3, 1, 3, 6),
         "note",
       )
       viewer.update_agent_feedback_hover_glyph(3)
       assert_eq(viewer.test_feedback_input_contribution().hover_line_number, -1)
-      // Resolved feedback frees the line again.
-      service.set_feedback_resolved(test_model_uri(), item.id, true)
+      // Removing feedback through the public capability frees the line again.
+      feedback.remove_feedback(test_model_uri(), item.id)
       viewer.update_agent_feedback_hover_glyph(3)
       assert_eq(viewer.test_feedback_input_contribution().hover_line_number, 3)
     },
@@ -146,11 +147,12 @@ test "feedback landing on the glyph line clears the glyph" {
       #|gamma
     ),
     (viewer, service) => {
+      let feedback = service.agent_feedback_handle()
       service.set_feedback_enabled(test_model_uri(), true)
       viewer.update_agent_feedback_hover_glyph(2)
       assert_eq(viewer.test_feedback_input_contribution().hover_line_number, 2)
       // The change subscription re-evaluates the glyph gates.
-      service.add_feedback(test_model_uri(), Range(2, 1, 2, 5), "note")
+      feedback.add_feedback(test_model_uri(), Range(2, 1, 2, 5), "note")
       |> ignore
       assert_eq(viewer.test_feedback_input_contribution().hover_line_number, -1)
     },
@@ -193,8 +195,13 @@ test "feedback content flush preserves central owners and refreshes model state"
     ),
   )
   let resource = model.uri
+  let feedback = service.agent_feedback_handle()
   service.set_feedback_enabled(resource, true)
-  let item = service.add_feedback(resource, Range(1, 1, 1, 6), "keep the guard")
+  let item = feedback.add_feedback(
+    resource,
+    Range(1, 1, 1, 6),
+    "keep the guard",
+  )
   let comment = @agent_feedback.get_session_editor_comments([item])[0]
   viewer.set_model(Some(model))
   let input = viewer.test_feedback_input_contribution()
@@ -267,8 +274,9 @@ test "feedback model swap removal and reattach preserve only Viewer-lifetime sta
       #|three
     ),
   )
+  let feedback = service.agent_feedback_handle()
   service.set_feedback_enabled(first.uri, true)
-  let item = service.add_feedback(
+  let item = feedback.add_feedback(
     first.uri,
     Range(1, 1, 1, 6),
     "first model note",
@@ -350,8 +358,9 @@ test "feedback disposal drains entries tears down model state and silences servi
     ),
   )
   let resource = model.uri
+  let feedback = service.agent_feedback_handle()
   service.set_feedback_enabled(resource, true)
-  let item = service.add_feedback(resource, Range(1, 1, 1, 6), "dispose note")
+  let item = feedback.add_feedback(resource, Range(1, 1, 1, 6), "dispose note")
   let comment = @agent_feedback.get_session_editor_comments([item])[0]
   viewer.set_model(Some(model))
   let input = viewer.test_feedback_input_contribution()
@@ -364,10 +373,10 @@ test "feedback disposal drains entries tears down model state and silences servi
   let input_service_deliveries = Ref(0)
   let widget_service_deliveries = Ref(0)
   input_entry.listeners.push(
-    service.on_did_change_feedback(_ => input_service_deliveries.val += 1),
+    feedback.on_did_change_feedback(_ => input_service_deliveries.val += 1),
   )
   widget_entry.listeners.push(
-    service.on_did_change_feedback(_ => widget_service_deliveries.val += 1),
+    feedback.on_did_change_feedback(_ => widget_service_deliveries.val += 1),
   )
   assert_eq(input_entry.listeners.length(), 10)
   assert_eq(widget_entry.listeners.length(), 6)
@@ -399,7 +408,7 @@ test "feedback disposal drains entries tears down model state and silences servi
   )
 
   service.set_feedback_enabled(resource, false)
-  service.add_feedback(resource, Range(2, 1, 2, 5), "after dispose") |> ignore
+  feedback.add_feedback(resource, Range(2, 1, 2, 5), "after dispose") |> ignore
   assert_eq(input_service_deliveries.val, 0)
   assert_eq(widget_service_deliveries.val, 0)
   assert_eq(input_entry.listeners.length(), 0)

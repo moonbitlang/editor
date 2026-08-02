@@ -1,4 +1,4 @@
-// Conformance port of Monaco/VS Code's CursorColumns suite.
+// White-box conformance port of Monaco/VS Code's CursorColumns suite.
 //
 // Ports: vscode/src/vs/editor/test/common/core/cursorColumns.test.ts
 // From the checked-in vscode submodule.
@@ -11,10 +11,7 @@ test "visibleColumnFromColumn" {
     column : Int,
     expected : Int,
   ) -> Unit raise {
-    assert_eq(
-      @core.visible_column_from_column(text, column, tab_size),
-      expected,
-    )
+    assert_eq(visible_column_from_column(text, column, tab_size), expected)
   }
 
   t("\t\tvar x = 3;", 4, 1, 0)
@@ -74,7 +71,7 @@ test "toStatusbarColumn" {
     column : Int,
     expected : Int,
   ) -> Unit raise {
-    assert_eq(@core.to_statusbar_column(text, column, tab_size), expected)
+    assert_eq(to_statusbar_column(text, column, tab_size), expected)
   }
 
   t("    spaces", 4, 1, 1)
@@ -132,7 +129,7 @@ test "columnFromVisibleColumn" {
     expected : Int,
   ) -> Unit raise {
     assert_eq(
-      @core.column_from_visible_column(text, visible_column, tab_size),
+      column_from_visible_column(text, visible_column, tab_size),
       expected,
     )
   }
@@ -269,20 +266,20 @@ fn assert_prev_tab_stop(f : (Int, Int) -> Int) -> Unit raise {
 
 ///|
 test "nextRenderTabStop" {
-  assert_next_tab_stop(@core.next_render_tab_stop)
+  assert_next_tab_stop(next_render_tab_stop)
 }
 
 ///|
 test "nextIndentTabStop" {
-  assert_next_tab_stop(@core.next_indent_tab_stop)
+  assert_next_tab_stop(next_indent_tab_stop)
 }
 
 ///|
 test "prevRenderTabStop" {
-  assert_prev_tab_stop(@core.prev_render_tab_stop)
+  assert_prev_tab_stop(prev_render_tab_stop)
 }
 
 ///|
 test "prevIndentTabStop" {
-  assert_prev_tab_stop(@core.prev_indent_tab_stop)
+  assert_prev_tab_stop(prev_indent_tab_stop)
 }

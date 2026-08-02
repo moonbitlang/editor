@@ -309,18 +309,18 @@ fn ElementPath::is_child_of_overflowing_overlay_widgets(path : Bytes) -> Bool {
 /// `HitTestContext` (mouseTarget.ts:237-390). Constructed per gesture; the
 /// options snapshot (`layoutInfo`, `lineHeight`, `typicalHalfwidth…`) is read
 /// through the helper's closures (see the header).
-pub struct HitTestContext {
+priv struct HitTestContext {
   view_model : @view_model.ViewModel
   layout_info : @config.EditorLayoutInfo
   view_dom_node : @rdom.Element
   line_height : Int
   typical_halfwidth_character_width : Double
   last_render_data : PointerHandlerLastRenderData
-  priv view_helper : PointerHandlerHelper
+  view_helper : PointerHandlerHelper
 }
 
 ///|
-pub fn HitTestContext::HitTestContext(
+fn HitTestContext::HitTestContext(
   view_model : @view_model.ViewModel,
   view_helper : PointerHandlerHelper,
   last_render_data : PointerHandlerLastRenderData,
@@ -338,7 +338,7 @@ pub fn HitTestContext::HitTestContext(
 }
 
 ///|
-pub fn HitTestContext::get_zone_at_coord(
+fn HitTestContext::get_zone_at_coord(
   self : HitTestContext,
   mouse_vertical_offset : Double,
 ) -> @editor_browser.MouseTargetViewZoneData? {
@@ -401,7 +401,7 @@ fn hit_test_get_zone_at_coord(
 ///|
 /// `getFullLineRangeAtCoord` (mouseTarget.ts:310-327): the whole line at a
 /// vertical offset as `(range, is_after_lines)`.
-pub fn HitTestContext::get_full_line_range_at_coord(
+fn HitTestContext::get_full_line_range_at_coord(
   self : HitTestContext,
   mouse_vertical_offset : Double,
 ) -> (@base_common.Range, Bool) {
@@ -422,7 +422,7 @@ pub fn HitTestContext::get_full_line_range_at_coord(
 }
 
 ///|
-pub fn HitTestContext::get_line_number_at_vertical_offset(
+fn HitTestContext::get_line_number_at_vertical_offset(
   self : HitTestContext,
   mouse_vertical_offset : Double,
 ) -> Int {
@@ -430,7 +430,7 @@ pub fn HitTestContext::get_line_number_at_vertical_offset(
 }
 
 ///|
-pub fn HitTestContext::is_after_lines(
+fn HitTestContext::is_after_lines(
   self : HitTestContext,
   mouse_vertical_offset : Double,
 ) -> Bool {
@@ -438,7 +438,7 @@ pub fn HitTestContext::is_after_lines(
 }
 
 ///|
-pub fn HitTestContext::is_in_top_padding(
+fn HitTestContext::is_in_top_padding(
   self : HitTestContext,
   mouse_vertical_offset : Double,
 ) -> Bool {
@@ -446,7 +446,7 @@ pub fn HitTestContext::is_in_top_padding(
 }
 
 ///|
-pub fn HitTestContext::is_in_bottom_padding(
+fn HitTestContext::is_in_bottom_padding(
   self : HitTestContext,
   mouse_vertical_offset : Double,
 ) -> Bool {
@@ -454,7 +454,7 @@ pub fn HitTestContext::is_in_bottom_padding(
 }
 
 ///|
-pub fn HitTestContext::get_vertical_offset_for_line_number(
+fn HitTestContext::get_vertical_offset_for_line_number(
   self : HitTestContext,
   line_number : Int,
 ) -> Double {
@@ -465,7 +465,7 @@ pub fn HitTestContext::get_vertical_offset_for_line_number(
 /// `findAttribute` (mouseTarget.ts:349-364): the value of `attr` on the
 /// element or its closest ancestor carrying it, stopping at the view DOM
 /// node.
-pub fn HitTestContext::find_attribute(
+fn HitTestContext::find_attribute(
   self : HitTestContext,
   element : @rdom.Element,
   attr : String,
@@ -493,7 +493,7 @@ fn find_attribute_up_to(
 }
 
 ///|
-pub fn HitTestContext::get_line_width(
+fn HitTestContext::get_line_width(
   self : HitTestContext,
   line_number : Int,
 ) -> Double {
@@ -504,16 +504,13 @@ pub fn HitTestContext::get_line_width(
 /// `isRtl` (mouseTarget.ts:370-373). The viewer renders LTR only
 /// (`getTextDirection` is unported), so this is constant `false` (header
 /// ledger).
-pub fn HitTestContext::is_rtl(
-  self : HitTestContext,
-  _line_number : Int,
-) -> Bool {
+fn HitTestContext::is_rtl(self : HitTestContext, _line_number : Int) -> Bool {
   ignore(self)
   false
 }
 
 ///|
-pub fn HitTestContext::visible_range_for_position(
+fn HitTestContext::visible_range_for_position(
   self : HitTestContext,
   line_number : Int,
   column : Int,
@@ -522,7 +519,7 @@ pub fn HitTestContext::visible_range_for_position(
 }
 
 ///|
-pub fn HitTestContext::get_position_from_dom_info(
+fn HitTestContext::get_position_from_dom_info(
   self : HitTestContext,
   span_node : @rdom.Element,
   offset : Int,
@@ -531,12 +528,12 @@ pub fn HitTestContext::get_position_from_dom_info(
 }
 
 ///|
-pub fn HitTestContext::get_current_scroll_top(self : HitTestContext) -> Double {
+fn HitTestContext::get_current_scroll_top(self : HitTestContext) -> Double {
   self.view_model.view_layout.get_current_scroll_top()
 }
 
 ///|
-pub fn HitTestContext::get_current_scroll_left(self : HitTestContext) -> Double {
+fn HitTestContext::get_current_scroll_left(self : HitTestContext) -> Double {
   self.view_model.view_layout.get_current_scroll_left()
 }
 
@@ -544,8 +541,8 @@ pub fn HitTestContext::get_current_scroll_left(self : HitTestContext) -> Double 
 /// `BareHitTestRequest` + `HitTestRequest` (mouseTarget.ts:392-502),
 /// flattened (see the header). The coordinate-derived state is computed in
 /// `HitTestRequest::HitTestRequest`.
-pub struct HitTestRequest {
-  priv ctx : HitTestContext
+priv struct HitTestRequest {
+  ctx : HitTestContext
   editor_pos : @editor_browser.EditorPagePosition
   pos : @editor_browser.PageCoordinates
   relative_pos : @editor_browser.CoordinatesRelativeToEditor
@@ -553,16 +550,16 @@ pub struct HitTestRequest {
   is_in_margin_area : Bool
   is_in_content_area : Bool
   mouse_content_horizontal_offset : Double
-  priv mouse_column : Int
-  priv event_target : @rdom.Element?
-  priv mut hit_test_result_cache : HitTestResult?
-  priv mut use_hit_test_target : Bool
-  priv mut target_path_cache_element : @rdom.Element?
-  priv mut target_path_cache_value : Bytes
+  mouse_column : Int
+  event_target : @rdom.Element?
+  mut hit_test_result_cache : HitTestResult?
+  mut use_hit_test_target : Bool
+  mut target_path_cache_element : @rdom.Element?
+  mut target_path_cache_value : Bytes
 }
 
 ///|
-pub fn HitTestRequest::HitTestRequest(
+fn HitTestRequest::HitTestRequest(
   ctx : HitTestContext,
   editor_pos : @editor_browser.EditorPagePosition,
   pos : @editor_browser.PageCoordinates,
@@ -613,7 +610,7 @@ fn HitTestRequest::hit_test_result(self : HitTestRequest) -> HitTestResult {
 }
 
 ///|
-pub fn HitTestRequest::target(self : HitTestRequest) -> @rdom.Element? {
+fn HitTestRequest::target(self : HitTestRequest) -> @rdom.Element? {
   if self.use_hit_test_target {
     return self.hit_test_result().hit_target()
   }
@@ -621,7 +618,7 @@ pub fn HitTestRequest::target(self : HitTestRequest) -> @rdom.Element? {
 }
 
 ///|
-pub fn HitTestRequest::target_path(self : HitTestRequest) -> Bytes {
+fn HitTestRequest::target_path(self : HitTestRequest) -> Bytes {
   let target = self.target()
   let cache_valid = match (self.target_path_cache_element, target) {
     (Some(cached), Some(current)) => cached.is_same_node(current.as_node())
@@ -639,7 +636,7 @@ pub fn HitTestRequest::target_path(self : HitTestRequest) -> Bytes {
 }
 
 ///|
-pub fn HitTestRequest::would_benefit_from_hit_test_target_switch(
+fn HitTestRequest::would_benefit_from_hit_test_target_switch(
   self : HitTestRequest,
 ) -> Bool {
   guard !self.use_hit_test_target else { return false }
@@ -653,7 +650,7 @@ pub fn HitTestRequest::would_benefit_from_hit_test_target_switch(
 }
 
 ///|
-pub fn HitTestRequest::switch_to_hit_test_target(self : HitTestRequest) -> Unit {
+fn HitTestRequest::switch_to_hit_test_target(self : HitTestRequest) -> Unit {
   self.use_hit_test_target = true
 }
 
@@ -683,7 +680,7 @@ fn HitTestRequest::get_mouse_column(
 }
 
 ///|
-pub fn HitTestRequest::fulfill_unknown(
+fn HitTestRequest::fulfill_unknown(
   self : HitTestRequest,
   position? : @base_common.Position,
 ) -> @editor_browser.MouseTarget {
@@ -695,7 +692,7 @@ pub fn HitTestRequest::fulfill_unknown(
 }
 
 ///|
-pub fn HitTestRequest::fulfill_margin(
+fn HitTestRequest::fulfill_margin(
   self : HitTestRequest,
   type_ : @editor_browser.MouseTargetType,
   position : @base_common.Position,
@@ -713,7 +710,7 @@ pub fn HitTestRequest::fulfill_margin(
 }
 
 ///|
-pub fn HitTestRequest::fulfill_view_zone(
+fn HitTestRequest::fulfill_view_zone(
   self : HitTestRequest,
   type_ : @editor_browser.MouseTargetType,
   position : @base_common.Position,
@@ -730,7 +727,7 @@ pub fn HitTestRequest::fulfill_view_zone(
 }
 
 ///|
-pub fn HitTestRequest::fulfill_content_text(
+fn HitTestRequest::fulfill_content_text(
   self : HitTestRequest,
   position : @base_common.Position,
   range : @base_common.Range?,
@@ -746,7 +743,7 @@ pub fn HitTestRequest::fulfill_content_text(
 }
 
 ///|
-pub fn HitTestRequest::fulfill_content_empty(
+fn HitTestRequest::fulfill_content_empty(
   self : HitTestRequest,
   position : @base_common.Position,
   detail : @editor_browser.MouseTargetContentEmptyData,
@@ -760,7 +757,7 @@ pub fn HitTestRequest::fulfill_content_empty(
 }
 
 ///|
-pub fn HitTestRequest::fulfill_content_widget(
+fn HitTestRequest::fulfill_content_widget(
   self : HitTestRequest,
   detail : String,
 ) -> @editor_browser.MouseTarget {
@@ -772,7 +769,7 @@ pub fn HitTestRequest::fulfill_content_widget(
 }
 
 ///|
-pub fn HitTestRequest::fulfill_scrollbar(
+fn HitTestRequest::fulfill_scrollbar(
   self : HitTestRequest,
   position : @base_common.Position,
 ) -> @editor_browser.MouseTarget {
@@ -784,7 +781,7 @@ pub fn HitTestRequest::fulfill_scrollbar(
 }
 
 ///|
-pub fn HitTestRequest::fulfill_overlay_widget(
+fn HitTestRequest::fulfill_overlay_widget(
   self : HitTestRequest,
   detail : String,
 ) -> @editor_browser.MouseTarget {
@@ -816,12 +813,12 @@ fn create_empty_content_data_in_lines(
 /// `MouseTargetFactory` (mouseTarget.ts:517-1114). Monaco holds a
 /// `ViewContext` + `IPointerHandlerHelper`; the helper substitutes for both
 /// here.
-struct MouseTargetFactory {
+priv struct MouseTargetFactory {
   view_helper : PointerHandlerHelper
 }
 
 ///|
-pub fn MouseTargetFactory::MouseTargetFactory(
+fn MouseTargetFactory::MouseTargetFactory(
   view_helper : PointerHandlerHelper,
 ) -> MouseTargetFactory {
   { view_helper, }
@@ -829,7 +826,7 @@ pub fn MouseTargetFactory::MouseTargetFactory(
 
 ///|
 /// `mouseTargetIsWidget` (mouseTarget.ts:527-542).
-pub fn MouseTargetFactory::mouse_target_is_widget(
+fn MouseTargetFactory::mouse_target_is_widget(
   self : MouseTargetFactory,
   e : @editor_browser.EditorDomMouseEvent,
 ) -> Bool {
@@ -855,7 +852,7 @@ pub fn MouseTargetFactory::mouse_target_is_widget(
 /// the `try/catch` are omitted (header). The detached-viewer arm (`None`
 /// view model) has no Monaco counterpart — the source's view always has a
 /// model.
-pub fn MouseTargetFactory::create_mouse_target(
+fn MouseTargetFactory::create_mouse_target(
   self : MouseTargetFactory,
   last_render_data : PointerHandlerLastRenderData,
   editor_pos : @editor_browser.EditorPagePosition,
@@ -1233,7 +1230,7 @@ fn hit_test_scrollbar(
 
 ///|
 /// `getMouseColumn` (mouseTarget.ts:859-864).
-pub fn MouseTargetFactory::get_mouse_column(
+fn MouseTargetFactory::get_mouse_column(
   self : MouseTargetFactory,
   relative_pos : @editor_browser.CoordinatesRelativeToEditor,
 ) -> Int {

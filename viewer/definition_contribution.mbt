@@ -516,7 +516,7 @@ fn Viewer::definition_command_position(self : Viewer) -> @base_common.Position? 
     self.definition_link_target_is_current(target) else {
     return None
   }
-  Some(target.position)
+  Some(target.position())
 }
 
 ///|
@@ -587,7 +587,7 @@ fn Viewer::start_definition_link_request(
   let source = @language.CancellationTokenSource()
   state.link_source = Some(source)
   state.link_state = LinkResolving(stamp)
-  let offset = model.get_offset_at(target.position)
+  let offset = model.get_offset_at(target.position())
   let task = state.launch_async_task
   task(async fn() noraise {
     let locations = self.services.languages.definition_at(
@@ -611,7 +611,7 @@ fn Viewer::start_definition_link_request(
     state.link_state = LinkArmed(stamp, locations)
     match self.current_markdown_document() {
       Some(markdown) => {
-        let source_range = model.snapshot.offset_range_of(target.word_range)
+        let source_range = model.snapshot.offset_range_of(target.word_range())
         state.markdown_link_elements = markdown.append_projected_range_spans(
           source_range, "moonbit-viewer-markdown-definition-link",
         )
@@ -619,7 +619,7 @@ fn Viewer::start_definition_link_request(
       None =>
         state.link_decorations.set([
           {
-            range: target.word_range,
+            range: target.word_range(),
             options: ModelDecorationOptions(
               "",
               inline_class_name="moonbit-viewer-definition-link",
@@ -794,14 +794,14 @@ fn Viewer::handle_definition_pointer_up(
     state.link_modifier_down &&
     mouse_down_line > 0 &&
     target is Some(target) &&
-    target.position.line_number == mouse_down_line &&
+    target.position().line_number == mouse_down_line &&
     self.definition_link_target_is_current(target) else {
     if !modifier_active && left_button && detail <= 1 {
       self.commit_plain_definition_pointer_target(target)
     }
     return false
   }
-  let position = target.position
+  let position = target.position()
   state.reset_link_gesture()
   if self.current_markdown_document() is None {
     self.set_position(position, source="gotoDefinitionLink")

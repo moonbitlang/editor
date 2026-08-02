@@ -6,26 +6,26 @@
 pub struct ScrollableElementDom {
   wrapper : @rdom.Element
   content : @rdom.Element
-  vertical_bar : @rdom.Element
-  vertical_slider : @rdom.Element
-  horizontal_bar : @rdom.Element
-  horizontal_slider : @rdom.Element
-  left_shadow : @rdom.Element
-  top_shadow : @rdom.Element
-  top_left_shadow : @rdom.Element
-  vertical_size : Double
-  horizontal_size : Double
-  vertical_state : @view_layout.ScrollbarState
-  horizontal_state : @view_layout.ScrollbarState
-  mut vertical_revealed : Bool
-  mut horizontal_revealed : Bool
-  mut vertical_fade : Bool
-  mut horizontal_fade : Bool
-  mut mouse_is_over : Bool
-  mut is_dragging : Bool
-  mut hide_generation : Int
-  mut hide_timeout : @base_common.Disposable?
-  mut disposed : Bool
+  priv vertical_bar : @rdom.Element
+  priv vertical_slider : @rdom.Element
+  priv horizontal_bar : @rdom.Element
+  priv horizontal_slider : @rdom.Element
+  priv left_shadow : @rdom.Element
+  priv top_shadow : @rdom.Element
+  priv top_left_shadow : @rdom.Element
+  priv vertical_size : Double
+  priv horizontal_size : Double
+  priv vertical_state : @view_layout.ScrollbarState
+  priv horizontal_state : @view_layout.ScrollbarState
+  priv mut vertical_revealed : Bool
+  priv mut horizontal_revealed : Bool
+  priv mut vertical_fade : Bool
+  priv mut horizontal_fade : Bool
+  priv mut mouse_is_over : Bool
+  priv mut is_dragging : Bool
+  priv mut hide_generation : Int
+  priv mut hide_timeout : @base_common.Disposable?
+  priv mut disposed : Bool
 }
 
 ///|

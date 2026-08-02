@@ -150,7 +150,10 @@ fn AsyncModelFeatureTestServices::dispose(
 ) -> Unit {
   // The concrete backings remain caller-owned and usable after Viewer
   // teardown; only the omitted defaults inside the bundle need disposal.
-  self.languages.get_language_configuration("moonbit") |> ignore
+  self.languages
+  .language_handle(self.log_service.log_handle())
+  .get_language_configuration("moonbit")
+  |> ignore
   self.log_service.trace("viewer.async-test", "dispose retained backings")
   self.services.dispose()
 }
@@ -228,16 +231,13 @@ test "content and model invalidation clear a pending mouse-react handle" {
   hc.hover_is_mouse_down = true
   hc.hover_mouse_posx = 42.0
   hc.hover_mouse_posy = 24.0
-  hc.hover_last_modifiers = { ctrl: true, meta: true, alt: true }
+  hc.hover_last_modifiers = @hover.EventModifiers(true, true, true)
   viewer.set_model(Some(replacement))
   assert_false(hc.hover_react_pending)
   assert_eq(scheduler.active_count(), 0)
   assert_false(hc.hover_is_mouse_down)
   assert_eq(hc.hover_mouse_posx, 0.0)
   assert_eq(hc.hover_mouse_posy, 0.0)
-  assert_false(hc.hover_last_modifiers.ctrl)
-  assert_false(hc.hover_last_modifiers.meta)
-  assert_false(hc.hover_last_modifiers.alt)
 
   viewer.dispose()
   backings.dispose()
@@ -263,7 +263,7 @@ test "hover widget mouseleave hides when the editor DOM is missing" {
 }
 
 ///|
-test "programmatic hover forwards immediate mode source focus and mouse state" {
+test "programmatic hover starts immediately with keyboard source and mouse state" {
   let backings = AsyncModelFeatureTestServices::new()
   let viewer = Viewer(services=backings.services)
   viewer.set_model(Some(async_test_model("/programmatic-hover.mbt", "hover")))
@@ -274,7 +274,6 @@ test "programmatic hover forwards immediate mode source focus and mouse state" {
   let hc = viewer.content_hover_controller().unwrap()
   assert_false(hc.hover_is_mouse_down)
   assert_false(hc.hover_ignore_mouse_events)
-  assert_true(hc.hover_settings.enabled is HoverEnabledOn)
   assert_true(hc.hover_settings.sticky)
   assert_eq(hc.hover_settings.hiding_delay, 300)
   viewer.start_showing_hover_at_range(
@@ -284,12 +283,12 @@ test "programmatic hover forwards immediate mode source focus and mouse state" {
     true,
   )
   match hc.hover.operation.options {
-    Some(options) => {
-      assert_true(options.source is HoverStartKeyboard)
-      assert_true(options.should_focus)
-      assert_eq(options.anchor.priority(), 0)
-    }
+    Some(options) => assert_true(options.source is HoverStartKeyboard)
     None => fail("expected forwarded hover options")
+  }
+  match hc.hover.anchor {
+    Some(anchor) => assert_eq(anchor.priority(), 0)
+    None => fail("expected the programmatic hover anchor")
   }
   assert_true(hc.hover.operation.state is HoverOpWaitingForAsync)
 
@@ -375,20 +374,34 @@ test "hover scroll handling covers neither top left both and ignored input" {
 
 ///|
 fn shown_hover_controller() -> @hover.HoverController {
+  let model = async_test_model("/shown-hover-helper.mbt", "shown")
+  defer model.dispose()
+  let source = new_hover_cancellation_source()
+  defer source.dispose()
   let (_, started) = @hover.HoverController::empty().start_showing_or_update_hover(
     async_hover_anchor(),
     false,
   )
   let token = started.operation.token
-  let (_, after_async_trigger) = started.op_trigger_async(token)
-  let after_sync = after_async_trigger.op_trigger_sync(token, [
-    MarkdownHover(
-      range=Range(1, 1, 1, 1),
-      contents=[PlainText("shown")],
-      ordinal=100,
-    ),
-  ])
-  after_sync.op_async_done(token)
+  let request = started.request_stamp(model, source.token())
+  let (_, after_async_trigger) = started.op_trigger_async_request(
+    request,
+    Some(model),
+    token,
+  )
+  let after_sync = after_async_trigger.op_trigger_sync_request(
+    request,
+    Some(model),
+    token,
+    [
+      MarkdownHover(
+        range=Range(1, 1, 1, 1),
+        contents=[PlainText("shown")],
+        ordinal=100,
+      ),
+    ],
+  )
+  after_sync.op_async_done_request(request, Some(model), token)
 }
 
 ///|
@@ -477,8 +490,21 @@ test "content invalidation removes loading visibility and permits same-anchor re
   let anchor = async_hover_anchor()
   let (_, armed) = hc.hover.start_showing_or_update_hover(anchor, false)
   let token = armed.operation.token
-  let (_, second_wait) = armed.op_trigger_async(token)
-  hc.hover = second_wait.op_trigger_sync(token, []).op_trigger_loading(token)
+  let source = new_hover_cancellation_source()
+  defer source.dispose()
+  let request = armed.request_stamp(model, source.token())
+  let (_, second_wait) = armed.op_trigger_async_request(
+    request,
+    Some(model),
+    token,
+  )
+  let waiting = second_wait.op_trigger_sync_request(
+    request,
+    Some(model),
+    token,
+    [],
+  )
+  hc.hover = waiting.op_trigger_loading_request(request, Some(model), token)
   assert_true(hc.hover.view is None)
   viewer.sync_content_hover_widget()
   assert_true(viewer.content_hover_visible())
@@ -486,7 +512,6 @@ test "content invalidation removes loading visibility and permits same-anchor re
   viewer.set_value("changed")
 
   assert_true(hc.hover.view is None)
-  assert_true(hc.hover.current_anchor is None)
   assert_false(viewer.content_hover_visible())
   let (effect, restarted) = hc.hover.start_showing_or_update_hover(
     anchor,

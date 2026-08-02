@@ -72,7 +72,7 @@ pub fn MarkerDecorationsService::MarkerDecorationsService(
 ///|
 /// Subscribes to per-model decoration-change events, `onDidChangeMarker`
 /// (`markerDecorationsService.ts:29`). The payload is the changed model.
-pub fn MarkerDecorationsService::on_did_change_marker_decorations(
+fn MarkerDecorationsService::on_did_change_marker_decorations(
   self : MarkerDecorationsService,
   listener : (@model.TextModel) -> Unit,
 ) -> @base_common.Disposable {
@@ -123,7 +123,7 @@ pub fn MarkerDecorationsService::dispose(
 /// The first lease installs exactly one content watch and one model-dispose
 /// watch, appends the identity to its URI bucket, and seeds decorations.
 /// Reacquisition only increments the refcount and preserves URI order.
-pub fn MarkerDecorationsService::acquire_model(
+fn MarkerDecorationsService::acquire_model(
   self : MarkerDecorationsService,
   model : @model.TextModel,
 ) -> @base_common.Disposable {
@@ -175,46 +175,6 @@ pub fn MarkerDecorationsService::acquire_model(
   @base_common.Disposable::from(() => {
     self.remove_model_registration(model_id, LeaseReleased)
   })
-}
-
-///|
-/// Compatibility entry point for callers that still use the historical
-/// paired add/remove API. New viewer ownership uses `acquire_model` directly.
-/// A repeated add refreshes the existing owner and never increments its lease.
-pub fn MarkerDecorationsService::on_model_added(
-  self : MarkerDecorationsService,
-  model : @model.TextModel,
-) -> Unit {
-  if self.disposed {
-    return
-  }
-  let model_id = model.identity()
-  match self.model_registrations.get(model_id) {
-    Some(_) => self.refresh_model_registration(model_id)
-    None => {
-      let lease = self.acquire_model(model)
-      if self.model_registrations.contains(model_id) {
-        self.legacy_leases.set(model_id, lease)
-      }
-    }
-  }
-}
-
-///|
-/// Compatibility counterpart to `on_model_added`. Ordinary paired removal is
-/// a lease release and therefore never deletes host-owned diagnostics.
-pub fn MarkerDecorationsService::on_model_removed(
-  self : MarkerDecorationsService,
-  model : @model.TextModel,
-) -> Unit {
-  let model_id = model.identity()
-  match self.legacy_leases.get(model_id) {
-    Some(lease) => {
-      self.legacy_leases.remove(model_id)
-      lease.dispose()
-    }
-    None => ()
-  }
 }
 
 ///|
@@ -451,7 +411,7 @@ fn MarkerDecorationsService::update_decorations_once(
 /// id on `uri`. The URI bucket is scanned in acquisition order; model-generated
 /// decoration ids carry the model identity prefix, so distinct live same-URI
 /// models remain unambiguous.
-pub fn MarkerDecorationsService::get_marker(
+fn MarkerDecorationsService::get_marker(
   self : MarkerDecorationsService,
   uri : @base_common.Uri,
   decoration_id : String,
@@ -477,7 +437,7 @@ pub fn MarkerDecorationsService::get_marker(
 /// every live identity at the resource, concatenated in acquisition order.
 /// Identity-sensitive consumers such as hover use
 /// `get_live_markers_for_model` instead.
-pub fn MarkerDecorationsService::get_live_markers(
+fn MarkerDecorationsService::get_live_markers(
   self : MarkerDecorationsService,
   uri : @base_common.Uri,
 ) -> Array[(@base_common.Range, Marker)] {
@@ -500,7 +460,7 @@ pub fn MarkerDecorationsService::get_live_markers(
 /// Returns only the live marker decorations owned by this exact model
 /// identity. Hover uses this helper so two live models sharing one URI cannot
 /// contribute ranges from each other's snapshots.
-pub fn MarkerDecorationsService::get_live_markers_for_model(
+fn MarkerDecorationsService::get_live_markers_for_model(
   self : MarkerDecorationsService,
   model : @model.TextModel,
 ) -> Array[(@base_common.Range, Marker)] {
@@ -513,7 +473,7 @@ pub fn MarkerDecorationsService::get_live_markers_for_model(
 ///|
 /// `addMarkerSuppression` (`markerDecorationsService.ts:62`): suppress markers in
 /// `range` on `uri`; the disposable removes the suppression (D5).
-pub fn MarkerDecorationsService::add_marker_suppression(
+fn MarkerDecorationsService::add_marker_suppression(
   self : MarkerDecorationsService,
   uri : @base_common.Uri,
   range : @base_common.Range,
@@ -576,9 +536,7 @@ let minimap_info : String = "minimap.infoHighlight"
 /// overrides. An empty `class_name` is Monaco's `className: undefined`
 /// (Hint+Deprecated); the range travels separately as the
 /// `IModelDeltaDecoration` pair (`create_decoration_range`).
-pub fn create_decoration_option(
-  marker : Marker,
-) -> @model.ModelDecorationOptions {
+fn create_decoration_option(marker : Marker) -> @model.ModelDecorationOptions {
   let mut class_name = ""
   let mut color : String? = None
   let mut z_index = 0
@@ -650,7 +608,7 @@ pub fn create_decoration_option(
 ///   4. full-line marker (`endColumn == MAX_VALUE`, `startColumn == 1`, single
 ///      line) → snap the start to the first non-whitespace column (and mutate the
 ///      raw marker, as Monaco does).
-pub fn create_decoration_range(
+fn create_decoration_range(
   model : @model.TextModel,
   raw_marker : Marker,
 ) -> @base_common.Range {

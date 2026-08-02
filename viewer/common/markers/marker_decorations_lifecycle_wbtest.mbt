@@ -13,6 +13,13 @@ fn lifecycle_model(
 }
 
 ///|
+fn marker_model_decorations(
+  model : @model.TextModel,
+) -> Array[@model.ModelDecoration] {
+  model.get_decorations_in_range(model.get_full_model_range())
+}
+
+///|
 fn lifecycle_marker(
   message : String,
   start_column? : Int = 1,
@@ -41,7 +48,7 @@ test "preloaded markers seed once and same-identity leases refcount" {
   })
 
   let first = service.acquire_model(model)
-  assert_eq(model.get_all_decorations().length(), 1)
+  assert_eq(marker_model_decorations(model).length(), 1)
   assert_true(changed == [model.identity()])
   let second = service.acquire_model(model)
   assert_eq(service.model_registrations.length(), 1)
@@ -62,20 +69,20 @@ test "preloaded markers seed once and same-identity leases refcount" {
     service.model_registrations.get(model.identity()).unwrap().ref_count,
     1,
   )
-  assert_eq(model.get_all_decorations().length(), 1)
+  assert_eq(marker_model_decorations(model).length(), 1)
   first.dispose()
   assert_eq(service.model_registrations.length(), 0)
   assert_eq(service.model_ids_by_uri.length(), 0)
-  assert_eq(model.get_all_decorations().length(), 0)
+  assert_eq(marker_model_decorations(model).length(), 0)
   // Ordinary release never owns the host's diagnostics, even for a transient
   // URI. A later lease for the still-live identity re-seeds the same host data
   // in a fresh owner, without any historical watch or ordering entry.
   assert_eq(markers.read(MarkerReadOptions(resource=uri)).length(), 1)
   let reattached = service.acquire_model(model)
-  assert_eq(model.get_all_decorations().length(), 1)
+  assert_eq(marker_model_decorations(model).length(), 1)
   assert_eq(service.model_registrations.length(), 1)
   reattached.dispose()
-  assert_eq(model.get_all_decorations().length(), 0)
+  assert_eq(marker_model_decorations(model).length(), 0)
   // The final release removed the new model-dispose watch too, so later host
   // disposal is unseen and cannot run transient cleanup.
   model.dispose()
@@ -118,8 +125,8 @@ test "same-URI identities fan out and URI lookups preserve acquisition order" {
   assert_true(
     service.get_live_markers_for_model(model_b)[0].0 == Range(1, 3, 1, 5),
   )
-  let a_id = model_a.get_all_decorations()[0].id
-  let b_id = model_b.get_all_decorations()[0].id
+  let a_id = marker_model_decorations(model_a)[0].id
+  let b_id = marker_model_decorations(model_b)[0].id
   assert_true(a_id.has_prefix("\{model_a.identity()};"))
   assert_true(b_id.has_prefix("\{model_b.identity()};"))
   assert_eq(service.get_marker(uri, a_id).unwrap().message, "first")
@@ -165,8 +172,8 @@ test "model identities and decoration namespaces do not wrap after 52 models" {
 
   assert_eq(service.model_registrations.length(), 53)
   assert_eq(service.model_ids_by_uri.get(uri.to_string()).unwrap().length(), 53)
-  let first_decoration_id = models[0].get_all_decorations()[0].id
-  let fifty_third_decoration_id = models[52].get_all_decorations()[0].id
+  let first_decoration_id = marker_model_decorations(models[0])[0].id
+  let fifty_third_decoration_id = marker_model_decorations(models[52])[0].id
   assert_false(first_decoration_id == fifty_third_decoration_id)
   assert_true(first_decoration_id.has_prefix("\{models[0].identity()};"))
   assert_true(fifty_third_decoration_id.has_prefix("\{models[52].identity()};"))
@@ -197,7 +204,7 @@ test "set_value refreshes one owner once without acquiring another lease" {
   let model = lifecycle_model(uri, "set-value.mbt", "before")
   let first = service.acquire_model(model)
   let second = service.acquire_model(model)
-  let old_id = model.get_all_decorations()[0].id
+  let old_id = marker_model_decorations(model)[0].id
   let events : Array[Int] = []
   let event_subscription = service.on_did_change_marker_decorations(changed => {
     events.push(changed.identity())
@@ -205,8 +212,8 @@ test "set_value refreshes one owner once without acquiring another lease" {
 
   model.set_value("after")
   assert_true(events == [model.identity()])
-  assert_eq(model.get_all_decorations().length(), 1)
-  assert_false(model.get_all_decorations()[0].id == old_id)
+  assert_eq(marker_model_decorations(model).length(), 1)
+  assert_false(marker_model_decorations(model)[0].id == old_id)
   assert_eq(
     service.model_registrations.get(model.identity()).unwrap().ref_count,
     2,
@@ -301,7 +308,7 @@ test "service disposal blocks reentrant marker and model ingress first" {
   assert_true(service.disposed)
   assert_eq(service.model_registrations.length(), 0)
   assert_eq(service.model_ids_by_uri.length(), 0)
-  assert_eq(model.get_all_decorations().length(), 0)
+  assert_eq(marker_model_decorations(model).length(), 0)
   let stored = markers.read(MarkerReadOptions(resource=uri))
   assert_eq(stored.length(), 1)
   assert_eq(stored[0].message, "during-dispose")
@@ -340,7 +347,7 @@ test "reentrant marker updates drain after the active decoration delta" {
   markers.change_one("host", uri, [lifecycle_marker("outer")])
   assert_true(reentered.val)
   assert_eq(outward_events.val, 2)
-  assert_eq(model.get_all_decorations().length(), 1)
+  assert_eq(marker_model_decorations(model).length(), 1)
   let live = service.get_live_markers_for_model(model)
   assert_eq(live.length(), 1)
   assert_eq(live[0].1.message, "nested")

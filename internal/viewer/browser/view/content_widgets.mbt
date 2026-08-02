@@ -43,7 +43,7 @@ pub(all) struct ContentWidgetDimension {
 ///|
 /// Monaco `IContentWidgetRenderedCoordinate`, passed to `afterRender` after
 /// the write phase has selected and applied a concrete placement.
-pub struct ContentWidgetRenderedCoordinate {
+struct ContentWidgetRenderedCoordinate {
   top : Double
   left : Double
 } derive(Eq, Debug)
@@ -166,7 +166,7 @@ struct ContentWidgets {
 }
 
 ///|
-pub fn ContentWidgets::ContentWidgets(
+fn ContentWidgets::ContentWidgets(
   document : @rdom.Document,
   view_dom_node : @rdom.Element,
 ) -> ContentWidgets {
@@ -199,7 +199,7 @@ pub fn ContentWidgets::ContentWidgets(
 /// Installs the live configuration/converter capabilities owned by the active
 /// ViewModel. The root calls this before re-adding retained widgets; the
 /// closures then remain stable for the View's model-scoped lifetime.
-pub fn ContentWidgets::install_live_view_context(
+fn ContentWidgets::install_live_view_context(
   self : ContentWidgets,
   read_layout_info : () -> (Double, Double),
   model_position_to_valid_view_position : (@base_common.Position) -> @base_common.Position?,
@@ -227,12 +227,12 @@ pub fn ContentWidgets::install_live_view_context_with_affinity(
 }
 
 ///|
-pub fn ContentWidgets::dom_node(self : ContentWidgets) -> @rdom.Element {
+fn ContentWidgets::dom_node(self : ContentWidgets) -> @rdom.Element {
   self.dom_node
 }
 
 ///|
-pub fn ContentWidgets::overflowing_content_widgets_dom_node(
+fn ContentWidgets::overflowing_content_widgets_dom_node(
   self : ContentWidgets,
 ) -> @rdom.Element {
   self.overflowing_content_widgets_dom_node
@@ -388,7 +388,7 @@ fn ContentWidgets::widget_ids_snapshot(self : ContentWidgets) -> Array[String] {
 /// Monaco's `RenderingContext` surface as data plus closures, the same host
 /// pattern `PointerHandlerHelper` uses. The record makes the widget's exact
 /// geometry requirements explicit and independently testable.
-pub(all) struct ContentWidgetsRenderContext {
+priv struct ContentWidgetsRenderContext {
   /// Content-space vertical offset of a view line
   /// (`ctx.getVerticalOffsetForLineNumber`).
   vertical_offset_for_line : (Int) -> Double
@@ -426,7 +426,7 @@ fn ContentWidgets::on_before_render_widgets(
 /// Monaco `ViewContentWidgets.prepareRender` (`contentWidgets.ts:152-157`):
 /// compute each widget's render data for this frame after the distinct
 /// `onBeforeRender` write phase and text rendering have completed.
-pub fn ContentWidgets::prepare_render_widgets(
+fn ContentWidgets::prepare_render_widgets(
   self : ContentWidgets,
   ctx : ContentWidgetsRenderContext,
 ) -> Unit {
@@ -443,7 +443,7 @@ pub fn ContentWidgets::prepare_render_widgets(
 /// transform, so `top_style = viewport_top - translate_y` is the source's
 /// `coordinate.top + ctx.scrollTop - ctx.bigNumbersDelta` on the transformed
 /// layer.
-pub fn ContentWidgets::render_widgets(
+fn ContentWidgets::render_widgets(
   self : ContentWidgets,
   scroll_top : Double,
   big_numbers_delta : Double,

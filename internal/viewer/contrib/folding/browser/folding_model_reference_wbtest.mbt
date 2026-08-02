@@ -94,7 +94,10 @@ fn TestDecorationProvider::get_decorations(
   self : TestDecorationProvider,
 ) -> Array[(Int, String)] {
   let res : Array[(Int, String)] = []
-  for decoration in self.model.get_all_decorations() {
+  for
+    decoration in self.model.get_decorations_in_range(
+      self.model.get_full_model_range(),
+    ) {
     match decoration.options.description {
       "test-hidden" => res.push((decoration.range.start_line_number, "hidden"))
       "test-collapsed" =>
@@ -335,7 +338,7 @@ test "getRegionsInsideWithLevel" {
   assert_regions_list(
     folding_model.get_regions_inside(
       None,
-      filter=RegionFilterWithLevel((_r, level) => level == 1),
+      filter=region_filter_with_level((_r, level) => level == 1),
     ),
     [r1, r2],
     "1",
@@ -343,7 +346,7 @@ test "getRegionsInsideWithLevel" {
   assert_regions_list(
     folding_model.get_regions_inside(
       None,
-      filter=RegionFilterWithLevel((_r, level) => level == 2),
+      filter=region_filter_with_level((_r, level) => level == 2),
     ),
     [r3],
     "2",
@@ -351,7 +354,7 @@ test "getRegionsInsideWithLevel" {
   assert_regions_list(
     folding_model.get_regions_inside(
       None,
-      filter=RegionFilterWithLevel((_r, level) => level == 3),
+      filter=region_filter_with_level((_r, level) => level == 3),
     ),
     [r4, r5],
     "3",
@@ -359,7 +362,7 @@ test "getRegionsInsideWithLevel" {
   assert_regions_list(
     folding_model.get_regions_inside(
       region2,
-      filter=RegionFilterWithLevel((_r, level) => level == 1),
+      filter=region_filter_with_level((_r, level) => level == 1),
     ),
     [r3],
     "4",
@@ -367,7 +370,7 @@ test "getRegionsInsideWithLevel" {
   assert_regions_list(
     folding_model.get_regions_inside(
       region2,
-      filter=RegionFilterWithLevel((_r, level) => level == 2),
+      filter=region_filter_with_level((_r, level) => level == 2),
     ),
     [r4, r5],
     "5",
@@ -375,7 +378,7 @@ test "getRegionsInsideWithLevel" {
   assert_regions_list(
     folding_model.get_regions_inside(
       region3,
-      filter=RegionFilterWithLevel((_r, level) => level == 1),
+      filter=region_filter_with_level((_r, level) => level == 1),
     ),
     [r4, r5],
     "6",
@@ -383,7 +386,7 @@ test "getRegionsInsideWithLevel" {
   assert_regions_list(
     folding_model.get_regions_inside(
       region2,
-      filter=RegionFilterWithLevel((r, _level) => r.hides_line(9)),
+      filter=region_filter_with_level((r, _level) => r.hides_line(9)),
     ),
     [r3, r5],
     "7",
@@ -391,7 +394,7 @@ test "getRegionsInsideWithLevel" {
   assert_regions_list(
     folding_model.get_regions_inside(
       region1,
-      filter=RegionFilterWithLevel((_r, level) => level == 1),
+      filter=region_filter_with_level((_r, level) => level == 1),
     ),
     [],
     "8",

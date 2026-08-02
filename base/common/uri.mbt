@@ -21,13 +21,6 @@
 ///   protocol serializes `to_string()` strings.
 
 ///|
-/// Validation failure raised by the `Uri` constructors (`[UriError]` throws
-/// in uri.ts `_validateUri`, D6).
-pub suberror UriError {
-  UriError(String)
-} derive(Debug)
-
-///|
 /// Uniform Resource Identifier (URI) http://tools.ietf.org/html/rfc3986.
 /// This class is a simple parser which creates the basic component parts
 /// (http://tools.ietf.org/html/rfc3986#section-3) with minimal validation
@@ -71,15 +64,6 @@ pub impl Eq for Uri with fn equal(self, other) {
   self.path == other.path &&
   self.query == other.query &&
   self.fragment == other.fragment
-}
-
-///|
-pub impl Hash for Uri with fn hash_combine(self, hasher) {
-  hasher.combine(self.scheme)
-  hasher.combine(self.authority)
-  hasher.combine(self.path)
-  hasher.combine(self.query)
-  hasher.combine(self.fragment)
 }
 
 ///|
@@ -426,7 +410,7 @@ pub fn Uri::from(
 /// optional named args: omitted = keep, `Some("")` = clear (Monaco maps null
 /// to `''` anyway, uri.ts:227-249, D6). Returns `self` unchanged when every
 /// component matches (uri.ts:251).
-pub fn Uri::with_(
+fn Uri::with_impl(
   self : Uri,
   scheme? : String,
   authority? : String,
@@ -453,7 +437,7 @@ pub fn Uri::with_(
 /// `URI.joinPath` (uri.ts:360): join a URI path with path fragments and
 /// normalize the resulting path. Aborts on a URI without path, matching
 /// Monaco's unconditional throw (programmer error, D6).
-pub fn Uri::join_path(uri : Uri, path_fragment : Array[String]) -> Uri {
+fn Uri::join_path_impl(uri : Uri, path_fragment : Array[String]) -> Uri {
   if uri.path == "" {
     abort(
       "[UriError]: cannot call joinPath on URI without path: \{uri.to_string()}",
@@ -496,7 +480,7 @@ pub fn Uri::to_string(self : Uri, skip_encoding? : Bool = false) -> String {
 /// (`file://server/share` → `//server/share` resp. `\\server\share`) and
 /// normalizes windows drive letters to lower-case. Does not validate the
 /// path and does not look at the scheme.
-pub fn Uri::fs_path(self : Uri) -> String {
+fn Uri::fs_path_impl(self : Uri) -> String {
   match self.fs_path_cache {
     Some(fs_path) => fs_path
     None => {
@@ -717,7 +701,7 @@ fn encode_uri_component_minimal(path : String) -> String {
 /// `uriToFsPath` (uri.ts:626): computes `fsPath` for the given uri — UNC
 /// form for file-URIs with authority, lower-cased drive letters unless
 /// `keep_drive_letter_casing`, and backslashes on windows.
-pub fn uri_to_fs_path(uri : Uri, keep_drive_letter_casing : Bool) -> String {
+fn uri_to_fs_path_impl(uri : Uri, keep_drive_letter_casing : Bool) -> String {
   let mut value = ""
   if uri.authority != "" && uri.path.length() > 1 && uri.scheme == "file" {
     // unc path: file://shares/c$/far/boo

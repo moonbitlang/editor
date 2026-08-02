@@ -18,7 +18,7 @@
 /// `toLineChanges` (`diffEditorWidget.ts:759`) without `charChanges`:
 /// re-encodes exclusive line-range mappings in the legacy 1-based inclusive
 /// `Change` shape, `0` marking the empty side.
-pub fn to_line_changes(
+fn to_line_changes(
   changes : Array[@diff.DetailedLineRangeMapping],
 ) -> Array[@diff.Change] {
   changes.map(m => {

@@ -36,7 +36,7 @@ fn Viewer::before_definition_target_mouse_down(
   state.link_modifier_down = true
   state.definition_mouse_down_line = match target {
     Some(target) if self.definition_link_target_is_current(target) =>
-      target.position.line_number
+      target.position().line_number
     _ => 0
   }
   match state.link_state {

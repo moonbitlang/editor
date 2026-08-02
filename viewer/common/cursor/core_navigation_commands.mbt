@@ -10,7 +10,7 @@
 
 ///|
 /// `CoreNavigationCommands.MoveTo`: collapse the cursor at `view_position`.
-pub fn move_to(
+fn move_to(
   controller : CursorsController,
   view_position : @base_common.Position,
 ) -> Unit {
@@ -19,7 +19,7 @@ pub fn move_to(
 
 ///|
 /// `CoreNavigationCommands.MoveToSelect`: extend the selection to `view_position`.
-pub fn move_to_select(
+fn move_to_select(
   controller : CursorsController,
   view_position : @base_common.Position,
 ) -> Unit {

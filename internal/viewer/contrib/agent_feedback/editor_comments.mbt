@@ -27,7 +27,7 @@ pub struct SessionEditorComment {
 /// `toSessionEditorCommentId(source, sourceId)` with the source fixed to
 /// `agentFeedback` — kept so anchors stay distinct from raw feedback ids and
 /// stable if another source ever lands.
-pub fn to_session_editor_comment_id(source_id : String) -> String {
+fn to_session_editor_comment_id(source_id : String) -> String {
   "agentFeedback:\{source_id}"
 }
 
@@ -61,7 +61,7 @@ pub fn get_session_editor_comments(
 /// `compareSessionEditorComments`: resource, then range start, then id.
 /// (Upstream uses `localeCompare`; the viewer uses MoonBit's `String`
 /// ordering — only determinism matters here, not collation.)
-pub fn compare_session_editor_comments(
+fn compare_session_editor_comments(
   a : SessionEditorComment,
   b : SessionEditorComment,
 ) -> Int {
@@ -146,7 +146,7 @@ pub fn group_nearby_session_editor_comments(
 ///|
 /// `getAcceptedAgentFeedbackCommentCount`: how many comments are accepted and
 /// waiting for submission — the count on the host's "Submit N" affordance.
-pub fn get_accepted_agent_feedback_comment_count(
+fn get_accepted_agent_feedback_comment_count(
   comments : Array[SessionEditorComment],
 ) -> Int {
   for comment in comments; count = 0 {

@@ -13,7 +13,7 @@ pub(all) enum TrackedRangeStickiness {
 /// Numeric value of the stickiness, matching Monaco's
 /// `TrackedRangeStickiness` enum values (`model.ts`) — the interval tree
 /// packs it into the node metadata byte.
-pub fn TrackedRangeStickiness::to_int(self : TrackedRangeStickiness) -> Int {
+fn TrackedRangeStickiness::to_int(self : TrackedRangeStickiness) -> Int {
   match self {
     AlwaysGrowsWhenTypingAtEdges => 0
     NeverGrowsWhenTypingAtEdges => 1
@@ -25,7 +25,7 @@ pub fn TrackedRangeStickiness::to_int(self : TrackedRangeStickiness) -> Int {
 ///|
 /// Inverse of `to_int`. Values outside 0..=3 cannot come out of the 2-bit
 /// metadata field; the fallback mirrors Monaco's numeric default 0.
-pub fn TrackedRangeStickiness::from_int(value : Int) -> TrackedRangeStickiness {
+fn TrackedRangeStickiness::from_int(value : Int) -> TrackedRangeStickiness {
   match value {
     1 => NeverGrowsWhenTypingAtEdges
     2 => GrowsOnlyWhenTypingBefore
@@ -70,7 +70,7 @@ pub(all) struct ModelDecorationMinimapOptions {
 ///|
 /// `cleanClassName` (`textModel.ts:2355-2357`): `[^a-z0-9\-_]/gi → ' '`,
 /// applied per UTF-16 code unit like the JS regex (no /u flag).
-pub fn clean_class_name(class_name : String) -> String {
+fn clean_class_name(class_name : String) -> String {
   let sb = StringBuilder()
   for unit in class_name.code_units() {
     if (unit >= 'a' && unit <= 'z') ||

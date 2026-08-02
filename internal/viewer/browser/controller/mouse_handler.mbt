@@ -296,7 +296,7 @@ pub fn MouseHandler::cancel_selection(self : MouseHandler) -> Unit {
 
 ///|
 /// `getTargetAtClientPoint` (mouseHandler.ts:231-242).
-pub fn MouseHandler::get_target_at_client_point(
+fn MouseHandler::get_target_at_client_point(
   self : MouseHandler,
   client_x : Double,
   client_y : Double,
@@ -840,7 +840,7 @@ fn MouseDownOperation::dispatch_mouse_target(
 
 ///|
 /// `MouseDownState` (mouseHandler.ts:658-749).
-struct MouseDownState {
+priv struct MouseDownState {
   mut alt_key_flag : Bool
   mut ctrl_key_flag : Bool
   mut meta_key_flag : Bool
@@ -859,7 +859,7 @@ struct MouseDownState {
 const CLEAR_MOUSE_DOWN_COUNT_TIME : Double = 400.0 // ms
 
 ///|
-pub fn MouseDownState::MouseDownState() -> MouseDownState {
+fn MouseDownState::MouseDownState() -> MouseDownState {
   {
     alt_key_flag: false,
     ctrl_key_flag: false,
@@ -876,42 +876,42 @@ pub fn MouseDownState::MouseDownState() -> MouseDownState {
 }
 
 ///|
-pub fn MouseDownState::alt_key(self : MouseDownState) -> Bool {
+fn MouseDownState::alt_key(self : MouseDownState) -> Bool {
   self.alt_key_flag
 }
 
 ///|
-pub fn MouseDownState::ctrl_key(self : MouseDownState) -> Bool {
+fn MouseDownState::ctrl_key(self : MouseDownState) -> Bool {
   self.ctrl_key_flag
 }
 
 ///|
-pub fn MouseDownState::meta_key(self : MouseDownState) -> Bool {
+fn MouseDownState::meta_key(self : MouseDownState) -> Bool {
   self.meta_key_flag
 }
 
 ///|
-pub fn MouseDownState::shift_key(self : MouseDownState) -> Bool {
+fn MouseDownState::shift_key(self : MouseDownState) -> Bool {
   self.shift_key_flag
 }
 
 ///|
-pub fn MouseDownState::left_button(self : MouseDownState) -> Bool {
+fn MouseDownState::left_button(self : MouseDownState) -> Bool {
   self.left_button_flag
 }
 
 ///|
-pub fn MouseDownState::middle_button(self : MouseDownState) -> Bool {
+fn MouseDownState::middle_button(self : MouseDownState) -> Bool {
   self.middle_button_flag
 }
 
 ///|
-pub fn MouseDownState::started_on_line_numbers(self : MouseDownState) -> Bool {
+fn MouseDownState::started_on_line_numbers(self : MouseDownState) -> Bool {
   self.started_on_line_numbers_flag
 }
 
 ///|
-pub fn MouseDownState::count(self : MouseDownState) -> Int {
+fn MouseDownState::count(self : MouseDownState) -> Int {
   self.last_mouse_down_count
 }
 
@@ -946,7 +946,7 @@ fn MouseDownState::set_started_on_line_numbers(
 ///|
 /// `trySetCount` (mouseHandler.ts:724-747). `now` is injectable for tests;
 /// the source reads `new Date().getTime()`.
-pub fn MouseDownState::try_set_count(
+fn MouseDownState::try_set_count(
   self : MouseDownState,
   set_mouse_down_count : Int,
   new_mouse_down_position : @base_common.Position,

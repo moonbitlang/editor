@@ -4,7 +4,6 @@ import {
   "moonbitlang/editor/platform/log",
   "moonbitlang/editor/viewer",
   "moonbitlang/editor/internal/viewer/browser/testing" @viewer_testing,
-  "moonbitlang/editor/internal/viewer/browser/view",
   "moonbitlang/editor/viewer/common/editor_api",
   "moonbitlang/editor/viewer/common/languages",
   "moonbitlang/editor/viewer/common/markers",

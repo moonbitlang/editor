@@ -19,7 +19,7 @@ pub let hover_sticky_debug : Bool = false
 
 ///|
 /// Monaco `editor.hover.enabled` (`IHoverSettings.enabled`).
-pub enum HoverEnabled {
+enum HoverEnabled {
   HoverEnabledOn
   HoverEnabledOff
   HoverEnabledOnKeyboardModifier
@@ -30,7 +30,7 @@ pub enum HoverEnabled {
 /// `'on' | 'off' | 'onKeyboardModifier'`) to the setting; unknown values fall
 /// back to the option default `'on'`. The config seam is not surfaced yet (see
 /// the plan's Deviations), so today only `'on'` is fed in.
-pub fn HoverEnabled::from_config(value : String) -> HoverEnabled {
+fn HoverEnabled::from_config(value : String) -> HoverEnabled {
   match value {
     "off" => HoverEnabledOff
     "onKeyboardModifier" => HoverEnabledOnKeyboardModifier
@@ -41,7 +41,7 @@ pub fn HoverEnabled::from_config(value : String) -> HoverEnabled {
 ///|
 /// Monaco `editor.multiCursorModifier` reduced to the modifier key it resolves to
 /// (`'altKey' | 'ctrlKey' | 'metaKey'`).
-pub enum MultiCursorModifier {
+enum MultiCursorModifier {
   MultiCursorAlt
   MultiCursorCtrl
   MultiCursorMeta
@@ -52,7 +52,7 @@ pub enum MultiCursorModifier {
 /// `'ctrlCmd'` is Meta on macOS and Ctrl elsewhere; anything else (the default
 /// `'alt'`) is Alt — the platform split Monaco applies before
 /// `isTriggerModifierPressed` reads `'altKey' | 'ctrlKey' | 'metaKey'`.
-pub fn MultiCursorModifier::from_config(
+fn MultiCursorModifier::from_config(
   value : String,
   mac~ : Bool,
 ) -> MultiCursorModifier {
@@ -73,15 +73,25 @@ pub let hover_multi_cursor_modifier : MultiCursorModifier = MultiCursorModifier:
 ///|
 /// The modifier-key flags carried by a pointer (or keyboard) event — the subset
 /// `hoverUtils` reads (`event.ctrlKey` / `event.metaKey` / `event.altKey`).
-pub(all) struct EventModifiers {
+struct EventModifiers {
   ctrl : Bool
   meta : Bool
   alt : Bool
 }
 
 ///|
+/// Creates the modifier snapshot carried across the browser input boundary.
+pub fn EventModifiers::EventModifiers(
+  ctrl : Bool,
+  meta : Bool,
+  alt : Bool,
+) -> EventModifiers {
+  { ctrl, meta, alt }
+}
+
+///|
 pub fn EventModifiers::none() -> EventModifiers {
-  { ctrl: false, meta: false, alt: false }
+  EventModifiers(false, false, false)
 }
 
 ///|
@@ -134,7 +144,7 @@ pub fn mouse_within_element(
 /// Monaco `hoverUtils.isTriggerModifierPressed`: the trigger modifier is the
 /// inverse of the multi-cursor modifier — when multi-cursor is Alt, the trigger
 /// is Ctrl/Meta; otherwise (multi-cursor is Ctrl/Meta) the trigger is Alt.
-pub fn is_trigger_modifier_pressed(
+fn is_trigger_modifier_pressed(
   multi_cursor_modifier : MultiCursorModifier,
   e : EventModifiers,
 ) -> Bool {

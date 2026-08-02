@@ -8,7 +8,7 @@
 /// `3 × -deltaY`, so `wheelDeltaY / 120` and `-deltaY / 40` are the same
 /// number. (deviation: the Firefox-on-non-mac line-mode `/ 3` quirk rides
 /// on the dropped browser sniffing and is omitted with it.)
-pub struct StandardWheelEvent {
+struct StandardWheelEvent {
   delta_x : Double
   delta_y : Double
 }
@@ -26,4 +26,16 @@ pub fn StandardWheelEvent::StandardWheelEvent(
   } else {
     { delta_x: -e.get_delta_x() / 40.0, delta_y: -e.get_delta_y() / 40.0 }
   }
+}
+
+///|
+/// Normalized horizontal wheel delta.
+pub fn StandardWheelEvent::delta_x(self : StandardWheelEvent) -> Double {
+  self.delta_x
+}
+
+///|
+/// Normalized vertical wheel delta.
+pub fn StandardWheelEvent::delta_y(self : StandardWheelEvent) -> Double {
+  self.delta_y
 }

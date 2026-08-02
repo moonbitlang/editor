@@ -246,9 +246,9 @@ test "View dispatcher retains eight handlers in source order and gives each the 
     width: 2.0,
     height: 20,
   })
-  let collector = view.begin_view_event_batch()
-  collector.emit(ViewFocusChanged(ViewFocusChangedEvent(true)))
-  collector.emit(
+  view.begin_view_event_batch()
+  view.emit_view_event(ViewFocusChanged(ViewFocusChangedEvent(true)))
+  view.emit_view_event(
     ViewConfigurationChanged(
       ViewConfigurationChangedEvent::from_changed_options([]),
     ),

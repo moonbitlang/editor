@@ -28,16 +28,12 @@ pub fn DefinitionPeekWidget::DefinitionPeekWidget(DefinitionPeekWidgetCallbacks)
 pub fn DefinitionPeekWidget::dispose(Self) -> Unit
 pub fn DefinitionPeekWidget::focus(Self) -> Unit
 pub fn DefinitionPeekWidget::get_dom_node(Self) -> @dom.Element
-pub fn DefinitionPeekWidget::get_list_node(Self) -> @dom.Element
 pub fn DefinitionPeekWidget::get_preview_host(Self) -> @dom.Element
-pub fn DefinitionPeekWidget::get_selected_index(Self) -> Int?
 pub fn DefinitionPeekWidget::set_locations(Self, Array[@language.Location], Int) -> Unit
 pub fn DefinitionPeekWidget::set_selected_index(Self, Int) -> Unit
-pub fn DefinitionPeekWidget::show_loading(Self) -> Unit
 pub fn DefinitionPeekWidget::show_preview_loading(Self) -> Unit
 pub fn DefinitionPeekWidget::show_preview_ready(Self) -> Unit
 pub fn DefinitionPeekWidget::show_preview_unavailable(Self, String) -> Unit
-pub fn DefinitionPeekWidget::show_unavailable(Self, String) -> Unit
 
 pub(all) struct DefinitionPeekWidgetCallbacks {
   on_close : () -> Unit

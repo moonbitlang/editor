@@ -17,9 +17,13 @@ async test "native host reads root-relative text files" {
     let host = @host.native_server_host()
     match host.read_text_file(root, expect_path("src/main.mbt")) {
       ServerHostReadOk(content) => {
-        assert_eq(content.text, "pub fn main {}\n")
-        assert_eq(content.display_name, "src/main.mbt")
-        assert_eq(content.language_id, "moonbit")
+        let document = @workspace.DocumentSnapshot::from_content(
+          @base_common.Uri::file(root + "/src/main.mbt"),
+          content,
+        )
+        assert_eq(document.text, "pub fn main {}\n")
+        assert_eq(document.display_name, "src/main.mbt")
+        assert_eq(document.language_id, "moonbit")
       }
       ServerHostReadError(_code, message) => fail(message)
     }

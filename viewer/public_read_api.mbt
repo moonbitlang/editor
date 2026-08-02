@@ -118,82 +118,6 @@ pub fn Viewer::get_top_for_line_number(
 }
 
 ///|
-/// Content-space top of a 1-based model position, Monaco's `getTopForPosition`
-/// (`cew:600`) — always excludes the view zone directly above the line. No model
-/// → `-1`.
-pub fn Viewer::get_top_for_position(
-  self : Viewer,
-  line_number : Int,
-  column : Int,
-) -> Double {
-  self.get_vertical_offset_for_position(
-    line_number,
-    column,
-    include_view_zones=false,
-  )
-}
-
-///|
-/// Content-space bottom of a 1-based model line, Monaco's
-/// `getBottomForLineNumber` (`cew:616`): the offset after the line, computed at
-/// the line's max column (`Number.MAX_SAFE_INTEGER`, validated down). No model →
-/// `-1`.
-pub fn Viewer::get_bottom_for_line_number(
-  self : Viewer,
-  line_number : Int,
-) -> Double {
-  self.get_vertical_offset_after_position(
-    line_number,
-    max_safe_column,
-    include_view_zones=false,
-  )
-}
-
-///|
-/// Pixel height of a 1-based model position's line, Monaco's
-/// `getLineHeightForPosition` (`cew:623`). No model → `-1`; a position inside a
-/// hidden region → `0`; otherwise the configured uniform line height.
-/// Like Monaco the raw position is not validated before the visibility test.
-pub fn Viewer::get_line_height_for_position(
-  self : Viewer,
-  position : @base_common.Position,
-) -> Double {
-  guard (self.get_model(), self.get_view_model()) is (Some(_), Some(view_model)) else {
-    return -1.0
-  }
-  if view_model.model_position_is_visible(position) {
-    let view_position = view_model
-      .coordinates_converter()
-      .model_position_to_view_position(position)
-    view_model.view_layout
-    .get_line_height_for_line_number(view_position.line_number)
-    .to_double()
-  } else {
-    0.0
-  }
-}
-
-///|
-/// 1-based visible column of a model position (tabs expand to tab stops,
-/// full-width/emoji count as two), Monaco's `getVisibleColumnFromPosition`
-/// (`cew:641`): `visibleColumnFromColumn(...) + 1`. No model → the raw input
-/// column (the load-bearing no-model sentinel, not `-1`).
-pub fn Viewer::get_visible_column_from_position(
-  self : Viewer,
-  position : @base_common.Position,
-) -> Int {
-  guard self.get_model() is Some(model) else { return position.column }
-  let position = model.validate_position(position)
-  let tab_size = self.configuration.snapshot().options.tab_size
-  @core.visible_column_from_column(
-    model.get_line_content(position.line_number),
-    position.column,
-    tab_size,
-  ) +
-  1
-}
-
-///|
 /// 1-based "Col" value for a status bar (tabs snap to tab stops, code points),
 /// Monaco's `getStatusbarColumn` (`cew:652`). No model → the raw input column.
 fn Viewer::get_statusbar_column(
@@ -238,17 +162,6 @@ pub fn Viewer::get_selection(self : Viewer) -> @core.Selection? {
   guard self.is_code_presentation() else { return None }
   guard self.get_view_model() is Some(view_model) else { return None }
   Some(view_model.cursor.get_model_selection())
-}
-
-///|
-/// All cursor model selections, Monaco's `getSelections` (`cew:790`). The viewer
-/// is single-selection, so this is a 1-element array (a documented prior scope
-/// cut). No model → `null`.
-pub fn Viewer::get_selections(self : Viewer) -> Array[@core.Selection]? {
-  match self.get_selection() {
-    Some(selection) => Some([selection])
-    None => None
-  }
 }
 
 ///|

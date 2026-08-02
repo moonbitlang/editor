@@ -1,6 +1,6 @@
 ///|
 /// Monaco-shaped language selector filter.
-pub struct LanguageFilter {
+struct LanguageFilter {
   language : String?
   scheme : String?
   pattern : String?
@@ -16,7 +16,7 @@ pub(all) enum LanguageSelector {
 
 ///|
 /// Builds a selector filter with optional fields.
-pub fn LanguageFilter::LanguageFilter(
+fn LanguageFilter::new_impl(
   language? : String,
   scheme? : String,
   pattern? : String,
@@ -25,8 +25,18 @@ pub fn LanguageFilter::LanguageFilter(
 }
 
 ///|
+/// Builds a selector filter with optional language, scheme, and path pattern.
+pub fn LanguageFilter::LanguageFilter(
+  language? : String,
+  scheme? : String,
+  pattern? : String,
+) -> LanguageFilter {
+  LanguageFilter::new_impl(language?, scheme?, pattern?)
+}
+
+///|
 /// Whether this selector accepts a text model.
-pub fn LanguageSelector::matches(
+fn LanguageSelector::matches_impl(
   self : LanguageSelector,
   model : @model.TextModel,
 ) -> Bool {
@@ -68,7 +78,7 @@ pub fn LanguageSelector::score(
 
 ///|
 /// Whether this filter accepts a text model.
-pub fn LanguageFilter::matches(
+fn LanguageFilter::matches_impl(
   self : LanguageFilter,
   model : @model.TextModel,
 ) -> Bool {
@@ -78,7 +88,7 @@ pub fn LanguageFilter::matches(
 ///|
 /// Scores the language, scheme, and path-pattern subset of Monaco's
 /// `LanguageFilter`.
-pub fn LanguageFilter::score(
+fn LanguageFilter::score_impl(
   self : LanguageFilter,
   model : @model.TextModel,
 ) -> Int {

@@ -59,7 +59,7 @@ fn hex_digit_char(value : Int) -> Char {
 /// surrounding markup once and only encodes `color` per call; encoding the
 /// whole string in one pass here produces byte-identical output (`encodeURI-
 /// Component` has no cross-boundary state) while staying a single function.
-pub fn squiggly_svg_data_uri(color : String) -> String {
+fn squiggly_svg_data_uri(color : String) -> String {
   encode_uri_component(
     "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 6 3' enable-background='new 0 0 6 3' height='3' width='6'><g fill='\{color}'><polygon points='5.5,0 2.5,3 1.1,3 4.1,0'/><polygon points='4,0 6,2 6,0.6 5.4,0'/><polygon points='0,2 1,3 2.4,3 0,0.6'/></g></svg>",
   )
@@ -68,7 +68,7 @@ pub fn squiggly_svg_data_uri(color : String) -> String {
 ///|
 /// `getDotDotDotSVGData` (`codeEditorWidget.ts:2525-2529`): the three-dot
 /// pattern used for hint squiggles.
-pub fn dotdotdot_svg_data_uri(color : String) -> String {
+fn dotdotdot_svg_data_uri(color : String) -> String {
   encode_uri_component(
     "<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"3\" width=\"12\"><g fill=\"\{color}\"><circle cx=\"1\" cy=\"1\" r=\"1\"/><circle cx=\"5\" cy=\"1\" r=\"1\"/><circle cx=\"9\" cy=\"1\" r=\"1\"/></g></svg>",
   )

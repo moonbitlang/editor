@@ -5,10 +5,11 @@
 ///|
 /// The gutter decorations the quick-diff contribution currently maintains on
 /// the viewer's model, rendered `"<range> <linesDecorationsClassName>"`.
-fn quick_diff_gutter_decorations(viewer : Viewer) -> Array[String] {
-  guard viewer.get_model() is Some(model) else { return [] }
+fn quick_diff_gutter_decorations_for_model(
+  model : @model.TextModel,
+) -> Array[String] {
   let rendered : Array[String] = []
-  for decoration in model.get_all_decorations() {
+  for decoration in model.get_decorations_in_range(model.get_full_model_range()) {
     match decoration.options.lines_decorations_class_name {
       Some(class_name) =>
         if class_name.contains("dirty-diff") {
@@ -18,6 +19,12 @@ fn quick_diff_gutter_decorations(viewer : Viewer) -> Array[String] {
     }
   }
   rendered
+}
+
+///|
+fn quick_diff_gutter_decorations(viewer : Viewer) -> Array[String] {
+  guard viewer.get_model() is Some(model) else { return [] }
+  quick_diff_gutter_decorations_for_model(model)
 }
 
 ///|
@@ -174,17 +181,17 @@ test "quick diff: one central state follows model swap, removal, and reattach" {
   )
   viewer.set_model(Some(first))
   assert_true(state.collection.length() > 0)
-  assert_true(first.get_all_decorations().length() > 0)
+  assert_true(quick_diff_gutter_decorations_for_model(first).length() > 0)
   viewer.set_model(Some(second))
   assert_true(physical_equal(state, viewer.quick_diff_contribution().unwrap()))
-  assert_eq(first.get_all_decorations().length(), 0)
-  assert_true(second.get_all_decorations().length() > 0)
+  assert_eq(quick_diff_gutter_decorations_for_model(first).length(), 0)
+  assert_true(quick_diff_gutter_decorations_for_model(second).length() > 0)
   viewer.set_model(None)
   assert_eq(state.collection.length(), 0)
-  assert_eq(second.get_all_decorations().length(), 0)
+  assert_eq(quick_diff_gutter_decorations_for_model(second).length(), 0)
   viewer.set_model(Some(first))
   assert_true(physical_equal(state, viewer.quick_diff_contribution().unwrap()))
-  assert_true(first.get_all_decorations().length() > 0)
+  assert_true(quick_diff_gutter_decorations_for_model(first).length() > 0)
   viewer.dispose()
   first.dispose()
   second.dispose()
@@ -223,7 +230,9 @@ test "quick diff: disposal window is live and later service events are silent" {
   assert_true(state.collection.length() > 0)
   let original_change_deliveries = Ref(0)
   state.listeners.push(
-    quick_diff.on_did_change_original(_ => original_change_deliveries.val += 1),
+    quick_diff
+    .quick_diff_handle()
+    .on_did_change_original(_ => original_change_deliveries.val += 1),
   )
   let callback_seen = Ref(false)
   let contribution_live_in_callback = Ref(false)

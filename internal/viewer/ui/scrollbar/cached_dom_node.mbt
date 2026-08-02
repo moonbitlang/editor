@@ -13,7 +13,7 @@ pub(all) enum CssLength {
 
 ///|
 /// `numberAsPixels` (`fastDomNode.ts:314-316`).
-pub fn number_as_pixels(value : CssLength) -> String {
+fn number_as_pixels(value : CssLength) -> String {
   match value {
     Pixels(value) => "\{value.to_string()}px"
     Raw(value) => value

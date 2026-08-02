@@ -50,36 +50,9 @@ fn MutableCancellationToken::new(
 }
 
 ///|
-/// Creates a directly cancellable token for compatibility. New request owners
-/// should create a `CancellationTokenSource` and pass its token instead.
-pub fn CancellationToken::new() -> CancellationToken {
-  {
-    state: CompatibilityMutable(
-      MutableCancellationToken::new(schedule_cancellation_inline),
-    ),
-  }
-}
-
-///|
 /// Shared token that never requests cancellation.
 pub fn CancellationToken::none() -> CancellationToken {
   cancellation_none
-}
-
-///|
-/// Shared token whose cancellation has already been requested.
-pub fn CancellationToken::cancelled() -> CancellationToken {
-  cancellation_cancelled
-}
-
-///|
-/// Requests cancellation for a compatibility token. Source-owned and shared
-/// tokens keep their source-defined behavior.
-pub fn CancellationToken::cancel(self : CancellationToken) -> Unit {
-  match self.state {
-    CompatibilityMutable(token) => token.cancel()
-    NeverCancelled | AlreadyCancelled(_) | SourceMutable(_) => ()
-  }
 }
 
 ///|
@@ -101,7 +74,7 @@ pub fn CancellationToken::is_cancellation_requested(
 /// scheduler and the returned disposable can suppress that pending delivery.
 /// MoonBit closures capture the source `thisArgs` context directly. When a
 /// disposable bucket is supplied, the returned subscription is appended to it.
-pub fn CancellationToken::on_cancellation_requested(
+fn CancellationToken::on_cancellation_requested_impl(
   self : CancellationToken,
   listener : () -> Unit,
   disposables? : Array[@base_common.Disposable],
@@ -153,6 +126,16 @@ fn MutableCancellationToken::on_cancellation_requested(
 }
 
 ///|
+/// Registers a once-only cancellation listener in registration order.
+pub fn CancellationToken::on_cancellation_requested(
+  self : CancellationToken,
+  listener : () -> Unit,
+  disposables? : Array[@base_common.Disposable],
+) -> @base_common.Disposable {
+  self.on_cancellation_requested_impl(listener, disposables?)
+}
+
+///|
 /// Retires listener state without changing the cancellation flag.
 fn MutableCancellationToken::dispose(self : MutableCancellationToken) -> Unit {
   if self.emitter is Some(emitter) {
@@ -176,7 +159,7 @@ struct CancellationTokenSource {
 /// child. `schedule` adapts VS Code's zero-delay shortcut event to the host;
 /// the host-neutral default delivers inline, while JS hosts or tests may inject
 /// a disposable next-turn scheduler.
-pub fn CancellationTokenSource::CancellationTokenSource(
+fn CancellationTokenSource::new_impl(
   parent? : CancellationToken,
   schedule? : (() -> Unit) -> @base_common.Disposable = schedule_cancellation_inline,
 ) -> CancellationTokenSource {
@@ -187,16 +170,26 @@ pub fn CancellationTokenSource::CancellationTokenSource(
   }
   if parent is Some(parent) {
     source.parent_listener = Some(
-      parent.on_cancellation_requested(() => source.cancel()),
+      parent.on_cancellation_requested_impl(() => source.cancel()),
     )
   }
   source
 }
 
 ///|
+/// Creates a cancellation source with optional parent propagation and host
+/// scheduling.
+pub fn CancellationTokenSource::CancellationTokenSource(
+  parent? : CancellationToken,
+  schedule? : (() -> Unit) -> @base_common.Disposable = schedule_cancellation_inline,
+) -> CancellationTokenSource {
+  CancellationTokenSource::new_impl(parent?, schedule~)
+}
+
+///|
 /// Returns the source's stable token, allocating mutable state only on the
 /// first read.
-pub fn CancellationTokenSource::token(
+fn CancellationTokenSource::token_impl(
   self : CancellationTokenSource,
 ) -> CancellationToken {
   match self.token_value {
@@ -212,24 +205,18 @@ pub fn CancellationTokenSource::token(
 }
 
 ///|
-/// Requests cancellation once. Cancellation before the first token read avoids
-/// mutable listener state but retains this source's scheduler, so a late
-/// listener still has next-turn/disposable delivery semantics.
-pub fn CancellationTokenSource::cancel(self : CancellationTokenSource) -> Unit {
-  match self.token_value {
-    None => self.token_value = Some({ state: AlreadyCancelled(self.schedule) })
-    Some({ state: SourceMutable(token) }) => token.cancel()
-    Some(
-      { state: NeverCancelled | AlreadyCancelled(_) | CompatibilityMutable(_) }
-    ) => ()
-  }
+/// Returns the source's stable cancellation token.
+pub fn CancellationTokenSource::token(
+  self : CancellationTokenSource,
+) -> CancellationToken {
+  self.token_impl()
 }
 
 ///|
 /// Releases the parent subscription and mutable listener state. Disposal is
 /// idempotent. When no token has been read, non-cancelling disposal installs
 /// the shared never-cancelled token so a later `cancel` remains a no-op.
-pub fn CancellationTokenSource::dispose(
+fn CancellationTokenSource::dispose_impl(
   self : CancellationTokenSource,
   cancel? : Bool = false,
 ) -> Unit {
@@ -246,4 +233,13 @@ pub fn CancellationTokenSource::dispose(
       { state: NeverCancelled | AlreadyCancelled(_) | CompatibilityMutable(_) }
     ) => ()
   }
+}
+
+///|
+/// Releases source listeners, optionally requesting cancellation first.
+pub fn CancellationTokenSource::dispose(
+  self : CancellationTokenSource,
+  cancel? : Bool = false,
+) -> Unit {
+  self.dispose_impl(cancel~)
 }

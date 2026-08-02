@@ -28,7 +28,7 @@ priv enum DragScrollingDirection {
 
 ///|
 /// `DragScrolling` (dragScrolling.ts:17-52).
-struct DragScrolling {
+priv struct DragScrolling {
   direction : DragScrollingDirection
   view_helper : PointerHandlerHelper
   mouse_target_factory : MouseTargetFactory
@@ -46,7 +46,7 @@ struct DragScrolling {
 /// straight into the constructor; the `MouseDownOperation` here can only
 /// close over itself after construction, so the closure is installed
 /// immediately afterwards (mouse_handler.mbt).
-pub fn DragScrolling::set_dispatch(
+fn DragScrolling::set_dispatch(
   self : DragScrolling,
   dispatch_mouse : (
     @editor_browser.MouseTarget,
@@ -78,14 +78,14 @@ fn DragScrolling::new(
 }
 
 ///|
-pub fn DragScrolling::dispose(self : DragScrolling) -> Unit {
+fn DragScrolling::dispose(self : DragScrolling) -> Unit {
   self.stop()
 }
 
 ///|
 /// `start` (dragScrolling.ts:36-42). `position` must be a
 /// `MouseTargetOutsideEditor`.
-pub fn DragScrolling::start(
+fn DragScrolling::start(
   self : DragScrolling,
   position : @editor_browser.MouseTarget,
   mouse_event : @editor_browser.EditorDomMouseEvent,
@@ -107,7 +107,7 @@ pub fn DragScrolling::start(
 }
 
 ///|
-pub fn DragScrolling::stop(self : DragScrolling) -> Unit {
+fn DragScrolling::stop(self : DragScrolling) -> Unit {
   match self.operation {
     Some(operation) => {
       operation.dispose()

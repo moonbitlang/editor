@@ -7,7 +7,7 @@
 /// Monaco, and LSP-facing code share one convention. Document identity
 /// (language id, version) lives on `TextModel`, not the buffer — same split as
 /// Monaco.
-pub struct TextSnapshot {
+struct TextSnapshot {
   text : String
   line_starts : Array[Int]
 } derive(Debug)
@@ -38,7 +38,7 @@ pub fn TextSnapshot::line_count(self : TextSnapshot) -> Int {
 
 ///|
 /// Start offset for `line`, clamped into the snapshot's line range.
-pub fn TextSnapshot::line_start_offset(self : TextSnapshot, line : Int) -> Int {
+fn TextSnapshot::line_start_offset(self : TextSnapshot, line : Int) -> Int {
   let line = line.clamp(min=0, max=self.line_count() - 1)
   self.line_starts[line]
 }
@@ -46,7 +46,7 @@ pub fn TextSnapshot::line_start_offset(self : TextSnapshot, line : Int) -> Int {
 ///|
 /// End offset for `line`, clamped into the snapshot's line range and excluding
 /// the stored LF line break.
-pub fn TextSnapshot::line_end_offset(self : TextSnapshot, line : Int) -> Int {
+fn TextSnapshot::line_end_offset(self : TextSnapshot, line : Int) -> Int {
   let line = line.clamp(min=0, max=self.line_count() - 1)
   if line + 1 < self.line_count() {
     self.line_starts[line + 1] - 1
@@ -86,7 +86,7 @@ pub fn TextSnapshot::get_value(self : TextSnapshot) -> String {
 ///|
 /// Stored model end-of-line sequence. Viewer snapshots have one fixed LF EOL
 /// and expose no TextDefined/CRLF preference.
-pub fn TextSnapshot::get_eol(_self : TextSnapshot) -> String {
+fn TextSnapshot::get_eol(_self : TextSnapshot) -> String {
   "\n"
 }
 
@@ -94,7 +94,7 @@ pub fn TextSnapshot::get_eol(_self : TextSnapshot) -> String {
 /// Text inside a 1-based line/column `Range`, interior line breaks emitted as
 /// `\n`. Mirrors Monaco's `getValueInRange` at its default LF EOL. Columns are
 /// clamped into each line.
-pub fn TextSnapshot::get_value_in_range(
+fn TextSnapshot::get_value_in_range(
   self : TextSnapshot,
   range : @base_common.Range,
 ) -> String {
@@ -130,7 +130,7 @@ pub fn TextSnapshot::get_value_in_range(
 ///|
 /// Length, in UTF-16 code units, of `get_value_in_range`. Mirrors Monaco's
 /// `getValueLengthInRange` at its default LF EOL.
-pub fn TextSnapshot::get_value_length_in_range(
+fn TextSnapshot::get_value_length_in_range(
   self : TextSnapshot,
   range : @base_common.Range,
 ) -> Int {
@@ -143,7 +143,7 @@ pub fn TextSnapshot::get_value_length_in_range(
 /// its selected-EOL representation; the Viewer compares its coherent
 /// LF-normalized representation, including U+FEFF as ordinary content. Hosts
 /// use it for the refresh no-op early return (`modelService.ts:370-373`).
-pub fn TextSnapshot::equals(self : TextSnapshot, other : TextSnapshot) -> Bool {
+fn TextSnapshot::equals(self : TextSnapshot, other : TextSnapshot) -> Bool {
   self.text == other.text
 }
 
@@ -161,7 +161,7 @@ pub fn TextSnapshot::slice(
 ///|
 /// Zero-based line containing `offset`, with out-of-range offsets clamped to
 /// the snapshot.
-pub fn TextSnapshot::line_at_offset(self : TextSnapshot, offset : Int) -> Int {
+fn TextSnapshot::line_at_offset(self : TextSnapshot, offset : Int) -> Int {
   let offset = offset.clamp(min=0, max=self.get_length())
   let mut found = 0
   for i in 0..<self.line_starts.length() {
@@ -177,7 +177,7 @@ pub fn TextSnapshot::line_at_offset(self : TextSnapshot, offset : Int) -> Int {
 /// convention; this is the offset↔position boundary, so it adds the +1 on both
 /// axes that keeps the rest of the viewer in 1-based coordinates). Mirrors
 /// `IReadonlyTextBuffer.getPositionAt`.
-pub fn TextSnapshot::get_position_at(
+fn TextSnapshot::get_position_at(
   self : TextSnapshot,
   offset : Int,
 ) -> @base_common.Position {
@@ -230,7 +230,7 @@ pub fn TextSnapshot::get_offset_at(
 ///|
 /// Length, in UTF-16 code units, of `line`'s content (1-based, EOL excluded).
 /// Mirrors `IReadonlyTextBuffer.getLineLength`.
-pub fn TextSnapshot::get_line_length(self : TextSnapshot, line : Int) -> Int {
+fn TextSnapshot::get_line_length(self : TextSnapshot, line : Int) -> Int {
   self.line_text(line - 1).length()
 }
 
@@ -279,7 +279,7 @@ pub fn TextSnapshot::get_line_first_non_whitespace_column(
 /// 1-based column just past the last non-whitespace character on `line`, or `0`
 /// if the line is empty/whitespace-only. Mirrors
 /// `getLineLastNonWhitespaceColumn`.
-pub fn TextSnapshot::get_line_last_non_whitespace_column(
+fn TextSnapshot::get_line_last_non_whitespace_column(
   self : TextSnapshot,
   line : Int,
 ) -> Int {
@@ -294,7 +294,7 @@ pub fn TextSnapshot::get_line_last_non_whitespace_column(
 ///|
 /// Whether the snapshot text contains any right-to-left character. Mirrors
 /// `mightContainRTL` (recomputed on demand rather than cached at construction).
-pub fn TextSnapshot::might_contain_rtl(self : TextSnapshot) -> Bool {
+fn TextSnapshot::might_contain_rtl(self : TextSnapshot) -> Bool {
   @base_common.contains_rtl(self.text)
 }
 
@@ -302,7 +302,7 @@ pub fn TextSnapshot::might_contain_rtl(self : TextSnapshot) -> Bool {
 /// Whether normalized stored text contains a non-basic-ASCII code unit.
 /// Monaco treats Tab, CR/LF, and printable ASCII 32..126 as basic; CR is
 /// impossible after construction but remains classified consistently here.
-pub fn TextSnapshot::might_contain_non_basic_ascii(self : TextSnapshot) -> Bool {
+fn TextSnapshot::might_contain_non_basic_ascii(self : TextSnapshot) -> Bool {
   for code in self.text.code_units() {
     if code != 9 && code != 10 && code != 13 && (code < 32 || code > 126) {
       return true

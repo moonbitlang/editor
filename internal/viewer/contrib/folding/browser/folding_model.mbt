@@ -61,7 +61,7 @@ fn FoldingDecorationAccess::remove_decorations(
 
 ///|
 /// `FoldingModelChangeEvent` (`foldingModel.ts:19`).
-pub struct FoldingModelChangeEvent {
+struct FoldingModelChangeEvent {
   model : FoldingModel
   collapse_state_changed : Array[FoldingRegion]?
 }
@@ -107,7 +107,7 @@ pub fn FoldingModel::text_model(self : FoldingModel) -> @model.TextModel {
 
 ///|
 /// `onDidChange` subscription.
-pub fn FoldingModel::on_did_change(
+fn FoldingModel::on_did_change(
   self : FoldingModel,
   listener : (FoldingModelChangeEvent) -> Unit,
 ) -> @base_common.Disposable {
@@ -186,7 +186,7 @@ pub fn FoldingModel::toggle_collapse_state(
 
 ///|
 /// `removeManualRanges` (`foldingModel.ts:97`).
-pub fn FoldingModel::remove_manual_ranges(
+fn FoldingModel::remove_manual_ranges(
   self : FoldingModel,
   ranges : Array[LineRange],
 ) -> Unit {
@@ -314,7 +314,7 @@ fn FoldingModel::current_folded_or_manual_ranges(
 
 ///|
 /// `dispose` (`foldingModel.ts:231`).
-pub fn FoldingModel::dispose(self : FoldingModel) -> Unit {
+fn FoldingModel::dispose(self : FoldingModel) -> Unit {
   self.decoration_access.remove_decorations(self.editor_decoration_ids)
 }
 
@@ -357,12 +357,26 @@ pub fn FoldingModel::get_region_at_line(
 }
 
 ///|
-/// The `RegionFilter | RegionFilterWithLevel` union of `getRegionsInside`
-/// (`foldingModel.ts:263,301-302`): the with-level form tracks the nesting
-/// depth relative to `region` with a stack.
-pub(all) enum RegionFilter {
-  RegionFilter((FoldingRegion) -> Bool)
-  RegionFilterWithLevel((FoldingRegion, Int) -> Bool)
+/// The externally-used plain filter shape of `getRegionsInside`
+/// (`foldingModel.ts:263,301-302`). The package also builds a private
+/// with-level form for the collapse helpers that track relative nesting.
+struct RegionFilter {
+  plain : ((FoldingRegion) -> Bool)?
+  with_level : ((FoldingRegion, Int) -> Bool)?
+}
+
+///|
+pub fn RegionFilter::RegionFilter(
+  filter : (FoldingRegion) -> Bool,
+) -> RegionFilter {
+  { plain: Some(filter), with_level: None }
+}
+
+///|
+fn region_filter_with_level(
+  filter : (FoldingRegion, Int) -> Bool,
+) -> RegionFilter {
+  { plain: None, with_level: Some(filter) }
 }
 
 ///|
@@ -383,7 +397,7 @@ pub fn FoldingModel::get_regions_inside(
     None => 0x7FFFFFFF // Number.MAX_VALUE
   }
   match filter {
-    Some(RegionFilterWithLevel(filter)) => {
+    Some({ with_level: Some(filter), .. }) => {
       let level_stack : Array[FoldingRegion] = []
       for i in index..<self.regions.length() {
         let current = self.regions.to_region(i)
@@ -406,7 +420,7 @@ pub fn FoldingModel::get_regions_inside(
     }
     _ => {
       let plain_filter = match filter {
-        Some(RegionFilter(f)) => Some(f)
+        Some({ plain: Some(f), .. }) => Some(f)
         _ => None
       }
       for i in index..<self.regions.length() {
@@ -429,7 +443,7 @@ pub fn FoldingModel::get_regions_inside(
 /// Collapse or expand the regions at the given locations — the free
 /// `toggleCollapseState` (`foldingModel.ts:310`). `levels` = 1 impacts only
 /// the innermost region at each location.
-pub fn toggle_collapse_state(
+fn toggle_collapse_state(
   folding_model : FoldingModel,
   levels : Int,
   line_numbers : Array[Int],
@@ -443,7 +457,7 @@ pub fn toggle_collapse_state(
         if levels > 1 {
           let regions_inside = folding_model.get_regions_inside(
             Some(region),
-            filter=RegionFilterWithLevel((r, level) => {
+            filter=region_filter_with_level((r, level) => {
               r.is_collapsed() != do_collapse && level < levels
             }),
           )
@@ -478,7 +492,7 @@ pub fn set_collapse_state_levels_down(
             if levels > 1 {
               let regions_inside = folding_model.get_regions_inside(
                 Some(region),
-                filter=RegionFilterWithLevel((r, level) => {
+                filter=region_filter_with_level((r, level) => {
                   r.is_collapsed() != do_collapse && level < levels
                 }),
               )
@@ -491,7 +505,7 @@ pub fn set_collapse_state_levels_down(
     _ => {
       let regions_inside = folding_model.get_regions_inside(
         None,
-        filter=RegionFilterWithLevel((r, level) => {
+        filter=region_filter_with_level((r, level) => {
           r.is_collapsed() != do_collapse && level < levels
         }),
       )
@@ -504,7 +518,7 @@ pub fn set_collapse_state_levels_down(
 ///|
 /// `setCollapseStateLevelsUp` (`foldingModel.ts:361`): collapse or expand
 /// the regions at the given locations including `levels` levels of parents.
-pub fn set_collapse_state_levels_up(
+fn set_collapse_state_levels_up(
   folding_model : FoldingModel,
   do_collapse : Bool,
   levels : Int,
@@ -552,7 +566,7 @@ pub fn set_collapse_state_at_level(
   do_collapse : Bool,
   blocked_line_numbers : Array[Int],
 ) -> Unit {
-  let filter = RegionFilterWithLevel((region, level) => {
+  let filter = region_filter_with_level((region, level) => {
     level == fold_level &&
     region.is_collapsed() != do_collapse &&
     !blocked_line_numbers.iter().any(line => region.contains_line(line))
@@ -564,7 +578,7 @@ pub fn set_collapse_state_at_level(
 ///|
 /// `setCollapseStateForRest` (`foldingModel.ts:402`): folds or unfolds all
 /// regions except those containing or contained by a blocked line's region.
-pub fn set_collapse_state_for_rest(
+fn set_collapse_state_for_rest(
   folding_model : FoldingModel,
   do_collapse : Bool,
   blocked_line_numbers : Array[Int],
@@ -601,7 +615,7 @@ pub fn set_collapse_state_for_rest(
 /// `setCollapseStateForMatchingLines` (`foldingModel.ts:419`): folds all
 /// regions whose start line matches. The source's `RegExp` is a predicate
 /// here.
-pub fn set_collapse_state_for_matching_lines(
+fn set_collapse_state_for_matching_lines(
   folding_model : FoldingModel,
   matches : (String) -> Bool,
   do_collapse : Bool,
@@ -623,7 +637,7 @@ pub fn set_collapse_state_for_matching_lines(
 ///|
 /// `setCollapseStateForType` (`foldingModel.ts:438`): folds all regions of
 /// the given type.
-pub fn set_collapse_state_for_type(
+fn set_collapse_state_for_type(
   folding_model : FoldingModel,
   type_ : String,
   do_collapse : Bool,
@@ -643,7 +657,7 @@ pub fn set_collapse_state_for_type(
 ///|
 /// `getParentFoldLine` (`foldingModel.ts:456`): the start line of the fold
 /// enclosing the fold at `line_number`.
-pub fn get_parent_fold_line(
+fn get_parent_fold_line(
   line_number : Int,
   folding_model : FoldingModel,
 ) -> Int? {
@@ -670,7 +684,7 @@ pub fn get_parent_fold_line(
 ///|
 /// `getPreviousFoldLine` (`foldingModel.ts:481`): the start line of the
 /// previous fold at the same nesting level.
-pub fn get_previous_fold_line(
+fn get_previous_fold_line(
   line_number : Int,
   folding_model : FoldingModel,
 ) -> Int? {
@@ -721,10 +735,7 @@ pub fn get_previous_fold_line(
 /// `getNextFoldLine` (`foldingModel.ts:539`): the start line of the next
 /// fold at the same nesting level. (The source's walk reads one index past
 /// the end — harmless on a JS typed array; the port bounds the walk.)
-pub fn get_next_fold_line(
-  line_number : Int,
-  folding_model : FoldingModel,
-) -> Int? {
+fn get_next_fold_line(line_number : Int, folding_model : FoldingModel) -> Int? {
   let regions = folding_model.regions()
   let mut folding_region = folding_model.get_region_at_line(line_number)
   // If on the folding range start line, go to next sibling.

@@ -1,7 +1,7 @@
 // Conformance port of `vs/base/test/common/uri.test.ts` in the checked-in
 // vscode source, suite "URI".
 //
-// `isWindows`-gated suites run under the D8 `set_is_windows_for_testing`
+// White-box `isWindows`-gated suites run under `set_is_windows_for_testing`
 // seam instead of being skipped; URIs are always created *after* setting the
 // seam because `fs_path`/`to_string` cache their results (D5).
 //

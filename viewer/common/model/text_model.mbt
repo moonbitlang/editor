@@ -45,12 +45,12 @@ pub struct TextModel {
   priv identity : Int
   /// Stable decoration-id namespace prefix derived from `identity`.
   priv decoration_id_namespace : String
-  mut delta_decoration_call_cnt : Int
-  mut last_decoration_id : Int
+  priv mut delta_decoration_call_cnt : Int
+  priv mut last_decoration_id : Int
   /// Mutable since the `set_value` flush lane: replaced wholesale
   /// ("Destroy all my decorations", `textModel.ts:526-528`).
-  mut decorations : Map[String, IntervalNode]
-  mut decorations_tree : DecorationsTrees
+  priv mut decorations : Map[String, IntervalNode]
+  priv mut decorations_tree : DecorationsTrees
   on_did_change_decorations : DidChangeDecorationsEmitter
   // #endregion
 }
@@ -240,7 +240,7 @@ pub fn TextModel::is_disposed(self : TextModel) -> Bool {
 ///|
 /// Constructor-fixed large-file tokenization policy. A later `set_value`
 /// never changes this fact (`textModel.ts:334-346,637-639`).
-pub fn TextModel::is_too_large_for_tokenization(self : TextModel) -> Bool {
+fn TextModel::is_too_large_for_tokenization(self : TextModel) -> Bool {
   self.tokenization_state.too_large
 }
 
@@ -252,7 +252,7 @@ pub fn TextModel::get_attached_editor_count(self : TextModel) -> Int {
 
 ///|
 /// Whether at least one Viewer is attached.
-pub fn TextModel::is_attached_to_editor(self : TextModel) -> Bool {
+fn TextModel::is_attached_to_editor(self : TextModel) -> Bool {
   self.tokenization_state.attached_count.val > 0
 }
 
@@ -260,7 +260,7 @@ pub fn TextModel::is_attached_to_editor(self : TextModel) -> Bool {
 /// Subscribes to the aggregate attachment boundary. The event fires after the
 /// tokenization part has observed exactly `0 -> 1` or `1 -> 0`, matching
 /// `onDidChangeAttached` (`textModel.ts:235-236,607-623`; `model.ts:1365`).
-pub fn TextModel::on_did_change_attached(
+fn TextModel::on_did_change_attached(
   self : TextModel,
   listener : () -> Unit,
 ) -> @base_common.Disposable {
@@ -379,7 +379,7 @@ pub fn TextModel::get_language_id(self : TextModel) -> String {
 ///|
 /// Whether the text contains any right-to-left character. Mirrors
 /// `mightContainRTL` (`textModel.ts:742`).
-pub fn TextModel::might_contain_rtl(self : TextModel) -> Bool {
+fn TextModel::might_contain_rtl(self : TextModel) -> Bool {
   self.snapshot.might_contain_rtl()
 }
 
@@ -387,7 +387,7 @@ pub fn TextModel::might_contain_rtl(self : TextModel) -> Bool {
 /// Whether the normalized stored text contains any non-basic-ASCII code unit.
 /// Mirrors `mightContainNonBasicASCII` (`textModel.ts:756`) while recomputing
 /// from the immutable snapshot instead of trusting builder cache metadata.
-pub fn TextModel::might_contain_non_basic_ascii(self : TextModel) -> Bool {
+fn TextModel::might_contain_non_basic_ascii(self : TextModel) -> Bool {
   self.snapshot.might_contain_non_basic_ascii()
 }
 
@@ -429,7 +429,7 @@ pub fn TextModel::get_value(self : TextModel) -> String {
 ///|
 /// Length of `get_value` in UTF-16 code units. Mirrors `getValueLength`
 /// (`textModel.ts:819`).
-pub fn TextModel::get_value_length(self : TextModel) -> Int {
+fn TextModel::get_value_length(self : TextModel) -> Int {
   self.get_value_length_in_range(self.get_full_model_range())
 }
 
@@ -446,7 +446,7 @@ pub fn TextModel::get_value_in_range(
 ///|
 /// Length, in UTF-16 code units, of `get_value_in_range`. Mirrors
 /// `getValueLengthInRange` (`textModel.ts:836`).
-pub fn TextModel::get_value_length_in_range(
+fn TextModel::get_value_length_in_range(
   self : TextModel,
   range : @base_common.Range,
 ) -> Int {
@@ -472,7 +472,7 @@ pub fn TextModel::get_line_content(
 ///|
 /// Content length of the one-based `line_number`, EOL excluded. Mirrors
 /// `getLineLength` (`textModel.ts:860`).
-pub fn TextModel::get_line_length(self : TextModel, line_number : Int) -> Int {
+fn TextModel::get_line_length(self : TextModel, line_number : Int) -> Int {
   self.snapshot.get_line_length(line_number)
 }
 
@@ -490,7 +490,7 @@ pub fn TextModel::get_lines_content(self : TextModel) -> Array[String] {
 ///|
 /// Stored model end-of-line sequence. Mirrors `getEOL` (`textModel.ts:879`)
 /// with the Viewer's approved fixed-LF representation.
-pub fn TextModel::get_eol(self : TextModel) -> String {
+fn TextModel::get_eol(self : TextModel) -> String {
   self.snapshot.get_eol()
 }
 
@@ -594,7 +594,7 @@ pub fn TextModel::validate_position(
 /// Clamps a range into the document without surrogate snapping. Mirrors
 /// `_validateRangeRelaxedNoAllocations` (`textModel.ts:925`) — the
 /// decoration paths use this cheaper clamp instead of `validateRange`.
-pub fn TextModel::validate_range_relaxed(
+fn TextModel::validate_range_relaxed(
   self : TextModel,
   range : @base_common.Range,
 ) -> @base_common.Range {
@@ -681,7 +681,7 @@ fn TextModel::increase_version_id(self : TextModel) -> Unit {
 /// Position `offset` UTF-16 code units away from `position`, clamped to the
 /// document. Mirrors `modifyPosition` (`textModel.ts:1162`): relaxed-validate,
 /// then offset round-trip.
-pub fn TextModel::modify_position(
+fn TextModel::modify_position(
   self : TextModel,
   position : @base_common.Position,
   offset : Int,
@@ -718,7 +718,7 @@ pub fn TextModel::on_did_change_content(
 /// Whole-buffer equality against another snapshot — `equalsTextBuffer`
 /// (`textModel.ts:457-460`). The host-side no-op early return before a
 /// refresh belongs to the caller (`modelService.ts:370-373`).
-pub fn TextModel::equals_text_snapshot(
+fn TextModel::equals_text_snapshot(
   self : TextModel,
   other : TextSnapshot,
 ) -> Bool {

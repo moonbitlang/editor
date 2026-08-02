@@ -70,6 +70,19 @@ extern "js" fn markdown_document_test_same_element(
 ) -> Bool = "(left, right) => left === right"
 
 ///|
+fn markdown_document_test_article(
+  markdown : @markdown_document.MarkdownDocumentView,
+) -> @rdom.Element raise {
+  guard markdown
+    .root()
+    .query_selector(".moonbit-viewer-markdown-document-article")
+    is Some(article) else {
+    fail("Markdown article is missing from the public root DOM")
+  }
+  article
+}
+
+///|
 extern "js" fn markdown_document_test_text(element : @rdom.Element) -> String = "(element) => String(element.textContent || '')"
 
 ///|
@@ -117,12 +130,9 @@ test "mounted Markdown keeps model truth and stable presentation capabilities" {
   guard viewer.current_markdown_document() is Some(markdown) else {
     fail("mounted .mbt.md did not install Markdown")
   }
-  guard viewer.current_markdown_browser_data() is Some(markdown_data) else {
-    fail("mounted .mbt.md did not install root Markdown composition")
-  }
-  let hover_bridge = markdown_data.hover_bridge
+  assert_true(viewer.current_markdown_browser_data() is Some(_))
   let root = markdown.root()
-  let article = markdown.article()
+  let article = markdown_document_test_article(markdown)
   let overlay = markdown.overlay_mount()
   assert_eq(markdown_document_test_style_property(root, "width"), "320px")
   assert_eq(markdown_document_test_style_property(root, "height"), "180px")
@@ -140,7 +150,7 @@ test "mounted Markdown keeps model truth and stable presentation capabilities" {
   assert_true(@base_browser.element_contains(root, article))
   assert_true(@base_browser.element_contains(root, overlay))
   assert_eq(root.get_attribute("data-source-uri"), Some(model.uri.to_string()))
-  assert_eq(markdown.resource_kind(), MoonBitMarkdown)
+  assert_markdown_kind(model, MoonBitMarkdown)
   assert_eq(markdown.source_model_version(), model.get_version_id())
   assert_eq(markdown.projection().code_blocks.length(), 1)
   assert_eq(markdown.semantic_code_lines().length(), 1)
@@ -152,7 +162,6 @@ test "mounted Markdown keeps model truth and stable presentation capabilities" {
   )
 
   let initial_generation = markdown.projection_generation()
-  let initial_hover_generation = hover_bridge.request_generation()
   viewer.set_value(
     (
       #|# Replacement
@@ -169,23 +178,25 @@ test "mounted Markdown keeps model truth and stable presentation capabilities" {
       root,
     ),
   )
-  assert_true(markdown_document_test_same_element(markdown.article(), article))
+  assert_true(
+    markdown_document_test_same_element(
+      markdown_document_test_article(markdown),
+      article,
+    ),
+  )
   assert_true(
     markdown_document_test_same_element(markdown.overlay_mount(), overlay),
   )
   assert_eq(markdown.projection_generation(), initial_generation + 1)
-  assert_true(hover_bridge.request_generation() > initial_hover_generation)
   assert_eq(markdown.source_model_version(), model.get_version_id())
   assert_true(markdown_document_test_text(article).contains("replacement"))
 
   let theme_generation = markdown.projection_generation()
-  let theme_hover_generation = hover_bridge.request_generation()
   viewer.update_options(
     viewer.get_options().with_theme("markdown-document-test-theme"),
   )
   flush_mounted_test_frames()
   assert_eq(markdown.projection_generation(), theme_generation + 1)
-  assert_true(hover_bridge.request_generation() > theme_hover_generation)
   assert_eq(
     root.get_attribute("data-theme"),
     Some("markdown-document-test-theme"),
@@ -195,7 +206,12 @@ test "mounted Markdown keeps model truth and stable presentation capabilities" {
   assert_false(root.get_attribute("class").unwrap().contains("showUnused"))
   viewer.update_options({ ..viewer.get_options(), show_unused: true })
   assert_true(root.get_attribute("class").unwrap().contains("showUnused"))
-  assert_true(markdown_document_test_same_element(markdown.article(), article))
+  assert_true(
+    markdown_document_test_same_element(
+      markdown_document_test_article(markdown),
+      article,
+    ),
+  )
 
   viewer.focus()
   assert_true(viewer.has_text_focus())
@@ -231,14 +247,11 @@ test "mounted Markdown keeps model truth and stable presentation capabilities" {
   let empty_visible = viewer.get_visible_ranges()
   assert_eq(empty_visible.length(), 1)
   assert_true(empty_visible[0] == model.get_full_model_range())
-  let before_dispose_generation = hover_bridge.request_generation()
   viewer.dispose()
-  assert_true(hover_bridge.request_generation() > before_dispose_generation)
-  assert_false(hover_bridge.widget_visible())
 }
 
 ///|
-test "Markdown detach retires presentation and root before model attachment" {
+test "Markdown detach retires presentation, root, and model attachment" {
   install_mounted_test_browser()
   defer restore_mounted_test_browser()
   let viewer = Viewer::Viewer()
@@ -275,36 +288,15 @@ test "Markdown detach retires presentation and root before model attachment" {
     overlay.query_selector(".moonbit-viewer-markdown-hover-widget") is Some(_),
   )
 
-  let attachment_event_ran = Ref(false)
-  let event_saw_disposed_semantic_dom = Ref(false)
-  let event_saw_removed_hover_widget = Ref(false)
-  let event_saw_removed_root = Ref(false)
-  let event_saw_restored_placeholder = Ref(false)
-  let subscription = model.on_did_change_attached(() => {
-    if !model.is_attached_to_editor() {
-      attachment_event_ran.val = true
-      event_saw_disposed_semantic_dom.val = markdown
-        .semantic_code_lines()
-        .is_empty()
-      event_saw_removed_hover_widget.val = overlay.query_selector(
-          ".moonbit-viewer-markdown-hover-widget",
-        )
-        is None
-      event_saw_removed_root.val = !@base_browser.element_contains(host, root)
-      event_saw_restored_placeholder.val = @base_browser.element_contains(
-        host,
-        placeholder.root,
-      )
-    }
-  })
+  assert_eq(model.get_attached_editor_count(), 1)
   viewer.set_model(None)
-  subscription.dispose()
-
-  assert_true(attachment_event_ran.val)
-  assert_true(event_saw_disposed_semantic_dom.val)
-  assert_true(event_saw_removed_hover_widget.val)
-  assert_true(event_saw_removed_root.val)
-  assert_true(event_saw_restored_placeholder.val)
+  assert_eq(model.get_attached_editor_count(), 0)
+  assert_true(markdown.semantic_code_lines().is_empty())
+  assert_true(
+    overlay.query_selector(".moonbit-viewer-markdown-hover-widget") is None,
+  )
+  assert_false(@base_browser.element_contains(host, root))
+  assert_true(@base_browser.element_contains(host, placeholder.root))
 }
 
 ///|
@@ -348,12 +340,12 @@ test "two mounted Markdown Viewers over one model isolate DOM scroll and lifetim
   assert_eq(first_markdown.projection_generation(), first_generation + 1)
   assert_eq(second_markdown.projection_generation(), second_generation + 1)
   assert_true(
-    markdown_document_test_text(first_markdown.article()).contains(
+    markdown_document_test_text(markdown_document_test_article(first_markdown)).contains(
       "First replacement",
     ),
   )
   assert_true(
-    markdown_document_test_text(second_markdown.article()).contains(
+    markdown_document_test_text(markdown_document_test_article(second_markdown)).contains(
       "First replacement",
     ),
   )

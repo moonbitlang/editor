@@ -7,21 +7,11 @@ import {
 }
 
 // Values
-pub let code_right_padding : Double
-
 pub fn column_from_visible_column(String, Int, Int) -> Int
 
 pub let editor_horizontal_scrollbar_size : Double
 
 pub let editor_vertical_scrollbar_size : Double
-
-pub fn next_indent_tab_stop(Int, Int) -> Int
-
-pub fn next_render_tab_stop(Int, Int) -> Int
-
-pub fn prev_indent_tab_stop(Int, Int) -> Int
-
-pub fn prev_render_tab_stop(Int, Int) -> Int
 
 pub fn to_statusbar_column(String, Int, Int) -> Int
 
@@ -30,10 +20,7 @@ pub fn visible_column_from_column(String, Int, Int) -> Int
 // Errors
 
 // Types and methods
-pub struct Selection {
-  selection_start : @common.Position
-  position : @common.Position
-} derive(Eq, @debug.Debug)
+type Selection derive(Eq, @debug.Debug)
 pub fn Selection::Selection(@common.Position, @common.Position) -> Self
 pub fn Selection::direction(Self) -> SelectionDirection
 pub fn Selection::end(Self) -> @common.Position

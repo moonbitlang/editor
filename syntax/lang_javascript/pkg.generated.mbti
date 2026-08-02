@@ -10,8 +10,7 @@ import {
 // Errors
 
 // Types and methods
-pub struct JavascriptTokenizer {
-}
+type JavascriptTokenizer
 pub fn JavascriptTokenizer::JavascriptTokenizer() -> Self
 pub impl @syntax.LineTokenizer for JavascriptTokenizer
 

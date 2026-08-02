@@ -25,7 +25,7 @@
 ///|
 /// Maps a line range in the original text model to a line range in the
 /// modified text model — `LineRangeMapping` (`rangeMapping.ts:19`).
-pub struct LineRangeMapping {
+priv struct LineRangeMapping {
   /// The line range in the original text model.
   original : @base_common.LineRange
   /// The line range in the modified text model.
@@ -33,7 +33,7 @@ pub struct LineRangeMapping {
 } derive(Eq, Debug)
 
 ///|
-pub fn LineRangeMapping::LineRangeMapping(
+fn LineRangeMapping::LineRangeMapping(
   original_range : @base_common.LineRange,
   modified_range : @base_common.LineRange,
 ) -> LineRangeMapping {
@@ -43,7 +43,7 @@ pub fn LineRangeMapping::LineRangeMapping(
 ///|
 /// `LineRangeMapping.inverse` (`rangeMapping.ts:20`): the unchanged regions
 /// between the given (sorted) mappings.
-pub fn LineRangeMapping::inverse(
+fn LineRangeMapping::inverse(
   mapping : Array[LineRangeMapping],
   original_line_count : Int,
   modified_line_count : Int,
@@ -73,22 +73,22 @@ pub fn LineRangeMapping::inverse(
 }
 
 ///|
-pub fn LineRangeMapping::to_string(self : LineRangeMapping) -> String {
+fn LineRangeMapping::to_string(self : LineRangeMapping) -> String {
   "{\{self.original.to_string()}->\{self.modified.to_string()}}"
 }
 
 ///|
-pub impl Show for LineRangeMapping with fn output(self, logger) {
+impl Show for LineRangeMapping with fn output(self, logger) {
   logger.write_string(self.to_string())
 }
 
 ///|
-pub fn LineRangeMapping::flip(self : LineRangeMapping) -> LineRangeMapping {
+fn LineRangeMapping::flip(self : LineRangeMapping) -> LineRangeMapping {
   LineRangeMapping(self.modified, self.original)
 }
 
 ///|
-pub fn LineRangeMapping::join(
+fn LineRangeMapping::join(
   self : LineRangeMapping,
   other : LineRangeMapping,
 ) -> LineRangeMapping {
@@ -99,7 +99,7 @@ pub fn LineRangeMapping::join(
 }
 
 ///|
-pub fn LineRangeMapping::changed_line_count(self : LineRangeMapping) -> Int {
+fn LineRangeMapping::changed_line_count(self : LineRangeMapping) -> Int {
   self.original.length().max(self.modified.length())
 }
 
@@ -114,11 +114,11 @@ pub struct DetailedLineRangeMapping {
   modified : @base_common.LineRange
   /// If inner changes have not been computed, this is `None`. Otherwise it
   /// represents the character-level diff in this line range.
-  inner_changes : Array[RangeMapping]?
+  priv inner_changes : Array[RangeMapping]?
 } derive(Eq, Debug)
 
 ///|
-pub fn DetailedLineRangeMapping::DetailedLineRangeMapping(
+fn DetailedLineRangeMapping::DetailedLineRangeMapping(
   original_range : @base_common.LineRange,
   modified_range : @base_common.LineRange,
   inner_changes : Array[RangeMapping]?,
@@ -127,19 +127,19 @@ pub fn DetailedLineRangeMapping::DetailedLineRangeMapping(
 }
 
 ///|
-pub fn DetailedLineRangeMapping::to_string(
+fn DetailedLineRangeMapping::to_string(
   self : DetailedLineRangeMapping,
 ) -> String {
   "{\{self.original.to_string()}->\{self.modified.to_string()}}"
 }
 
 ///|
-pub impl Show for DetailedLineRangeMapping with fn output(self, logger) {
+impl Show for DetailedLineRangeMapping with fn output(self, logger) {
   logger.write_string(self.to_string())
 }
 
 ///|
-pub fn DetailedLineRangeMapping::flip(
+fn DetailedLineRangeMapping::flip(
   self : DetailedLineRangeMapping,
 ) -> DetailedLineRangeMapping {
   DetailedLineRangeMapping(
@@ -152,7 +152,7 @@ pub fn DetailedLineRangeMapping::flip(
 ///|
 /// Maps a range in the original text model to a range in the modified text
 /// model — `RangeMapping` (`rangeMapping.ts:243`).
-pub struct RangeMapping {
+struct RangeMapping {
   /// The original range.
   original_range : @base_common.Range
   /// The modified range.
@@ -160,7 +160,7 @@ pub struct RangeMapping {
 } derive(Eq, Debug)
 
 ///|
-pub fn RangeMapping::RangeMapping(
+fn RangeMapping::RangeMapping(
   original_range : @base_common.Range,
   modified_range : @base_common.Range,
 ) -> RangeMapping {
@@ -168,16 +168,16 @@ pub fn RangeMapping::RangeMapping(
 }
 
 ///|
-pub fn RangeMapping::to_string(self : RangeMapping) -> String {
+fn RangeMapping::to_string(self : RangeMapping) -> String {
   "{\{self.original_range.to_string()}->\{self.modified_range.to_string()}}"
 }
 
 ///|
-pub impl Show for RangeMapping with fn output(self, logger) {
+impl Show for RangeMapping with fn output(self, logger) {
   logger.write_string(self.to_string())
 }
 
 ///|
-pub fn RangeMapping::flip(self : RangeMapping) -> RangeMapping {
+fn RangeMapping::flip(self : RangeMapping) -> RangeMapping {
   RangeMapping(self.modified_range, self.original_range)
 }

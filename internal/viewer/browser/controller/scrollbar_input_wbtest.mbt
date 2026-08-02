@@ -1,15 +1,11 @@
 ///|
 test "AbstractScrollbar Windows orthogonal reset uses strict greater than 140" {
-  @base_common.set_is_windows_for_testing(value=true)
-  assert_false(scrollbar_drag_should_reset(10.0, 149.0))
-  assert_false(scrollbar_drag_should_reset(10.0, 150.0))
-  assert_true(scrollbar_drag_should_reset(10.0, 151.0))
-  assert_false(scrollbar_drag_should_reset(150.0, 10.0))
-  assert_true(scrollbar_drag_should_reset(151.0, 10.0))
-
-  @base_common.set_is_windows_for_testing(value=false)
-  assert_false(scrollbar_drag_should_reset(10.0, 151.0))
-  @base_common.set_is_windows_for_testing()
+  assert_false(scrollbar_drag_should_reset(10.0, 149.0, is_windows=true))
+  assert_false(scrollbar_drag_should_reset(10.0, 150.0, is_windows=true))
+  assert_true(scrollbar_drag_should_reset(10.0, 151.0, is_windows=true))
+  assert_false(scrollbar_drag_should_reset(150.0, 10.0, is_windows=true))
+  assert_true(scrollbar_drag_should_reset(151.0, 10.0, is_windows=true))
+  assert_false(scrollbar_drag_should_reset(10.0, 151.0, is_windows=false))
 }
 
 ///|
@@ -312,7 +308,7 @@ test "AbstractScrollbar gesture owns listeners, drag state, and reset branches" 
     scrollbar_input_test_non_element_mouse(0, 1, 2),
   )
   assert_true(handler.drag is None)
-  assert_false(hover_scrollable.is_dragging)
+  assert_eq(slider.get_attribute("class"), Some("slider"))
 
   // A normal along-axis move applies the captured slider delta.
   scrollbar_input_test_reset_trace()
@@ -321,7 +317,6 @@ test "AbstractScrollbar gesture owns listeners, drag state, and reset branches" 
     3,
   )
   assert_true(handler.drag is Some(_))
-  assert_true(hover_scrollable.is_dragging)
   assert_eq(slider.get_attribute("class"), Some("slider active"))
   assert_eq(scrollbar_input_test_trace(), "active,monitor,drag-start")
   let expected_from_pointerdown = match handler.drag {
@@ -355,55 +350,12 @@ test "AbstractScrollbar gesture owns listeners, drag state, and reset branches" 
   scrollbar_input_test_dispatch_mouse(slider, "pointerup", 0, 0, 3, 10, 30)
   |> ignore
   assert_true(handler.drag is None)
-  assert_false(hover_scrollable.is_dragging)
   assert_eq(slider.get_attribute("class"), Some("slider"))
   assert_eq(scrollbar_input_test_listener_count(slider, "pointermove"), 0)
   // A second pointerup has no retained stop callback or state transition.
   scrollbar_input_test_dispatch_mouse(slider, "pointerup", 0, 0, 3, 10, 30)
   |> ignore
   assert_true(handler.drag is None)
-
-  // Windows 139/140 remain ordinary moves; 141 resets to the initial scroll.
-  @base_common.set_is_windows_for_testing(value=true)
-  for orthogonal_distance in [139, 140, 141] {
-    prepare_scrollbar_input_test_scrollable(hover_scrollable, 200.0)
-    scrollbar_input_test_dispatch_mouse(
-      slider,
-      "pointerdown",
-      0,
-      1,
-      10 + orthogonal_distance,
-      10,
-      10,
-    )
-    |> ignore
-    scrollbar_input_test_dispatch_mouse(
-      slider,
-      "pointermove",
-      0,
-      1,
-      10 + orthogonal_distance,
-      10 + orthogonal_distance,
-      30,
-    )
-    |> ignore
-    if orthogonal_distance > 140 {
-      assert_eq(hover_scrollable.content.get_scroll_top(), 200.0)
-    } else {
-      assert_true(hover_scrollable.content.get_scroll_top() > 200.0)
-    }
-    scrollbar_input_test_dispatch_mouse(
-      slider,
-      "pointerup",
-      0,
-      0,
-      10 + orthogonal_distance,
-      10 + orthogonal_distance,
-      30,
-    )
-    |> ignore
-  }
-  @base_common.set_is_windows_for_testing()
 
   // Disposing an active handler ends the drag and removes every hook exactly
   // once; post-dispose pointerdown is inert.
@@ -413,7 +365,6 @@ test "AbstractScrollbar gesture owns listeners, drag state, and reset branches" 
   handler.dispose()
   handler.dispose()
   assert_true(handler.drag is None)
-  assert_false(hover_scrollable.is_dragging)
   assert_eq(slider.get_attribute("class"), Some("slider"))
   assert_eq(scrollbar_input_test_listener_count(slider, "pointerdown"), 0)
   assert_eq(

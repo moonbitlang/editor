@@ -1,4 +1,4 @@
-///| Faithful conformance port of the `TextModel.getLineIndentGuide` suite in
+///| White-box conformance port of the `TextModel.getLineIndentGuide` suite in
 /// `vscode/src/vs/editor/test/common/model/textModelWithTokens.test.ts` in the
 /// checked-in vscode source. Ports the
 /// indent-guide subset of that file (18 cases, including the `tweaks` and
@@ -38,7 +38,7 @@ fn assert_indent_guides(
     sb.write_string(l.4)
   }
   let snapshot = TextSnapshot::TextSnapshot(sb.to_string())
-  let guides = @model.GuidesTextModelPart(
+  let guides = GuidesTextModelPart(
     snapshot,
     tab_size=4,
     indent_size~,
@@ -271,7 +271,7 @@ test "issue #49173" {
       "\t}", "}",
     ] : Array[String]).join("\n")
   let snapshot = TextSnapshot::TextSnapshot(text)
-  let guides = @model.GuidesTextModelPart(snapshot, tab_size=4, indent_size=4)
+  let guides = GuidesTextModelPart(snapshot, tab_size=4, indent_size=4)
   let actual = guides.get_active_indent_guide(2, 4, 9)
   assert_eq(actual.start_line_number, 2)
   assert_eq(actual.end_line_number, 9)

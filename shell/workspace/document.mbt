@@ -6,7 +6,7 @@ pub struct DocumentSnapshot {
   language_id : String
   revision : String
   text : String
-  line_starts : Array[Int]
+  priv line_starts : Array[Int]
 } derive(Debug)
 
 ///|

@@ -1,5 +1,5 @@
 ///|
-pub struct HoverView {
+struct HoverView {
   range : @base_common.Range
   parts : Array[HoverPart]
 } derive(Eq)
@@ -10,10 +10,7 @@ pub struct HoverView {
 /// and the part's range contains the anchor range (`anchor.type ===
 /// HoverAnchorType.Range && startColumn <= anchor.range.startColumn &&
 /// endColumn >= anchor.range.endColumn`, the source's column-only comparison).
-pub fn hover_part_valid_for_anchor(
-  part : HoverPart,
-  anchor : HoverAnchor,
-) -> Bool {
+fn hover_part_valid_for_anchor(part : HoverPart, anchor : HoverAnchor) -> Bool {
   guard anchor is HoverRangeAnchor(range=anchor_range, ..) else { return false }
   let range = hover_part_range(part)
   range.start_column <= anchor_range.start_column &&
@@ -23,7 +20,7 @@ pub fn hover_part_valid_for_anchor(
 ///|
 /// Monaco `ContentHoverResult.filter`: keep the parts that are still valid for
 /// the new anchor.
-pub fn filter_hover_parts(
+fn filter_hover_parts(
   parts : Array[HoverPart],
   anchor : HoverAnchor,
 ) -> Array[HoverPart] {
@@ -58,7 +55,7 @@ pub let hover_loading_message_ms : Int = 3 * hover_delay_ms
 /// Pure configured-delay arithmetic from Monaco's HoverOperation getters.
 /// Doubles preserve the source's half-millisecond values for odd delays; the
 /// current browser settings use the integral 300ms default above.
-pub struct HoverTiming {
+priv struct HoverTiming {
   hover_time_ms : Double
   first_wait_ms : Double
   second_wait_ms : Double
@@ -67,7 +64,7 @@ pub struct HoverTiming {
 
 ///|
 /// Derives the exact half/full/triple-delay schedule for one configured delay.
-pub fn HoverTiming::from_delay(delay_ms : Int) -> HoverTiming {
+fn HoverTiming::from_delay(delay_ms : Int) -> HoverTiming {
   let hover_time_ms = delay_ms.to_double()
   let first_wait_ms = hover_time_ms / 2.0
   {
@@ -84,7 +81,7 @@ pub fn HoverTiming::from_delay(delay_ms : Int) -> HoverTiming {
 /// hover reacts, so the pointer can travel onto the hover widget without it
 /// closing. Mirrors `ContentHoverController`'s `_reactToEditorMouseMoveRunner`
 /// scheduled at `hidingDelay`.
-pub let hover_hiding_delay_ms = 300
+let hover_hiding_delay_ms = 300
 
 ///|
 /// Typed start mode from Monaco's `HoverStartMode`. Numeric enum encodings are
@@ -105,15 +102,15 @@ pub(all) enum HoverStartSource {
 ///|
 /// Source-shaped options retained by one hover operation.
 pub struct HoverOperationOptions {
-  should_focus : Bool
-  anchor : HoverAnchor
+  priv should_focus : Bool
+  priv anchor : HoverAnchor
   source : HoverStartSource
-  insist_on_keeping_hover_visible : Bool
+  priv insist_on_keeping_hover_visible : Bool
 } derive(Eq, Debug)
 
 ///|
 /// Builds one immutable operation-options snapshot with source defaults.
-pub fn HoverOperationOptions::HoverOperationOptions(
+fn HoverOperationOptions::HoverOperationOptions(
   anchor : HoverAnchor,
   should_focus? : Bool = false,
   source? : HoverStartSource = HoverStartMouse,
@@ -195,7 +192,7 @@ pub fn HoverRequestStamp::is_current(
 
 ///|
 /// Result snapshot emitted by the pure operation after the initial wait.
-pub struct HoverResult {
+priv struct HoverResult {
   value : Array[HoverPart]
   is_complete : Bool
   has_loading_message : Bool
@@ -206,7 +203,7 @@ pub struct HoverResult {
 /// Host work selected by `HoverOperation::start`. Timers and computation stay
 /// host-owned; this value makes every valid start-mode/state branch explicit
 /// and deterministic.
-pub enum HoverOperationStartEffect {
+priv enum HoverOperationStartEffect {
   HoverOperationNoStart
   HoverOperationScheduleDelayed(Int)
   HoverOperationRunAsyncAndSync(Int)
@@ -238,20 +235,20 @@ pub enum HoverOpState {
 pub struct HoverOperation {
   state : HoverOpState
   token : Int
-  parts : Array[HoverPart]
-  async_done : Bool
+  priv parts : Array[HoverPart]
+  priv async_done : Bool
   options : HoverOperationOptions?
 } derive(Eq)
 
 ///|
 /// Creates the initial idle operation at generation zero.
-pub fn HoverOperation::idle() -> HoverOperation {
+fn HoverOperation::idle() -> HoverOperation {
   HoverOperation::idle_at(0)
 }
 
 ///|
 /// Creates an idle operation retaining the supplied monotonic generation.
-pub fn HoverOperation::idle_at(token : Int) -> HoverOperation {
+fn HoverOperation::idle_at(token : Int) -> HoverOperation {
   { state: HoverOpIdle, token, parts: [], async_done: false, options: None }
 }
 
@@ -259,7 +256,7 @@ pub fn HoverOperation::idle_at(token : Int) -> HoverOperation {
 /// Pure `HoverOperation.start`: delayed starts arm only from Idle; immediate
 /// starts request async+sync from Idle, sync-only from SecondWait, and no-op in
 /// every other typed state. The host interprets the returned work immediately.
-pub fn HoverOperation::start(
+fn HoverOperation::start(
   self : HoverOperation,
   mode : HoverStartMode,
   options : HoverOperationOptions,
@@ -304,14 +301,14 @@ pub fn HoverOperation::start(
 ///|
 /// Mirrors `HoverOperation.cancel`: clear result/options, return to Idle, and
 /// rotate the generation so dispatched callbacks cannot re-enter the operation.
-pub fn HoverOperation::cancelled(self : HoverOperation) -> HoverOperation {
+fn HoverOperation::cancelled(self : HoverOperation) -> HoverOperation {
   HoverOperation::idle_at(self.token + 1)
 }
 
 ///|
 /// Returns the source-shaped result snapshot for observable states. Wait states
 /// suppress emission; the initial Idle state has no options and no result.
-pub fn HoverOperation::result(self : HoverOperation) -> HoverResult? {
+fn HoverOperation::result(self : HoverOperation) -> HoverResult? {
   if self.state is HoverOpFirstWait || self.state is HoverOpSecondWait {
     return None
   }
@@ -419,13 +416,13 @@ pub struct HoverController {
   /// `insistOnKeepingHoverVisible` for the in-flight operation. Set only by the
   /// sticky mouse-getting-closer keep, which the viewer handles at the input
   /// seam, so it is currently always `false` (see the plan's Deviation 11).
-  insist_on_keeping : Bool
+  priv insist_on_keeping : Bool
   /// Monaco `_currentResult`: the shown hover parts (`view`), the anchor that
   /// produced them (`current_anchor`), and whether that result was complete
   /// (`current_complete`). `view` is `None` exactly when no hover is shown.
   view : HoverView?
-  current_anchor : HoverAnchor?
-  current_complete : Bool
+  priv current_anchor : HoverAnchor?
+  priv current_complete : Bool
 } derive(Eq)
 
 ///|
@@ -437,7 +434,7 @@ pub fn HoverController::empty() -> HoverController {
 ///|
 /// Creates an empty controller without resetting the caller-owned monotonic
 /// generation. Browser/controller teardown uses this instead of reusing zero.
-pub fn HoverController::empty_at(generation : Int) -> HoverController {
+fn HoverController::empty_at(generation : Int) -> HoverController {
   {
     anchor: None,
     operation: HoverOperation::idle_at(generation),
@@ -600,7 +597,7 @@ pub fn HoverController::start_showing_or_update_hover(
 /// operation (rotating the token so its timers / async results are dropped) and
 /// arm a fresh operation in the supplied mode with source/focus/options
 /// retained exactly. The shown result is left untouched until new output.
-pub fn HoverController::start_hover_operation_if_necessary(
+fn HoverController::start_hover_operation_if_necessary(
   self : HoverController,
   anchor : HoverAnchor,
   insist~ : Bool,
@@ -644,7 +641,7 @@ pub fn HoverController::start_hover_operation_if_necessary(
 /// compute. Returns whether the transition applied (the token is still current);
 /// a stale timer is a no-op. Invoking this then `op_trigger_sync` back to back
 /// — without the schedulers — is Monaco's immediate (`start(Immediate)`) path.
-pub fn HoverController::op_trigger_async(
+fn HoverController::op_trigger_async(
   self : HoverController,
   token : Int,
 ) -> (Bool, HoverController) {
@@ -668,7 +665,7 @@ pub fn HoverController::op_trigger_async(
 /// Monaco `_triggerSyncComputation`: append the sync parts, then move to `Idle`
 /// if the async compute already finished or `WaitingForAsync` otherwise, and
 /// emit the accumulated result.
-pub fn HoverController::op_trigger_sync(
+fn HoverController::op_trigger_sync(
   self : HoverController,
   token : Int,
   sync_parts : Array[HoverPart],
@@ -689,7 +686,7 @@ pub fn HoverController::op_trigger_sync(
 ///|
 /// Monaco `_triggerLoadingMessage`: when still waiting on the async compute,
 /// switch to showing the loading message.
-pub fn HoverController::op_trigger_loading(
+fn HoverController::op_trigger_loading(
   self : HoverController,
   token : Int,
 ) -> HoverController {
@@ -712,7 +709,7 @@ pub fn HoverController::op_trigger_loading(
 ///|
 /// One streamed async result arrived (Monaco pushes each iterable item onto
 /// `_result` and re-fires): accumulate and emit.
-pub fn HoverController::op_async_item(
+fn HoverController::op_async_item(
   self : HoverController,
   token : Int,
   parts : Array[HoverPart],
@@ -728,7 +725,7 @@ pub fn HoverController::op_async_item(
 ///|
 /// The async compute finished (Monaco's `_asyncIterableDone`): mark it done and,
 /// if we were waiting on it, complete to `Idle`, then emit.
-pub fn HoverController::op_async_done(
+fn HoverController::op_async_done(
   self : HoverController,
   token : Int,
 ) -> HoverController {
@@ -847,7 +844,7 @@ pub fn HoverController::op_async_done_request(
 /// result); a complete-but-empty result is held back too when the operation
 /// insisted on keeping the hover visible; otherwise the accumulated parts become
 /// the shown result via `_setCurrentResult`.
-pub fn HoverController::emit(self : HoverController) -> HoverController {
+fn HoverController::emit(self : HoverController) -> HoverController {
   match self.operation.result() {
     None => self
     Some(result) => {
@@ -881,7 +878,7 @@ pub fn HoverController::emit(self : HoverController) -> HoverController {
 /// Monaco `ContentHoverWidgetWrapper._setCurrentResult`: dedupe an unchanged
 /// result, treat an empty result as hiding the hover, and otherwise show the
 /// sorted parts.
-pub fn HoverController::set_current_result(
+fn HoverController::set_current_result(
   self : HoverController,
   parts : Array[HoverPart],
   is_complete : Bool,
@@ -962,7 +959,7 @@ pub struct HoverWidgetView {
 /// Whether a hover widget is currently on screen (resolved content or the
 /// loading placeholder). Monaco's `_contentWidget.isVisible`; the mouse-move
 /// grace period only applies once the widget is shown.
-pub fn HoverController::widget_visible(self : HoverController) -> Bool {
+fn HoverController::widget_visible(self : HoverController) -> Bool {
   self.widget_view() is Some(_)
 }
 
@@ -970,7 +967,7 @@ pub fn HoverController::widget_visible(self : HoverController) -> Bool {
 /// Compatibility view derivation using the built-in markdown loading row.
 /// Live Viewer code uses `widget_view_with_loading` so participant selection
 /// remains authoritative.
-pub fn HoverController::widget_view(self : HoverController) -> HoverWidgetView? {
+fn HoverController::widget_view(self : HoverController) -> HoverWidgetView? {
   let loading_message = match self.anchor {
     Some(anchor) =>
       Some(LoadingHover(range=anchor.range(), message="Loading..."))

@@ -4,7 +4,6 @@ package "moonbitlang/editor/internal/viewer/ui/scrollbar"
 import {
   "moonbit-community/rabbita/dom",
   "moonbitlang/core/debug",
-  "moonbitlang/editor/base/common",
   "moonbitlang/editor/viewer/common/view_layout",
 }
 
@@ -14,8 +13,6 @@ pub fn drag_coord(@dom.MouseEvent, Bool) -> Double
 pub fn global_mouse_wheel_classifier() -> MouseWheelClassifier
 
 pub fn mouse_wheel_scroll_deltas(StandardWheelEvent, alt_key? : Bool, shift_key? : Bool, mouse_wheel_scroll_sensitivity? : Double, fast_scroll_sensitivity? : Double, scroll_predominant_axis? : Bool) -> (Double, Double)
-
-pub fn number_as_pixels(CssLength) -> String
 
 // Errors
 
@@ -38,34 +35,13 @@ pub(all) enum CssLength {
 } derive(Eq, @debug.Debug)
 
 type MouseWheelClassifier
-pub fn MouseWheelClassifier::MouseWheelClassifier() -> Self
-pub fn MouseWheelClassifier::accept(Self, Double, Double, Double) -> Unit
 pub fn MouseWheelClassifier::accept_standard_wheel_event(Self, StandardWheelEvent) -> Unit
 pub fn MouseWheelClassifier::is_physical_mouse_wheel(Self) -> Bool
 
 pub struct ScrollableElementDom {
   wrapper : @dom.Element
   content : @dom.Element
-  vertical_bar : @dom.Element
-  vertical_slider : @dom.Element
-  horizontal_bar : @dom.Element
-  horizontal_slider : @dom.Element
-  left_shadow : @dom.Element
-  top_shadow : @dom.Element
-  top_left_shadow : @dom.Element
-  vertical_size : Double
-  horizontal_size : Double
-  vertical_state : @view_layout.ScrollbarState
-  horizontal_state : @view_layout.ScrollbarState
-  mut vertical_revealed : Bool
-  mut horizontal_revealed : Bool
-  mut vertical_fade : Bool
-  mut horizontal_fade : Bool
-  mut mouse_is_over : Bool
-  mut is_dragging : Bool
-  mut hide_generation : Int
-  mut hide_timeout : @common.Disposable?
-  mut disposed : Bool
+  // private fields
 }
 pub fn ScrollableElementDom::ScrollableElementDom(String, vertical_size? : Double, horizontal_size? : Double, content? : @dom.Element) -> Self
 pub fn ScrollableElementDom::desired_position_from_track(Self, vertical~ : Bool, @dom.MouseEvent) -> Double
@@ -99,11 +75,10 @@ pub(all) struct ScrollbarDrag {
   initial_state : @view_layout.ScrollbarState
 }
 
-pub struct StandardWheelEvent {
-  delta_x : Double
-  delta_y : Double
-}
+type StandardWheelEvent
 pub fn StandardWheelEvent::StandardWheelEvent(@dom.WheelEvent) -> Self
+pub fn StandardWheelEvent::delta_x(Self) -> Double
+pub fn StandardWheelEvent::delta_y(Self) -> Double
 
 // Type aliases
 

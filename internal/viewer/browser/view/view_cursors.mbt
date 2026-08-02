@@ -16,7 +16,7 @@
 ///|
 /// Monaco's `ViewCursorRenderData` (`viewCursor.ts:26-36`), minus the
 /// block-cursor `textContent`/`textContentClassName` (N-A for the Line style).
-struct CursorRenderData {
+priv struct CursorRenderData {
   top : Double
   left : Double
   padding_left : Double

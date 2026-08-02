@@ -14,7 +14,7 @@
 
 ///|
 /// `originalFSPath` (resources.ts:14).
-pub fn original_fs_path(uri : Uri) -> String {
+fn original_fs_path(uri : Uri) -> String {
   uri_to_fs_path(uri, true)
 }
 
@@ -26,14 +26,14 @@ struct ExtUri {
 }
 
 ///|
-pub fn ExtUri::ExtUri(ignore_path_casing : (Uri) -> Bool) -> ExtUri {
+fn ExtUri::ExtUri(ignore_path_casing : (Uri) -> Bool) -> ExtUri {
   { ignore_path_casing_fn: ignore_path_casing }
 }
 
 ///|
 /// `compare` (resources.ts:143): compares two uris. Must use the ported
 /// `strings.compare` — MoonBit's built-in `String` compare is length-first.
-pub fn ExtUri::compare(
+fn ExtUri::compare_impl(
   self : ExtUri,
   uri1 : Uri,
   uri2 : Uri,
@@ -50,7 +50,7 @@ pub fn ExtUri::compare(
 
 ///|
 /// `isEqual` (resources.ts:150): tests whether two uris are equal.
-pub fn ExtUri::is_equal(
+fn ExtUri::is_equal_impl(
   self : ExtUri,
   uri1 : Uri?,
   uri2 : Uri?,
@@ -69,7 +69,7 @@ pub fn ExtUri::is_equal(
 ///|
 /// `getComparisonKey` (resources.ts:160): creates a key from a resource URI
 /// to be used for resource comparison and for resource maps.
-pub fn ExtUri::get_comparison_key(
+fn ExtUri::get_comparison_key_impl(
   self : ExtUri,
   uri : Uri,
   ignore_fragment? : Bool = false,
@@ -86,14 +86,14 @@ pub fn ExtUri::get_comparison_key(
 ///|
 /// `ignorePathCasing` (resources.ts:167): whether the casing of the
 /// path-component of the uri should be ignored.
-pub fn ExtUri::ignore_path_casing(self : ExtUri, uri : Uri) -> Bool {
+fn ExtUri::ignore_path_casing_impl(self : ExtUri, uri : Uri) -> Bool {
   (self.ignore_path_casing_fn)(uri)
 }
 
 ///|
 /// `isEqualOrParent` (resources.ts:171): tests whether a `parent_candidate`
 /// URI is a parent or equal of a given `base` URI.
-pub fn ExtUri::is_equal_or_parent(
+fn ExtUri::is_equal_or_parent_impl(
   self : ExtUri,
   base : Uri,
   parent_candidate : Uri,
@@ -127,7 +127,7 @@ pub fn ExtUri::is_equal_or_parent(
 
 ///|
 /// `joinPath` (resources.ts:185).
-pub fn ExtUri::join_path(
+fn ExtUri::join_path_impl(
   self : ExtUri,
   resource : Uri,
   path_fragment : Array[String],
@@ -138,7 +138,7 @@ pub fn ExtUri::join_path(
 
 ///|
 /// `basenameOrAuthority` (resources.ts:189).
-pub fn ExtUri::basename_or_authority(self : ExtUri, resource : Uri) -> String {
+fn ExtUri::basename_or_authority_impl(self : ExtUri, resource : Uri) -> String {
   let name = self.basename(resource)
   if name != "" {
     name
@@ -150,7 +150,7 @@ pub fn ExtUri::basename_or_authority(self : ExtUri, resource : Uri) -> String {
 ///|
 /// `basename` (resources.ts:193): the basename of the path component of an
 /// uri.
-pub fn ExtUri::basename(
+fn ExtUri::basename_impl(
   self : ExtUri,
   resource : Uri,
   suffix? : String,
@@ -162,7 +162,7 @@ pub fn ExtUri::basename(
 ///|
 /// `extname` (resources.ts:197): the extension of the path component of an
 /// uri.
-pub fn ExtUri::extname(self : ExtUri, resource : Uri) -> String {
+fn ExtUri::extname_impl(self : ExtUri, resource : Uri) -> String {
   ignore(self)
   Posix::extname(resource.path)
 }
@@ -170,7 +170,7 @@ pub fn ExtUri::extname(self : ExtUri, resource : Uri) -> String {
 ///|
 /// `dirname` (resources.ts:201): a URI representing the directory of a URI
 /// path.
-pub fn ExtUri::dirname(self : ExtUri, resource : Uri) -> Uri {
+fn ExtUri::dirname_impl(self : ExtUri, resource : Uri) -> Uri {
   ignore(self)
   if resource.path.length() == 0 {
     return resource
@@ -195,7 +195,7 @@ pub fn ExtUri::dirname(self : ExtUri, resource : Uri) -> Uri {
 ///|
 /// `normalizePath` (resources.ts:220): resolves `.` and `..` elements of the
 /// path with directory names.
-pub fn ExtUri::normalize_path(self : ExtUri, resource : Uri) -> Uri {
+fn ExtUri::normalize_path_impl(self : ExtUri, resource : Uri) -> Uri {
   ignore(self)
   if resource.path.length() == 0 {
     return resource
@@ -210,7 +210,7 @@ pub fn ExtUri::normalize_path(self : ExtUri, resource : Uri) -> Uri {
 
 ///|
 /// `relativePath` (resources.ts:235).
-pub fn ExtUri::relative_path(self : ExtUri, from : Uri, to : Uri) -> String? {
+fn ExtUri::relative_path_impl(self : ExtUri, from : Uri, to : Uri) -> String? {
   if from.scheme != to.scheme ||
     !is_equal_authority(from.authority, to.authority) {
     return None
@@ -246,7 +246,7 @@ pub fn ExtUri::relative_path(self : ExtUri, from : Uri, to : Uri) -> String? {
 /// `resolvePath` (resources.ts:260): resolves an absolute or relative path
 /// against a base URI. The path can be relative or absolute posix or a
 /// Windows path.
-pub fn ExtUri::resolve_path(self : ExtUri, base : Uri, path : String) -> Uri {
+fn ExtUri::resolve_path_impl(self : ExtUri, base : Uri, path : String) -> Uri {
   ignore(self)
   if base.scheme == schemas_file {
     let new_uri = Uri::file(resolve([original_fs_path(base), path]))
@@ -260,7 +260,7 @@ pub fn ExtUri::resolve_path(self : ExtUri, base : Uri, path : String) -> Uri {
 
 ///|
 /// `isAbsolutePath` (resources.ts:276).
-pub fn ExtUri::is_absolute_path(self : ExtUri, resource : Uri) -> Bool {
+fn ExtUri::is_absolute_path_impl(self : ExtUri, resource : Uri) -> Bool {
   ignore(self)
   resource.path != "" && char_code_at(resource.path, 0) == char_forward_slash
 }
@@ -268,7 +268,7 @@ pub fn ExtUri::is_absolute_path(self : ExtUri, resource : Uri) -> Bool {
 ///|
 /// `isEqualAuthority` (resources.ts:280): tests whether the two authorities
 /// are the same.
-pub fn ExtUri::is_equal_authority(
+fn ExtUri::is_equal_authority_impl(
   self : ExtUri,
   a1 : String,
   a2 : String,
@@ -280,7 +280,7 @@ pub fn ExtUri::is_equal_authority(
 ///|
 /// `hasTrailingPathSeparator` (resources.ts:284): true if the URI path has a
 /// trailing path separator.
-pub fn ExtUri::has_trailing_path_separator(
+fn ExtUri::has_trailing_path_separator_impl(
   self : ExtUri,
   resource : Uri,
   sep? : String,
@@ -316,7 +316,7 @@ pub fn ExtUri::has_trailing_path_separator(
 /// `removeTrailingPathSeparator` (resources.ts:294): removes a trailing path
 /// separator, if there's one. Important: doesn't remove the first slash —
 /// that would make the URI invalid.
-pub fn ExtUri::remove_trailing_path_separator(
+fn ExtUri::remove_trailing_path_separator_impl(
   self : ExtUri,
   resource : Uri,
   sep? : String,
@@ -337,7 +337,7 @@ pub fn ExtUri::remove_trailing_path_separator(
 /// `addTrailingPathSeparator` (resources.ts:302): adds a trailing path
 /// separator if there isn't one already. For example, `c:\` would be
 /// unchanged, but `c:\users` becomes `c:\users\`.
-pub fn ExtUri::add_trailing_path_separator(
+fn ExtUri::add_trailing_path_separator(
   self : ExtUri,
   resource : Uri,
   sep? : String,
@@ -368,14 +368,14 @@ pub fn ExtUri::add_trailing_path_separator(
 /// `extUri` (resources.ts:327): unbiased utility that takes uris "as they
 /// are" — interchangeable with `uri.to_string()` usages:
 /// `(a.to_string() == b.to_string()) == ext_uri.is_equal(a, b)`.
-pub let ext_uri : ExtUri = ExtUri(_uri => false)
+let ext_uri_impl : ExtUri = ExtUri(_uri => false)
 
 ///|
 /// `extUriBiasedIgnorePathCase` (resources.ts:340): BIASED utility that
 /// _mostly_ ignores the case of uri paths — a file-scheme resource is on the
 /// same platform as the code, so case is ignored on non-Linux platforms.
 /// INCOMPATIBLE with `uri.to_string()` usages.
-pub let ext_uri_biased_ignore_path_case : ExtUri = ExtUri(uri => {
+let ext_uri_biased_ignore_path_case_impl : ExtUri = ExtUri(uri => {
   if uri.scheme == schemas_file {
     !is_linux
   } else {
@@ -387,81 +387,77 @@ pub let ext_uri_biased_ignore_path_case : ExtUri = ExtUri(uri => {
 /// `extUriIgnorePathCase` (resources.ts:358): BIASED utility that always
 /// ignores the casing of uri paths. INCOMPATIBLE with `uri.to_string()`
 /// usages.
-pub let ext_uri_ignore_path_case : ExtUri = ExtUri(_uri => true)
+let ext_uri_ignore_path_case_impl : ExtUri = ExtUri(_uri => true)
 
 // --- bound exports (resources.ts:360-375), delegating to `ext_uri`.
 // `dirname` and `isEqualOrParent` are omitted here — see the file header.
 
 ///|
-pub fn is_equal(
-  uri1 : Uri?,
-  uri2 : Uri?,
-  ignore_fragment? : Bool = false,
-) -> Bool {
-  ext_uri.is_equal(uri1, uri2, ignore_fragment~)
+fn is_equal(uri1 : Uri?, uri2 : Uri?, ignore_fragment? : Bool = false) -> Bool {
+  ext_uri_impl.is_equal_impl(uri1, uri2, ignore_fragment~)
 }
 
 ///|
-pub fn get_comparison_key(uri : Uri, ignore_fragment? : Bool = false) -> String {
-  ext_uri.get_comparison_key(uri, ignore_fragment~)
+fn get_comparison_key(uri : Uri, ignore_fragment? : Bool = false) -> String {
+  ext_uri_impl.get_comparison_key_impl(uri, ignore_fragment~)
 }
 
 ///|
 pub fn basename_or_authority(resource : Uri) -> String {
-  ext_uri.basename_or_authority(resource)
+  ext_uri_impl.basename_or_authority_impl(resource)
 }
 
 ///|
-pub fn basename(resource : Uri) -> String {
-  ext_uri.basename(resource)
+fn basename(resource : Uri) -> String {
+  ext_uri_impl.basename_impl(resource)
 }
 
 ///|
-pub fn extname(resource : Uri) -> String {
-  ext_uri.extname(resource)
+fn extname(resource : Uri) -> String {
+  ext_uri_impl.extname_impl(resource)
 }
 
 ///|
-pub fn join_path(resource : Uri, path_fragment : Array[String]) -> Uri {
-  ext_uri.join_path(resource, path_fragment)
+fn join_path(resource : Uri, path_fragment : Array[String]) -> Uri {
+  ext_uri_impl.join_path_impl(resource, path_fragment)
 }
 
 ///|
-pub fn normalize_path(resource : Uri) -> Uri {
-  ext_uri.normalize_path(resource)
+fn normalize_path(resource : Uri) -> Uri {
+  ext_uri_impl.normalize_path_impl(resource)
 }
 
 ///|
-pub fn relative_path(from : Uri, to : Uri) -> String? {
-  ext_uri.relative_path(from, to)
+fn relative_path(from : Uri, to : Uri) -> String? {
+  ext_uri_impl.relative_path_impl(from, to)
 }
 
 ///|
-pub fn resolve_path(base : Uri, path : String) -> Uri {
-  ext_uri.resolve_path(base, path)
+fn resolve_path(base : Uri, path : String) -> Uri {
+  ext_uri_impl.resolve_path_impl(base, path)
 }
 
 ///|
-pub fn is_absolute_path(resource : Uri) -> Bool {
-  ext_uri.is_absolute_path(resource)
+fn is_absolute_path(resource : Uri) -> Bool {
+  ext_uri_impl.is_absolute_path_impl(resource)
 }
 
 ///|
-pub fn is_equal_authority(a1 : String, a2 : String) -> Bool {
-  ext_uri.is_equal_authority(a1, a2)
+fn is_equal_authority(a1 : String, a2 : String) -> Bool {
+  ext_uri_impl.is_equal_authority_impl(a1, a2)
 }
 
 ///|
-pub fn has_trailing_path_separator(resource : Uri, sep? : String) -> Bool {
-  ext_uri.has_trailing_path_separator(resource, sep?)
+fn has_trailing_path_separator(resource : Uri, sep? : String) -> Bool {
+  ext_uri_impl.has_trailing_path_separator_impl(resource, sep?)
 }
 
 ///|
-pub fn remove_trailing_path_separator(resource : Uri, sep? : String) -> Uri {
-  ext_uri.remove_trailing_path_separator(resource, sep?)
+fn remove_trailing_path_separator(resource : Uri, sep? : String) -> Uri {
+  ext_uri_impl.remove_trailing_path_separator_impl(resource, sep?)
 }
 
 ///|
-pub fn add_trailing_path_separator(resource : Uri, sep? : String) -> Uri {
-  ext_uri.add_trailing_path_separator(resource, sep?)
+fn add_trailing_path_separator(resource : Uri, sep? : String) -> Uri {
+  ext_uri_impl.add_trailing_path_separator(resource, sep?)
 }

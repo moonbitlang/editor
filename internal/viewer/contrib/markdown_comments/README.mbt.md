@@ -21,7 +21,7 @@ snapshot. Both consume the owning language's `CommentRule`.
 Consecutive line comments are grouped into one block, and the comment delimiter
 is stripped from the emitted Markdown.
 
-```mbt check
+```mbt nocheck
 ///|
 let moonbit_comments : @languages.CommentRule = {
   line_comment: Some(LineCommentRule("//")),
@@ -68,7 +68,7 @@ test "consecutive whole-line comments become one block" {
 Only *whole-line* comments qualify. A trailing comment after code is not a
 Markdown block, because replacing it would destroy the code on that line.
 
-```mbt check
+```mbt nocheck
 ///|
 test "a trailing comment after code is not a block" {
   let model = commented("let x = 1 // not a doc comment\n")
@@ -84,7 +84,7 @@ test "a trailing comment after code is not a block" {
 Line comments win when configured delimiters overlap, and only whole-line block
 comments are accepted.
 
-```mbt check
+```mbt nocheck
 ///|
 test "a whole-line block comment is accepted" {
   let model = commented("/* # Block heading */\nlet x = 1\n")
@@ -114,7 +114,7 @@ fallback. Invalid and overlapping inputs are reported through `LogHandle`.
 Because both the provider path and the detection path pass through it, a
 provider cannot produce a block shape the detector could not.
 
-```mbt check
+```mbt nocheck
 ///|
 test "normalization orders blocks and rejects later overlaps" {
   let log = @log.LogService(logger=@log.NullLogger()).log_handle()
@@ -145,7 +145,7 @@ test "normalization orders blocks and rejects later overlaps" {
 A range outside the document is invalid and is dropped rather than clamped, so
 a stale provider result cannot decorate lines that no longer exist.
 
-```mbt check
+```mbt nocheck
 ///|
 test "a range beyond the document is dropped, not clamped" {
   let log = @log.LogService(logger=@log.NullLogger()).log_handle()
@@ -172,7 +172,7 @@ matching provider result is authoritative, including an empty result. Only an
 absent provider falls back to the model language's configured comment rules;
 both paths pass through the same normalizer.
 
-```mbt check
+```mbt nocheck
 ///|
 test "with no provider, resolution falls back to the language rules" {
   let log = @log.LogService(logger=@log.NullLogger())

@@ -5,7 +5,7 @@
 
 ///|
 /// Right padding of `.view-line-content`, part of the horizontal scroll extent.
-pub let code_right_padding = 16.0
+let code_right_padding = 16.0
 
 ///|
 /// Editor scrollbar defaults from Monaco's `EditorScrollbar` option.

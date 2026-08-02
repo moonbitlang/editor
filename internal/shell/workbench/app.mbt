@@ -260,7 +260,7 @@ fn install_language_tokenizers(services : WorkbenchServices) -> Unit {
 ///|
 /// Mounts the Rabbita workbench shell and attaches the viewer view after the
 /// first shell paint.
-pub fn mount_app() -> Unit {
+fn mount_app() -> Unit {
   let app = @rabbita.new(() => {
     let tree_view = workspace_file_tree().view()
     let (state, emit) = @rabbita.create_state(
@@ -842,7 +842,7 @@ fn text_model_harness_json(model : @model.TextModel) -> String {
   payload = "\{payload},\"languageId\":\{json_string(model.language_id)}"
   payload = "\{payload},\"version\":\{model.version.to_string()}"
   payload = "\{payload},\"revision\":\{json_string(model.revision)}"
-  payload = "\{payload},\"text\":\{json_string(model.snapshot.text)}"
+  payload = "\{payload},\"text\":\{json_string(model.snapshot.get_value())}"
   payload = "\{payload}}"
   payload
 }

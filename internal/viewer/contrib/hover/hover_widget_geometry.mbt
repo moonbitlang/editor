@@ -82,7 +82,7 @@ pub fn compute_hover_positions(
 /// Monaco `computeDistanceFromPointToRectangle` (`contentHoverWidget.ts`
 /// :477-483): Euclidean distance from a point to the nearest edge of a
 /// rectangle, `0` when the point is inside it.
-pub fn compute_distance_from_point_to_rectangle(
+fn compute_distance_from_point_to_rectangle(
   point_x : Double,
   point_y : Double,
   left : Double,
@@ -105,7 +105,7 @@ pub fn compute_distance_from_point_to_rectangle(
 /// updated in place per move, exactly as Monaco mutates the
 /// `RenderedContentHover`. Recreated per shown hover (the viewer resets it when
 /// the shown view changes, mirroring Monaco's fresh `RenderedContentHover`).
-pub struct MouseCloserState {
+struct MouseCloserState {
   mut initial_pos_x : Double?
   mut initial_pos_y : Double?
   mut closest_distance : Double?

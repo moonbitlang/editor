@@ -1,37 +1,29 @@
 ///|
-fn mapping(
-  original_start : Int,
-  original_end_exclusive : Int,
-  modified_start : Int,
-  modified_end_exclusive : Int,
-) -> @diff.DetailedLineRangeMapping {
-  DetailedLineRangeMapping(
-    LineRange(original_start, original_end_exclusive),
-    LineRange(modified_start, modified_end_exclusive),
-    None,
-  )
-}
-
-///|
 fn change_str(change : @diff.Change) -> String {
   "(\{change.original_start_line_number},\{change.original_end_line_number})->(\{change.modified_start_line_number},\{change.modified_end_line_number})"
 }
 
 ///|
-test "to_line_changes re-encodes the three change shapes (diffEditorWidget.ts:759)" {
+test "compute_changes re-encodes the three change shapes (diffEditorWidget.ts:759)" {
   // Modification: exclusive ends become inclusive.
   assert_eq(
-    change_str(to_line_changes([mapping(2, 4, 2, 3)])[0]),
+    change_str(
+      compute_changes(["a", "old 1", "old 2", "tail"], ["a", "new", "tail"])[0],
+    ),
     "(2,3)->(2,2)",
   )
   // Insertion: empty original side → start-1 / 0.
   assert_eq(
-    change_str(to_line_changes([mapping(2, 2, 2, 4)])[0]),
+    change_str(
+      compute_changes(["a", "tail"], ["a", "new 1", "new 2", "tail"])[0],
+    ),
     "(1,0)->(2,3)",
   )
   // Deletion: empty modified side → start-1 / 0.
   assert_eq(
-    change_str(to_line_changes([mapping(2, 4, 2, 2)])[0]),
+    change_str(
+      compute_changes(["a", "old 1", "old 2", "tail"], ["a", "tail"])[0],
+    ),
     "(2,3)->(1,0)",
   )
 }

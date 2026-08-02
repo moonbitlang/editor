@@ -372,16 +372,6 @@ pub fn Viewer::on_did_change_view_zones(
 }
 
 ///|
-/// Fires after a changed hidden-area mapping has completed its internal view
-/// events, cursor/decorations reprojection, layout, and viewport recovery.
-pub fn Viewer::on_did_change_hidden_areas(
-  self : Viewer,
-  listener : () -> Unit,
-) -> @base_common.Disposable {
-  self.did_change_hidden_areas.event(_ => listener())
-}
-
-///|
 pub fn Viewer::on_did_dispose(
   self : Viewer,
   listener : () -> Unit,
@@ -734,14 +724,6 @@ pub fn Viewer::get_options(self : Viewer) -> ViewerOptions {
 }
 
 ///|
-/// The editor type marker, Monaco's `getEditorType()` →
-/// `EditorType.ICodeEditor`.
-pub fn Viewer::get_editor_type(self : Viewer) -> String {
-  ignore(self)
-  "vs.editor.ICodeEditor"
-}
-
-///|
 /// This editor's unique id, Monaco's `getId()`: the editor type plus the
 /// process-wide instance counter.
 pub fn Viewer::get_id(self : Viewer) -> String {
@@ -783,17 +765,6 @@ pub fn Viewer::has_text_focus(self : Viewer) -> Bool {
   match self.mount {
     Headless => false
     Mounted(mounted) => mounted.editor_has_focus
-  }
-}
-
-///|
-/// Whether focus is anywhere inside the editor widget, including hover
-/// widgets — `hasWidgetFocus()`.
-pub fn Viewer::has_widget_focus(self : Viewer) -> Bool {
-  match self.current_browser_presentation() {
-    Some(presentation) =>
-      self.has_text_focus() || presentation.contains_active_element()
-    None => false
   }
 }
 

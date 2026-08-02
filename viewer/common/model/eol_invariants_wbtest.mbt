@@ -21,7 +21,7 @@ fn eol_assert_model_offset_round_trips(model : TextModel) -> Unit raise {
   }
   let full = model.get_full_model_range()
   assert_eq(
-    model.get_offset_at(full.get_end_position()),
+    model.get_offset_at(Position(full.end_line_number, full.end_column)),
     model.get_value_length(),
   )
 }

@@ -55,6 +55,12 @@ fn run_scroll_perf_test() -> Unit {
   viewer.on_did_scroll_change(event => {
     if event.scroll_top_changed || event.scroll_left_changed {
       public_scroll_events.val += 1
+      forward_scroll_perf_phase(
+        viewer.get_id(),
+        "state-committed",
+        event.scroll_top,
+        event.scroll_left,
+      )
     }
   })
   |> ignore
@@ -64,20 +70,6 @@ fn run_scroll_perf_test() -> Unit {
       host.set_attribute("data-visible-lines", visible_lines.to_string())
       host.set_attribute("data-smooth", smooth.to_string())
     }
-  })
-  |> ignore
-  @viewer_testing.on_did_observe_scroll_frame(viewer.get_id(), event => {
-    let phase = match event.phase {
-      StateCommitted => "state-committed"
-      RenderStarted => "render-started"
-      RenderFinished => "render-finished"
-    }
-    forward_scroll_perf_phase(
-      event.viewer_id,
-      phase,
-      event.scroll_top,
-      event.scroll_left,
-    )
   })
   |> ignore
   let zone = @rdom.document().create_element("div")

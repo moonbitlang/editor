@@ -640,7 +640,7 @@ pub fn TextModel::remove_all_decorations_with_owner_id(
 
 ///|
 /// `getDecorationOptions` (`textModel.ts:1790-1796`).
-pub fn TextModel::get_decoration_options(
+fn TextModel::get_decoration_options(
   self : TextModel,
   decoration_id : String,
 ) -> ModelDecorationOptions? {
@@ -686,7 +686,7 @@ pub fn TextModel::get_line_decorations(
 ///|
 /// `getLinesDecorations` (`textModel.ts:1813-1825`). The bracket/font
 /// provider merges are N-A (providers out of scope) — tree results only.
-pub fn TextModel::get_lines_decorations(
+fn TextModel::get_lines_decorations(
   self : TextModel,
   start_line_number : Int,
   end_line_number : Int,
@@ -729,7 +729,7 @@ pub fn TextModel::get_decorations_in_range(
 /// `getOverviewRulerDecorations` (`textModel.ts:1835-1838`) — query surface
 /// only; the overview-ruler view part stays deferred (marker plan Increment
 /// H).
-pub fn TextModel::get_overview_ruler_decorations(
+fn TextModel::get_overview_ruler_decorations(
   self : TextModel,
   owner_id? : Int = 0,
   filter_out_validation? : Bool = false,
@@ -743,7 +743,7 @@ pub fn TextModel::get_overview_ruler_decorations(
 ///|
 /// `getAllDecorations` (`textModel.ts:1869-1875`) — tree results only
 /// (provider merges N-A).
-pub fn TextModel::get_all_decorations(
+fn TextModel::get_all_decorations(
   self : TextModel,
   owner_id? : Int = 0,
   filter_out_validation? : Bool = false,
@@ -769,7 +769,7 @@ pub fn TextModel::get_injected_text_decorations(
 /// `getInjectedTextInInterval` reduced to a line query — the seam
 /// `_getInjectedTextInLine` (`textModel.ts`) gives the view-model line
 /// projection.
-pub fn TextModel::get_injected_text_in_interval(
+fn TextModel::get_injected_text_in_interval(
   self : TextModel,
   start_offset : Int,
   end_offset : Int,
@@ -782,7 +782,7 @@ pub fn TextModel::get_injected_text_in_interval(
 
 ///|
 /// `getAllMarginDecorations` (`textModel.ts:1876-1879`) — query surface only.
-pub fn TextModel::get_all_margin_decorations(
+fn TextModel::get_all_margin_decorations(
   self : TextModel,
   owner_id? : Int = 0,
 ) -> Array[ModelDecoration] {

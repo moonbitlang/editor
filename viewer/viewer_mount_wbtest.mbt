@@ -146,7 +146,7 @@ test "mount keeps one host and one placeholder pair across detach" {
 }
 
 ///|
-test "Code detach preserves attachment event before presentation root removal" {
+test "Code detach releases model attachment and removes presentation root" {
   install_mounted_test_browser()
   defer restore_mounted_test_browser()
   let viewer = Viewer::Viewer()
@@ -163,20 +163,9 @@ test "Code detach preserves attachment event before presentation root removal" {
   }
   let root = view.root
   assert_true(@base_browser.element_contains(host, root))
-  let final_attachment_event_ran = Ref(false)
-  let event_saw_root_still_mounted = Ref(false)
-  let subscription = model.on_did_change_attached(() => {
-    if !model.is_attached_to_editor() {
-      final_attachment_event_ran.val = true
-      event_saw_root_still_mounted.val = @base_browser.element_contains(
-        host, root,
-      )
-    }
-  })
+  assert_eq(model.get_attached_editor_count(), 1)
   viewer.set_model(None)
-  subscription.dispose()
-  assert_true(final_attachment_event_ran.val)
-  assert_true(event_saw_root_still_mounted.val)
+  assert_eq(model.get_attached_editor_count(), 0)
   assert_false(@base_browser.element_contains(host, root))
 }
 
@@ -282,28 +271,12 @@ test "two mounted Viewers share one request and isolate cancellation" {
   second.configuration.clear_measure_request()
   first.cancel_render_frame()
   second.cancel_render_frame()
-  let first_trace : Array[@viewer_testing.ScrollFrameObservation] = []
-  let second_trace : Array[@viewer_testing.ScrollFrameObservation] = []
-  let first_trace_subscription = @viewer_testing.on_did_observe_scroll_frame(
-    first.get_id(),
-    observation => first_trace.push(observation),
-  )
-  let second_trace_subscription = @viewer_testing.on_did_observe_scroll_frame(
-    second.get_id(),
-    observation => second_trace.push(observation),
-  )
   first.set_scroll_top(18.0)
   second.set_scroll_top(36.0)
-  assert_eq(first_trace.length(), 1)
-  assert_eq(second_trace.length(), 1)
-  assert_eq(first_trace[0].viewer_id, first.get_id())
-  assert_eq(first_trace[0].scroll_top, 18.0)
-  assert_eq(second_trace[0].viewer_id, second.get_id())
-  assert_eq(second_trace[0].scroll_top, 36.0)
+  assert_eq(first.get_scroll_top(), 18.0)
+  assert_eq(second.get_scroll_top(), 36.0)
   first.cancel_render_frame()
   second.cancel_render_frame()
-  first_trace_subscription.dispose()
-  second_trace_subscription.dispose()
   let events : Array[String] = []
   first_mounted.schedule_render(() => events.push("first"))
   second_mounted.schedule_render(() => events.push("second"))
@@ -326,7 +299,7 @@ test "two mounted Viewers share one request and isolate cancellation" {
 }
 
 ///|
-test "mounted scroll trace publishes committed axis state by viewer id" {
+test "mounted public scroll event publishes committed axis state" {
   install_mounted_test_browser()
   defer restore_mounted_test_browser()
   let viewer = Viewer::Viewer()
@@ -339,18 +312,15 @@ test "mounted scroll trace publishes committed axis state by viewer id" {
   viewer.configuration.clear_measure_request()
   viewer.cancel_render_frame()
 
-  let observations : Array[@viewer_testing.ScrollFrameObservation] = []
-  let subscription = @viewer_testing.on_did_observe_scroll_frame(
-    viewer.get_id(),
-    observation => observations.push(observation),
-  )
+  let observations : Array[@editor_api.ScrollEvent] = []
+  let subscription = viewer.on_did_scroll_change(observation => {
+    observations.push(observation)
+  })
   defer subscription.dispose()
   viewer.set_scroll_top(18.0)
+  run_one_mounted_test_frame()
   assert_eq(observations.length(), 1)
-  assert_eq(observations[0].phase, StateCommitted)
   assert_eq(observations[0].scroll_top, 18.0)
-  assert_eq(mounted_test_frame_count(), 1)
-  assert_eq(observations[0].viewer_id, viewer.get_id())
   assert_eq(observations[0].scroll_left, 0.0)
   viewer.cancel_render_frame()
 }
@@ -400,11 +370,10 @@ fn assert_pending_smooth_exit_cancels(exit : PendingSmoothExit) -> Unit raise {
   guard viewer.get_view_model() is Some(old_view_model) else {
     fail("mounted Viewer did not install its ViewModel")
   }
-  let observations : Array[@viewer_testing.ScrollFrameObservation] = []
-  let subscription = @viewer_testing.on_did_observe_scroll_frame(
-    viewer.get_id(),
-    observation => observations.push(observation),
-  )
+  let observations : Array[@editor_api.ScrollEvent] = []
+  let subscription = viewer.on_did_scroll_change(observation => {
+    observations.push(observation)
+  })
   defer subscription.dispose()
   old_view_model.view_layout.scroll_to_smooth(scroll_top=90.0)
   assert_true(old_view_model.view_layout.has_pending_scroll_animation())

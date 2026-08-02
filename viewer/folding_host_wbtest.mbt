@@ -20,11 +20,12 @@ test "folding: contribution computes indent regions on model attach" {
         fail("expected an attached folding model")
       }
       let regions = folding_model.regions()
+      let fold_regions = folding_model.get_regions_inside(None)
       assert_eq(regions.length(), 2)
-      assert_eq(regions.get_start_line_number(0), 1)
-      assert_eq(regions.get_end_line_number(0), 3)
-      assert_eq(regions.get_start_line_number(1), 4)
-      assert_eq(regions.get_end_line_number(1), 5)
+      assert_eq(fold_regions[0].start_line_number(), 1)
+      assert_eq(fold_regions[0].end_line_number(), 3)
+      assert_eq(fold_regions[1].start_line_number(), 4)
+      assert_eq(fold_regions[1].end_line_number(), 5)
     },
   )
 }
@@ -49,12 +50,13 @@ test "folding: public fold_top_level collapses every outer region only" {
         fail("expected an attached folding model")
       }
       let regions = folding_model.regions()
+      let fold_regions = folding_model.get_regions_inside(None)
       assert_eq(regions.length(), 3)
       viewer.set_position(Position(3, 1))
       viewer.fold_top_level()
-      assert_true(regions.is_collapsed(0))
-      assert_false(regions.is_collapsed(1))
-      assert_true(regions.is_collapsed(2))
+      assert_true(fold_regions[0].is_collapsed())
+      assert_false(fold_regions[1].is_collapsed())
+      assert_true(fold_regions[2].is_collapsed())
       assert_eq(view_model.line_count(), 3)
       assert_eq(view_model.lines().get_view_line_content(1), "root")
       assert_eq(view_model.lines().get_view_line_content(2), "next")
@@ -118,7 +120,10 @@ test "folding: MoonBit outline keeps the complete signature and opening brace" {
   }
   assert_position(position, Position(3, 18))
   let mut saw_outline_body = false
-  for decoration in folding_model.text_model().get_all_decorations() {
+  for
+    decoration in folding_model
+    .text_model()
+    .get_decorations_in_range(folding_model.text_model().get_full_model_range()) {
     if decoration.options.description ==
       "folding-collapsed-outline-body-highlighted-visual-decoration" {
       saw_outline_body = true
@@ -441,11 +446,12 @@ test "folding: same-start provider ranges yield to the comment run" {
     fail("expected an attached folding model")
   }
   let regions = folding_model.regions()
+  let fold_regions = folding_model.get_regions_inside(None)
   assert_eq(regions.length(), 1)
-  assert_eq(regions.get_start_line_number(0), 1)
-  assert_eq(regions.get_end_line_number(0), 2)
+  assert_eq(fold_regions[0].start_line_number(), 1)
+  assert_eq(fold_regions[0].end_line_number(), 2)
   assert_eq(regions.get_type(0), Some(COMMENT_RUN_FOLDING_RANGE_TYPE))
-  assert_true(regions.is_collapsed(0))
+  assert_true(fold_regions[0].is_collapsed())
   viewer.dispose()
 }
 
@@ -466,15 +472,16 @@ test "folding: provider ranges containing a comment run are retained" {
     fail("expected an attached folding model")
   }
   let regions = folding_model.regions()
+  let fold_regions = folding_model.get_regions_inside(None)
   assert_eq(regions.length(), 2)
-  assert_eq(regions.get_start_line_number(0), 1)
-  assert_eq(regions.get_end_line_number(0), 3)
+  assert_eq(fold_regions[0].start_line_number(), 1)
+  assert_eq(fold_regions[0].end_line_number(), 3)
   assert_eq(regions.get_type(0), None)
-  assert_true(regions.is_collapsed(0))
-  assert_eq(regions.get_start_line_number(1), 2)
-  assert_eq(regions.get_end_line_number(1), 3)
+  assert_true(fold_regions[0].is_collapsed())
+  assert_eq(fold_regions[1].start_line_number(), 2)
+  assert_eq(fold_regions[1].end_line_number(), 3)
   assert_eq(regions.get_type(1), Some(COMMENT_RUN_FOLDING_RANGE_TYPE))
-  assert_false(regions.is_collapsed(1))
+  assert_false(fold_regions[1].is_collapsed())
   let view_model = viewer.test_view_model()
   assert_eq(view_model.line_count(), 2)
   assert_eq(view_model.lines().get_view_line_content(1), "zero")
@@ -522,15 +529,19 @@ test "folding: MoonBit outline collapses a copyright header to its first line" {
     fail("expected an attached folding model")
   }
   let regions = folding_model.regions()
+  let fold_regions = folding_model.get_regions_inside(None)
   assert_eq(regions.length(), 2)
-  assert_eq(regions.get_start_line_number(0), 1)
-  assert_eq(regions.get_end_line_number(0), 3)
+  assert_eq(fold_regions[0].start_line_number(), 1)
+  assert_eq(fold_regions[0].end_line_number(), 3)
   assert_eq(regions.get_type(0), Some(COMMENT_RUN_FOLDING_RANGE_TYPE))
-  assert_true(regions.is_collapsed(0))
+  assert_true(fold_regions[0].is_collapsed())
   // Unlike outline bodies, the collapsed comment run keeps the ordinary
   // trailing ellipsis after its visible first line.
   let mut saw_comment_header = false
-  for decoration in folding_model.text_model().get_all_decorations() {
+  for
+    decoration in folding_model
+    .text_model()
+    .get_decorations_in_range(folding_model.text_model().get_full_model_range()) {
     if decoration.range.start_line_number == 1 &&
       decoration.options.first_line_decoration_class_name
       is Some("codicon codicon-folding-collapsed") {
@@ -574,11 +585,12 @@ test "folding: comment-only MoonBit file folds and survives option updates" {
     fail("expected an attached folding model")
   }
   let regions = folding_model.regions()
+  let fold_regions = folding_model.get_regions_inside(None)
   assert_eq(regions.length(), 1)
-  assert_eq(regions.get_start_line_number(0), 1)
-  assert_eq(regions.get_end_line_number(0), 3)
+  assert_eq(fold_regions[0].start_line_number(), 1)
+  assert_eq(fold_regions[0].end_line_number(), 3)
   assert_eq(regions.get_type(0), Some(COMMENT_RUN_FOLDING_RANGE_TYPE))
-  assert_true(regions.is_collapsed(0))
+  assert_true(fold_regions[0].is_collapsed())
   assert_eq(viewer.test_view_model().line_count(), 1)
   viewer.dispose()
 }
@@ -664,17 +676,21 @@ test "folding: MoonBit outline survives folding decoration option updates" {
   }
   viewer.update_options(ViewerOptions(show_folding_controls=Never))
   let regions = folding_model.regions()
+  let fold_regions = folding_model.get_regions_inside(None)
   assert_eq(regions.length(), 1)
-  assert_eq(regions.get_start_line_number(0), 1)
-  assert_eq(regions.get_end_line_number(0), 3)
+  assert_eq(fold_regions[0].start_line_number(), 1)
+  assert_eq(fold_regions[0].end_line_number(), 3)
   assert_eq(
     regions.get_type(0),
     Some(@folding_browser.OUTLINE_BODY_FOLDING_RANGE_TYPE),
   )
-  assert_true(regions.is_collapsed(0))
+  assert_true(fold_regions[0].is_collapsed())
   assert_eq(viewer.test_view_model().line_count(), 2)
   let mut saw_outline_body = false
-  for decoration in folding_model.text_model().get_all_decorations() {
+  for
+    decoration in folding_model
+    .text_model()
+    .get_decorations_in_range(folding_model.text_model().get_full_model_range()) {
     if decoration.options.description ==
       "folding-no-controls-outline-body-range-decoration" {
       saw_outline_body = true
@@ -712,12 +728,13 @@ test "folding: MoonBit outline respects the configured folding limit" {
     fail("expected an attached folding model")
   }
   let regions = folding_model.regions()
+  let fold_regions = folding_model.get_regions_inside(None)
   assert_eq(regions.length(), 1)
   assert_eq(
     regions.get_type(0),
     Some(@folding_browser.OUTLINE_BODY_FOLDING_RANGE_TYPE),
   )
-  assert_true(regions.is_collapsed(0))
+  assert_true(fold_regions[0].is_collapsed())
   viewer.dispose()
 }
 
@@ -793,7 +810,12 @@ test "folding: toggling a region folds its lines out of the view axis" {
       // The folded header carries the collapsed chevron + `⋯` + highlight
       // decoration on the model.
       let mut saw_collapsed = false
-      for decoration in folding_model.text_model().get_all_decorations() {
+      for
+        decoration in folding_model
+        .text_model()
+        .get_decorations_in_range(
+          folding_model.text_model().get_full_model_range(),
+        ) {
         if decoration.options.first_line_decoration_class_name
           is Some("codicon codicon-folding-collapsed") {
           saw_collapsed = true

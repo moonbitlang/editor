@@ -14,7 +14,7 @@ fn to_uint8(v : Int) -> Int {
 
 ///|
 /// Classifies char codes into small integer buckets.
-pub struct CharacterClassifier {
+struct CharacterClassifier {
   ascii_map : Array[Int]
   map : Map[Int, Int]
   default_value : Int
@@ -60,7 +60,7 @@ pub fn CharacterClassifier::get(
 }
 
 ///|
-pub fn CharacterClassifier::clear(self : CharacterClassifier) -> Unit {
+fn CharacterClassifier::clear(self : CharacterClassifier) -> Unit {
   for i in 0..<256 {
     self.ascii_map[i] = self.default_value
   }
@@ -69,26 +69,26 @@ pub fn CharacterClassifier::clear(self : CharacterClassifier) -> Unit {
 
 ///|
 /// A set of char codes, backed by a `CharacterClassifier`.
-pub struct CharacterSet {
+struct CharacterSet {
   actual : CharacterClassifier
 }
 
 ///|
-pub fn CharacterSet::CharacterSet() -> CharacterSet {
+fn CharacterSet::new_impl() -> CharacterSet {
   { actual: CharacterClassifier(0) }
 }
 
 ///|
-pub fn CharacterSet::add(self : CharacterSet, char_code : Int) -> Unit {
+fn CharacterSet::add_impl(self : CharacterSet, char_code : Int) -> Unit {
   self.actual.set(char_code, 1)
 }
 
 ///|
-pub fn CharacterSet::has(self : CharacterSet, char_code : Int) -> Bool {
+fn CharacterSet::has_impl(self : CharacterSet, char_code : Int) -> Bool {
   self.actual.get(char_code) == 1
 }
 
 ///|
-pub fn CharacterSet::clear(self : CharacterSet) -> Unit {
+fn CharacterSet::clear(self : CharacterSet) -> Unit {
   self.actual.clear()
 }

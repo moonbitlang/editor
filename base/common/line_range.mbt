@@ -25,19 +25,7 @@ pub fn LineRange::LineRange(
 }
 
 ///|
-pub fn LineRange::of_length(start_line_number : Int, length : Int) -> LineRange {
-  LineRange(start_line_number, start_line_number + length)
-}
-
-///|
-/// Indicates if this line range contains the given line number.
-pub fn LineRange::contains(self : LineRange, line_number : Int) -> Bool {
-  self.start_line_number <= line_number &&
-  line_number < self.end_line_number_exclusive
-}
-
-///|
-pub fn LineRange::contains_range(self : LineRange, other : LineRange) -> Bool {
+fn LineRange::contains_range(self : LineRange, other : LineRange) -> Bool {
   self.start_line_number <= other.start_line_number &&
   other.end_line_number_exclusive <= self.end_line_number_exclusive
 }
@@ -49,7 +37,7 @@ pub fn LineRange::is_empty(self : LineRange) -> Bool {
 }
 
 ///|
-pub fn LineRange::delta(self : LineRange, offset : Int) -> LineRange {
+fn LineRange::delta(self : LineRange, offset : Int) -> LineRange {
   LineRange(
     self.start_line_number + offset,
     self.end_line_number_exclusive + offset,
@@ -72,31 +60,13 @@ pub fn LineRange::join(self : LineRange, other : LineRange) -> LineRange {
 }
 
 ///|
-/// Joins arrays of already sorted line ranges into one normalized array.
-/// Mirrors Monaco's `LineRange.joinMany` (`lineRange.ts:51-60`), including the
-/// empty-input early return and caller-array copies.
-pub fn LineRange::join_many(
-  line_ranges : Array[Array[LineRange]],
-) -> Array[LineRange] {
-  guard line_ranges is [first, ..] else { return [] }
-  let result = for
-    ranges in line_ranges[1:]
-    result = LineRangeSet(normalized_ranges=first.copy()) {
-    continue result.get_union(LineRangeSet(normalized_ranges=ranges.copy()))
-  } nobreak {
-    result
-  }
-  result.ranges()
-}
-
-///|
 pub fn LineRange::to_string(self : LineRange) -> String {
   "[\{self.start_line_number},\{self.end_line_number_exclusive})"
 }
 
 ///|
 /// Empty if the ranges touch but do not overlap; `None` if they don't touch.
-pub fn LineRange::intersect(self : LineRange, other : LineRange) -> LineRange? {
+fn LineRange::intersect(self : LineRange, other : LineRange) -> LineRange? {
   let start_line_number = self.start_line_number.max(other.start_line_number)
   let end_line_number_exclusive = self.end_line_number_exclusive.min(
     other.end_line_number_exclusive,
@@ -109,16 +79,13 @@ pub fn LineRange::intersect(self : LineRange, other : LineRange) -> LineRange? {
 }
 
 ///|
-pub fn LineRange::intersects_strict(
-  self : LineRange,
-  other : LineRange,
-) -> Bool {
+fn LineRange::intersects_strict(self : LineRange, other : LineRange) -> Bool {
   self.start_line_number < other.end_line_number_exclusive &&
   other.start_line_number < self.end_line_number_exclusive
 }
 
 ///|
-pub fn LineRange::intersects_or_touches(
+fn LineRange::intersects_or_touches(
   self : LineRange,
   other : LineRange,
 ) -> Bool {
@@ -133,7 +100,7 @@ pub fn LineRange::equals(self : LineRange, other : LineRange) -> Bool {
 
 ///|
 /// A normalized set of line ranges (sorted by start, none touching/overlapping).
-pub struct LineRangeSet {
+struct LineRangeSet {
   normalized_ranges : Array[LineRange]
 }
 
@@ -181,7 +148,7 @@ pub fn LineRangeSet::add_range(self : LineRangeSet, range : LineRange) -> Unit {
 }
 
 ///|
-pub fn LineRangeSet::contains(self : LineRangeSet, line_number : Int) -> Bool {
+fn LineRangeSet::contains(self : LineRangeSet, line_number : Int) -> Bool {
   match
     find_last_monotonous(self.normalized_ranges[:], r => {
       r.start_line_number <= line_number
@@ -192,7 +159,7 @@ pub fn LineRangeSet::contains(self : LineRangeSet, line_number : Int) -> Bool {
 }
 
 ///|
-pub fn LineRangeSet::intersects(self : LineRangeSet, range : LineRange) -> Bool {
+fn LineRangeSet::intersects(self : LineRangeSet, range : LineRange) -> Bool {
   match
     find_last_monotonous(self.normalized_ranges[:], r => {
       r.start_line_number < range.end_line_number_exclusive
@@ -203,7 +170,7 @@ pub fn LineRangeSet::intersects(self : LineRangeSet, range : LineRange) -> Bool 
 }
 
 ///|
-pub fn LineRangeSet::get_union(
+fn LineRangeSet::get_union(
   self : LineRangeSet,
   other : LineRangeSet,
 ) -> LineRangeSet {
@@ -257,7 +224,7 @@ pub fn LineRangeSet::get_union(
 }
 
 ///|
-pub fn LineRangeSet::to_string(self : LineRangeSet) -> String {
+fn LineRangeSet::to_string(self : LineRangeSet) -> String {
   [ for r in self.normalized_ranges => r.to_string() ].join(", ")
 }
 

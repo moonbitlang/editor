@@ -230,12 +230,12 @@ fn ViewZones::force_should_render(self : ViewZones) -> Unit {
 ///|
 /// Read-only ViewPart dirty-state query; the mutable flag itself remains
 /// source-private.
-pub fn ViewZones::should_render(self : ViewZones) -> Bool {
+fn ViewZones::should_render(self : ViewZones) -> Bool {
   self.should_render
 }
 
 ///|
-pub fn ViewZones::did_render(self : ViewZones) -> Unit {
+fn ViewZones::did_render(self : ViewZones) -> Unit {
   self.should_render = false
 }
 

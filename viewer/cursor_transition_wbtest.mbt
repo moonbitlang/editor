@@ -541,7 +541,12 @@ test "empty transition source falls back to keyboard" {
     viewer
     .test_view_model()
     .set_model_cursor_state(
-      @cursor.SingleCursorState::collapsed(Position(1, 2)),
+      @cursor.SingleCursorState(
+        Position(1, 2),
+        Position(1, 2),
+        Simple,
+        Position(1, 2),
+      ),
       "",
       NotSet,
     )

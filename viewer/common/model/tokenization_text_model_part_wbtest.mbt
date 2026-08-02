@@ -189,7 +189,7 @@ test "the sweep threads state across lines and encodes every line" {
 /// syntax, and blank-line tokens alike), and the packed metadata's low 8 bits
 /// equal the process-wide codec's numeric id. The `mtk<fg>` classes are
 /// unchanged — the language field is presentation-neutral.
-test "language id round-trips through the process-wide codec" {
+test "language id uses the process-wide codec id" {
   // A blank middle line exercises the empty-line token path; no tokenizer is
   // registered for this language, exercising the null-tokenization path too.
   let part = part_from_lines(
@@ -207,10 +207,6 @@ test "language id round-trips through the process-wide codec" {
         @common_tokens.METADATA_LANGUAGEID_OFFSET
       ) &
       0xffU).reinterpret_as_int()
-      assert_eq(
-        @services.language_id_codec.decode_language_id(language_id),
-        "part-null-language",
-      )
       assert_eq(language_id, expected_id)
     }
   }

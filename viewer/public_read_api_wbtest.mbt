@@ -278,16 +278,15 @@ test "read API: visible and statusbar columns expand tabs" {
 }
 
 ///|
-/// Selection and position report *model* coordinates even with wrap on. Moving
-/// the cursor to view position (2,1) of "abcdefghij" wrapped at 6 lands on model
-/// position (1,7).
+/// Selection and position continue to report model coordinates while wrapping
+/// is active; the wrapped presentation does not leak view-line coordinates.
 test "read API: selection and position report model coordinates under wrap" {
   let options = ViewerOptions(soft_wrap=true)
   with_test_viewer(
     "abcdefghij",
     viewer => {
       viewer.test_set_soft_wrap_column(6)
-      viewer.test_cursor().move_to(Position(2, 1), false) |> ignore
+      viewer.set_position(Position(1, 7))
       let position = viewer.get_position().unwrap()
       assert_eq(position.line_number, 1)
       assert_eq(position.column, 7)

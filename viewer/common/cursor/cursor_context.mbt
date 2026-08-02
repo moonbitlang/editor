@@ -29,7 +29,7 @@ pub fn CursorContext::CursorContext(
 
 ///|
 /// Converts a view position to its model position.
-pub fn CursorContext::view_to_model(
+fn CursorContext::view_to_model(
   self : CursorContext,
   position : @base_common.Position,
 ) -> @base_common.Position {
@@ -50,7 +50,7 @@ fn CursorContext::view_range_to_model(
 
 ///|
 /// Converts a model position to its view position.
-pub fn CursorContext::model_to_view(
+fn CursorContext::model_to_view(
   self : CursorContext,
   position : @base_common.Position,
 ) -> @base_common.Position {

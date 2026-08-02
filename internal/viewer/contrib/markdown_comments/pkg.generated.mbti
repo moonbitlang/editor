@@ -9,20 +9,12 @@ import {
 }
 
 // Values
-pub fn detect_markdown_comments(@model.TextModel, @languages.CommentRule) -> Array[@language.MarkdownCommentBlock]
-
-pub fn detect_markdown_comments_in_snapshot(@model.TextSnapshot, @languages.CommentRule) -> Array[@language.MarkdownCommentBlock]
-
-pub fn normalize_markdown_comment_blocks(Array[@language.MarkdownCommentBlock], Int, @log.LogHandle) -> Array[@language.MarkdownCommentBlock]
-
-pub fn resolve_markdown_comment_blocks(@model.TextModel, @languages.LanguageHandle, @log.LogHandle) -> Array[@language.MarkdownCommentBlock]
-
 pub fn resolve_markdown_comment_blocks_with_presentation(@model.TextModel, @languages.LanguageHandle, @log.LogHandle) -> ResolvedMarkdownCommentBlocks
 
 // Errors
 
 // Types and methods
-pub(all) struct ResolvedMarkdownCommentBlocks {
+pub struct ResolvedMarkdownCommentBlocks {
   blocks : Array[@language.MarkdownCommentBlock]
   foldable : Bool
 }

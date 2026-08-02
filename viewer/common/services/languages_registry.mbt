@@ -32,7 +32,7 @@ pub impl Debug for LanguageIdCodec with fn to_repr(self) {
 }
 
 ///|
-pub fn LanguageIdCodec::LanguageIdCodec() -> LanguageIdCodec {
+fn LanguageIdCodec::LanguageIdCodec() -> LanguageIdCodec {
   let codec = {
     language_id_to_language: [],
     language_to_language_id: Map([]),
@@ -47,7 +47,8 @@ pub fn LanguageIdCodec::LanguageIdCodec() -> LanguageIdCodec {
 ///|
 /// The process-wide codec instance, the role of Monaco's
 /// `LanguageService.languageIdCodec` (one `LanguagesRegistry` threads through
-/// every model). Isolated codecs remain constructible for tests.
+/// every model). Construction stays internal so all token users share one
+/// stable numeric mapping.
 pub let language_id_codec : LanguageIdCodec = LanguageIdCodec()
 
 ///|
@@ -81,7 +82,7 @@ pub fn LanguageIdCodec::encode_language_id(
 }
 
 ///|
-pub fn LanguageIdCodec::decode_language_id(
+fn LanguageIdCodec::decode_language_id(
   self : LanguageIdCodec,
   language_id : Int,
 ) -> String {

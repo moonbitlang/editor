@@ -2,7 +2,7 @@
 /// Mutable collector shared by nested `begin_view_event_batch` scopes.  Event
 /// order is the append order; only the outermost matching `end` dispatches the
 /// collected batch.
-struct ViewEventCollector {
+priv struct ViewEventCollector {
   view_events : Array[ViewEvent]
 }
 
@@ -12,7 +12,7 @@ fn ViewEventCollector::ViewEventCollector() -> ViewEventCollector {
 }
 
 ///|
-pub fn ViewEventCollector::emit(
+fn ViewEventCollector::emit(
   self : ViewEventCollector,
   event : ViewEvent,
 ) -> Unit {

@@ -38,7 +38,7 @@ pub fn PartFingerprint::to_int(self : PartFingerprint) -> Int {
 }
 
 ///|
-pub fn PartFingerprint::from_int(value : Int) -> PartFingerprint {
+fn PartFingerprint::from_int(value : Int) -> PartFingerprint {
   match value {
     1 => ContentWidgets
     2 => OverflowingContentWidgets

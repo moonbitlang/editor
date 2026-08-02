@@ -23,13 +23,13 @@ pub(all) struct ContextMenuWidgetCallbacks {
 }
 
 ///|
-priv struct ContextMenuItemNode {
+struct ContextMenuItemNode {
   wrapper : @rdom.Element
   action : @rdom.Element
 }
 
 ///|
-priv struct ContextMenuSubmenuView {
+struct ContextMenuSubmenuView {
   container : @rdom.Element
   entries : Array[ContextMenuEntry]
   item_nodes : Array[ContextMenuItemNode?]
@@ -106,9 +106,7 @@ pub fn ContextMenuWidget::is_visible(self : ContextMenuWidget) -> Bool {
 }
 
 ///|
-pub fn ContextMenuWidget::get_dom_node(
-  self : ContextMenuWidget,
-) -> @rdom.Element {
+fn ContextMenuWidget::get_dom_node(self : ContextMenuWidget) -> @rdom.Element {
   self.container
 }
 

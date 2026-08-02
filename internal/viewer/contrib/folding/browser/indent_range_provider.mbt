@@ -14,7 +14,7 @@ const MAX_FOLDING_REGIONS_FOR_INDENT_DEFAULT : Int = 5000
 
 ///|
 /// `ID_INDENT_PROVIDER` (`indentRangeProvider.ts:16`).
-pub const ID_INDENT_PROVIDER : String = "indent"
+const ID_INDENT_PROVIDER : String = "indent"
 
 ///|
 /// The indentation range provider — Monaco's `IndentRangeProvider`
@@ -42,13 +42,13 @@ pub fn IndentRangeProvider::IndentRangeProvider(
 }
 
 ///|
-pub fn IndentRangeProvider::id(self : IndentRangeProvider) -> String {
+fn IndentRangeProvider::id(self : IndentRangeProvider) -> String {
   ignore(self)
   ID_INDENT_PROVIDER
 }
 
 ///|
-pub fn IndentRangeProvider::dispose(self : IndentRangeProvider) -> Unit {
+fn IndentRangeProvider::dispose(self : IndentRangeProvider) -> Unit {
   ignore(self)
 }
 
@@ -78,8 +78,9 @@ pub fn IndentRangeProvider::compute(
 ///|
 /// Collects candidate ranges bottom-up and enforces the region limit by
 /// dropping the deepest indents first — Monaco's `RangesCollector`
-/// (`indentRangeProvider.ts:38`, "public only for testing").
-struct RangesCollector {
+/// (`indentRangeProvider.ts:38`). White-box tests exercise it without adding
+/// it to the package API.
+priv struct RangesCollector {
   start_indexes : Array[Int]
   end_indexes : Array[Int]
   indent_occurrences : Array[Int]
@@ -88,7 +89,7 @@ struct RangesCollector {
 }
 
 ///|
-pub fn RangesCollector::RangesCollector(
+fn RangesCollector::RangesCollector(
   folding_ranges_limit : FoldingLimitReporter,
 ) -> RangesCollector {
   {
@@ -103,7 +104,7 @@ pub fn RangesCollector::RangesCollector(
 ///|
 /// `insertFirst` (`indentRangeProvider.ts:53`). Ranges arrive innermost/last
 /// first; `toIndentRanges` reverses them into document order.
-pub fn RangesCollector::insert_first(
+fn RangesCollector::insert_first(
   self : RangesCollector,
   start_line_number : Int,
   end_line_number : Int,
@@ -128,7 +129,7 @@ pub fn RangesCollector::insert_first(
 /// `toIndentRanges` (`indentRangeProvider.ts:66`): under the limit, reverse
 /// into a `FoldingRegions`; over it, find the deepest indent level that
 /// still fits and keep only shallower regions.
-pub fn RangesCollector::to_indent_ranges(
+fn RangesCollector::to_indent_ranges(
   self : RangesCollector,
   model : @model.TextModel,
   tab_size? : Int = 4,
@@ -187,7 +188,7 @@ pub fn RangesCollector::to_indent_ranges(
 /// the sentinel, `-2` for an end-marker region), `end_above` the end line
 /// for the region above, `line` the start line (only used for marker
 /// regions).
-priv struct PreviousRegion {
+struct PreviousRegion {
   mut indent : Int
   mut end_above : Int
   mut line : Int
@@ -208,7 +209,7 @@ let folding_ranges_limit_default : FoldingLimitReporter = {
 /// contribute `#region`/`#endregion`-style ranges. Monaco's combined
 /// single-regex fast path collapses into the separate start/end probe order
 /// (start wins), which is its own fallback branch.
-pub fn compute_ranges(
+fn compute_ranges(
   model : @model.TextModel,
   off_side : Bool,
   markers? : @languages.FoldingMarkers,

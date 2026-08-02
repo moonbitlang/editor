@@ -283,11 +283,10 @@ test "marker participant isolates distinct live models sharing one URI" {
   let marker_decorations = @markers.MarkerDecorationsService(
     markers.marker_service_handle(),
   )
-  let lease_a = marker_decorations.acquire_model(model_a)
-  let lease_b = marker_decorations.acquire_model(model_b)
-  let participant = MarkerHoverParticipant(
-    marker_decorations.marker_decorations_handle(),
-  ).hover_participant_handle()
+  let marker_handle = marker_decorations.marker_decorations_handle()
+  let lease_a = marker_handle.acquire_model(model_a)
+  let lease_b = marker_handle.acquire_model(model_b)
+  let participant = MarkerHoverParticipant(marker_handle).hover_participant_handle()
 
   let compute = (model : @model.TextModel, column : Int) => {
     (participant.compute_sync)({

@@ -220,11 +220,11 @@ pub fn View::dispose(self : View) -> Unit {
 }
 
 ///|
-/// Starts a possibly nested view-event collection scope.  Every nested call
-/// returns the same collector; only the outermost matching `end` delivers its
-/// events.
-pub fn View::begin_view_event_batch(self : View) -> ViewEventCollector {
-  self.event_dispatcher.begin()
+/// Starts a possibly nested view-event collection scope. Every nested call
+/// shares the same package-private collector; only the outermost matching
+/// `end` delivers its events.
+pub fn View::begin_view_event_batch(self : View) -> Unit {
+  self.event_dispatcher.begin() |> ignore
 }
 
 ///|

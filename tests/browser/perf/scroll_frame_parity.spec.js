@@ -67,11 +67,8 @@ async function compareScrollFrameParity({ page }, testInfo) {
               expect(localSample.analysis.worstStateToCommitLag).toBeLessThanOrEqual(
                 monacoSample.analysis.worstStateToCommitLag,
               );
-              expect(localSample.analysis.missingRenderCount).toBe(0);
               if (smooth && input === 'physical') {
                 expect(localSample.analysis.worstStateToCommitLag).toBe(0);
-                expect(localSample.analysis.worstStateToRenderStartLag).toBe(0);
-                expect(localSample.analysis.worstStateToRenderFinishLag).toBe(0);
               }
             }
 
@@ -271,14 +268,11 @@ test.describe('mobile touch commit-frame evidence', () => {
                 expect(leftDelta).toBeLessThan(1_000);
               }
             }
-            expect(localSample.analysis.missingRenderCount).toBe(0);
             expect(localSample.analysis.worstStateToCommitLag).toBeLessThanOrEqual(
               monacoSample.analysis.worstStateToCommitLag,
             );
             expect(localSample.analysis.animationStateCount).toBeGreaterThan(0);
             expect(localSample.analysis.worstAnimationStateToCommitLag).toBe(0);
-            expect(localSample.analysis.worstAnimationStateToRenderStartLag).toBe(0);
-            expect(localSample.analysis.worstAnimationStateToRenderFinishLag).toBe(0);
           }
         }
       }

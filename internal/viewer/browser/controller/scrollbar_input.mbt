@@ -122,8 +122,8 @@ pub fn MouseHandler::handle_editor_wheel(
     shift_key=wheel.get_shift_key(),
   )
   let future = view_layout.future_position()
-  let desired = if standard_event.delta_y != 0.0 ||
-    standard_event.delta_x != 0.0 {
+  let desired = if standard_event.delta_y() != 0.0 ||
+    standard_event.delta_x() != 0.0 {
     view_layout.validate_scroll_position({
       scroll_left: if delta_left != 0.0 {
         Some(future.scroll_left + delta_left)
@@ -266,8 +266,9 @@ fn scrollbar_drag_orthogonal_coord(
 fn scrollbar_drag_should_reset(
   initial_orthogonal_coord : Double,
   current_orthogonal_coord : Double,
+  is_windows? : Bool = @base_common.platform_is_win32(),
 ) -> Bool {
-  @base_common.platform_is_win32() &&
+  is_windows &&
   (current_orthogonal_coord - initial_orthogonal_coord).abs() > 140.0
 }
 

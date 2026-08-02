@@ -30,19 +30,13 @@ pub let is_macintosh : Bool = host_platform == Mac
 pub let is_windows : Bool = host_platform == Windows
 
 ///|
-/// Monaco `platform.isLinux`.
-pub let is_linux : Bool = host_platform == Linux
-
-///|
 /// D8 test seam for the URI/path stack: `None` reads the host platform.
 let is_windows_override : Ref[Bool?] = { val: None }
 
 ///|
-/// Debug-only override so non-Windows CI exercises the win32 branches that
-/// `path.ts`/`uri.ts`/`resources.ts` gate on the global `isWindows`
-/// (Deviation D8 of the URI-system port). Call with no argument to restore
-/// the host platform.
-pub fn set_is_windows_for_testing(value? : Bool) -> Unit {
+/// White-box platform override for URI/path conformance tests. This is not a
+/// product capability and therefore does not enter the package interface.
+fn set_is_windows_for_testing(value? : Bool) -> Unit {
   is_windows_override.val = value
 }
 

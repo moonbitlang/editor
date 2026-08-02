@@ -84,29 +84,6 @@ fn Viewer::apply_selection(
 }
 
 ///|
-/// Sets all cursor selections — Monaco's `setSelections`
-/// (`codeEditorWidget.ts:832-849`). The viewer is single-selection (a
-/// documented scope cut, see `get_selections`), so the primary selection is
-/// applied and any secondaries are dropped. Like Monaco, an empty array is
-/// rejected as a no-op (Monaco throws an "Invalid arguments" error there; the
-/// readonly viewer's mutators never throw).
-pub fn Viewer::set_selections(
-  self : Viewer,
-  selections : Array[@core.Selection],
-  source? : String = "api",
-  reason? : @editor_api.CursorChangeReason = NotSet,
-) -> Unit {
-  guard selections.length() > 0 else { return }
-  guard self.is_code_presentation() else { return }
-  guard self.get_view_model() is Some(view_model) else { return }
-  let states = @cursor.CursorState::from_model_selections(selections)
-  // The source converts every selection in order before `setStates`; this
-  // readonly viewer then applies the first and drops secondaries at its
-  // documented single-cursor boundary.
-  view_model.set_cursor_state(Some(states[0]), source, reason) |> ignore
-}
-
-///|
 /// Browser-owned DOM mounted through these view contracts is not part of the
 /// model selection surface. The marker attributes are written by the browser
 /// View when it mounts each caller node, so descendants can be recognized

@@ -5,7 +5,7 @@
 
 ///|
 fn store_test_codec() -> @services.LanguageIdCodec {
-  let codec = @services.LanguageIdCodec()
+  let codec = @services.language_id_codec
   ignore(codec.register("store-top"))
   ignore(codec.register("store-embedded"))
   codec

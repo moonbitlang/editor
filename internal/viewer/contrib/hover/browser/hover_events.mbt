@@ -106,8 +106,31 @@ pub fn hover_on_event(
 /// typeof detail.horizontalDistanceToText === 'number' && … < epsilon`,
 /// with no lower bound: the distance is `>= 0` by construction). Candidates
 /// sort by descending priority. `target.range` is already model-space.
-pub fn find_anchor_candidates(
+fn find_anchor_candidates(
   participants : Array[@hover.HoverParticipantHandle],
+  target : @editor_browser.MouseTarget,
+  typical_halfwidth_character_width : Double,
+  initial_mouse_pos_x? : Double,
+  initial_mouse_pos_y? : Double,
+) -> Array[@hover.HoverAnchor] {
+  find_anchor_candidates_from_suggestions(
+    participants.map(participant => participant.suggest_hover_anchor),
+    target,
+    typical_halfwidth_character_width,
+    initial_mouse_pos_x?,
+    initial_mouse_pos_y?,
+  )
+}
+
+///|
+/// The callback-level core of `find_anchor_candidates`. Keeping this seam in
+/// the owning browser package lets white-box tests cover absent and present
+/// participant suggestions without making participant constructors or foreign
+/// anchor internals part of the public interface.
+fn find_anchor_candidates_from_suggestions(
+  suggestions : Array[
+    ((@view_model.InjectedText?, @base_common.Range, Double?, Double?) -> @hover.HoverAnchor?)?,
+  ],
   target : @editor_browser.MouseTarget,
   typical_halfwidth_character_width : Double,
   initial_mouse_pos_x? : Double,
@@ -119,8 +142,8 @@ pub fn find_anchor_candidates(
     _ => None
   }
   let target_range = target.range()
-  for participant in participants {
-    match (target_range, participant.suggest_hover_anchor) {
+  for suggestion in suggestions {
+    match (target_range, suggestion) {
       (Some(range), Some(suggest_hover_anchor)) =>
         match
           suggest_hover_anchor(

@@ -182,7 +182,7 @@ fn set_markdown_document_diagnostic(
   symbol : String,
   message : String,
 ) -> Unit {
-  match model.snapshot.text.find(symbol) {
+  match model.snapshot.get_value().find(symbol) {
     Some(start) =>
       markers.set_diagnostics("markdown-document", model.uri, [
         {
@@ -203,7 +203,7 @@ fn set_markdown_document_marker_policy_fixture(
   markers : @markers.MarkerService,
   model : @model.TextModel,
 ) -> Unit {
-  guard model.snapshot.text.find("markdown_answer") is Some(start) else {
+  guard model.snapshot.get_value().find("markdown_answer") is Some(start) else {
     return
   }
   let range = model.snapshot.range_of(

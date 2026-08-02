@@ -24,46 +24,6 @@ pub fn Viewer::on_mouse_down(
 }
 
 ///|
-/// Fires on editor mouseup with the hit-tested target — Monaco's
-/// `onMouseUp`.
-pub fn Viewer::on_mouse_up(
-  self : Viewer,
-  listener : (@editor_browser.EditorMouseEvent) -> Unit,
-) -> @base_common.Disposable {
-  self.did_mouse_up.event(listener)
-}
-
-///|
-/// Fires on editor mousemove with the hit-tested target — Monaco's
-/// `onMouseMove`.
-pub fn Viewer::on_mouse_move(
-  self : Viewer,
-  listener : (@editor_browser.EditorMouseEvent) -> Unit,
-) -> @base_common.Disposable {
-  self.did_mouse_move.event(listener)
-}
-
-///|
-/// Fires on an editor context-menu gesture with the hit-tested target —
-/// Monaco's `onContextMenu`.
-pub fn Viewer::on_context_menu(
-  self : Viewer,
-  listener : (@editor_browser.EditorMouseEvent) -> Unit,
-) -> @base_common.Disposable {
-  self.did_context_menu.event(listener)
-}
-
-///|
-/// Fires when the pointer leaves the editor — Monaco's `onMouseLeave`
-/// (`IPartialEditorMouseEvent`; the target is always `None` for leaves).
-pub fn Viewer::on_mouse_leave(
-  self : Viewer,
-  listener : (@editor_browser.PartialEditorMouseEvent) -> Unit,
-) -> @base_common.Disposable {
-  self.did_mouse_leave.event(listener)
-}
-
-///|
 /// The view→model target conversion applied at the public boundary —
 /// `ViewUserInputEvents._convertViewToModelMouseEvent`.
 fn Viewer::convert_mouse_target(
@@ -117,11 +77,11 @@ fn Viewer::emit_mouse_move(
   let converted = self.convert_mouse_target(target)
   self.did_mouse_move.fire({ event, target: converted })
   let client = event.pos.to_client_coordinates()
-  self.record_hover_pointer(client.client_x, client.client_y, {
-    ctrl: event.ctrl_key,
-    meta: event.meta_key,
-    alt: event.alt_key,
-  })
+  self.record_hover_pointer(
+    client.client_x,
+    client.client_y,
+    @hover.EventModifiers(event.ctrl_key, event.meta_key, event.alt_key),
+  )
   self.on_editor_mouse_move(converted)
 }
 

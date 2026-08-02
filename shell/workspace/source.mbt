@@ -1,7 +1,7 @@
 ///|
 /// Root-relative source path accepted from UI or protocol input after
 /// normalization rejects absolute paths, parent traversal, and NUL bytes.
-pub struct SourcePath {
+struct SourcePath {
   value : String
 } derive(Eq, Debug)
 

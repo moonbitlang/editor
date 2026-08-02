@@ -67,7 +67,7 @@ pub fn register_viewer(
 ///|
 /// Removes one viewer's controls and all of its testing listeners. Unknown or
 /// already-removed ids are no-ops.
-pub fn unregister_viewer(viewer_id : String) -> Unit {
+fn unregister_viewer(viewer_id : String) -> Unit {
   match viewer_entries.get(viewer_id) {
     Some(entry) => {
       viewer_entries.remove(viewer_id)
@@ -80,7 +80,7 @@ pub fn unregister_viewer(viewer_id : String) -> Unit {
 ///|
 /// Returns whether the registered viewer currently has a model. Missing ids
 /// are treated as detached/disposed viewers.
-pub fn has_model(viewer_id : String) -> Bool {
+fn has_model(viewer_id : String) -> Bool {
   match viewer_entries.get(viewer_id) {
     Some(entry) => (entry.has_model)()
     None => false
@@ -90,7 +90,7 @@ pub fn has_model(viewer_id : String) -> Bool {
 ///|
 /// Applies hidden areas through a registered viewer's private control seam.
 /// Returns `false` when the id has already been unregistered.
-pub fn set_hidden_areas(
+fn set_hidden_areas(
   viewer_id : String,
   ranges : Array[@base_common.Range],
   source? : String,
@@ -147,7 +147,7 @@ pub fn on_did_resolve_hover(
 ///|
 /// Subscribes to ordered scroll state/render observations for one registered
 /// viewer. Missing or unregistered ids return an inert disposable.
-pub fn on_did_observe_scroll_frame(
+fn on_did_observe_scroll_frame(
   viewer_id : String,
   listener : (ScrollFrameObservation) -> Unit,
 ) -> @base_common.Disposable {

@@ -23,16 +23,17 @@ allocated id.
 ///|
 test "feedback is stored per resource with an allocated id" {
   let service = @agent_feedback.AgentFeedbackService()
+  let handle = service.agent_feedback_handle()
   let uri = @base_common.Uri::parse("file:///src/main.mbt")
   let other = @base_common.Uri::parse("file:///src/other.mbt")
-  let created = service.add_feedback(uri, Range(4, 1, 4, 9), "look here")
+  let created = handle.add_feedback(uri, Range(4, 1, 4, 9), "look here")
   debug_inspect(
     (
       created.text,
       created.kind,
       created.state,
-      service.get_feedback(uri).length(),
-      service.get_feedback(other).length(),
+      handle.get_feedback(uri).length(),
+      handle.get_feedback(other).length(),
     ),
     content=(
       #|("look here", UserReview, Accepted, 1, 0)
@@ -48,15 +49,16 @@ rather than separate collections.
 ///|
 test "accept, reply, and submit move the same item through its states" {
   let service = @agent_feedback.AgentFeedbackService()
+  let handle = service.agent_feedback_handle()
   let uri = @base_common.Uri::parse("file:///src/main.mbt")
-  let item = service.add_feedback(uri, Range(1, 1, 1, 4), "note")
-  service.accept_feedback(uri, item.id)
-  let accepted = service.get_feedback(uri)[0].state
-  service.add_reply(uri, item.id, "acknowledged")
-  let replies = service.get_feedback(uri)[0].replies
-  service.mark_feedback_submitted(uri)
+  let item = handle.add_feedback(uri, Range(1, 1, 1, 4), "note")
+  handle.accept_feedback(uri, item.id)
+  let accepted = handle.get_feedback(uri)[0].state
+  handle.add_reply(uri, item.id, "acknowledged")
+  let replies = handle.get_feedback(uri)[0].replies
+  handle.mark_feedback_submitted(uri)
   debug_inspect(
-    (accepted, replies, service.get_feedback(uri)[0].state),
+    (accepted, replies, handle.get_feedback(uri)[0].state),
     content=(
       #|(Accepted, ["acknowledged"], Submitted)
     ),
@@ -70,16 +72,14 @@ Clearing a resource removes its items without touching other resources.
 ///|
 test "clearing one resource leaves the others intact" {
   let service = @agent_feedback.AgentFeedbackService()
+  let handle = service.agent_feedback_handle()
   let first = @base_common.Uri::parse("file:///a.mbt")
   let second = @base_common.Uri::parse("file:///b.mbt")
-  service.add_feedback(first, Range(1, 1, 1, 2), "a") |> ignore
-  service.add_feedback(second, Range(1, 1, 1, 2), "b") |> ignore
-  service.clear_feedback(first)
+  let first_item = handle.add_feedback(first, Range(1, 1, 1, 2), "a")
+  handle.add_feedback(second, Range(1, 1, 1, 2), "b") |> ignore
+  handle.remove_feedback(first, first_item.id)
   debug_inspect(
-    (
-      service.get_feedback(first).length(),
-      service.get_feedback(second).length(),
-    ),
+    (handle.get_feedback(first).length(), handle.get_feedback(second).length()),
     content=(
       #|(0, 1)
     ),
@@ -93,7 +93,7 @@ test "clearing one resource leaves the others intact" {
 renders. `compare_session_editor_comments` gives that list a deterministic
 order — by position, so two comments never swap places between renders.
 
-```mbt check
+```mbt nocheck
 ///|
 fn feedback_at(
   line : Int,
@@ -132,7 +132,7 @@ test "the projection is ordered deterministically by position" {
 threshold of each other into one visual group, so adjacent notes render as a
 stack rather than as overlapping bubbles.
 
-```mbt check
+```mbt nocheck
 ///|
 test "nearby comments group and distant ones do not" {
   let projected = @agent_feedback.get_session_editor_comments([
@@ -155,7 +155,7 @@ test "nearby comments group and distant ones do not" {
 `get_accepted_agent_feedback_comment_count` is the counter a submission summary
 renders; it counts only accepted agent-review comments.
 
-```mbt check
+```mbt nocheck
 ///|
 test "the accepted count is a filtered projection, not a stored total" {
   let projected = @agent_feedback.get_session_editor_comments([

@@ -12,17 +12,13 @@ import {
 // Errors
 
 // Types and methods
-pub(all) struct MarkdownCommentDom {
+pub struct MarkdownCommentDom {
   outer : @dom.Element
-  content : @dom.Element
   full : @dom.Element
   preview : @dom.Element
   source : @dom.Element
-  source_toggle : @dom.Element
-  toggle : @dom.Element
-  toggle_icon : @dom.Element
   margin : @dom.Element
-  margin_toggle : @dom.Element
+  // private fields
 }
 pub fn MarkdownCommentDom::MarkdownCommentDom(Int, Int) -> Self
 pub fn MarkdownCommentDom::disable_folding(Self) -> Unit

@@ -62,7 +62,7 @@ pub fn FontMeasurementsImpl::on_did_change(
 
 ///|
 /// Monaco `clearAllFontInfos`.
-pub fn FontMeasurementsImpl::clear_all_font_infos(
+fn FontMeasurementsImpl::clear_all_font_infos(
   self : FontMeasurementsImpl,
 ) -> Unit {
   self.cache.clear()

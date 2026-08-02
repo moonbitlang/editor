@@ -5,7 +5,7 @@
 /// check` push path (`MoonCheckDiagnostics`) instead of a pull provider.
 /// Remaining semantic features without a machine-readable `moon` query return
 /// empty results.
-pub(all) struct MoonWorkspaceLanguageProvider {
+struct MoonWorkspaceLanguageProvider {
   /// Shared with the host's workspace switching, so every request runs
   /// against the currently served root.
   root : Ref[String]

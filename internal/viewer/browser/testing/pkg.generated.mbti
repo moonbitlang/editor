@@ -8,11 +8,7 @@ import {
 }
 
 // Values
-pub fn has_model(String) -> Bool
-
 pub fn on_did_build_view_model(String, (ViewModelBuiltObservation) -> Unit) -> @common.Disposable
-
-pub fn on_did_observe_scroll_frame(String, (ScrollFrameObservation) -> Unit) -> @common.Disposable
 
 pub fn on_did_render_model(String, (ModelRenderedObservation) -> Unit) -> @common.Disposable
 
@@ -27,10 +23,6 @@ pub fn publish_scroll_frame(String, ScrollFramePhase, Double, Double) -> Unit
 pub fn publish_view_model_built(String, ViewModelBuiltObservation) -> Unit
 
 pub fn register_viewer(String, has_model~ : () -> Bool, set_hidden_areas~ : (Array[@common.Range], String?, Bool) -> Unit) -> @common.Disposable
-
-pub fn set_hidden_areas(String, Array[@common.Range], source? : String, force_update? : Bool) -> Bool
-
-pub fn unregister_viewer(String) -> Unit
 
 // Errors
 
@@ -47,13 +39,6 @@ pub(all) struct ModelRenderedObservation {
   patch_ms : Double
   fresh : Bool
 } derive(@debug.Debug)
-
-pub(all) struct ScrollFrameObservation {
-  viewer_id : String
-  phase : ScrollFramePhase
-  scroll_top : Double
-  scroll_left : Double
-} derive(Eq, @debug.Debug)
 
 pub(all) enum ScrollFramePhase {
   StateCommitted
