@@ -86,16 +86,15 @@ test "wrapping splits one model line into several view lines" {
   debug_inspect(
     (
       lines.get_view_line_count(),
-      (1)
-      .until(lines.get_view_line_count() + 1)
-      .map(view_line => {
-        (
-          view_line,
-          lines.get_view_line_content(view_line),
-          lines.model_line_number_of_view_line(view_line),
-        )
-      })
-      .collect(),
+      [
+        for view_line in 1..<=lines.get_view_line_count() => {
+          (
+            view_line,
+            lines.get_view_line_content(view_line),
+            lines.model_line_number_of_view_line(view_line),
+          )
+        }
+      ],
     ),
     content=(
       #|(

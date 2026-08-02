@@ -171,17 +171,16 @@ test "line tokens expose their consumer-facing full view" {
     (
       line.get_count(),
       line.get_line_content(),
-      (0)
-      .until(view.get_count())
-      .map(i => {
-        (
-          line.get_start_offset(i),
-          view.get_end_offset(i),
-          view.get_token_text(i),
-          view.get_class_name(i),
-        )
-      })
-      .collect(),
+      [
+        for i in 0..<view.get_count() => {
+          (
+            line.get_start_offset(i),
+            view.get_end_offset(i),
+            view.get_token_text(i),
+            view.get_class_name(i),
+          )
+        }
+      ],
     ),
     content=(
       #|(
@@ -229,7 +228,9 @@ test "injected text splices a new token" {
     (
       line.get_line_content(),
       with_hint.get_line_content(),
-      (0).until(view.get_count()).map(i => view.get_token_text(i)).collect(),
+      [
+        for i in 0..<view.get_count() => view.get_token_text(i)
+      ],
     ),
     content=(
       #|("value", "value : Int", ["value", " : Int"])

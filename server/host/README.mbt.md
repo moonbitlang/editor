@@ -86,15 +86,14 @@ test "diagnostics are grouped by remote URI and clipped to the root" {
     #|
   let grouped = @host.parse_moon_check_diagnostics("/workspace/demo", raw)
   debug_inspect(
-    grouped
-    .iter()
-    .map(entry => {
-      (
-        entry.0,
-        entry.1.map(diagnostic => (diagnostic.severity, diagnostic.range)),
-      )
-    })
-    .collect(),
+    [
+      for entry in grouped => {
+        (
+          entry.0,
+          entry.1.map(diagnostic => (diagnostic.severity, diagnostic.range)),
+        )
+      }
+    ],
     content=(
       #|[
       #|  (
