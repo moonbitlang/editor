@@ -279,12 +279,20 @@ test('the pinned toc bar outlines sections and navigation expands the chain', as
 
   // Rendered, collapsed to the summary row, and outside the article.
   await expect(page.locator(tocBar)).toHaveAttribute('data-toc-visible', 'true');
-  await expect(page.locator(tocToggle)).toContainText('4 sections');
+  await expect(page.locator(tocToggle)).toHaveText('Contents · 4');
+  await expect(page.locator(tocToggle)).toHaveAttribute(
+    'aria-label',
+    'Contents, 4 sections',
+  );
   await expect(page.locator(tocRow).first()).toBeHidden();
   const collapsedTocBox = await page.locator(tocBar).boundingBox();
+  const rootBox = await page.locator(root).boundingBox();
   const titleBox = await page.locator(`${article} > h1`).boundingBox();
   expect(collapsedTocBox).not.toBeNull();
+  expect(rootBox).not.toBeNull();
   expect(titleBox).not.toBeNull();
+  expect(collapsedTocBox.x).toBeGreaterThan(rootBox.x);
+  expect(collapsedTocBox.width).toBeLessThan(rootBox.width / 2);
   expect(titleBox.y).toBeGreaterThanOrEqual(
     collapsedTocBox.y + collapsedTocBox.height - 1,
   );
@@ -294,6 +302,12 @@ test('the pinned toc bar outlines sections and navigation expands the chain', as
   await expect(page.locator(tocToggle)).toHaveAttribute('aria-expanded', 'true');
   await expect(page.locator(tocRow)).toHaveCount(4);
   await expect(page.locator(tocRow).nth(3)).toHaveAttribute('data-toc-depth', '3');
+  const expandedTocBox = await page.locator(tocBar).boundingBox();
+  expect(expandedTocBox).not.toBeNull();
+  expect(expandedTocBox.width).toBeLessThanOrEqual(321);
+  expect(expandedTocBox.x + expandedTocBox.width).toBeLessThanOrEqual(
+    rootBox.x + rootBox.width - 7,
+  );
 
   // Keyboard navigation to a middle section collapses the overlay, restores
   // focus to its persistent toggle, and honors the viewport scroll inset.
