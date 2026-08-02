@@ -130,7 +130,7 @@ test "lines with unresolved feedback refuse the add glyph" {
       viewer.update_agent_feedback_hover_glyph(3)
       assert_eq(viewer.test_feedback_input_contribution().hover_line_number, -1)
       // Resolved feedback frees the line again.
-      service.set_feedback_resolved(test_model_uri(), item.id, true)
+      service.set_feedback_items(test_model_uri(), [{ ..item, state: Resolved }])
       viewer.update_agent_feedback_hover_glyph(3)
       assert_eq(viewer.test_feedback_input_contribution().hover_line_number, 3)
     },
@@ -340,6 +340,7 @@ test "feedback model swap removal and reattach preserve only Viewer-lifetime sta
 test "feedback disposal drains entries tears down model state and silences services" {
   let backings = RootTestServiceBackings::new()
   let service = backings.agent_feedback
+  let handle = service.agent_feedback_handle()
   let viewer = Viewer::Viewer(services=backings.services)
   let model = feedback_test_model(
     "/dispose",
@@ -364,10 +365,10 @@ test "feedback disposal drains entries tears down model state and silences servi
   let input_service_deliveries = Ref(0)
   let widget_service_deliveries = Ref(0)
   input_entry.listeners.push(
-    service.on_did_change_feedback(_ => input_service_deliveries.val += 1),
+    handle.on_did_change_feedback(_ => input_service_deliveries.val += 1),
   )
   widget_entry.listeners.push(
-    service.on_did_change_feedback(_ => widget_service_deliveries.val += 1),
+    handle.on_did_change_feedback(_ => widget_service_deliveries.val += 1),
   )
   assert_eq(input_entry.listeners.length(), 10)
   assert_eq(widget_entry.listeners.length(), 6)

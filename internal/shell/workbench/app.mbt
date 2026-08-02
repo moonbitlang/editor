@@ -128,6 +128,7 @@ priv struct WorkbenchServices {
   markers : @markers.MarkerService
   remote_language : RemoteLanguageFreshness
   agent_feedback : @agent_feedback.AgentFeedbackService
+  agent_feedback_handle : @agent_feedback_api.AgentFeedbackHandle
   log_service : @log.LogService
 }
 
@@ -149,12 +150,13 @@ fn workbench_services() -> WorkbenchServices {
       )
       let remote_language = RemoteLanguageFreshness(markers)
       let agent_feedback = @agent_feedback.AgentFeedbackService()
+      let agent_feedback_handle = agent_feedback.agent_feedback_handle()
       let location_opener = workbench_location_opener()
       let text_model_resolver = workbench_text_model_resolver()
       let viewer = @viewer.ViewerServices(
         languages=languages.language_handle(log_service.log_handle()),
         markers=MarkerStore(markers.marker_service_handle()),
-        agent_feedback=agent_feedback.agent_feedback_handle(),
+        agent_feedback=agent_feedback_handle,
         location_opener~,
         text_model_resolver~,
         log_service=log_service.log_handle(),
@@ -165,6 +167,7 @@ fn workbench_services() -> WorkbenchServices {
         markers,
         remote_language,
         agent_feedback,
+        agent_feedback_handle,
         log_service,
       }
       viewer_services_cell.val = Some(services)
