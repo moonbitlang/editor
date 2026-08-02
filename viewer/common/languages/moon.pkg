@@ -10,6 +10,8 @@ import {
 
 import {
   "moonbitlang/editor/language",
+  "moonbitlang/editor/syntax/lang_json",
+  "moonbitlang/editor/viewer/common/tokens",
   "moonbitlang/async",
 } for "test"
 
