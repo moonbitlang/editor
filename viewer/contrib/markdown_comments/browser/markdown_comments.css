@@ -277,7 +277,7 @@
   background: color-mix(
     in srgb,
     currentColor 7%,
-    var(--vscode-editor-background)
+    var(--vscode-editor-background, #ffffff)
   );
   color: var(--vscode-descriptionForeground, var(--vscode-editor-foreground));
 }

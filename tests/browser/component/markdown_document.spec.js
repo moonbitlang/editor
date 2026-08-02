@@ -473,6 +473,57 @@ test('presents Markdown blockquotes as subtle callouts', async ({ page }) => {
       3,
     );
   }
+
+  await page.evaluate(() => {
+    for (const theme of ['dark', 'light']) {
+      const root = document.createElement('div');
+      root.className = 'moonbit-viewer-markdown-document';
+      root.dataset.theme = theme;
+      root.dataset.fallbackCalloutRoot = theme;
+      const article = document.createElement('article');
+      article.className = 'moonbit-viewer-markdown-document-article';
+      const quote = document.createElement('blockquote');
+      quote.dataset.fallbackCallout = theme;
+      quote.textContent = `${theme} fallback callout`;
+      article.appendChild(quote);
+      root.appendChild(article);
+      document.body.appendChild(root);
+    }
+  });
+  for (const theme of ['dark', 'light']) {
+    const fallback = page.locator(`[data-fallback-callout="${theme}"]`);
+    const colors = await calloutColors(fallback);
+    expect(contrastRatio(colors.border, colors.background)).toBeGreaterThanOrEqual(
+      3,
+    );
+  }
+
+  await page.evaluate(() =>
+    globalThis.__markdownDocumentControls.resizeHost(320),
+  );
+  const nestedGeometry = await quote.evaluate((element) => {
+    const nested = element.querySelector('[data-nested-callout-probe="true"]');
+    const outerRect = element.getBoundingClientRect();
+    const outerStyle = getComputedStyle(element);
+    const nestedRect = nested.getBoundingClientRect();
+    const nestedStyle = getComputedStyle(nested);
+    return {
+      availableWidth: outerRect.width -
+        Number.parseFloat(outerStyle.borderLeftWidth) -
+        Number.parseFloat(outerStyle.paddingLeft) -
+        Number.parseFloat(outerStyle.paddingRight),
+      nestedWidth: nestedRect.width,
+      nestedContentWidth: nestedRect.width -
+        Number.parseFloat(nestedStyle.borderLeftWidth) -
+        Number.parseFloat(nestedStyle.paddingLeft) -
+        Number.parseFloat(nestedStyle.paddingRight),
+    };
+  });
+  expect(nestedGeometry.nestedWidth).toBeCloseTo(
+    nestedGeometry.availableWidth,
+    1,
+  );
+  expect(nestedGeometry.nestedContentWidth).toBeGreaterThan(150);
 });
 
 test('mounts zoom and drag controls for D2 and Mermaid in Markdown documents', async ({

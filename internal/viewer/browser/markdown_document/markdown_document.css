@@ -53,7 +53,17 @@
   background: color-mix(
     in srgb,
     currentColor 7%,
-    var(--vscode-editor-background)
+    var(--vscode-editor-background, #ffffff)
+  );
+}
+
+.moonbit-viewer-markdown-document[data-theme="dark"]
+  .moonbit-viewer-markdown-document-article
+  blockquote {
+  background: color-mix(
+    in srgb,
+    currentColor 7%,
+    var(--vscode-editor-background, #1e1e1e)
   );
 }
 
@@ -61,6 +71,10 @@
   max-width: var(--markdown-prose-measure);
   margin-inline: auto;
   padding-inline: 40px;
+}
+
+.moonbit-viewer-markdown-document-article blockquote blockquote {
+  margin-inline: 0;
 }
 
 .moonbit-viewer-markdown-document-article blockquote > :first-child {
