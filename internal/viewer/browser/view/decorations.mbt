@@ -30,7 +30,19 @@ struct DecorationOverlayPiece {
   /// (`_renderWholeLineDecorations`) rather than the normal pieces'
   /// `left:{n}px;…` (`_renderNormalDecoration`).
   whole_line : Bool
-} derive(Eq, Debug)
+} derive(Eq)
+
+///|
+/// Structural diagnostics without publishing an inherent `to_repr` method.
+pub impl Debug for DecorationOverlayPiece with fn to_repr(self) {
+  Repr::record({
+    "line_index": Repr(self.line_index),
+    "class_name": Repr(self.class_name),
+    "left": Repr(self.left),
+    "width": Repr(self.width),
+    "whole_line": Repr(self.whole_line),
+  })
+}
 
 ///|
 /// `prepareRender`'s filter + sort (`decorations.ts:67-113`): keep only

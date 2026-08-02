@@ -18,7 +18,13 @@ pub enum HoverAnchorType {
 /// handle cannot change anchor equality or adoption.
 struct HoverParticipantOwner {
   id : Int
-} derive(Eq, Debug)
+} derive(Eq)
+
+///|
+/// Structural diagnostics without publishing an inherent `to_repr` method.
+pub impl Debug for HoverParticipantOwner with fn to_repr(self) {
+  Repr::record({ "id": Repr(self.id) })
+}
 
 ///|
 let next_hover_participant_owner_id : Ref[Int] = Ref(0)

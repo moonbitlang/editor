@@ -334,7 +334,19 @@ struct HoverDebouncer {
   scheduled : Bool
   delay_ms : Int
   options : HoverOperationOptions?
-} derive(Eq, Debug)
+} derive(Eq)
+
+///|
+/// Structural diagnostics without publishing an inherent `to_repr` method.
+pub impl Debug for HoverDebouncer with fn to_repr(self) {
+  Repr::record({
+    "default_delay_ms": Repr(self.default_delay_ms),
+    "generation": Repr(self.generation),
+    "scheduled": Repr(self.scheduled),
+    "delay_ms": Repr(self.delay_ms),
+    "options": Repr(self.options),
+  })
+}
 
 ///|
 /// Creates an idle latest-options debouncer with a caller-selected fallback

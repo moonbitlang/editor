@@ -66,7 +66,43 @@ struct ViewerOptions {
   font_size : Double
   line_height : Double
   letter_spacing : Double
-} derive(Eq, Debug)
+} derive(Eq)
+
+///|
+/// Structural diagnostics without publishing an inherent `to_repr` method.
+pub impl Debug for ViewerOptions with fn to_repr(self) {
+  Repr::record({
+    "soft_wrap": Repr(self.soft_wrap),
+    "tab_size": Repr(self.tab_size),
+    "wrapping_indent": Repr(self.wrapping_indent),
+    "render_whitespace": Repr(self.render_whitespace),
+    "render_control_characters": Repr(self.render_control_characters),
+    "render_line_highlight": Repr(self.render_line_highlight),
+    "render_line_highlight_only_when_focus": Repr(
+      self.render_line_highlight_only_when_focus,
+    ),
+    "render_validation_decorations": Repr(self.render_validation_decorations),
+    "theme": Repr(self.theme),
+    "placeholder": Repr(self.placeholder),
+    "line_decorations_width": Repr(self.line_decorations_width),
+    "line_numbers_min_chars": Repr(self.line_numbers_min_chars),
+    "folding": Repr(self.folding),
+    "show_folding_controls": Repr(self.show_folding_controls),
+    "folding_highlight": Repr(self.folding_highlight),
+    "folding_maximum_regions": Repr(self.folding_maximum_regions),
+    "unfold_on_click_after_end_of_line": Repr(
+      self.unfold_on_click_after_end_of_line,
+    ),
+    "smooth_scrolling": Repr(self.smooth_scrolling),
+    "show_unused": Repr(self.show_unused),
+    "show_deprecated": Repr(self.show_deprecated),
+    "font_family": Repr(self.font_family),
+    "font_weight": Repr(self.font_weight),
+    "font_size": Repr(self.font_size),
+    "line_height": Repr(self.line_height),
+    "letter_spacing": Repr(self.letter_spacing),
+  })
+}
 
 ///|
 /// Builds viewer options, normalizing `tab_size` to at least one column.

@@ -22,6 +22,10 @@
   for contracts whose field visibility is intentionally public instead of
   spelling an opaque representation as a public struct with every field
   marked `priv`.
+- When an opaque public type needs `Debug`, write an explicit `pub impl Debug`
+  instead of `derive(Debug)`. Derivation publishes an inherent `to_repr`
+  method in addition to the trait implementation and unnecessarily expands the
+  opaque type's callable API.
 
 ## Tests
 

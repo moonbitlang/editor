@@ -75,9 +75,11 @@ pub(all) struct ContentWidgetsRenderContext {
   viewport_height : Double
 }
 
-type CursorRenderData derive(Eq, @debug.Debug)
+type CursorRenderData derive(Eq)
+pub impl @debug.Debug for CursorRenderData
 
-type DecorationOverlayPiece derive(Eq, @debug.Debug)
+type DecorationOverlayPiece derive(Eq)
+pub impl @debug.Debug for DecorationOverlayPiece
 
 type EditorScrollbar
 pub fn EditorScrollbar::content(Self) -> @dom.Element
