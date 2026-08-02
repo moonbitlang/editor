@@ -260,6 +260,38 @@ async function expectHoverCallCancelled(page, callId) {
     .toBe(true);
 }
 
+test('uses a restrained, stable Markdown type scale', async ({ page }) => {
+  await page.goto('/browser-tests/component.html?markdownDocument=1');
+  await page.waitForFunction(() =>
+    Boolean(globalThis.__markdownDocumentControls),
+  );
+
+  await page.locator(article).evaluate((articleNode) => {
+    document.documentElement.style.fontSize = '10px';
+    for (const level of [2, 3, 4, 5, 6]) {
+      const heading = document.createElement(`h${level}`);
+      heading.dataset.typeScaleProbe = String(level);
+      heading.textContent = `Heading ${level}`;
+      articleNode.appendChild(heading);
+    }
+  });
+
+  await expect(page.locator(article)).toHaveCSS('font-size', '16px');
+  await expect(page.locator(`${article} h1`)).toHaveCSS('font-size', '28px');
+  await expect(page.locator(`${article} h1`)).toHaveCSS('line-height', '33.6px');
+  for (const [level, fontSize] of [
+    [2, '22px'],
+    [3, '18px'],
+    [4, '16px'],
+    [5, '16px'],
+    [6, '16px'],
+  ]) {
+    await expect(
+      page.locator(`[data-type-scale-probe="${level}"]`),
+    ).toHaveCSS('font-size', fontSize);
+  }
+});
+
 test('mounts zoom and drag controls for D2 and Mermaid in Markdown documents', async ({
   page,
 }, testInfo) => {
