@@ -28,18 +28,18 @@ impl @log.Logger for WorkbenchLogger with fn flush(_self) {
 ///|
 fn log_entry_json(entry : @log.LogEntry) -> String {
   let mut payload = "{"
-  payload = payload + "\"level\":" + json_string(entry.level.label())
-  payload = payload + ",\"category\":" + json_string(entry.category)
-  payload = payload + ",\"message\":" + json_string(entry.message)
-  payload = payload + ",\"details\":{"
+  payload = "\{payload}\"level\":\{json_string(entry.level.label())}"
+  payload = "\{payload},\"category\":\{json_string(entry.category)}"
+  payload = "\{payload},\"message\":\{json_string(entry.message)}"
+  payload = "\{payload},\"details\":{"
   for index in 0..<entry.details.length() {
     if index > 0 {
-      payload = payload + ","
+      payload = "\{payload},"
     }
     let (key, value) = entry.details[index]
-    payload = payload + json_string(key) + ":" + json_string(value)
+    payload = "\{payload}\{json_string(key)}:\{json_string(value)}"
   }
-  payload = payload + "}}"
+  payload = "\{payload}}}"
   payload
 }
 
@@ -53,14 +53,14 @@ fn emit_render_event(
   build_ms : Double,
 ) -> Unit {
   let mut payload = "{"
-  payload = payload + "\"lineCount\":" + line_count.to_string()
-  payload = payload + ",\"tokenCount\":" + token_count.to_string()
-  payload = payload + ",\"diagnosticCount\":"
+  payload = "\{payload}\"lineCount\":\{line_count.to_string()}"
+  payload = "\{payload},\"tokenCount\":\{token_count.to_string()}"
+  payload = "\{payload},\"diagnosticCount\":"
   payload = payload + diagnostic_count.to_string()
-  payload = payload + ",\"revision\":" + json_string(revision)
-  payload = payload + ",\"tokenizeMs\":" + tokenize_ms.to_string()
-  payload = payload + ",\"buildMs\":" + build_ms.to_string()
-  payload = payload + "}"
+  payload = "\{payload},\"revision\":\{json_string(revision)}"
+  payload = "\{payload},\"tokenizeMs\":\{tokenize_ms.to_string()}"
+  payload = "\{payload},\"buildMs\":\{build_ms.to_string()}"
+  payload = "\{payload}}"
   emit_event("moonbit:render", payload)
 }
 
@@ -68,11 +68,7 @@ fn emit_render_event(
 fn emit_language_status(diagnostic_count : Int, revision : String) -> Unit {
   emit_event(
     "language:diagnostics",
-    "{\"count\":" +
-    diagnostic_count.to_string() +
-    ",\"revision\":" +
-    json_string(revision) +
-    "}",
+    "{\"count\":\{diagnostic_count.to_string()},\"revision\":\{json_string(revision)}}",
   )
 }
 
@@ -82,11 +78,7 @@ fn emit_language_status(diagnostic_count : Int, revision : String) -> Unit {
 fn emit_scroll_event(scroll_top : Double, scroll_left : Double) -> Unit {
   emit_event(
     "view:scroll",
-    "{\"scrollTop\":" +
-    scroll_top.to_string() +
-    ",\"scrollLeft\":" +
-    scroll_left.to_string() +
-    "}",
+    "{\"scrollTop\":\{scroll_top.to_string()},\"scrollLeft\":\{scroll_left.to_string()}}",
   )
 }
 
@@ -94,7 +86,7 @@ fn emit_scroll_event(scroll_top : Double, scroll_left : Double) -> Unit {
 fn emit_hover_status(ok : Bool, revision : String) -> Unit {
   emit_event(
     "language:hover",
-    "{\"ok\":" + ok.to_string() + ",\"revision\":" + json_string(revision) + "}",
+    "{\"ok\":\{ok.to_string()},\"revision\":\{json_string(revision)}}",
   )
 }
 
@@ -106,14 +98,14 @@ fn emit_dom_mounted(
   patch_ms~ : Double?,
 ) -> Unit {
   let mut payload = "{"
-  payload = payload + "\"renderedLines\":" + rendered_lines.to_string()
-  payload = payload + ",\"diagnostics\":" + diagnostics.to_string()
-  payload = payload + ",\"status\":" + json_string(status)
+  payload = "\{payload}\"renderedLines\":\{rendered_lines.to_string()}"
+  payload = "\{payload},\"diagnostics\":\{diagnostics.to_string()}"
+  payload = "\{payload},\"status\":\{json_string(status)}"
   match patch_ms {
-    Some(patch_ms) => payload = payload + ",\"patchMs\":" + patch_ms.to_string()
+    Some(patch_ms) => payload = "\{payload},\"patchMs\":\{patch_ms.to_string()}"
     None => ()
   }
-  payload = payload + "}"
+  payload = "\{payload}}"
   emit_event("dom:mounted", payload)
 }
 

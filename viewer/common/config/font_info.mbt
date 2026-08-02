@@ -153,7 +153,7 @@ pub fn BareFontInfo::create(
     if font_weight == "normal" || font_weight == "bold" {
       font_variation_settings = font_variation_off
     } else {
-      font_variation_settings = "'wght' " + parse_decimal_prefix(font_weight)
+      font_variation_settings = "'wght' \{parse_decimal_prefix(font_weight)}"
       font_weight = "normal"
     }
   }

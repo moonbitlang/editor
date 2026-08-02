@@ -272,14 +272,7 @@ fn get_editor_class_name(
   is_webkit_webview? : Bool = editor_browser_kind() == 2,
   is_macos? : Bool = @base_common.is_macintosh,
 ) -> String {
-  "monaco-editor moonbit-viewer readonly-editor" +
-  " " +
-  extra_editor_class_name(is_safari, is_webkit_webview, is_macos) +
-  (if show_unused { " showUnused" } else { "" }) +
-  (if show_deprecated { " showDeprecated" } else { "" }) +
-  " " +
-  source_state +
-  (if focused { " focused" } else { "" })
+  "monaco-editor moonbit-viewer readonly-editor \{extra_editor_class_name(is_safari, is_webkit_webview, is_macos)}\{(if show_unused { " showUnused" } else { "" })}\{(if show_deprecated { " showDeprecated" } else { "" })} \{source_state}\{(if focused { " focused" } else { "" })}"
 }
 
 ///|

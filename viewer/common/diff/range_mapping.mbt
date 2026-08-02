@@ -74,7 +74,7 @@ pub fn LineRangeMapping::inverse(
 
 ///|
 pub fn LineRangeMapping::to_string(self : LineRangeMapping) -> String {
-  "{" + self.original.to_string() + "->" + self.modified.to_string() + "}"
+  "{\{self.original.to_string()}->\{self.modified.to_string()}}"
 }
 
 ///|
@@ -130,7 +130,7 @@ pub fn DetailedLineRangeMapping::DetailedLineRangeMapping(
 pub fn DetailedLineRangeMapping::to_string(
   self : DetailedLineRangeMapping,
 ) -> String {
-  "{" + self.original.to_string() + "->" + self.modified.to_string() + "}"
+  "{\{self.original.to_string()}->\{self.modified.to_string()}}"
 }
 
 ///|
@@ -169,11 +169,7 @@ pub fn RangeMapping::RangeMapping(
 
 ///|
 pub fn RangeMapping::to_string(self : RangeMapping) -> String {
-  "{" +
-  self.original_range.to_string() +
-  "->" +
-  self.modified_range.to_string() +
-  "}"
+  "{\{self.original_range.to_string()}->\{self.modified_range.to_string()}}"
 }
 
 ///|

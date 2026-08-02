@@ -522,7 +522,7 @@ test "Limit by indent" {
       limit: () => max_entries,
       update: (_computed, limited) => reported.val = limited,
     })
-    guard indent_ranges.length() <= max_entries else { fail("max " + message) }
+    guard indent_ranges.length() <= max_entries else { fail("max \{message}") }
     let actual : Array[(Int, Int)] = []
     for i in 0..<indent_ranges.length() {
       actual.push(
@@ -541,7 +541,7 @@ test "Limit by indent" {
       Some(max_entries)
     }
     if reported.val != expected_reported {
-      fail("limited " + message)
+      fail("limited \{message}")
     }
   }
   assert_limit(1000, [r1, r2, r3, r4, r5, r6, r7, r8, r9], "1000")

@@ -161,7 +161,7 @@ fn reference_resolved_options(
       return reference.resolved_options
     }
   }
-  abort("missing resolved inline-decoration options for " + decoration.id)
+  abort("missing resolved inline-decoration options for \{decoration.id}")
 }
 
 ///|
@@ -418,7 +418,13 @@ test "all decoration types combined" {
 
 ///|
 test "decoration spanning multiple lines" {
-  let model = TestTextModel::create("line one\nline two\nline three")
+  let model = TestTextModel::create(
+    (
+      #|line one
+      #|line two
+      #|line three
+    ),
+  )
   let context : ReferenceInlineModelContext = {
     get_model_decorations: fn(_view_range, _a, _b) {
       [

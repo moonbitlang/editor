@@ -216,13 +216,9 @@ fn register_definition_contribution(
 ///|
 fn definition_menu_keybinding_label(alt~ : Bool, ctrl_cmd~ : Bool) -> String {
   if @base_common.is_macintosh {
-    (if alt { "\u{2325}" } else { "" }) +
-    (if ctrl_cmd { "\u{2318}" } else { "" }) +
-    "F12"
+    "\{(if alt { "\u{2325}" } else { "" })}\{(if ctrl_cmd { "\u{2318}" } else { "" })}F12"
   } else {
-    (if alt { "Alt+" } else { "" }) +
-    (if ctrl_cmd { "Ctrl+" } else { "" }) +
-    "F12"
+    "\{(if alt { "Alt+" } else { "" })}\{(if ctrl_cmd { "Ctrl+" } else { "" })}F12"
   }
 }
 

@@ -167,8 +167,8 @@ test "stabilized demand threads grammar state through the demanded final line" {
 test "windowed view-line reads stay passive while covering stored defaults" {
   let chunks = []
   for i in 0..<200 {
-    chunks.push("pub fn generated_value_" + i.to_string() + "() -> Int {")
-    chunks.push("  " + i.to_string())
+    chunks.push("pub fn generated_value_\{i.to_string()}() -> Int {")
+    chunks.push("  \{i.to_string()}")
     chunks.push("}")
   }
   let model = plain_text_model(chunks.join("\n"))

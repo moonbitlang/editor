@@ -47,7 +47,11 @@ test "real viewport uses one batch, one passive read per projected model line, a
     "viewport-counting",
     1,
     "viewport-batch",
-    "abcdefghij\nklmn\nopqr",
+    (
+      #|abcdefghij
+      #|klmn
+      #|opqr
+    ),
   )
   let view_model = ViewModel::with_options(
     model,

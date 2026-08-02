@@ -1,8 +1,18 @@
 ///|
 fn semantic_test_block(info_string : String?) -> MarkdownCodeBlock {
   let source = match info_string {
-    Some(info_string) => "```" + info_string + "\nx\n```"
-    None => "```\nx\n```"
+    Some(info_string) =>
+      (
+        $|```\{info_string}
+        $|x
+        $|```
+      )
+    None =>
+      (
+        #|```
+        #|x
+        #|```
+      )
   }
   render_markdown(source).projection.code_blocks[0]
 }

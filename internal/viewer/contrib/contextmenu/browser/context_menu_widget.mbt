@@ -1022,12 +1022,12 @@ fn set_context_menu_position(
   @base_browser.set_style_property(
     element,
     "left",
-    position.x.to_string() + "px",
+    "\{position.x.to_string()}px",
   )
   @base_browser.set_style_property(
     element,
     "top",
-    position.y.to_string() + "px",
+    "\{position.y.to_string()}px",
   )
 }
 

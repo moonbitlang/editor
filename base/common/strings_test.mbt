@@ -48,5 +48,14 @@ test "splitLines (strings.ts:251)" {
   // A trailing newline yields a trailing empty line, like the JS split.
   assert_eq(split_lines("a\n").length(), 2)
   assert_eq(split_lines("a\n")[1], "")
-  assert_eq(split_lines("\n\n").length(), 3)
+  assert_eq(
+    split_lines(
+      (
+        #|
+        #|
+        #|
+      ),
+    ).length(),
+    3,
+  )
 }

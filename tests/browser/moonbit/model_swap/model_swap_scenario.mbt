@@ -44,7 +44,7 @@ fn swap_model(name : String, marker : String) -> @model.TextModel {
     try! @base_common.Uri::from(
       scheme="inmemory",
       authority="model",
-      path="/" + name,
+      path="/\{name}",
     ),
     name,
     "plaintext",
@@ -312,11 +312,7 @@ fn wait_for_text(
   }
   if remaining <= 0 {
     ctx.fail(
-      "timed out waiting for text: " +
-      needle +
-      " (saw: " +
-      @support.query_text(".viewer-host") +
-      ")",
+      "timed out waiting for text: \{needle} (saw: \{@support.query_text(".viewer-host")})",
     )
     ctx.finish()
     return

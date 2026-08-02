@@ -10,7 +10,13 @@ fn join_token_text(line : @view_model.ViewLineData) -> String {
 
 ///|
 test "view lines carry highlighted spans covering the line text" {
-  let model = plain_text_model("fn main { // TODO\n  let x = 1\n}")
+  let model = plain_text_model(
+    (
+      #|fn main { // TODO
+      #|  let x = 1
+      #|}
+    ),
+  )
   let view_model = @view_model.ViewModel(model)
   let line = view_model.lines().get_view_line_data(1)
   assert_true(line.tokens.get_count() > 0)
@@ -20,7 +26,16 @@ test "view lines carry highlighted spans covering the line text" {
 ///|
 test "windowed viewport data matches the matching slice of a whole-document build" {
   let model = plain_text_model(
-    "fn main { // TODO\n  let x = 1\n  let y = 2\n}\n\nfn other {\n  3\n}",
+    (
+      #|fn main { // TODO
+      #|  let x = 1
+      #|  let y = 2
+      #|}
+      #|
+      #|fn other {
+      #|  3
+      #|}
+    ),
   )
   let view_model = @view_model.ViewModel(model)
   let whole = @view_model.viewport_data_from_view_model(
@@ -48,7 +63,13 @@ test "windowed viewport data matches the matching slice of a whole-document buil
 
 ///|
 test "window bounds clamp to the document" {
-  let model = plain_text_model("a\nb\nc")
+  let model = plain_text_model(
+    (
+      #|a
+      #|b
+      #|c
+    ),
+  )
   let view_model = @view_model.ViewModel(model)
   debug_inspect(
     view_model.clamp_window({ start: -5, end: 99 }),

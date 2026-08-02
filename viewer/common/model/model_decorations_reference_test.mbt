@@ -55,15 +55,7 @@ fn create_text_model(text : String) -> @model.TextModel {
 ///|
 /// The suite's shared five-line model text.
 fn create_this_model() -> @model.TextModel {
-  let text = "My First Line" +
-    "\r\n" +
-    "\t\tMy Second Line" +
-    "\n" +
-    "    Third Line" +
-    "\n" +
-    "" +
-    "\r\n" +
-    "1"
+  let text = "My First Line\r\n\t\tMy Second Line\n    Third Line\n\r\n1"
   create_text_model(text)
 }
 

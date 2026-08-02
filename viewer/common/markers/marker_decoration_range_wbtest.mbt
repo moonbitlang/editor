@@ -48,7 +48,13 @@ fn wb_range_model(text : String) -> @model.TextModel {
 
 ///|
 test "create_decoration_range branch 1: hint truncated to start line +2" {
-  let model = wb_range_model("hello world\nsecond\nthird")
+  let model = wb_range_model(
+    (
+      #|hello world
+      #|second
+      #|third
+    ),
+  )
   // multi-line hint, no tags → single line, endColumn = startColumn + 2
   let marker = make_marker(Hint, 1, 3, 3, 5)
   assert_true(create_decoration_range(model, marker) == Range(1, 3, 1, 5))
@@ -63,7 +69,13 @@ test "create_decoration_range branch 3: empty range expands to word" {
 
 ///|
 test "create_decoration_range branch 3: empty range on empty line kept 1ch" {
-  let model = wb_range_model("hello\n\nworld")
+  let model = wb_range_model(
+    (
+      #|hello
+      #|
+      #|world
+    ),
+  )
   let marker = make_marker(Error, 2, 1, 2, 1)
   assert_true(create_decoration_range(model, marker) == Range(2, 1, 2, 1))
 }

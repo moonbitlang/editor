@@ -28,7 +28,7 @@ pub struct SessionEditorComment {
 /// `agentFeedback` — kept so anchors stay distinct from raw feedback ids and
 /// stable if another source ever lands.
 pub fn to_session_editor_comment_id(source_id : String) -> String {
-  "agentFeedback:" + source_id
+  "agentFeedback:\{source_id}"
 }
 
 ///|

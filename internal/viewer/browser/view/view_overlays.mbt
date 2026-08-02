@@ -156,15 +156,7 @@ fn ViewOverlayLine::render_line(
   }
   self.rendered_content = Some(content)
   builder.write_string(
-    "<div style=\"top:" +
-    delta_top.to_string() +
-    "px;height:" +
-    line_height.to_string() +
-    "px;line-height:" +
-    line_height.to_string() +
-    "px;\">" +
-    content +
-    "</div>",
+    "<div style=\"top:\{delta_top.to_string()}px;height:\{line_height.to_string()}px;line-height:\{line_height.to_string()}px;\">\{content}</div>",
   )
   true
 }
@@ -253,7 +245,7 @@ fn ViewOverlays::render_focused_class(
 ) -> Unit {
   let element = self.dom_node.element()
   let class_name = if self.is_focused {
-    base_class_name + " focused"
+    "\{base_class_name} focused"
   } else {
     base_class_name
   }

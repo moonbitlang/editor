@@ -88,8 +88,7 @@ fn poll_reveal(
     ctx.finish()
   } else if remaining <= 0 {
     ctx.fail(
-      "timed out waiting for the deferred horizontal reveal to scroll right" +
-      " (scroll_left=\{last_scroll_left.val}, scroll_top=\{last_scroll_top.val})",
+      "timed out waiting for the deferred horizontal reveal to scroll right (scroll_left=\{last_scroll_left.val}, scroll_top=\{last_scroll_top.val})",
     )
     done.val = true
     ctx.finish()

@@ -134,10 +134,7 @@ fn MermaidRuntime::next_id(
 ) -> String {
   while true {
     self.next_diagram_id += 1
-    let id = "moonbit-markdown-mermaid-" +
-      self.id_nonce +
-      "-" +
-      self.next_diagram_id.to_string()
+    let id = "moonbit-markdown-mermaid-\{self.id_nonce}-\{self.next_diagram_id.to_string()}"
     if mermaid_id_is_available(owner_document, id) {
       return id
     }

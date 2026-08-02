@@ -117,7 +117,7 @@ test "set_value 4x4 EOL transitions cover normalized-equal and changed lanes" {
 /// use the same normalized range/length/event contract as any other code unit.
 test "set_value keeps BOM as ordinary content when adding and removing it" {
   let bom = "\u{FEFF}"
-  let model = wb_model(bom + "a\r\nb")
+  let model = wb_model("\{bom}a\r\nb")
   let events : Array[ModelContentChangedEvent] = []
   let _sub = model.on_did_change_content(e => events.push(e))
   let old_range = model.get_full_model_range()
@@ -128,11 +128,11 @@ test "set_value keeps BOM as ordinary content when adding and removing it" {
   assert_eq(events[0].changes[0].range_length, old_length)
   assert_eq(events[0].changes[0].text, "a\nb")
   assert_eq(model.get_value(), "a\nb")
-  model.set_value(bom + "a\rb")
+  model.set_value("\{bom}a\rb")
   assert_eq(events.length(), 2)
   assert_eq(events[1].changes[0].range_length, "a\nb".length())
-  assert_eq(events[1].changes[0].text, bom + "a\nb")
-  assert_eq(model.get_value(), bom + "a\nb")
+  assert_eq(events[1].changes[0].text, "\{bom}a\nb")
+  assert_eq(model.get_value(), "\{bom}a\nb")
   assert_eq(model.might_contain_non_basic_ascii(), true)
 }
 
@@ -140,13 +140,32 @@ test "set_value keeps BOM as ordinary content when adding and removing it" {
 test "set_value bumps the version id and swaps the snapshot" {
   let model = wb_model("alpha\nbravo")
   assert_eq(model.get_version_id(), 1)
-  model.set_value("x\ny\nz")
+  model.set_value(
+    (
+      #|x
+      #|y
+      #|z
+    ),
+  )
   assert_eq(model.get_version_id(), 2)
-  assert_eq(model.get_value(), "x\ny\nz")
+  assert_eq(
+    model.get_value(),
+    (
+      #|x
+      #|y
+      #|z
+    ),
+  )
   assert_eq(model.get_line_count(), 3)
   // identical content still flushes (the no-op early return is the host's,
   // per modelService.ts:370-373)
-  model.set_value("x\ny\nz")
+  model.set_value(
+    (
+      #|x
+      #|y
+      #|z
+    ),
+  )
   assert_eq(model.get_version_id(), 3)
 }
 
@@ -175,7 +194,13 @@ test "set_value emits one full-range public change with isFlush" {
   let model = wb_model("alpha\nbravo")
   let events : Array[ModelContentChangedEvent] = []
   let _sub = model.on_did_change_content(e => events.push(e))
-  model.set_value("x\ny\nz")
+  model.set_value(
+    (
+      #|x
+      #|y
+      #|z
+    ),
+  )
   assert_eq(events.length(), 1)
   let e = events[0]
   assert_eq(e.is_flush, true)
@@ -191,7 +216,14 @@ test "set_value emits one full-range public change with isFlush" {
   assert_eq(change.range_offset, 0)
   assert_eq(change.range_length, "alpha\nbravo".length())
   // the text is the NEW full value (read after the buffer swap)
-  assert_eq(change.text, "x\ny\nz")
+  assert_eq(
+    change.text,
+    (
+      #|x
+      #|y
+      #|z
+    ),
+  )
 }
 
 ///|
@@ -207,7 +239,13 @@ test "set_value re-seeds visible token state without a full reset event" {
   let _sub = model.on_did_change_tokens(e => {
     to_lines.push(e.ranges[0].to_line_number)
   })
-  model.set_value("one\ntwo\nthree")
+  model.set_value(
+    (
+      #|one
+      #|two
+      #|three
+    ),
+  )
   // The shared model state sees the NEW line count before flush handling, while
   // the internal reset suppresses its whole-document event. The retained
   // visible range is refreshed and reports only lines one through two.

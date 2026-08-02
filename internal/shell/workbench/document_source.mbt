@@ -226,7 +226,7 @@ fn route_watched_error_cmd(
             try! @base_common.Uri::from(
               scheme=@base_common.schemas_in_memory,
               authority="model",
-              path="/" + uri_key,
+              path="/\{uri_key}",
             )
         }
         let document_error = match uri {

@@ -10,14 +10,14 @@ test "crossing in-flight responses resolve their own requests" {
   let resolved : Array[String] = []
   pending_requests[first] = {
     resolve: packet => {
-      resolved.push("first<-" + server_packet_request_id(packet))
+      resolved.push("first<-\{server_packet_request_id(packet)}")
     },
     cancellation_subscription: None,
     sent: false,
   }
   pending_requests[second] = {
     resolve: packet => {
-      resolved.push("second<-" + server_packet_request_id(packet))
+      resolved.push("second<-\{server_packet_request_id(packet)}")
     },
     cancellation_subscription: None,
     sent: false,
@@ -139,7 +139,7 @@ test "send failure resumes every pending request without waiting for Closed" {
   let pending = id => PendingProtocolRequest::{
     resolve: packet => {
       match packet {
-        RemoteError(error) => messages.push(id + ":" + error.message)
+        RemoteError(error) => messages.push("\{id}:\{error.message}")
         _ => unexpected_packet.val = true
       }
     },
@@ -161,6 +161,6 @@ test "send failure resumes every pending request without waiting for Closed" {
   assert_eq(subscription_disposals.val, 2)
   assert_false(unexpected_packet.val)
   assert_eq(messages.length(), 2)
-  assert_true(messages.contains(first + ":WebSocket send failed."))
-  assert_true(messages.contains(second + ":WebSocket send failed."))
+  assert_true(messages.contains("\{first}:WebSocket send failed."))
+  assert_true(messages.contains("\{second}:WebSocket send failed."))
 }

@@ -1,6 +1,14 @@
 ///|
 test "hidden areas collect recovery scroll before mapping delivery" {
-  let source = "one\ntwo\nthree\nfour\nfive\nsix\nseven\neight"
+  let source =
+    #|one
+    #|two
+    #|three
+    #|four
+    #|five
+    #|six
+    #|seven
+    #|eight
   with_mounted_test_viewer(source, viewer => {
     guard viewer.model_slot.current is Some(model_data) else {
       fail("mounted model data missing")

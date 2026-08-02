@@ -320,20 +320,13 @@ fn prepare_decorations_render(
     let style = if piece.whole_line {
       "left:0;width:100%;"
     } else {
-      "left:" +
-      piece.left.to_string() +
-      "px;width:" +
-      (match piece.width {
-        Some(width) => width.to_string() + "px;"
+      let width = match piece.width {
+        Some(width) => "\{width.to_string()}px;"
         None => "100%;"
-      })
+      }
+      "left:\{piece.left.to_string()}px;width:\{width}"
     }
-    output[piece.line_index] = output[piece.line_index] +
-      "<div class=\"cdr " +
-      piece.class_name +
-      "\" style=\"" +
-      style +
-      "\"></div>"
+    output[piece.line_index] = "\{output[piece.line_index]}<div class=\"cdr \{piece.class_name}\" style=\"\{style}\"></div>"
   }
   output
 }

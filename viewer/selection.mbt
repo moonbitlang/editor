@@ -204,9 +204,7 @@ fn selection_rich_text_to_copy(
   selection : @core.Selection,
   snapshot : @model.TextSnapshot,
 ) -> String {
-  "<pre class=\"readonly-editor-copy\">" +
-  escape_copy_html(selection_plain_text_to_copy(selection, snapshot)) +
-  "</pre>"
+  "<pre class=\"readonly-editor-copy\">\{escape_copy_html(selection_plain_text_to_copy(selection, snapshot))}</pre>"
 }
 
 ///|
@@ -239,29 +237,7 @@ fn get_rich_text_to_copy(
   font_info : @config.FontInfo,
 ) -> String {
   let color_map = @model.default_token_color_map()
-  "<div style=\"" +
-  "color: " +
-  color_map[1] +
-  ";" +
-  "background-color: " +
-  color_map[2] +
-  ";" +
-  "font-family: " +
-  font_info.bare().get_massaged_font_family() +
-  ";" +
-  "font-weight: " +
-  font_info.font_weight +
-  ";" +
-  "font-size: " +
-  font_info.font_size.to_string() +
-  "px;" +
-  "line-height: " +
-  font_info.line_height.to_string() +
-  "px;" +
-  "white-space: pre;" +
-  "\">" +
-  get_html_to_copy(model, model_range, color_map) +
-  "</div>"
+  "<div style=\"color: \{color_map[1]};background-color: \{color_map[2]};font-family: \{font_info.bare().get_massaged_font_family()};font-weight: \{font_info.font_weight};font-size: \{font_info.font_size.to_string()}px;line-height: \{font_info.line_height.to_string()}px;white-space: pre;\">\{get_html_to_copy(model, model_range, color_map)}</div>"
 }
 
 ///|

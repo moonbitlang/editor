@@ -488,7 +488,7 @@ fn Widget::apply_max_width(self : Widget) -> Unit {
   @base_browser.set_style_property(
     self.dom_node,
     "max-width",
-    self.max_width.to_string() + "px",
+    "\{self.max_width.to_string()}px",
   )
 }
 
@@ -921,12 +921,12 @@ fn Widget::render(
       @base_browser.set_style_property(
         self.dom_node,
         "top",
-        top.to_string() + "px",
+        "\{top.to_string()}px",
       )
       @base_browser.set_style_property(
         self.dom_node,
         "left",
-        coordinate.left.to_string() + "px",
+        "\{coordinate.left.to_string()}px",
       )
       if !self.is_visible {
         @base_browser.set_style_property(self.dom_node, "visibility", "inherit")

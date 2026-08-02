@@ -59,8 +59,8 @@ async test "filesystem provider reads document snapshots by uri" {
       assert_eq(document.text, "pub fn main {}\n")
     }
     DocumentReadFailed(error) =>
-      fail("unexpected provider error " + error.message)
-    DocumentNotFound(uri) => fail("unexpected not found " + uri.to_string())
+      fail("unexpected provider error \{error.message}")
+    DocumentNotFound(uri) => fail("unexpected not found \{uri.to_string()}")
   }
 }
 
@@ -72,8 +72,8 @@ async test "filesystem provider rejects mismatched schemes" {
   match @workspace.read_document(provider, uri) {
     DocumentReadFailed(error) => assert_true(error.code == InvalidUri)
     DocumentLoaded(document) =>
-      fail("unexpected document " + document.uri.to_string())
-    DocumentNotFound(uri) => fail("unexpected not found " + uri.to_string())
+      fail("unexpected document \{document.uri.to_string()}")
+    DocumentNotFound(uri) => fail("unexpected not found \{uri.to_string()}")
   }
 }
 
@@ -121,7 +121,7 @@ test "document snapshot owns identity and text helpers" {
 fn expect_path(raw_path : String) -> @workspace.SourcePath raise {
   match @workspace.SourcePath::normalize_root_relative_path(raw_path) {
     ParsedSourcePath(path) => path
-    SourcePathError(error) => fail("unexpected path error " + error.to_string())
+    SourcePathError(error) => fail("unexpected path error \{error.to_string()}")
   }
 }
 
@@ -132,7 +132,7 @@ fn expect_path_error(
 ) -> Unit raise {
   match @workspace.SourcePath::normalize_root_relative_path(raw_path) {
     SourcePathError(error) => assert_true(error == expected)
-    ParsedSourcePath(path) => fail("unexpected path " + path.to_string())
+    ParsedSourcePath(path) => fail("unexpected path \{path.to_string()}")
   }
 }
 

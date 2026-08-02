@@ -71,8 +71,7 @@ struct MarkdownDocumentView {
 
 ///|
 fn markdown_document_root_class(show_unused : Bool) -> String {
-  "moonbit-viewer-markdown-document" +
-  (if show_unused { " showUnused" } else { "" })
+  "moonbit-viewer-markdown-document\{(if show_unused { " showUnused" } else { "" })}"
 }
 
 ///|
@@ -295,11 +294,12 @@ fn render_markdown_document_code_block(
   }
   let body = match code_block.language_id {
     Some("mermaid") =>
-      "<div class=\"moonbit-viewer-markdown-diagram\" " +
-      "data-diagram-language=\"mermaid\" " +
-      "data-mermaid-state=\"fallback\">\n" +
-      tokenized +
-      "\n</div>\n"
+      (
+        $|<div class="moonbit-viewer-markdown-diagram" data-diagram-language="mermaid" data-mermaid-state="fallback">
+        $|\{tokenized}
+        $|</div>
+        $|
+      )
     _ => tokenized
   }
   let semantic_attribute = if code_block.is_moonbit_check_fence(resource_kind) {
@@ -307,12 +307,11 @@ fn render_markdown_document_code_block(
   } else {
     ""
   }
-  "<div class=\"moonbit-viewer-markdown-code-block\" " +
-  "data-markdown-code-block=\"\{code_block.block_index}\"" +
-  semantic_attribute +
-  ">\n" +
-  body +
-  "</div>\n"
+  (
+    $|<div class="moonbit-viewer-markdown-code-block" data-markdown-code-block="\{code_block.block_index}"\{semantic_attribute}>
+    $|\{body}</div>
+    $|
+  )
 }
 
 ///|
@@ -348,12 +347,7 @@ fn render_semantic_tokenized_code_lines(
       result.write_string("<br/>")
     }
     result.write_string(
-      "<span class=\"moonbit-viewer-markdown-code-line\" " +
-      "data-markdown-block-index=\"\{code_block.block_index}\" " +
-      "data-markdown-code-line=\"\{line_index}\" " +
-      "data-markdown-source-line=\"\{code_line.source_line_number}\" " +
-      "data-markdown-source-start=\"\{code_line.source_range.start}\" " +
-      "data-markdown-source-end=\"\{code_line.source_range.end_exclusive}\">",
+      "<span class=\"moonbit-viewer-markdown-code-line\" data-markdown-block-index=\"\{code_block.block_index}\" data-markdown-code-line=\"\{line_index}\" data-markdown-source-line=\"\{code_line.source_line_number}\" data-markdown-source-start=\"\{code_line.source_range.start}\" data-markdown-source-end=\"\{code_line.source_range.end_exclusive}\">",
     )
     result.write_string(rendered_lines[line_index])
     result.write_string("</span>")

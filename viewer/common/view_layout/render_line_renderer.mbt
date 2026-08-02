@@ -677,7 +677,7 @@ fn apply_inline_decorations(
         last_result_end_index = decoration.end_offset + 1
         result.push({
           end_index: last_result_end_index,
-          class_name: token_type + " " + decoration.class_name,
+          class_name: "\{token_type} \{decoration.class_name}",
           metadata: token_metadata | decoration.metadata,
           contains_rtl: token_contains_rtl,
         })
@@ -686,7 +686,7 @@ fn apply_inline_decorations(
         last_result_end_index = token_end_index
         result.push({
           end_index: last_result_end_index,
-          class_name: token_type + " " + decoration.class_name,
+          class_name: "\{token_type} \{decoration.class_name}",
           metadata: token_metadata | decoration.metadata,
           contains_rtl: token_contains_rtl,
         })

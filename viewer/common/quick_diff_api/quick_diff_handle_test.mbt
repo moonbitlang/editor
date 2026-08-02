@@ -5,7 +5,7 @@ test "QuickDiffHandle forwards lookup, subscription, and disposal" {
   let changed : Array[String] = []
   let handle = @quick_diff_api.QuickDiffHandle(
     get_original_content=uri => {
-      calls.push("get:" + uri.to_string())
+      calls.push("get:\{uri.to_string()}")
       Some("original")
     },
     on_did_change_original=listener => {
@@ -20,8 +20,5 @@ test "QuickDiffHandle forwards lookup, subscription, and disposal" {
   assert_eq(changed.join(","), resource.to_string())
   assert_true(handle.get_original_content(resource) is Some("original"))
   subscription.dispose()
-  assert_eq(
-    calls.join("|"),
-    "subscribe|get:" + resource.to_string() + "|dispose",
-  )
+  assert_eq(calls.join("|"), "subscribe|get:\{resource.to_string()}|dispose")
 }

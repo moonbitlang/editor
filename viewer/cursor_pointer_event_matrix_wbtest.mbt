@@ -24,92 +24,100 @@ fn assert_pointer_transition(
 
 ///|
 test "live pointer branches retain exact old selections after committed state" {
-  with_test_viewer("alpha beta\nsecond line\nthird\nfourth", viewer => {
-    let events : Array[@editor_api.CursorSelectionChangedEvent] = []
-    let mut position_callbacks_committed = true
-    let mut selection_callbacks_committed = true
-    viewer.on_did_change_cursor_position(event => {
-      position_callbacks_committed = position_callbacks_committed &&
-        viewer.get_position().unwrap() == event.position &&
-        viewer.test_cursor().model_state().position == event.position
-    })
-    |> ignore
-    viewer.on_did_change_cursor_selection(event => {
-      selection_callbacks_committed = selection_callbacks_committed &&
-        viewer.get_selection().unwrap() == event.selection &&
-        viewer.test_cursor().get_model_selection() == event.selection
-      events.push(event)
-    })
-    |> ignore
+  with_test_viewer(
+    (
+      #|alpha beta
+      #|second line
+      #|third
+      #|fourth
+    ),
+    viewer => {
+      let events : Array[@editor_api.CursorSelectionChangedEvent] = []
+      let mut position_callbacks_committed = true
+      let mut selection_callbacks_committed = true
+      viewer.on_did_change_cursor_position(event => {
+        position_callbacks_committed = position_callbacks_committed &&
+          viewer.get_position().unwrap() == event.position &&
+          viewer.test_cursor().model_state().position == event.position
+      })
+      |> ignore
+      viewer.on_did_change_cursor_selection(event => {
+        selection_callbacks_committed = selection_callbacks_committed &&
+          viewer.get_selection().unwrap() == event.selection &&
+          viewer.test_cursor().get_model_selection() == event.selection
+        events.push(event)
+      })
+      |> ignore
 
-    let mut before = viewer.get_selection().unwrap()
-    let mut count = events.length()
-    viewer.dispatch_mouse(mouse_dispatch_data(Position(1, 3)))
-    assert_pointer_transition(viewer, events, count, before, "mouse")
+      let mut before = viewer.get_selection().unwrap()
+      let mut count = events.length()
+      viewer.dispatch_mouse(mouse_dispatch_data(Position(1, 3)))
+      assert_pointer_transition(viewer, events, count, before, "mouse")
 
-    before = viewer.get_selection().unwrap()
-    count = events.length()
-    viewer.dispatch_mouse(
-      mouse_dispatch_data(Position(1, 8), mouse_down_count=2),
-    )
-    assert_pointer_transition(viewer, events, count, before, "mouse")
+      before = viewer.get_selection().unwrap()
+      count = events.length()
+      viewer.dispatch_mouse(
+        mouse_dispatch_data(Position(1, 8), mouse_down_count=2),
+      )
+      assert_pointer_transition(viewer, events, count, before, "mouse")
 
-    before = viewer.get_selection().unwrap()
-    count = events.length()
-    viewer.dispatch_mouse(
-      mouse_dispatch_data(
-        Position(1, 2),
-        in_selection_mode=true,
-        mouse_down_count=2,
-      ),
-    )
-    assert_pointer_transition(viewer, events, count, before, "mouse")
+      before = viewer.get_selection().unwrap()
+      count = events.length()
+      viewer.dispatch_mouse(
+        mouse_dispatch_data(
+          Position(1, 2),
+          in_selection_mode=true,
+          mouse_down_count=2,
+        ),
+      )
+      assert_pointer_transition(viewer, events, count, before, "mouse")
 
-    before = viewer.get_selection().unwrap()
-    count = events.length()
-    viewer.dispatch_mouse(
-      mouse_dispatch_data(Position(2, 3), mouse_down_count=3),
-    )
-    assert_pointer_transition(viewer, events, count, before, "mouse")
+      before = viewer.get_selection().unwrap()
+      count = events.length()
+      viewer.dispatch_mouse(
+        mouse_dispatch_data(Position(2, 3), mouse_down_count=3),
+      )
+      assert_pointer_transition(viewer, events, count, before, "mouse")
 
-    before = viewer.get_selection().unwrap()
-    count = events.length()
-    viewer.dispatch_mouse(
-      mouse_dispatch_data(
-        Position(4, 3),
-        in_selection_mode=true,
-        mouse_down_count=3,
-      ),
-    )
-    assert_pointer_transition(viewer, events, count, before, "mouse")
+      before = viewer.get_selection().unwrap()
+      count = events.length()
+      viewer.dispatch_mouse(
+        mouse_dispatch_data(
+          Position(4, 3),
+          in_selection_mode=true,
+          mouse_down_count=3,
+        ),
+      )
+      assert_pointer_transition(viewer, events, count, before, "mouse")
 
-    before = viewer.get_selection().unwrap()
-    count = events.length()
-    viewer.dispatch_mouse(
-      mouse_dispatch_data(Position(1, 2), started_on_line_numbers=true),
-    )
-    assert_pointer_transition(viewer, events, count, before, "mouse")
+      before = viewer.get_selection().unwrap()
+      count = events.length()
+      viewer.dispatch_mouse(
+        mouse_dispatch_data(Position(1, 2), started_on_line_numbers=true),
+      )
+      assert_pointer_transition(viewer, events, count, before, "mouse")
 
-    before = viewer.get_selection().unwrap()
-    count = events.length()
-    viewer.dispatch_mouse(
-      mouse_dispatch_data(
-        Position(3, 2),
-        started_on_line_numbers=true,
-        in_selection_mode=true,
-      ),
-    )
-    assert_pointer_transition(viewer, events, count, before, "mouse")
+      before = viewer.get_selection().unwrap()
+      count = events.length()
+      viewer.dispatch_mouse(
+        mouse_dispatch_data(
+          Position(3, 2),
+          started_on_line_numbers=true,
+          in_selection_mode=true,
+        ),
+      )
+      assert_pointer_transition(viewer, events, count, before, "mouse")
 
-    before = viewer.get_selection().unwrap()
-    count = events.length()
-    viewer.dispatch_mouse(
-      mouse_dispatch_data(Position(2, 2), mouse_down_count=4),
-    )
-    assert_pointer_transition(viewer, events, count, before, "keyboard")
-    assert_true(position_callbacks_committed)
-    assert_true(selection_callbacks_committed)
-  })
+      before = viewer.get_selection().unwrap()
+      count = events.length()
+      viewer.dispatch_mouse(
+        mouse_dispatch_data(Position(2, 2), mouse_down_count=4),
+      )
+      assert_pointer_transition(viewer, events, count, before, "keyboard")
+      assert_true(position_callbacks_committed)
+      assert_true(selection_callbacks_committed)
+    },
+  )
 }
 
 ///|
@@ -161,7 +169,12 @@ test "ctrl and meta pointer modifiers retain ordinary and non-multi behavior" {
 test "pointer converts a wrapped injected position across a hidden model line" {
   let options = ViewerOptions(soft_wrap=true)
   with_test_viewer(
-    "abcdefghij\nhidden line wraps too\nabcdefghijklmnop\ntail",
+    (
+      #|abcdefghij
+      #|hidden line wraps too
+      #|abcdefghijklmnop
+      #|tail
+    ),
     viewer => {
       viewer.test_set_soft_wrap_column(6)
       let view_model = viewer.test_view_model()

@@ -365,7 +365,7 @@ fn ViewLines::publish_content_viewport_geometry(
     @base_browser.set_style_property(
       self.lines_content.element(),
       rendered_scroll_left_css_variable,
-      scroll_left.to_string() + "px",
+      "\{scroll_left.to_string()}px",
     )
     self.rendered_scroll_left = Some(scroll_left)
   }
@@ -373,7 +373,7 @@ fn ViewLines::publish_content_viewport_geometry(
     @base_browser.set_style_property(
       self.lines_content.element(),
       visible_content_width_css_variable,
-      visible_width.to_string() + "px",
+      "\{visible_width.to_string()}px",
     )
     self.visible_content_width = Some(visible_width)
   }

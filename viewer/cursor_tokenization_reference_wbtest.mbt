@@ -65,7 +65,13 @@ test "issue #46314: ViewModel is out of sync with Model!" {
   })
 
   assert_eq(calls.val, 0)
-  first.set_value("-Just text\nsecond\nthird")
+  first.set_value(
+    (
+      #|-Just text
+      #|second
+      #|third
+    ),
+  )
   assert_eq(cursor_events, 1)
   assert_true(projections_were_current.val)
   assert_eq(first.test_view_model().line_count(), 3)

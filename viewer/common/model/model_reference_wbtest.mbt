@@ -215,5 +215,12 @@ test "model lines" {
 test "Bug 13333: Model should line break on lonely CR too" {
   let m = TextSnapshot("Hello\rWorld!\r\nAnother line")
   assert_eq(m.line_count(), 3)
-  assert_eq(m.get_value(), "Hello\nWorld!\nAnother line")
+  assert_eq(
+    m.get_value(),
+    (
+      #|Hello
+      #|World!
+      #|Another line
+    ),
+  )
 }

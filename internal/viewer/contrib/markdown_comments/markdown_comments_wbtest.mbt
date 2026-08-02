@@ -52,7 +52,18 @@ test "line comments allow indentation group blanks and preserve Unicode" {
   assert_eq(snapshot.line_count(), 6)
   assert_eq(
     detect_markdown_comments_in_snapshot(snapshot, line_comments("//")),
-    [block(1, 4, "heading\n世界 🌙\n"), block(6, 7, "second")],
+    [
+      block(
+        1,
+        4,
+        (
+          #|heading
+          #|世界 🌙
+          #|
+        ),
+      ),
+      block(6, 7, "second"),
+    ],
   )
 }
 
@@ -71,7 +82,15 @@ test "line comments strip at most one ASCII space" {
 test "blank non-comment and source lines separate line comment blocks" {
   assert_eq(
     detect_markdown_comments_in_snapshot(
-      TextSnapshot("// first\n\n// second\nvalue\n// third"),
+      TextSnapshot(
+        (
+          #|// first
+          #|
+          #|// second
+          #|value
+          #|// third
+        ),
+      ),
       line_comments("//"),
     ),
     [block(1, 2, "first"), block(3, 4, "second"), block(5, 6, "third")],
@@ -108,34 +127,87 @@ test "single and multiline block comments strip boundaries indent and stars" {
   )
   assert_eq(
     detect_markdown_comments_in_snapshot(snapshot, block_comments("/*", "*/")),
-    [block(1, 2, "single "), block(3, 9, "\nHeading\n* item\n\n世界\n")],
+    [
+      block(1, 2, "single "),
+      block(
+        3,
+        9,
+        (
+          #|
+          #|Heading
+          #|* item
+          #|
+          #|世界
+          #|
+        ),
+      ),
+    ],
   )
 }
 
 ///|
 test "multiline block comments remove common indentation and preserve shape" {
   let snapshot = @model.TextSnapshot(
-    "  /* first\n     second\n       third\n  */",
+    (
+      #|  /* first
+      #|     second
+      #|       third
+      #|  */
+    ),
   )
   assert_eq(
     detect_markdown_comments_in_snapshot(snapshot, block_comments("/*", "*/")),
-    [block(1, 5, "first\n    second\n      third\n")],
+    [
+      block(
+        1,
+        5,
+        (
+          #|first
+          #|    second
+          #|      third
+          #|
+        ),
+      ),
+    ],
   )
 }
 
 ///|
 test "block comments dedent mixed starred and unstarred content" {
-  let snapshot = @model.TextSnapshot("/**\n * first\n   continuation\n */")
+  let snapshot = @model.TextSnapshot(
+    (
+      #|/**
+      #| * first
+      #|   continuation
+      #| */
+    ),
+  )
   assert_eq(
     detect_markdown_comments_in_snapshot(snapshot, block_comments("/*", "*/")),
-    [block(1, 5, "\nfirst\n  continuation\n")],
+    [
+      block(
+        1,
+        5,
+        (
+          #|
+          #|first
+          #|  continuation
+          #|
+        ),
+      ),
+    ],
   )
 }
 
 ///|
 test "block comments reject inline and trailing boundary source" {
   let snapshot = @model.TextSnapshot(
-    "let x = /* inline */\n/* closed */ trailing\n/* first */ trailing */\n  /* valid */",
+    (
+      #|let x = /* inline */
+      #|/* closed */ trailing
+      #|/* first */ trailing */
+      #|  /* valid */
+    ),
   )
   assert_eq(
     detect_markdown_comments_in_snapshot(snapshot, block_comments("/*", "*/")),
@@ -147,7 +219,13 @@ test "block comments reject inline and trailing boundary source" {
 test "line and block rules coexist with deterministic line-first precedence" {
   assert_eq(
     detect_markdown_comments_in_snapshot(
-      TextSnapshot("// line\ncode\n/* block */"),
+      TextSnapshot(
+        (
+          #|// line
+          #|code
+          #|/* block */
+        ),
+      ),
       both_comments(),
     ),
     [block(1, 2, "line"), block(3, 4, "block ")],
@@ -169,7 +247,13 @@ test "line and block rules coexist with deterministic line-first precedence" {
 test "unmatched block opening does not reinterpret its interior as line comments" {
   assert_eq(
     detect_markdown_comments_in_snapshot(
-      TextSnapshot("/* open\n// still block\ntext"),
+      TextSnapshot(
+        (
+          #|/* open
+          #|// still block
+          #|text
+        ),
+      ),
       both_comments(),
     ),
     [],
@@ -341,7 +425,16 @@ test "resolver normalizes provider ranges and reports discarded entries" {
   let log_handle = @log.LogService(logger=memory).log_handle()
   let handle = registry.language_handle(log_handle)
   let resolved = resolve_markdown_comment_blocks_with_presentation(
-    test_model("one\ntwo\nthree\nfour\nfive\nsix"),
+    test_model(
+      (
+        #|one
+        #|two
+        #|three
+        #|four
+        #|five
+        #|six
+      ),
+    ),
     handle,
     log_handle,
   )

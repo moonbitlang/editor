@@ -59,15 +59,12 @@ fn wait_for_text(
   if @support.query_text(".viewer-host").contains(needle) {
     // Two indent regions → two expanded chevrons in the `.cldr` lane
     // (opacity 0 under `showFoldingControls: mouseover`, but present).
+    let expanded_count = @support.query_count(
+      ".margin-view-overlays .cldr.codicon-folding-expanded",
+    )
     ctx.assert_true(
-      @support.query_count(
-        ".margin-view-overlays .cldr.codicon-folding-expanded",
-      ) ==
-      2,
-      "expected one expanded chevron per indent region, saw " +
-      @support.query_count(
-        ".margin-view-overlays .cldr.codicon-folding-expanded",
-      ).to_string(),
+      expanded_count == 2,
+      "expected one expanded chevron per indent region, saw \{expanded_count}",
     )
     ctx.assert_true(
       @support.query_count(
@@ -81,11 +78,7 @@ fn wait_for_text(
   }
   if remaining <= 0 {
     ctx.fail(
-      "timed out waiting for text: " +
-      needle +
-      " (saw: " +
-      @support.query_text(".viewer-host") +
-      ")",
+      "timed out waiting for text: \{needle} (saw: \{@support.query_text(".viewer-host")})",
     )
     ctx.finish()
     return

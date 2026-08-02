@@ -70,7 +70,11 @@ fn moonbit_markdown_comments_in_snapshot(
       markdown: if contents.is_empty() {
         "---"
       } else {
-        "---\n\n" + contents.join("\n")
+        (
+          $|---
+          $|
+          $|\{contents.join("\n")}
+        )
       },
     })
   }

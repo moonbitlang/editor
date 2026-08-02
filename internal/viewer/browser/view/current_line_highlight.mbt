@@ -225,11 +225,7 @@ fn prepare_current_line_render(
 /// (`height: 100%` in `current_line_highlight.css`).
 fn render_one(in_margin~ : Bool, exact~ : Bool, width~ : Double) -> String {
   let class_name = @view_layout.current_line_content_class(in_margin~, exact~)
-  "<div class=\"" +
-  class_name +
-  "\" style=\"width:" +
-  width.to_string() +
-  "px;\"></div>"
+  "<div class=\"\{class_name}\" style=\"width:\{width.to_string()}px;\"></div>"
 }
 
 ///|

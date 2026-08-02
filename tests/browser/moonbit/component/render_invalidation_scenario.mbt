@@ -313,7 +313,7 @@ fn run_render_invalidation_test() -> Unit {
     line_count => {
       let lines : Array[String] = []
       for index in 1..<=line_count {
-        lines.push("line " + index.to_string())
+        lines.push("line \{index.to_string()}")
       }
       viewer.set_value(lines.join("\n"))
     },

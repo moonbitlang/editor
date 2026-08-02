@@ -64,15 +64,7 @@ fn cursor_input_state_json(
     (Some(position), Some(selection)) => {
       let anchor = selection.get_selection_start()
       let active = selection.get_position()
-      "{" +
-      "\"position\":{\"line\":\{position.line_number},\"column\":\{position.column}}," +
-      "\"selection\":{" +
-      "\"anchorLine\":\{anchor.line_number},\"anchorColumn\":\{anchor.column}," +
-      "\"activeLine\":\{active.line_number},\"activeColumn\":\{active.column}}," +
-      "\"modelVersionId\":\{model.get_version_id()}," +
-      "\"hostVersion\":\{model.version}," +
-      "\"hasTextFocus\":\{viewer.has_text_focus()}" +
-      "}"
+      "{\"position\":{\"line\":\{position.line_number},\"column\":\{position.column}},\"selection\":{\"anchorLine\":\{anchor.line_number},\"anchorColumn\":\{anchor.column},\"activeLine\":\{active.line_number},\"activeColumn\":\{active.column}},\"modelVersionId\":\{model.get_version_id()},\"hostVersion\":\{model.version},\"hasTextFocus\":\{viewer.has_text_focus()}}"
     }
     _ => "null"
   }

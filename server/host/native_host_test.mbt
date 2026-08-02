@@ -8,9 +8,9 @@ async test "native host reads root-relative text files" {
     group.add_defer() <| () => {
       @async.protect_from_cancel(() => @fs.rmdir(root, recursive=true))
     }
-    @fs.mkdir(root + "/src", recursive=true)
+    @fs.mkdir("\{root}/src", recursive=true)
     @fs.write_file(
-      root + "/src/main.mbt",
+      "\{root}/src/main.mbt",
       "pub fn main {}\n",
       create_mode=CreateOrTruncate,
     )
@@ -38,20 +38,20 @@ async test "native host resolves one directory level with minted uris" {
     group.add_defer() <| () => {
       @async.protect_from_cancel(() => @fs.rmdir(root, recursive=true))
     }
-    @fs.mkdir(root + "/src/lib", recursive=true)
-    @fs.mkdir(root + "/_build", recursive=true)
+    @fs.mkdir("\{root}/src/lib", recursive=true)
+    @fs.mkdir("\{root}/_build", recursive=true)
     @fs.write_file(
-      root + "/moon.mod",
+      "\{root}/moon.mod",
       "name = \"fixture\"\n",
       create_mode=CreateOrTruncate,
     )
     @fs.write_file(
-      root + "/src/main.mbt",
+      "\{root}/src/main.mbt",
       "pub fn main {}\n",
       create_mode=CreateOrTruncate,
     )
     @fs.write_file(
-      root + "/src/lib/util.mbt",
+      "\{root}/src/lib/util.mbt",
       "pub fn util {}\n",
       create_mode=CreateOrTruncate,
     )
@@ -122,7 +122,7 @@ async test "native host polling watch emits changed and deleted" {
       @async.protect_from_cancel(() => @fs.rmdir(root, recursive=true))
     }
     @fs.write_file(
-      root + "/watched.mbt",
+      "\{root}/watched.mbt",
       "pub fn watched { 1 }\n",
       create_mode=CreateOrTruncate,
     )
@@ -139,12 +139,12 @@ async test "native host polling watch emits changed and deleted" {
     )
     @async.sleep(30)
     @fs.write_file(
-      root + "/watched.mbt",
+      "\{root}/watched.mbt",
       "pub fn watched { 2 }\n",
       create_mode=CreateOrTruncate,
     )
     wait_for_events(events, 1)
-    @fs.remove(root + "/watched.mbt")
+    @fs.remove("\{root}/watched.mbt")
     wait_for_events(events, 2)
     watch.dispose()
     assert_true(events[0] == Changed)
@@ -249,8 +249,8 @@ async test "moon definition provider invokes exact peek-def command" {
     group.add_defer() <| () => {
       @async.protect_from_cancel(() => @fs.rmdir(root, recursive=true))
     }
-    @fs.mkdir(root + "/src", recursive=true)
-    let command = root + "/moon-probe"
+    @fs.mkdir("\{root}/src", recursive=true)
+    let command = "\{root}/moon-probe"
     let script =
       #|#!/bin/sh
       #|test "$#" -eq 5 || exit 41
@@ -317,6 +317,6 @@ test "parses moon check json diagnostics grouped by workspace uri" {
 fn expect_path(raw : String) -> @workspace.SourcePath raise {
   match @workspace.SourcePath::normalize_root_relative_path(raw) {
     ParsedSourcePath(path) => path
-    SourcePathError(error) => fail("unexpected path error " + error.to_string())
+    SourcePathError(error) => fail("unexpected path error \{error.to_string()}")
   }
 }

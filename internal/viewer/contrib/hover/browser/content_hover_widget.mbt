@@ -297,7 +297,7 @@ fn ContentHoverWidget::set_rendered_hover(
   self.hover_rows = hover_rows
   self.rendered_hover = rendered_hover
   let hidden = if rendered_hover is Some(_) { "" } else { " hidden" }
-  self.hover.set_attribute("class", "monaco-hover fade-in" + hidden)
+  self.hover.set_attribute("class", "monaco-hover fade-in\{hidden}")
 }
 
 ///|
@@ -667,7 +667,7 @@ fn ContentHoverWidget::layout_content_widget(self : ContentHoverWidget) -> Unit 
 
 ///|
 fn px(value : Double) -> String {
-  value.to_string() + "px"
+  "\{value.to_string()}px"
 }
 
 ///|

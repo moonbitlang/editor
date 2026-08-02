@@ -191,7 +191,7 @@ fn TreeNode::ancestor_uris(
 ) -> Array[@base_common.Uri]? {
   let root_raw = self.uri.to_string()
   let target_raw = target.to_string()
-  if !target_raw.has_prefix(root_raw + "/") {
+  if !target_raw.has_prefix("\{root_raw}/") {
     return None
   }
   let relative = target_raw[root_raw.length() + 1:].to_owned()
@@ -205,7 +205,7 @@ fn TreeNode::ancestor_uris(
     }
   }
   for i in 0..<(segments.length() - 1) {
-    prefix = prefix + "/" + segments[i]
+    prefix = "\{prefix}/\{segments[i]}"
     // `prefix` extends the canonical form of a valid URI with path
     // segments, so re-parsing cannot fail.
     ancestors.push(try! @base_common.Uri::parse(prefix))

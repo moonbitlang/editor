@@ -1,6 +1,6 @@
 ///|
 fn remote_language_test_uri(path : String) -> @base_common.Uri {
-  try! @base_common.Uri::parse("readonly-remote://workspace/" + path)
+  try! @base_common.Uri::parse("readonly-remote://workspace/\{path}")
 }
 
 ///|

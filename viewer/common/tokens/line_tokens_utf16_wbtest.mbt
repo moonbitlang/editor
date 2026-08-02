@@ -19,12 +19,7 @@ fn assert_utf16_units(actual : String, expected : Array[Int]) -> Unit raise {
 
 ///|
 test "LineTokens raw UTF-16 token content preserves lone surrogate matrix" {
-  let text = utf16_unit(0xD800) +
-    utf16_unit(0xDBFF) +
-    utf16_unit(0xDC00) +
-    utf16_unit(0xDFFF) +
-    "\u{FEFF}" +
-    "A"
+  let text = "\{utf16_unit(0xD800)}\{utf16_unit(0xDBFF)}\{utf16_unit(0xDC00)}\{utf16_unit(0xDFFF)}\u{FEFF}A"
   let metadata = LineTokens::default_token_metadata()
   let tokens = LineTokens(
     [

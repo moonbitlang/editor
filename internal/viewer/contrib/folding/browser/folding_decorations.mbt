@@ -137,8 +137,7 @@ let expanded_visual_decoration : @model.ModelDecorationOptions = ModelDecoration
   description="folding-expanded-visual-decoration",
   stickiness=NeverGrowsWhenTypingAtEdges,
   is_whole_line=true,
-  first_line_decoration_class_name="alwaysShowFoldIcons " +
-    FOLDING_EXPANDED_ICON_CLASS,
+  first_line_decoration_class_name="alwaysShowFoldIcons \{FOLDING_EXPANDED_ICON_CLASS}",
 )
 
 ///|
@@ -158,8 +157,7 @@ let manually_expanded_visual_decoration : @model.ModelDecorationOptions = ModelD
   description="folding-manually-expanded-visual-decoration",
   stickiness=AlwaysGrowsWhenTypingAtEdges,
   is_whole_line=true,
-  first_line_decoration_class_name="alwaysShowFoldIcons " +
-    FOLDING_MANUAL_EXPANDED_ICON_CLASS,
+  first_line_decoration_class_name="alwaysShowFoldIcons \{FOLDING_MANUAL_EXPANDED_ICON_CLASS}",
 )
 
 ///|

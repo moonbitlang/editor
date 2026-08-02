@@ -526,14 +526,58 @@ test "inline markup and setext line breaks do not change a heading's identity" {
   debug_inspect(
     (
       // emphasis, code spans, and links reduce to the words a reader sees
-      describe_keys("# *Title*\n\nbody\n"),
-      describe_keys("# Title\n\nbody\n"),
-      describe_keys("# `Title`\n\nbody\n"),
+      describe_keys(
+        (
+          #|# *Title*
+          #|
+          #|body
+          #|
+        ),
+      ),
+      describe_keys(
+        (
+          #|# Title
+          #|
+          #|body
+          #|
+        ),
+      ),
+      describe_keys(
+        (
+          #|# `Title`
+          #|
+          #|body
+          #|
+        ),
+      ),
       // a multi-line setext heading keeps all of its words
-      describe_keys("Foo\nbar\n---\n\nbody\n"),
-      describe_keys("## Foo bar\n\nbody\n"),
+      describe_keys(
+        (
+          #|Foo
+          #|bar
+          #|---
+          #|
+          #|body
+          #|
+        ),
+      ),
+      describe_keys(
+        (
+          #|## Foo bar
+          #|
+          #|body
+          #|
+        ),
+      ),
       // a literal trailing hash is content, not decoration
-      describe_keys("# C#\n\nbody\n"),
+      describe_keys(
+        (
+          #|# C#
+          #|
+          #|body
+          #|
+        ),
+      ),
     ),
     content=(
       #|(

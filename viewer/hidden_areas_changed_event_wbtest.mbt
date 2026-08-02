@@ -1,5 +1,13 @@
 ///|
-let hidden_event_source = "one\ntwo\nthree\nfour\nfive\nsix\nseven\neight"
+let hidden_event_source =
+  #|one
+  #|two
+  #|three
+  #|four
+  #|five
+  #|six
+  #|seven
+  #|eight
 
 ///|
 test "headless hidden-area event is changed-only" {

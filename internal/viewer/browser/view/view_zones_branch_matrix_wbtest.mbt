@@ -139,7 +139,7 @@ fn ViewZonesBranchFixture::assert_single_callback_report(
   let entries = self.memory.entries()
   assert_eq(entries.length(), 1)
   assert_eq(entries[0].category, "viewer.viewZones")
-  assert_eq(entries[0].message, callback_name + " callback failed")
+  assert_eq(entries[0].message, "\{callback_name} callback failed")
 }
 
 ///|
@@ -160,7 +160,12 @@ test "ViewZones maps zero, first, middle, last, and clamped model anchors" {
   defer restore_view_lifecycle_test_browser()
   let fixture = view_zones_branch_fixture(
     "/view-zones-anchor-matrix.txt",
-    "abcdefgh\nijklmnop\nqrstuvwx\nyz",
+    (
+      #|abcdefgh
+      #|ijklmnop
+      #|qrstuvwx
+      #|yz
+    ),
     @view_model.ViewModelOptions::soft_wrap(4),
     20,
   )
@@ -294,7 +299,11 @@ test "ViewZones hidden-area omitted false and true toggle exact heights" {
   defer restore_view_lifecycle_test_browser()
   let fixture = view_zones_branch_fixture(
     "/view-zones-hidden-matrix.txt",
-    "first\nhidden\nthird",
+    (
+      #|first
+      #|hidden
+      #|third
+    ),
     @view_model.ViewModelOptions::no_wrap(),
     20,
   )
@@ -437,7 +446,13 @@ test "ViewZones hidden-source precedence uses declared anchors and covers EOF" {
   // declared anchor side itself (line 2).
   let middle = view_zones_branch_fixture(
     "/view-zones-hidden-source-middle.txt",
-    "first\nmarkdown\nfolded\nfourth\nfifth",
+    (
+      #|first
+      #|markdown
+      #|folded
+      #|fourth
+      #|fifth
+    ),
     @view_model.ViewModelOptions::no_wrap(),
     20,
   )
@@ -485,7 +500,12 @@ test "ViewZones hidden-source precedence uses declared anchors and covers EOF" {
   // another source on that same line still suppresses it.
   let eof_own = view_zones_branch_fixture(
     "/view-zones-hidden-source-eof-own.txt",
-    "first\nsecond\nthird\nmarkdown",
+    (
+      #|first
+      #|second
+      #|third
+      #|markdown
+    ),
     @view_model.ViewModelOptions::no_wrap(),
     20,
   )
@@ -531,7 +551,12 @@ test "ViewZones hidden-source precedence uses declared anchors and covers EOF" {
 
   let eof_other = view_zones_branch_fixture(
     "/view-zones-hidden-source-eof-other.txt",
-    "first\nsecond\nthird\nmarkdown",
+    (
+      #|first
+      #|second
+      #|third
+      #|markdown
+    ),
     @view_model.ViewModelOptions::no_wrap(),
     20,
   )
@@ -564,7 +589,11 @@ test "ViewZones refresh source-aware visibility when merged projection is unchan
   defer restore_view_lifecycle_test_browser()
   let fixture = view_zones_branch_fixture(
     "/view-zones-hidden-source-live-overlap.txt",
-    "first\nmarkdown\nthird",
+    (
+      #|first
+      #|markdown
+      #|third
+    ),
     @view_model.ViewModelOptions::no_wrap(),
     20,
   )

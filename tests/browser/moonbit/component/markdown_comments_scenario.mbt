@@ -386,8 +386,7 @@ fn poll_markdown_comments_ready(
 ) -> Unit {
   let zones = @support.query_count(".moonbit-viewer-markdown-comment")
   let diagrams = @support.query_count(
-    ".markdown-comments-host .moonbit-viewer-markdown-diagram-content" +
-    " > svg",
+    ".markdown-comments-host .moonbit-viewer-markdown-diagram-content > svg",
   )
   let text = @support.query_text(".markdown-comments-host")
   if zones == 3 &&

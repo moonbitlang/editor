@@ -8,7 +8,11 @@ fn register_shared_markdown_test_tokenizer() -> Unit {
 test "shared tokenized code override emits editor classes and threads active language" {
   register_shared_markdown_test_tokenizer()
   let fenced = render_markdown(
-    "```mbt\nlet answer = 42\n```",
+    (
+      #|```mbt
+      #|let answer = 42
+      #|```
+    ),
     language_id="plaintext",
     code_block_renderer=render_tokenized_code_block,
   )
@@ -17,7 +21,11 @@ test "shared tokenized code override emits editor classes and threads active lan
   assert_true(fenced.html.contains("class=\"mtk3\""))
 
   let active = render_markdown(
-    "```\nfn active() -> Unit {}\n```",
+    (
+      #|```
+      #|fn active() -> Unit {}
+      #|```
+    ),
     language_id="moonbit",
     code_block_renderer=render_tokenized_code_block,
   )
@@ -28,7 +36,11 @@ test "shared tokenized code override emits editor classes and threads active lan
 ///|
 test "shared tokenized code override keeps unknown-language source as safe default tokens" {
   let rendered = render_markdown(
-    "```unknown\nnot really code\n```",
+    (
+      #|```unknown
+      #|not really code
+      #|```
+    ),
     code_block_renderer=render_tokenized_code_block,
   )
   assert_true(rendered.has_code_block)

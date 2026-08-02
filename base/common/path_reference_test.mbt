@@ -289,7 +289,7 @@ test "extname" {
         "win32.extname(\{win_input}) expect=\{expected} actual=\{win_actual}",
       )
     }
-    let drive_input = "C:" + win_input
+    let drive_input = "C:\{win_input}"
     let drive_actual = Win32::extname(drive_input)
     if drive_actual != expected {
       failures.push(
@@ -461,9 +461,9 @@ test "basename" {
   assert_eq(Posix::basename("foo"), "foo")
 
   // POSIX filenames may include control characters
-  let control_char_filename = "Icon" + "\r"
+  let control_char_filename = "Icon\r"
   assert_eq(
-    Posix::basename("/a/b/" + control_char_filename),
+    Posix::basename("/a/b/\{control_char_filename}"),
     control_char_filename,
   )
 

@@ -68,7 +68,7 @@ async test "native hover requires exact disk state and runs ordinary moon ide ho
       @async.protect_from_cancel(() => @fs.rmdir(root, recursive=true))
     }
     @fs.write_file(
-      root + "/main.mbt",
+      "\{root}/main.mbt",
       "pub fn old {}\r\n",
       create_mode=CreateOrTruncate,
     )
@@ -102,7 +102,7 @@ async test "native hover skips command for a mismatched request revision" {
       @async.protect_from_cancel(() => @fs.rmdir(root, recursive=true))
     }
     @fs.write_file(
-      root + "/main.mbt",
+      "\{root}/main.mbt",
       "pub fn old {}\n",
       create_mode=CreateOrTruncate,
     )
@@ -140,7 +140,7 @@ async test "native hover drops a disk change during the command" {
       @async.protect_from_cancel(() => @fs.rmdir(root, recursive=true))
     }
     @fs.write_file(
-      root + "/main.mbt",
+      "\{root}/main.mbt",
       "pub fn old {}\n",
       create_mode=CreateOrTruncate,
     )
@@ -161,7 +161,7 @@ async test "native hover drops a disk change during the command" {
     })
     started.acquire()
     @fs.write_file(
-      root + "/main.mbt",
+      "\{root}/main.mbt",
       "pub fn new {}\n",
       create_mode=CreateOrTruncate,
     )
@@ -178,7 +178,7 @@ async test "native document reads reuse one coherent text and revision snapshot"
       @async.protect_from_cancel(() => @fs.rmdir(root, recursive=true))
     }
     @fs.write_file(
-      root + "/main.mbt",
+      "\{root}/main.mbt",
       "pub fn main {}\r\n",
       create_mode=CreateOrTruncate,
     )
@@ -204,7 +204,7 @@ async test "native coherent snapshot rejects invalid utf8 and disappearing entri
       @async.protect_from_cancel(() => @fs.rmdir(root, recursive=true))
     }
     let invalid = Bytes::from_array([0xff, 0xfe])
-    @fs.write_file(root + "/invalid.mbt", invalid, create_mode=CreateOrTruncate)
+    @fs.write_file("\{root}/invalid.mbt", invalid, create_mode=CreateOrTruncate)
     let invalid_path = freshness_test_path("invalid.mbt")
     assert_true(read_native_disk_snapshot(root, invalid_path) is None)
     match read_native_text_file(root, invalid_path) {
@@ -213,7 +213,7 @@ async test "native coherent snapshot rejects invalid utf8 and disappearing entri
     }
     let missing_path = freshness_test_path("missing.mbt")
     assert_true(read_native_disk_snapshot(root, missing_path) is None)
-    @fs.mkdir(root + "/directory.mbt")
+    @fs.mkdir("\{root}/directory.mbt")
     let directory_path = freshness_test_path("directory.mbt")
     assert_true(read_native_disk_snapshot(root, directory_path) is None)
   }
@@ -251,13 +251,7 @@ fn check_test_file_output(
   relative : String,
   message : String,
 ) -> String {
-  "{\"$message_type\":\"diagnostic\",\"level\":\"warning\",\"path\":\"" +
-  root +
-  "/" +
-  relative +
-  "\",\"loc\":\"1:1-1:4\",\"message\":\"" +
-  message +
-  "\"}"
+  "{\"$message_type\":\"diagnostic\",\"level\":\"warning\",\"path\":\"\{root}/\{relative}\",\"loc\":\"1:1-1:4\",\"message\":\"\{message}\"}"
 }
 
 ///|
@@ -320,7 +314,7 @@ async test "moon check replays only an exact producing document state" {
       @async.protect_from_cancel(() => @fs.rmdir(root, recursive=true))
     }
     @fs.write_file(
-      root + "/main.mbt",
+      "\{root}/main.mbt",
       "pub fn old {}\n",
       create_mode=CreateOrTruncate,
     )
@@ -348,7 +342,7 @@ async test "moon check replays only an exact producing document state" {
     assert_eq(events[1].revision, old_document.revision)
 
     @fs.write_file(
-      root + "/main.mbt",
+      "\{root}/main.mbt",
       "pub fn new {}\n",
       create_mode=CreateOrTruncate,
     )
@@ -375,7 +369,7 @@ async test "document sync during moon check discards output and reruns once" {
       @async.protect_from_cancel(() => @fs.rmdir(root, recursive=true))
     }
     @fs.write_file(
-      root + "/main.mbt",
+      "\{root}/main.mbt",
       "pub fn old {}\n",
       create_mode=CreateOrTruncate,
     )
@@ -393,7 +387,7 @@ async test "document sync during moon check discards output and reruns once" {
     diagnostics.schedule(task => group.spawn_bg(task))
     assert_eq(control.started.get(), 1)
     @fs.write_file(
-      root + "/main.mbt",
+      "\{root}/main.mbt",
       "pub fn new {}\n",
       create_mode=CreateOrTruncate,
     )
@@ -420,7 +414,7 @@ async test "disk-only change during moon check reruns and publishes nothing" {
       @async.protect_from_cancel(() => @fs.rmdir(root, recursive=true))
     }
     @fs.write_file(
-      root + "/main.mbt",
+      "\{root}/main.mbt",
       "pub fn old {}\n",
       create_mode=CreateOrTruncate,
     )
@@ -436,7 +430,7 @@ async test "disk-only change during moon check reruns and publishes nothing" {
     diagnostics.schedule(task => group.spawn_bg(task))
     assert_eq(control.started.get(), 1)
     @fs.write_file(
-      root + "/main.mbt",
+      "\{root}/main.mbt",
       "pub fn new {}\n",
       create_mode=CreateOrTruncate,
     )
@@ -457,7 +451,7 @@ async test "stable incompatible rerun preserves a prior published set silently" 
       @async.protect_from_cancel(() => @fs.rmdir(root, recursive=true))
     }
     @fs.write_file(
-      root + "/main.mbt",
+      "\{root}/main.mbt",
       "pub fn old {}\n",
       create_mode=CreateOrTruncate,
     )
@@ -479,7 +473,7 @@ async test "stable incompatible rerun preserves a prior published set silently" 
     diagnostics.schedule(task => group.spawn_bg(task))
     assert_eq(control.started.get(), 2)
     @fs.write_file(
-      root + "/main.mbt",
+      "\{root}/main.mbt",
       "pub fn new {}\n",
       create_mode=CreateOrTruncate,
     )
@@ -508,12 +502,12 @@ async test "historical incompatible document does not suppress active diagnostic
       @async.protect_from_cancel(() => @fs.rmdir(root, recursive=true))
     }
     @fs.write_file(
-      root + "/historical.mbt",
+      "\{root}/historical.mbt",
       "pub fn historical {}\n",
       create_mode=CreateOrTruncate,
     )
     @fs.write_file(
-      root + "/active.mbt",
+      "\{root}/active.mbt",
       "pub fn active {}\n",
       create_mode=CreateOrTruncate,
     )
@@ -535,9 +529,10 @@ async test "historical incompatible document does not suppress active diagnostic
     diagnostics.schedule(task => group.spawn_bg(task))
     assert_eq(control.started.get(), 1)
     control.release_gate.put(
-      check_test_file_output(root, "historical.mbt", "accepted historical") +
-      "\n" +
-      check_test_file_output(root, "active.mbt", "accepted active"),
+      (
+        $|\{check_test_file_output(root, "historical.mbt", "accepted historical")}
+        $|\{check_test_file_output(root, "active.mbt", "accepted active")}
+      ),
     )
     wait_for_check_idle(diagnostics)
     let historical_key = historical.uri.to_string()
@@ -547,15 +542,15 @@ async test "historical incompatible document does not suppress active diagnostic
 
     // There is no diagnostics close notification yet, so this stale document
     // remains in `documents` after its file disappears.
-    @fs.remove(root + "/historical.mbt")
+    @fs.remove("\{root}/historical.mbt")
     diagnostics.schedule(task => group.spawn_bg(task))
     assert_eq(control.started.get(), 2)
     control.release_gate.put(
-      check_test_file_output(root, "historical.mbt", "must be ignored") +
-      "\n" +
-      check_test_file_output(root, "active.mbt", "updated active") +
-      "\n" +
-      check_test_file_output(root, "unknown.mbt", "unknown"),
+      (
+        $|\{check_test_file_output(root, "historical.mbt", "must be ignored")}
+        $|\{check_test_file_output(root, "active.mbt", "updated active")}
+        $|\{check_test_file_output(root, "unknown.mbt", "unknown")}
+      ),
     )
     wait_for_check_idle(diagnostics)
     assert_eq(check_event_count(events, historical_key), 1)

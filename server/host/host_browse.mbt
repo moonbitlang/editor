@@ -22,7 +22,7 @@ fn HostBrowseScope::allows(self : HostBrowseScope, real : String) -> Bool {
   match self {
     BrowseHost => true
     BrowseWithin(scope) =>
-      scope == "/" || real == scope || real.has_prefix(scope + "/")
+      scope == "/" || real == scope || real.has_prefix("\{scope}/")
     BrowseDisabled => false
   }
 }
@@ -278,9 +278,9 @@ fn compare_names_lexicographic(left : String, right : String) -> Int {
 ///|
 fn join_host_path(base : String, name : String) -> String {
   if base == "/" {
-    "/" + name
+    "/\{name}"
   } else {
-    base + "/" + name
+    "\{base}/\{name}"
   }
 }
 

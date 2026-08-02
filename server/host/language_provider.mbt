@@ -251,7 +251,7 @@ fn definition_uri_under_root(
 ) -> @base_common.Uri? {
   let root = normalize_host_path(root)
   let path = normalize_host_path(raw_path)
-  let root_prefix = if root == "/" { "/" } else { root + "/" }
+  let root_prefix = if root == "/" { "/" } else { "\{root}/" }
   let relative = if path.has_prefix(root_prefix) {
     path[root_prefix.length():].to_owned()
   } else if path.has_prefix("/") {

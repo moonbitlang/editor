@@ -10,7 +10,14 @@ test "flush reprojects the view lines to the new content (no wrap)" {
   let model = plain_text_model("one\ntwo")
   let view_model = @view_model.ViewModel(model)
   assert_eq(view_model.line_count(), 2)
-  model.set_value("a\nb\nc\nd")
+  model.set_value(
+    (
+      #|a
+      #|b
+      #|c
+      #|d
+    ),
+  )
   assert_eq(view_model.line_count(), 4)
   assert_eq(view_model.get_line_content(3), "c")
 }
@@ -39,7 +46,13 @@ test "public content listeners observe already-updated view models (two-loop ord
     observed.push(vm2.line_count())
     observed.push(e.version_id)
   })
-  model.set_value("a\nb\nc")
+  model.set_value(
+    (
+      #|a
+      #|b
+      #|c
+    ),
+  )
   assert_true(observed == [3, 3, 2])
 }
 
@@ -50,7 +63,14 @@ test "headless flush suppresses full-reset token notification" {
   let mut token_events = 0
   let _sub = model.on_did_change_tokens(_event => token_events += 1)
 
-  model.set_value("a\nb\nc\nd")
+  model.set_value(
+    (
+      #|a
+      #|b
+      #|c
+      #|d
+    ),
+  )
 
   // `reset_tokenization(false)` suppresses the full reset event. With no
   // attached visible ranges there is no bounded refresh event either.
@@ -66,7 +86,13 @@ test "headless flush suppresses full-reset token notification" {
 
 ///|
 test "flush resets the cursor to the origin (cursor.ts ContentFlush branch)" {
-  let model = plain_text_model("one\ntwo\nthree")
+  let model = plain_text_model(
+    (
+      #|one
+      #|two
+      #|three
+    ),
+  )
   let view_model = @view_model.ViewModel(model)
   view_model.cursor.move_to(Position(3, 4), false) |> ignore
   assert_true(
@@ -93,7 +119,20 @@ test "flush clamps the scroll position instead of resetting it" {
   layout.set_viewport_size(width=400.0, height=100.0) |> ignore
   layout.scroll_to(scroll_top=100000.0, scroll_left=0.0) |> ignore
   assert_true(layout.get_current_scroll_top() > 0.0)
-  model.set_value("a\nb\nc\nd\ne\nf\ng\nh\ni\nj")
+  model.set_value(
+    (
+      #|a
+      #|b
+      #|c
+      #|d
+      #|e
+      #|f
+      #|g
+      #|h
+      #|i
+      #|j
+    ),
+  )
   assert_eq(layout.line_count(), 10)
   // clamped to the shrunken extent — not reset to the origin (the reset is
   // `set_model`'s behavior)
@@ -103,7 +142,15 @@ test "flush clamps the scroll position instead of resetting it" {
 
 ///|
 test "flush resets hidden areas; the injected-text reproject keeps them" {
-  let model = plain_text_model("a\nb\nc\nd\ne")
+  let model = plain_text_model(
+    (
+      #|a
+      #|b
+      #|c
+      #|d
+      #|e
+    ),
+  )
   let view_model = @view_model.ViewModel(model)
   let lines = view_model.lines()
   assert_true(lines.set_hidden_areas([Range(2, 1, 3, 1)]))
@@ -112,7 +159,15 @@ test "flush resets hidden areas; the injected-text reproject keeps them" {
   view_model.on_did_change_content_or_injected_text()
   assert_eq(view_model.line_count(), 3)
   // a flush replaces the document: `onModelFlushed` resets hidden areas
-  model.set_value("a\nb\nc\nd\ne")
+  model.set_value(
+    (
+      #|a
+      #|b
+      #|c
+      #|d
+      #|e
+    ),
+  )
   assert_eq(view_model.line_count(), 5)
   assert_eq(lines.get_hidden_areas().length(), 0)
 }
@@ -121,7 +176,13 @@ test "flush resets hidden areas; the injected-text reproject keeps them" {
 test "converter round-trips against the post-flush projections" {
   let model = plain_text_model("one\ntwo")
   let view_model = @view_model.ViewModel(model)
-  model.set_value("alpha\nbravo\ncharlie")
+  model.set_value(
+    (
+      #|alpha
+      #|bravo
+      #|charlie
+    ),
+  )
   let converter = view_model.coordinates_converter()
   let position = @base_common.Position(3, 4)
   assert_true(converter.model_position_to_view_position(position) == position)
@@ -135,7 +196,13 @@ test "dispose unregisters the view model from the model's dispatch set" {
   model.set_value("a\nb")
   assert_eq(view_model.line_count(), 2)
   view_model.dispose()
-  model.set_value("a\nb\nc")
+  model.set_value(
+    (
+      #|a
+      #|b
+      #|c
+    ),
+  )
   // no longer registered: the stale projection stays at the old count
   assert_eq(view_model.line_count(), 2)
 }

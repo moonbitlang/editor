@@ -10,7 +10,12 @@ fn computer_test_model() -> @model.TextModel {
     "moonbit",
     7,
     "rev-7",
-    "fn main {\n  value\n}\n",
+    (
+      #|fn main {
+      #|  value
+      #|}
+      #|
+    ),
   )
 }
 

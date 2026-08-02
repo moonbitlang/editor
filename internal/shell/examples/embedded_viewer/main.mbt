@@ -41,7 +41,7 @@ fn memory_uri(raw : String) -> @base_common.Uri {
 ///|
 fn memory_file(path : String, name : String) -> @workspace.WorkspaceStat {
   {
-    uri: memory_uri(memory_root + "/" + path),
+    uri: memory_uri("\{memory_root}/\{path}"),
     name,
     kind: File,
     children: None,
@@ -51,7 +51,7 @@ fn memory_file(path : String, name : String) -> @workspace.WorkspaceStat {
 ///|
 fn memory_dir(path : String, name : String) -> @workspace.WorkspaceStat {
   {
-    uri: memory_uri(memory_root + "/" + path),
+    uri: memory_uri("\{memory_root}/\{path}"),
     name,
     kind: Directory,
     children: None,
@@ -66,15 +66,15 @@ fn memory_workspace() -> MemoryWorkspace {
     memory_file("README.md", "README.md"),
     memory_file("moon.mod", "moon.mod"),
   ]
-  directories[memory_root + "/src"] = [
+  directories["\{memory_root}/src"] = [
     memory_dir("src/lib", "lib"),
     memory_file("src/main.mbt", "main.mbt"),
   ]
-  directories[memory_root + "/src/lib"] = [
+  directories["\{memory_root}/src/lib"] = [
     memory_file("src/lib/util.mbt", "util.mbt"),
   ]
   let documents : Map[String, String] = Map([])
-  documents[memory_root + "/README.md"] = (
+  documents["\{memory_root}/README.md"] = (
     #|# Embedded Markdown document
     #|
     #|This URI-backed in-memory model is rendered directly by the public **Viewer**.
@@ -83,15 +83,15 @@ fn memory_workspace() -> MemoryWorkspace {
     #|- No remote protocol or WebSocket participates.
     #|
   )
-  documents[memory_root + "/moon.mod"] = "name = \"embedded-example\"\n"
-  documents[memory_root + "/src/main.mbt"] = (
+  documents["\{memory_root}/moon.mod"] = "name = \"embedded-example\"\n"
+  documents["\{memory_root}/src/main.mbt"] = (
     #|///|
     #|fn main {
     #|  println(greeting())
     #|}
     #|
   )
-  documents[memory_root + "/src/lib/util.mbt"] = (
+  documents["\{memory_root}/src/lib/util.mbt"] = (
     #|///|
     #|pub fn util_answer() -> Int {
     #|  42
@@ -152,7 +152,7 @@ fn MemoryWorkspace::model(
           @base_common.basename_or_authority(uri),
           @workspace.infer_language_id(@base_common.basename_or_authority(uri)),
           version,
-          "memory-" + version.to_string(),
+          "memory-\{version.to_string()}",
           text,
         ),
       )
@@ -266,7 +266,7 @@ fn update_embed(
 ) -> (@rabbita.Cmd, EmbedModel) {
   match msg {
     Boot => {
-      let first_file = memory_uri(memory_root + "/src/main.mbt")
+      let first_file = memory_uri("\{memory_root}/src/main.mbt")
       (
         @rabbita.batch([
           embed_tree().refresh(),

@@ -70,11 +70,7 @@ fn prepare_current_line_margin_render(
       other~,
       exact=view_line == cursor_line,
     )
-    render_data[index] = "<div class=\"" +
-      class_name +
-      "\" style=\"width:" +
-      width.to_string() +
-      "px\"></div>"
+    render_data[index] = "<div class=\"\{class_name}\" style=\"width:\{width.to_string()}px\"></div>"
   }
   render_data
 }

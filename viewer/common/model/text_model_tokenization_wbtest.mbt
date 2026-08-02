@@ -214,10 +214,20 @@ test "set_value updates shared token state and token_count stays passive" {
   assert_eq(model.tokenization.token_count(), 2)
   assert_eq(calls.val, 0)
 
-  model.set_value("new\nvalue\nnow")
+  model.set_value(
+    (
+      #|new
+      #|value
+      #|now
+    ),
+  )
   assert_eq(
     model.tokenization_state.snapshot.val.get_value(),
-    "new\nvalue\nnow",
+    (
+      #|new
+      #|value
+      #|now
+    ),
   )
   assert_eq(model.tokenization_state.snapshot.val.line_count(), 3)
   assert_eq(model.tokenization.get_line_tokens(3).get_line_content(), "now")
@@ -244,7 +254,16 @@ test "attached epoch selects first scheduler, retains it, then cancels and clear
   })
   let first_scheduler = model_tokenization_scheduler_harness()
   let later_scheduler = model_tokenization_scheduler_harness()
-  let model = tokenization_model("one\ntwo\nthree\nfour\nfive", language_id)
+  let model = tokenization_model(
+    (
+      #|one
+      #|two
+      #|three
+      #|four
+      #|five
+    ),
+    language_id,
+  )
 
   // None starts the epoch without selecting or enqueueing a host scheduler.
   let headless = model.on_before_attached()
@@ -403,44 +422,37 @@ test "TextModel disposal marks disposed between token part and registered resour
   run_text_model_dispose_sequence(
     set_disposing=value => {
       trace.push(
-        "disposing=\{value}:\{is_disposing.val}:" +
-        "\{tokenization_disposed.val}:\{is_disposed.val}",
+        "disposing=\{value}:\{is_disposing.val}:\{tokenization_disposed.val}:\{is_disposed.val}",
       )
       is_disposing.val = value
     },
     fire_will_dispose=() => {
       trace.push(
-        "willDispose:\{is_disposing.val}:" +
-        "\{tokenization_disposed.val}:\{is_disposed.val}",
+        "willDispose:\{is_disposing.val}:\{tokenization_disposed.val}:\{is_disposed.val}",
       )
     },
     dispose_tokenization=() => {
       trace.push(
-        "tokenization.dispose:\{is_disposing.val}:" +
-        "\{tokenization_disposed.val}:\{is_disposed.val}",
+        "tokenization.dispose:\{is_disposing.val}:\{tokenization_disposed.val}:\{is_disposed.val}",
       )
       tokenization_disposed.val = true
     },
     set_disposed=() => {
       trace.push(
-        "isDisposed=true:\{is_disposing.val}:" +
-        "\{tokenization_disposed.val}:\{is_disposed.val}",
+        "isDisposed=true:\{is_disposing.val}:\{tokenization_disposed.val}:\{is_disposed.val}",
       )
       is_disposed.val = true
     },
     dispose_registered_resources=() => {
       trace.push(
-        "super.dispose:\{is_disposing.val}:" +
-        "\{tokenization_disposed.val}:\{is_disposed.val}",
+        "super.dispose:\{is_disposing.val}:\{tokenization_disposed.val}:\{is_disposed.val}",
       )
     },
   )
 
   assert_eq(
     trace.join(","),
-    "disposing=true:false:false:false,willDispose:true:false:false," +
-    "tokenization.dispose:true:false:false,isDisposed=true:true:true:false," +
-    "super.dispose:true:true:true,disposing=false:true:true:true",
+    "disposing=true:false:false:false,willDispose:true:false:false,tokenization.dispose:true:false:false,isDisposed=true:true:true:false,super.dispose:true:true:true,disposing=false:true:true:true",
   )
   assert_false(is_disposing.val)
 }
@@ -453,7 +465,14 @@ test "Some then None scheduler epoch retains supplier until final detach" {
     calls,
   })
   let scheduler = model_tokenization_scheduler_harness()
-  let model = tokenization_model("one\ntwo\nthree", language_id)
+  let model = tokenization_model(
+    (
+      #|one
+      #|two
+      #|three
+    ),
+    language_id,
+  )
 
   // First Some selects before the 0 -> 1 tokenization notification. The
   // following None increments to two without another wake.

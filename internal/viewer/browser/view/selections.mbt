@@ -260,11 +260,5 @@ fn selection_piece_html(
   left : Double,
   width : Double,
 ) -> String {
-  "<div class=\"cslr " +
-  class_name +
-  "\" style=\"top:0px;bottom:0px;left:" +
-  left.to_string() +
-  "px;width:" +
-  width.to_string() +
-  "px;\"></div>"
+  "<div class=\"cslr \{class_name}\" style=\"top:0px;bottom:0px;left:\{left.to_string()}px;width:\{width.to_string()}px;\"></div>"
 }

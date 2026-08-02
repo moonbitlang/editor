@@ -408,13 +408,9 @@ fn MarkerService::create_filtered_marker(
   reasons : Array[String],
 ) -> Marker {
   let message = if reasons.length() == 1 {
-    "Problems are paused because: \"" + reasons[0] + "\""
+    "Problems are paused because: \"\{reasons[0]}\""
   } else {
-    "Problems are paused because: \"" +
-    reasons[0] +
-    "\" and " +
-    (reasons.length() - 1).to_string() +
-    " more"
+    "Problems are paused because: \"\{reasons[0]}\" and \{(reasons.length() - 1).to_string()} more"
   }
   {
     owner: "markersFilter",

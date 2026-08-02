@@ -70,13 +70,20 @@ fn with_feedback_test_viewer(
 
 ///|
 test "feedback lane reserves 18px while enabled and restores the base" {
-  with_feedback_test_viewer("alpha\nbeta\ngamma", (viewer, service) => {
-    assert_eq(viewer.get_options().line_decorations_width, 10)
-    service.set_feedback_enabled(test_model_uri(), true)
-    assert_eq(viewer.get_options().line_decorations_width, 28)
-    service.set_feedback_enabled(test_model_uri(), false)
-    assert_eq(viewer.get_options().line_decorations_width, 10)
-  })
+  with_feedback_test_viewer(
+    (
+      #|alpha
+      #|beta
+      #|gamma
+    ),
+    (viewer, service) => {
+      assert_eq(viewer.get_options().line_decorations_width, 10)
+      service.set_feedback_enabled(test_model_uri(), true)
+      assert_eq(viewer.get_options().line_decorations_width, 28)
+      service.set_feedback_enabled(test_model_uri(), false)
+      assert_eq(viewer.get_options().line_decorations_width, 10)
+    },
+  )
 }
 
 ///|
@@ -107,43 +114,69 @@ test "hover glyph follows non-empty lines of an enabled resource" {
 
 ///|
 test "lines with unresolved feedback refuse the add glyph" {
-  with_feedback_test_viewer("alpha\nbeta\ngamma", (viewer, service) => {
-    service.set_feedback_enabled(test_model_uri(), true)
-    let item = service.add_feedback(test_model_uri(), Range(3, 1, 3, 6), "note")
-    viewer.update_agent_feedback_hover_glyph(3)
-    assert_eq(viewer.test_feedback_input_contribution().hover_line_number, -1)
-    // Resolved feedback frees the line again.
-    service.set_feedback_resolved(test_model_uri(), item.id, true)
-    viewer.update_agent_feedback_hover_glyph(3)
-    assert_eq(viewer.test_feedback_input_contribution().hover_line_number, 3)
-  })
+  with_feedback_test_viewer(
+    (
+      #|alpha
+      #|beta
+      #|gamma
+    ),
+    (viewer, service) => {
+      service.set_feedback_enabled(test_model_uri(), true)
+      let item = service.add_feedback(
+        test_model_uri(),
+        Range(3, 1, 3, 6),
+        "note",
+      )
+      viewer.update_agent_feedback_hover_glyph(3)
+      assert_eq(viewer.test_feedback_input_contribution().hover_line_number, -1)
+      // Resolved feedback frees the line again.
+      service.set_feedback_resolved(test_model_uri(), item.id, true)
+      viewer.update_agent_feedback_hover_glyph(3)
+      assert_eq(viewer.test_feedback_input_contribution().hover_line_number, 3)
+    },
+  )
 }
 
 ///|
 test "feedback landing on the glyph line clears the glyph" {
-  with_feedback_test_viewer("alpha\nbeta\ngamma", (viewer, service) => {
-    service.set_feedback_enabled(test_model_uri(), true)
-    viewer.update_agent_feedback_hover_glyph(2)
-    assert_eq(viewer.test_feedback_input_contribution().hover_line_number, 2)
-    // The change subscription re-evaluates the glyph gates.
-    service.add_feedback(test_model_uri(), Range(2, 1, 2, 5), "note") |> ignore
-    assert_eq(viewer.test_feedback_input_contribution().hover_line_number, -1)
-  })
+  with_feedback_test_viewer(
+    (
+      #|alpha
+      #|beta
+      #|gamma
+    ),
+    (viewer, service) => {
+      service.set_feedback_enabled(test_model_uri(), true)
+      viewer.update_agent_feedback_hover_glyph(2)
+      assert_eq(viewer.test_feedback_input_contribution().hover_line_number, 2)
+      // The change subscription re-evaluates the glyph gates.
+      service.add_feedback(test_model_uri(), Range(2, 1, 2, 5), "note")
+      |> ignore
+      assert_eq(viewer.test_feedback_input_contribution().hover_line_number, -1)
+    },
+  )
 }
 
 ///|
 test "selection changes without editor focus never open the input" {
-  with_feedback_test_viewer("alpha\nbeta\ngamma", (viewer, service) => {
-    service.set_feedback_enabled(test_model_uri(), true)
-    viewer.set_selection(
-      @core.Selection::from_positions(Position(1, 1), Position(1, 6)),
-    )
-    // The unattached harness has no DOM focus, so `_onSelectionChanged`'s
-    // `hasTextFocus` gate holds the input closed (and no widget DOM is
-    // ever created headlessly).
-    assert_eq(viewer.test_feedback_input_contribution().visible, false)
-    assert_true(viewer.test_feedback_input_contribution().widget is None)
-  })
+  with_feedback_test_viewer(
+    (
+      #|alpha
+      #|beta
+      #|gamma
+    ),
+    (viewer, service) => {
+      service.set_feedback_enabled(test_model_uri(), true)
+      viewer.set_selection(
+        @core.Selection::from_positions(Position(1, 1), Position(1, 6)),
+      )
+      // The unattached harness has no DOM focus, so `_onSelectionChanged`'s
+      // `hasTextFocus` gate holds the input closed (and no widget DOM is
+      // ever created headlessly).
+      assert_eq(viewer.test_feedback_input_contribution().visible, false)
+      assert_true(viewer.test_feedback_input_contribution().widget is None)
+    },
+  )
 }
 
 ///|
@@ -151,7 +184,14 @@ test "feedback content flush preserves central owners and refreshes model state"
   let backings = RootTestServiceBackings::new()
   let service = backings.agent_feedback
   let viewer = Viewer::Viewer(services=backings.services)
-  let model = feedback_test_model("/content-flush", "alpha\nbeta\ngamma")
+  let model = feedback_test_model(
+    "/content-flush",
+    (
+      #|alpha
+      #|beta
+      #|gamma
+    ),
+  )
   let resource = model.uri
   service.set_feedback_enabled(resource, true)
   let item = service.add_feedback(resource, Range(1, 1, 1, 6), "keep the guard")
@@ -175,7 +215,13 @@ test "feedback content flush preserves central owners and refreshes model state"
   assert_eq(input_entry.listeners.length(), 9)
   assert_eq(widget_entry.listeners.length(), 5)
 
-  viewer.set_value("alpha changed\nbeta\ngamma")
+  viewer.set_value(
+    (
+      #|alpha changed
+      #|beta
+      #|gamma
+    ),
+  )
 
   assert_true(physical_equal(input, viewer.test_feedback_input_contribution()))
   assert_true(
@@ -205,8 +251,22 @@ test "feedback model swap removal and reattach preserve only Viewer-lifetime sta
   let backings = RootTestServiceBackings::new()
   let service = backings.agent_feedback
   let viewer = Viewer::Viewer(services=backings.services)
-  let first = feedback_test_model("/first", "alpha\nbeta\ngamma")
-  let second = feedback_test_model("/second", "one\ntwo\nthree")
+  let first = feedback_test_model(
+    "/first",
+    (
+      #|alpha
+      #|beta
+      #|gamma
+    ),
+  )
+  let second = feedback_test_model(
+    "/second",
+    (
+      #|one
+      #|two
+      #|three
+    ),
+  )
   service.set_feedback_enabled(first.uri, true)
   let item = service.add_feedback(
     first.uri,
@@ -281,7 +341,14 @@ test "feedback disposal drains entries tears down model state and silences servi
   let backings = RootTestServiceBackings::new()
   let service = backings.agent_feedback
   let viewer = Viewer::Viewer(services=backings.services)
-  let model = feedback_test_model("/dispose", "alpha\nbeta\ngamma")
+  let model = feedback_test_model(
+    "/dispose",
+    (
+      #|alpha
+      #|beta
+      #|gamma
+    ),
+  )
   let resource = model.uri
   service.set_feedback_enabled(resource, true)
   let item = service.add_feedback(resource, Range(1, 1, 1, 6), "dispose note")
