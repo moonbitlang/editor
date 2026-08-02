@@ -95,7 +95,11 @@ tests/browser/
 
 The browser-correctness gate runs both `smoke/` and `component/`. Their
 directory names describe how they reach the browser surface, not separate
-top-level quality gates.
+top-level quality gates. GitHub Actions retries a failed browser test once in
+a fresh Playwright worker because the hosted macOS runner can transiently stall
+native input, layout, or fixture-watch delivery. Local runs do not retry, and
+the failed CI attempt retains its trace; a deterministic regression therefore
+fails both attempts and still fails the gate.
 
 Compilation is `moon build`'s job: every js entry point declares
 `supported_targets = "js"`, so one workspace build emits all of them. The
