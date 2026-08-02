@@ -50,12 +50,12 @@ allowed to reach the owning hover, widget, or editor scroller.
 
 `MarkdownDiagramViewports` owns the optional interactive presentation for every
 successful direct Diago or Mermaid SVG in one rendered target. It mounts pan,
-zoom, fit, and resize controls in an always-visible floating toolbar that also
-reports the diagram type and current zoom. The full Markdown document uses the
-roomier card treatment while Markdown comments use the same controller with a
-compact CSS density. The controller owns its listener/observer/frame lifetime
-and restores borrowed DOM state on disposal. Both consumers dispose it before
-replacing their renderer target. Its stylesheet is
+zoom, fit, and resize controls in an always-visible floating toolbar. The full
+Markdown document uses the roomier card treatment while Markdown comments use
+the same controller with a compact CSS density. The controller owns its
+listener/observer/frame lifetime and restores borrowed DOM state on disposal.
+Both consumers dispose it before replacing their renderer target. Its
+stylesheet is
 `internal/viewer/browser/markdown/diagram_viewport.css`.
 
 `moonbit-viewer-markdown-diagram-viewport` is also an event-time ownership

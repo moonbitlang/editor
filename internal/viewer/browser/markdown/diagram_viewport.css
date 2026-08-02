@@ -161,49 +161,6 @@
   border-radius: 6px;
 }
 
-.moonbit-viewer-markdown-diagram-kind,
-.moonbit-viewer-markdown-diagram-scale {
-  flex: none;
-  color: var(--vscode-descriptionForeground, var(--vscode-editor-foreground));
-  font-family: var(--ui-font-family, var(--editor-font-family));
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 22px;
-  white-space: nowrap;
-}
-
-.moonbit-viewer-markdown-diagram-kind {
-  padding: 0 6px 0 5px;
-  border-right: 1px solid
-    var(--vscode-editorWidget-border, var(--vscode-widget-border, transparent));
-  letter-spacing: 0.02em;
-}
-
-.moonbit-viewer-markdown-diagram-scale {
-  min-width: 38px;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-}
-
-.moonbit-viewer-markdown-comment-content
-  :is(
-    .moonbit-viewer-markdown-diagram-kind,
-    .moonbit-viewer-markdown-diagram-scale
-  ) {
-  font-size: 10px;
-  line-height: 20px;
-}
-
-.moonbit-viewer-markdown-comment-content
-  .moonbit-viewer-markdown-diagram-kind {
-  padding-inline: 5px;
-}
-
-.moonbit-viewer-markdown-comment-content
-  .moonbit-viewer-markdown-diagram-scale {
-  min-width: 34px;
-}
-
 .moonbit-viewer-markdown-diagram-controls button {
   display: flex;
   align-items: center;

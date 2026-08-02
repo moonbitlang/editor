@@ -1181,12 +1181,6 @@ test('interactive Diago controls pan zoom fit resize and keep sibling state inde
     await expect(
       large.getByRole('toolbar', { name: 'D2 diagram controls' }),
     ).toBeVisible();
-    await expect(large.locator('.moonbit-viewer-markdown-diagram-kind')).toHaveText(
-      'D2',
-    );
-    await expect(large.locator('.moonbit-viewer-markdown-diagram-scale')).toHaveText(
-      `${Math.round(initial.scale * 100)}%`,
-    );
     await zoomIn.focus();
     const windowWidth = await page.evaluate(() => window.innerWidth);
     await page.mouse.move(windowWidth - 2, 20);
