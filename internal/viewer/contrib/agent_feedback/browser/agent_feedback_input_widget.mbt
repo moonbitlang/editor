@@ -21,7 +21,7 @@ let input_min_width_px : Double = 150.0
 let input_max_width_px : Double = 400.0
 
 ///|
-pub let input_max_width_editor_fraction : Double = 0.9
+let input_max_width_editor_fraction : Double = 0.9
 
 ///|
 /// The textarea line height the widget sizes against (`_lineHeight = 22`).
@@ -48,7 +48,7 @@ pub(all) struct AgentFeedbackInputWidgetHost {
 }
 
 ///|
-pub struct AgentFeedbackInputWidget {
+struct AgentFeedbackInputWidget {
   host : AgentFeedbackInputWidgetHost
   root : @rdom.Element
   textarea : @rdom.Element
@@ -317,9 +317,7 @@ fn AgentFeedbackInputWidget::update_action_enabled(
 /// minimum and a maximum that never exceeds the editor content area), height
 /// from the textarea's scroll height. An empty input uses the placeholder only
 /// when that attribute exists.
-pub fn AgentFeedbackInputWidget::auto_size(
-  self : AgentFeedbackInputWidget,
-) -> Unit {
+fn AgentFeedbackInputWidget::auto_size(self : AgentFeedbackInputWidget) -> Unit {
   let value = self.value()
   let text = if value.is_empty() &&
     self.textarea.get_attribute("placeholder") is Some(placeholder) {

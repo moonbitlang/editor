@@ -45,7 +45,7 @@ pub(all) struct AgentFeedbackEditorWidgetHost {
 }
 
 ///|
-pub struct AgentFeedbackEditorWidget {
+struct AgentFeedbackEditorWidget {
   host : AgentFeedbackEditorWidgetHost
   id : String
   comments : Array[@agent_feedback.SessionEditorComment]
@@ -61,7 +61,7 @@ pub struct AgentFeedbackEditorWidget {
   reply_textareas : Map[String, @rdom.Element]
   /// The shared Markdown renderer lifetime for each retained comment/reply
   /// target. Keys distinguish the comment body from each indexed reply.
-  priv markdown_disposables : Map[String, @base_common.Disposable]
+  markdown_disposables : Map[String, @base_common.Disposable]
   mut expanded : Bool
   mut disposed : Bool
   mut start_line : Int
@@ -643,7 +643,7 @@ pub fn AgentFeedbackEditorWidget::focus_feedback(
 
 ///|
 /// `clearFocus`.
-pub fn AgentFeedbackEditorWidget::clear_focus(
+fn AgentFeedbackEditorWidget::clear_focus(
   self : AgentFeedbackEditorWidget,
 ) -> Unit {
   for _, node in self.item_nodes {
