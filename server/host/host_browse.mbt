@@ -122,7 +122,7 @@ async fn resolve_host_directory_listing(
   }
   // MoonBit's default String order is shortlex; a directory picker wants
   // plain lexicographic order.
-  names.sort_by(compare_names_lexicographic)
+  names.sort_by(String::lexical_compare)
   let entries : Array[@remote_protocol.HostDirectoryEntry] = []
   for name in names {
     // The picker chooses repositories; hidden directories are noise there.
@@ -258,21 +258,6 @@ async fn looks_like_repository_root(path : String) -> Bool {
     }
   }
   false
-}
-
-///|
-/// Code-unit lexicographic comparison (the default `String` order is
-/// shortlex, which reads wrongly in a file listing).
-fn compare_names_lexicographic(left : String, right : String) -> Int {
-  let shared = left.length().min(right.length())
-  for index in 0..<shared {
-    let l = left[index].to_int()
-    let r = right[index].to_int()
-    if l != r {
-      return l - r
-    }
-  }
-  left.length() - right.length()
 }
 
 ///|
