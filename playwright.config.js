@@ -16,6 +16,10 @@ export default defineConfig({
   testDir: 'tests/browser',
   outputDir: 'test-results/browser',
   timeout: 30_000,
+  // Hosted macOS occasionally stalls native input, layout, or fixture-watch
+  // delivery. Retry once in a fresh worker while retaining the failed
+  // attempt's trace; deterministic failures still fail the gate twice.
+  retries: process.env.CI ? 1 : 0,
   workers: 1,
   use: {
     baseURL,
