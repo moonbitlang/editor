@@ -94,6 +94,25 @@ test('keeps the explorer compact and exposes an accessible splitter', async ({
     )
   ).toBeGreaterThanOrEqual(24);
 
+  // The Viewer has positioned margin layers of its own. Exercise the target's
+  // right overhang in Code view to prove the splitter stacks above them.
+  const codeSplitterBox = await splitter.boundingBox();
+  await page.mouse.move(
+    codeSplitterBox.x + codeSplitterBox.width + 6,
+    codeSplitterBox.y + codeSplitterBox.height / 2,
+  );
+  await page.mouse.down();
+  await page.mouse.move(
+    codeSplitterBox.x + codeSplitterBox.width + 26,
+    codeSplitterBox.y + codeSplitterBox.height / 2,
+  );
+  await page.mouse.up();
+  await expect(splitter).toHaveAttribute('aria-valuenow', '300');
+  await splitter.focus();
+  await splitter.press('ArrowLeft');
+  await splitter.press('ArrowLeft');
+  await expect(splitter).toHaveAttribute('aria-valuenow', '280');
+
   await page.locator(
     '[data-workspace-id="readonly-remote://workspace/README.md"]',
   ).click();

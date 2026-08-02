@@ -35,7 +35,7 @@ body {
 
 .workspace-resize-handle {
   position: relative;
-  z-index: 2;
+  z-index: 3;
   width: 4px;
   cursor: ew-resize;
   touch-action: none;
