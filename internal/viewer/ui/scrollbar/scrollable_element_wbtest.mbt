@@ -215,14 +215,17 @@ test "500ms hide timeout is cancellable and inert after disposal" {
   // idle path still performs the 500ms fade when its current callback runs.
   let guarded = ScrollableElementDom("guarded")
   prepare_scrollable_timeout_test(guarded)
+  assert_false(guarded.is_dragging)
   guarded.mouse_entered()
   guarded.reveal_for_scroll()
   assert_eq(scrollable_timeout_test_active_count(), 0)
   guarded.mouse_left()
   guarded.drag_started()
+  assert_true(guarded.is_dragging)
   guarded.reveal_for_scroll()
   assert_eq(scrollable_timeout_test_active_count(), 0)
   guarded.drag_ended()
+  assert_false(guarded.is_dragging)
   guarded.reveal_for_scroll()
   assert_eq(scrollable_timeout_test_active_count(), 1)
   scrollable_timeout_test_run_pending()
@@ -231,6 +234,9 @@ test "500ms hide timeout is cancellable and inert after disposal" {
     guarded.vertical_bar.get_attribute("class"),
     Some("invisible scrollbar vertical fade"),
   )
+  guarded.drag_started()
+  assert_true(guarded.is_dragging)
   guarded.dispose()
+  assert_false(guarded.is_dragging)
   restore_scrollable_timeout_test_browser()
 }
