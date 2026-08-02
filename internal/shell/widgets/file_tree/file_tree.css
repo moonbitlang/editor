@@ -8,8 +8,8 @@
 }
 
 .workspace-title {
-  height: 35px;
-  padding: 0 8px 0 20px;
+  height: 30px;
+  padding: 0 6px 0 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -18,10 +18,11 @@
 }
 
 .workspace-title-label {
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 10px;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
+  opacity: 0.72;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
