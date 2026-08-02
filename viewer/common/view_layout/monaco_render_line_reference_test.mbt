@@ -2166,13 +2166,11 @@ fn inner(out : RenderLineOutput2) -> String {
 /// `[partIndex,charIndex,visibleColumn]` form (the `*.1.snap` shape).
 fn cmap(out : RenderLineOutput2) -> String {
   let sb = StringBuilder()
-  sb.write_string("[")
+  sb.write_char('[')
   for entry in out.character_mapping.entries {
-    sb.write_string(
-      "[\{entry.part_index},\{entry.char_index},\{entry.visible_column}]",
-    )
+    sb <+ "[\{entry.part_index},\{entry.char_index},\{entry.visible_column}]"
   }
-  sb.write_string("]")
+  sb.write_char(']')
   sb.to_string()
 }
 

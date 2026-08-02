@@ -119,7 +119,7 @@ fn markdown_comments_offscreen_source() -> String {
         "offscreen_horizontal_overflow_sentinel alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu nu xi omicron pi rho sigma tau upsilon phi chi psi omega alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu nu xi omicron pi rho sigma tau upsilon phi chi psi omega alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu nu xi omicron pi rho sigma tau upsilon phi chi psi omega",
       )
     } else {
-      source.write_string("offscreen_code_line_\{line}")
+      source <+ "offscreen_code_line_\{line}"
     }
   }
   source.write_string(
@@ -204,7 +204,7 @@ fn markdown_comments_mermaid_offscreen_source() -> String {
     if line > 1 {
       source.write_char('\n')
     }
-    source.write_string("m_pad_\{line}")
+    source <+ "m_pad_\{line}"
   }
   source.write_string(
     (

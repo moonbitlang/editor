@@ -117,13 +117,11 @@ pub fn TextSnapshot::get_value_in_range(
   let a = (range.start_column - 1).clamp(min=0, max=first.length())
   sb.write_string(code_unit_slice(first, a, first.length()))
   for line in (start_line + 1)..<end_line {
-    sb.write_string("\n")
-    sb.write_string(self.line_text(line))
+    sb <+ "\n\{self.line_text(line)}"
   }
   let last = self.line_text(end_line)
   let b = (range.end_column - 1).clamp(min=0, max=last.length())
-  sb.write_string("\n")
-  sb.write_string(code_unit_slice(last, 0, b))
+  sb <+ "\n\{code_unit_slice(last, 0, b)}"
   sb.to_string()
 }
 

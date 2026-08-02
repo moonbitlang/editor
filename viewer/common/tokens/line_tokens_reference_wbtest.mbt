@@ -41,8 +41,8 @@ fn render_line_tokens(tokens : LineTokens) -> String {
   let str = tokens.get_line_content()
   let mut last_offset = 0
   for i in 0..<tokens.get_count() {
-    result.write_string(substr(str, last_offset, tokens.get_end_offset(i)))
-    result.write_string("(\{tokens.get_metadata(i).to_uint()})")
+    result <+
+      "\{substr(str, last_offset, tokens.get_end_offset(i))}(\{tokens.get_metadata(i).to_uint()})"
     last_offset = tokens.get_end_offset(i)
   }
   result.to_string()

@@ -178,7 +178,7 @@ fn feedback_source_text() -> String {
   // spec step has room to wheel; line 30 anchors the far bubble.
   let filler = StringBuilder::new()
   for index in 1..<=34 {
-    filler.write_string("// filler line \{index.to_string()}\n")
+    filler <+ "// filler line \{index}\n"
   }
   (
     #|// feedback fixture

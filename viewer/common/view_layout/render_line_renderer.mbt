@@ -86,9 +86,8 @@ pub fn render_view_line(
       for decoration in input.line_decorations {
         if decoration.decoration_type == Before ||
           decoration.decoration_type == After {
-          html.write_string("<span class=\"")
-          html.write_string(decoration.class_name)
-          html.write_string("\"></span>")
+          html <+
+            $|<span class="\{decoration.class_name}"></span>
           if decoration.decoration_type == Before {
             contains_foreign = add_foreign_element(contains_foreign, Before)
             before_count = before_count + 1
@@ -764,13 +763,13 @@ fn render_line(
     if part_contains_rtl {
       html.write_string("style=\"unicode-bidi:isolate\" ")
     }
-    html.write_string("class=\"")
-    if part_renders_whitespace_with_width {
-      html.write_string("mtkz")
+    let part_class = if part_renders_whitespace_with_width {
+      "mtkz"
     } else {
-      html.write_string(part_type)
+      part_type
     }
-    html.write_char('"')
+    html <+
+      $|class="\{part_class}"
     if part_renders_whitespace {
       let mut part_width = 0
       let mut probe_index = char_index
@@ -896,9 +895,7 @@ fn render_line(
             run_start = char_index + 1
           } else if render_control_characters && is_control_character(charcode) {
             flush_run(html, line_content, run_start, char_index)
-            html.write_string("[U+")
-            html.write_string(to_4_char_hex(charcode))
-            html.write_string("]")
+            html <+ "[U+\{to_4_char_hex(charcode)}]"
             produced_characters = 8
             char_width = produced_characters
             run_start = char_index + 1
@@ -941,13 +938,8 @@ fn render_line(
     )
   }
   if input.is_overflowing {
-    html.write_string("<span class=\"mtkoverflow\">")
-    html.write_string("Show more (")
-    html.write_string(
-      render_overflowing_char_count(input.overflowing_char_count),
-    )
-    html.write_string(")")
-    html.write_string("</span>")
+    html <+
+      $|<span class="mtkoverflow">Show more (\{render_overflowing_char_count(input.overflowing_char_count)})</span>
   }
   html.write_string("</span>")
   { character_mapping, contains_foreign_elements }

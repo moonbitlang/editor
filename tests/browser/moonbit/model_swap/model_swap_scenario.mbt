@@ -38,7 +38,7 @@ fn swap_model(name : String, marker : String) -> @model.TextModel {
   lines.write_string(marker)
   for index in 1..<40 {
     lines.write_char('\n')
-    lines.write_string("line_\{index}_of_\{name}")
+    lines <+ "line_\{index}_of_\{name}"
   }
   TextModel(
     try! @base_common.Uri::from(

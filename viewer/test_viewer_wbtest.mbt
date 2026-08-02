@@ -513,8 +513,7 @@ fn long_document(line_count : Int) -> String {
     if i > 0 {
       out.write_char('\n')
     }
-    out.write_string("line ")
-    out.write_string(i.to_string())
+    out <+ "line \{i}"
   }
   out.to_string()
 }

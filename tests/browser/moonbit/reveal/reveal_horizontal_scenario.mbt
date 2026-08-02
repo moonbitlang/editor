@@ -146,8 +146,7 @@ fn reveal_source_text() -> String {
     if i > 0 {
       out.write_char('\n')
     }
-    out.write_string("line")
-    out.write_string(i.to_string())
+    out <+ "line\{i}"
     for _ in 0..<120 {
       out.write_char('x')
     }

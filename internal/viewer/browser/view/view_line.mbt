@@ -198,23 +198,13 @@ fn ViewLine::render_line(
   } else if input.contains_rtl {
     builder.write_string("dir=\"ltr\" ")
   }
-  builder.write_string("style=\"top:")
-  builder.write_string(delta_top.to_string())
-  builder.write_string("px;height:")
-  builder.write_string(line_height.to_string())
-  builder.write_string("px;line-height:")
-  builder.write_string(line_height.to_string())
+  builder <+
+    $|style="top:\{delta_top}px;height:\{line_height}px;line-height:\{line_height}
   if input.text_direction == RTL {
-    builder.write_string("px;padding-right:")
-    builder.write_string(input.vertical_scrollbar_size.to_string())
+    builder <+ "px;padding-right:\{input.vertical_scrollbar_size}"
   }
-  builder.write_string("px;\" class=\"")
-  builder.write_string(@viewer_common.render_line_class())
-  builder.write_string("\" data-line=\"")
-  builder.write_string(line_number.to_string())
-  builder.write_string("\">")
-  builder.write_string(output.html)
-  builder.write_string("</div>")
+  builder <+
+    $|px;" class="\{@viewer_common.render_line_class()}" data-line="\{line_number}">\{output.html}</div>
   let prior_dom_node = match self.rendered_view_line {
     Some(rendered) => rendered.dom_node
     None => None

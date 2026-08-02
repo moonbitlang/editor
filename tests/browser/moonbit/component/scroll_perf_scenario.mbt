@@ -129,7 +129,7 @@ fn scroll_perf_mount_host(visible_lines : Int) -> @rdom.Element? {
 fn scroll_perf_source_text(wide : Bool) -> String {
   let builder = StringBuilder()
   for line in 1..<=3000 {
-    builder.write_string("perf line \{line.to_string()} ")
+    builder <+ "perf line \{line} "
     let repetitions = if wide { 24 } else { 1 }
     for _ in 0..<repetitions {
       builder.write_string("alpha beta gamma delta epsilon zeta eta theta ")

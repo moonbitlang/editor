@@ -111,7 +111,7 @@ test "flush clamps the scroll position instead of resetting it" {
     if index > 0 {
       long_lines.write_char('\n')
     }
-    long_lines.write_string("line_\{index}")
+    long_lines <+ "line_\{index}"
   }
   let model = plain_text_model(long_lines.to_string())
   let view_model = @view_model.ViewModel(model)
