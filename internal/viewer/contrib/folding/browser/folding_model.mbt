@@ -61,7 +61,7 @@ fn FoldingDecorationAccess::remove_decorations(
 
 ///|
 /// `FoldingModelChangeEvent` (`foldingModel.ts:19`).
-struct FoldingModelChangeEvent {
+priv struct FoldingModelChangeEvent {
   model : FoldingModel
   collapse_state_changed : Array[FoldingRegion]?
 }

@@ -302,14 +302,14 @@ fn TestContentWidget::content_widget_handle(
   } else {
     None
   }
-  ContentWidgetHandle(
+  ContentWidgetHandle::with_render_callbacks(
     () => self.id,
     () => self.dom_node,
     () => self.position,
-    allow_editor_overflow=self.allow_overflow,
-    use_display_none=self.use_display_none,
-    before_render?,
-    after_render?,
+    self.allow_overflow,
+    self.use_display_none,
+    before_render,
+    after_render,
   )
 }
 

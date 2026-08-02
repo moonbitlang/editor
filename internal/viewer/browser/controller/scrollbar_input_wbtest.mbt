@@ -278,6 +278,9 @@ test "AbstractScrollbar gesture owns listeners, drag state, and reset branches" 
   let handler = scrollbar_input_test_handler(
     editor_scrollable, hover_scrollable,
   )
+  handler.set_scrollbar_drag_should_reset_for_test((initial, current) => {
+    scrollbar_drag_should_reset(initial, current, is_windows=true)
+  })
   handler.hook_scrollable_scrollbar_input(
     hover_scrollable,
     HoverScrollableElement,
@@ -356,6 +359,48 @@ test "AbstractScrollbar gesture owns listeners, drag state, and reset branches" 
   scrollbar_input_test_dispatch_mouse(slider, "pointerup", 0, 0, 3, 10, 30)
   |> ignore
   assert_true(handler.drag is None)
+
+  // Windows 139/140 remain ordinary moves; 141 resets to the initial scroll.
+  // The injected predicate sits on the real gesture path, so this proves the
+  // handler calls the branch rather than merely testing its arithmetic helper.
+  for orthogonal_distance in [139, 140, 141] {
+    prepare_scrollbar_input_test_scrollable(hover_scrollable, 200.0)
+    scrollbar_input_test_dispatch_mouse(
+      slider,
+      "pointerdown",
+      0,
+      1,
+      10 + orthogonal_distance,
+      10,
+      10,
+    )
+    |> ignore
+    scrollbar_input_test_dispatch_mouse(
+      slider,
+      "pointermove",
+      0,
+      1,
+      10 + orthogonal_distance,
+      10 + orthogonal_distance,
+      30,
+    )
+    |> ignore
+    if orthogonal_distance > 140 {
+      assert_eq(hover_scrollable.content.get_scroll_top(), 200.0)
+    } else {
+      assert_true(hover_scrollable.content.get_scroll_top() > 200.0)
+    }
+    scrollbar_input_test_dispatch_mouse(
+      slider,
+      "pointerup",
+      0,
+      0,
+      10 + orthogonal_distance,
+      10 + orthogonal_distance,
+      30,
+    )
+    |> ignore
+  }
 
   // Disposing an active handler ends the drag and removes every hook exactly
   // once; post-dispose pointerdown is inert.

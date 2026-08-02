@@ -188,7 +188,7 @@ fn RangesCollector::to_indent_ranges(
 /// the sentinel, `-2` for an end-marker region), `end_above` the end line
 /// for the region above, `line` the start line (only used for marker
 /// regions).
-struct PreviousRegion {
+priv struct PreviousRegion {
   mut indent : Int
   mut end_above : Int
   mut line : Int

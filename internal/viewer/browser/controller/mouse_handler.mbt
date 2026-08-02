@@ -153,6 +153,11 @@ struct MouseHandler {
   listeners : Array[@base_common.Disposable]
   /// The active scrollbar-thumb drag (scrollbar_input.mbt).
   mut drag : @scrollbar.ScrollbarDrag?
+  /// Gesture-level platform predicate. Production installs the host-platform
+  /// implementation; package white-box tests replace it on an isolated
+  /// handler to exercise the Windows reset branch without a public platform
+  /// override.
+  mut scrollbar_drag_should_reset : (Double, Double) -> Bool
   mut disposed : Bool
 }
 
@@ -173,6 +178,9 @@ pub fn MouseHandler::MouseHandler(
     mouse_leave_monitor: None,
     listeners: [],
     drag: None,
+    scrollbar_drag_should_reset: (initial, current) => {
+      scrollbar_drag_should_reset(initial, current)
+    },
     disposed: false,
   }
   let mouse_events = @editor_browser.EditorMouseEventFactory(

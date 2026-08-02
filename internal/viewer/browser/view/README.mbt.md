@@ -167,10 +167,12 @@ rewrites a row only when the concatenated content changes.
 widgets remain in `internal/viewer/contrib/hover/browser`.
 
 - `ContentWidgetHandle` retains live id, DOM-node, and position getters;
-  `allowEditorOverflow` and `useDisplayNone`; and independently optional
-  before/after-render callbacks. Safe callback helpers preserve exception
-  fallbacks and argument order. Content-widget mouse suppression is absent
-  because no current pointer-input consumer queries it.
+  `allowEditorOverflow`; and the production-used preference-only after-render
+  callback. The package-private full adapter retains `useDisplayNone`,
+  before-render dimensions, and exact rendered coordinates for the white-box
+  geometry contract. Safe callback helpers preserve exception fallbacks and
+  argument order. Content-widget mouse suppression is absent because no
+  current pointer-input consumer queries it.
 - `add_widget` mounts a node once in `.contentWidgets` or
   `.overflowingContentWidgets`, where it remains for the owning View lifetime;
   disposing the View removes the complete subtree. `set_widget_position`

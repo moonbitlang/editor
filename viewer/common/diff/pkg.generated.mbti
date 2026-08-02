@@ -39,10 +39,6 @@ pub(all) struct LinesDiffComputerOptions {
   compute_moves : Bool
 } derive(Eq, @debug.Debug)
 
-type MovedText derive(Eq, @debug.Debug)
-
-type RangeMapping derive(Eq, @debug.Debug)
-
 // Type aliases
 
 // Traits

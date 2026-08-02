@@ -14,7 +14,7 @@ pub(all) struct LineRange {
 
 ///|
 /// Where a fold range came from — `FoldSource` (`foldingRanges.ts:13`).
-enum FoldSource {
+priv enum FoldSource {
   Provider
   UserDefined
   Recovered
@@ -94,7 +94,7 @@ const MASK_INDENT : UInt = 0xFF000000
 
 ///|
 /// A packed bit set — Monaco's `BitField` (`foldingRanges.ts:38`).
-struct BitField {
+priv struct BitField {
   states : FixedArray[UInt]
 }
 
@@ -451,7 +451,7 @@ pub fn FoldingRegions::from_fold_ranges(
 ///|
 /// The `FoldingRegions | FoldRange[]` parameter union of `sanitizeAndMerge`
 /// (`foldingRanges.ts:302-303`), made explicit for MoonBit.
-enum FoldRangesOrRegions {
+priv enum FoldRangesOrRegions {
   Regions(FoldingRegions)
   Ranges(Array[FoldRange])
 }

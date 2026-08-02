@@ -152,7 +152,7 @@ fn DetailedLineRangeMapping::flip(
 ///|
 /// Maps a range in the original text model to a range in the modified text
 /// model — `RangeMapping` (`rangeMapping.ts:243`).
-struct RangeMapping {
+priv struct RangeMapping {
   /// The original range.
   original_range : @base_common.Range
   /// The modified range.

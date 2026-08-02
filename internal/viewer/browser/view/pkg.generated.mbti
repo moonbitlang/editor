@@ -25,13 +25,8 @@ pub fn empty_editor_class_name(show_unused? : Bool, show_deprecated? : Bool) -> 
 // Errors
 
 // Types and methods
-pub(all) struct ContentWidgetDimension {
-  width : Double
-  height : Double
-} derive(Eq, @debug.Debug)
-
 type ContentWidgetHandle
-pub fn ContentWidgetHandle::ContentWidgetHandle(() -> String, () -> @dom.Element, () -> ContentWidgetPosition?, allow_editor_overflow? : Bool, use_display_none? : Bool, before_render? : () -> ContentWidgetDimension? raise, after_render? : (ContentWidgetPositionPreference?, ContentWidgetRenderedCoordinate?) -> Unit raise) -> Self
+pub fn ContentWidgetHandle::ContentWidgetHandle(() -> String, () -> @dom.Element, () -> ContentWidgetPosition?, allow_editor_overflow? : Bool, after_render? : (ContentWidgetPositionPreference?) -> Unit raise) -> Self
 
 pub(all) struct ContentWidgetPosition {
   position : @common.Position?
@@ -45,8 +40,6 @@ pub(all) enum ContentWidgetPositionPreference {
   Below
   Exact
 } derive(Eq)
-
-type ContentWidgetRenderedCoordinate derive(Eq, @debug.Debug)
 
 type ContentWidgets
 pub fn ContentWidgets::add_widget(Self, ContentWidgetHandle) -> Unit

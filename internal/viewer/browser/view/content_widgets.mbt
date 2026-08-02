@@ -35,7 +35,7 @@ pub(all) struct ContentWidgetPosition {
 ///|
 /// Monaco `IDimension`, returned by an optional content-widget `beforeRender`
 /// callback when the widget can provide its dimensions without a DOM read.
-pub(all) struct ContentWidgetDimension {
+priv struct ContentWidgetDimension {
   width : Double
   height : Double
 } derive(Eq, Debug)
@@ -43,7 +43,7 @@ pub(all) struct ContentWidgetDimension {
 ///|
 /// Monaco `IContentWidgetRenderedCoordinate`, passed to `afterRender` after
 /// the write phase has selected and applied a concrete placement.
-struct ContentWidgetRenderedCoordinate {
+priv struct ContentWidgetRenderedCoordinate {
   top : Double
   left : Double
 } derive(Eq, Debug)
@@ -67,20 +67,47 @@ struct ContentWidgetHandle {
 }
 
 ///|
-/// Creates a content-widget adapter. The optional values preserve Monaco's
-/// absent-member defaults; callbacks capture any concrete widget state they
-/// need at the construction boundary.
+/// Creates the production content-widget adapter. The public callback reports
+/// only the selected preference consumed by concrete widgets; dimension hints,
+/// rendered coordinates, and `useDisplayNone` remain package implementation
+/// seams exercised by white-box geometry tests.
 pub fn ContentWidgetHandle::ContentWidgetHandle(
   get_id : () -> String,
   get_dom_node : () -> @rdom.Element,
   get_position : () -> ContentWidgetPosition?,
   allow_editor_overflow? : Bool = false,
-  use_display_none? : Bool = false,
-  before_render? : () -> ContentWidgetDimension? raise,
-  after_render? : (
+  after_render? : (ContentWidgetPositionPreference?) -> Unit raise,
+) -> ContentWidgetHandle {
+  let after_render_with_coordinate = match after_render {
+    Some(callback) => Some((position, _coordinate) => callback(position))
+    None => None
+  }
+  ContentWidgetHandle::with_render_callbacks(
+    get_id,
+    get_dom_node,
+    get_position,
+    allow_editor_overflow,
+    false,
+    None,
+    after_render_with_coordinate,
+  )
+}
+
+///|
+/// Package-private full adapter used by the renderer's white-box contract
+/// tests. It retains Monaco's dimension hint and exact rendered-coordinate
+/// callbacks without making either geometry DTO part of the public API.
+fn ContentWidgetHandle::with_render_callbacks(
+  get_id : () -> String,
+  get_dom_node : () -> @rdom.Element,
+  get_position : () -> ContentWidgetPosition?,
+  allow_editor_overflow : Bool,
+  use_display_none : Bool,
+  before_render : (() -> ContentWidgetDimension? raise)?,
+  after_render : ((
     ContentWidgetPositionPreference?,
     ContentWidgetRenderedCoordinate?,
-  ) -> Unit raise,
+  ) -> Unit raise)?,
 ) -> ContentWidgetHandle {
   {
     get_id,

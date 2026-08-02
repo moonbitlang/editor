@@ -251,7 +251,7 @@ test "mounted Markdown keeps model truth and stable presentation capabilities" {
 }
 
 ///|
-test "Markdown detach retires presentation, root, and model attachment" {
+test "Markdown detach retires presentation and root before model transition" {
   install_mounted_test_browser()
   defer restore_mounted_test_browser()
   let viewer = Viewer::Viewer()
@@ -289,7 +289,37 @@ test "Markdown detach retires presentation, root, and model attachment" {
   )
 
   assert_eq(model.get_attached_editor_count(), 1)
+  let final_detachment_observed = Ref(false)
+  let detachment_saw_disposed_semantic_dom = Ref(false)
+  let detachment_saw_removed_hover_widget = Ref(false)
+  let detachment_saw_removed_root = Ref(false)
+  let detachment_saw_restored_placeholder = Ref(false)
+  let subscription = viewer.on_did_detach_model_for_diagnostics(() => {
+    if model.get_attached_editor_count() == 0 {
+      final_detachment_observed.val = true
+      detachment_saw_disposed_semantic_dom.val = markdown
+        .semantic_code_lines()
+        .is_empty()
+      detachment_saw_removed_hover_widget.val = overlay.query_selector(
+          ".moonbit-viewer-markdown-hover-widget",
+        )
+        is None
+      detachment_saw_removed_root.val = !@base_browser.element_contains(
+        host, root,
+      )
+      detachment_saw_restored_placeholder.val = @base_browser.element_contains(
+        host,
+        placeholder.root,
+      )
+    }
+  })
   viewer.set_model(None)
+  subscription.dispose()
+  assert_true(final_detachment_observed.val)
+  assert_true(detachment_saw_disposed_semantic_dom.val)
+  assert_true(detachment_saw_removed_hover_widget.val)
+  assert_true(detachment_saw_removed_root.val)
+  assert_true(detachment_saw_restored_placeholder.val)
   assert_eq(model.get_attached_editor_count(), 0)
   assert_true(markdown.semantic_code_lines().is_empty())
   assert_true(

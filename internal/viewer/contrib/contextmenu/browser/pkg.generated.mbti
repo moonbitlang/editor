@@ -16,16 +16,6 @@ pub(all) enum ContextMenuEntry {
   ContextMenuSubmenu(label~ : String, entries~ : Array[ContextMenuEntry])
 }
 
-type ContextMenuItemNode
-
-type ContextMenuPoint
-
-type ContextMenuRect
-
-type ContextMenuSize
-
-type ContextMenuSubmenuView
-
 type ContextMenuWidget
 pub fn ContextMenuWidget::ContextMenuWidget(ContextMenuWidgetCallbacks) -> Self
 pub fn ContextMenuWidget::dispose(Self) -> Unit

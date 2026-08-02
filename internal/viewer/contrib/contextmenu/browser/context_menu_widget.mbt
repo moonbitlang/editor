@@ -23,13 +23,13 @@ pub(all) struct ContextMenuWidgetCallbacks {
 }
 
 ///|
-struct ContextMenuItemNode {
+priv struct ContextMenuItemNode {
   wrapper : @rdom.Element
   action : @rdom.Element
 }
 
 ///|
-struct ContextMenuSubmenuView {
+priv struct ContextMenuSubmenuView {
   container : @rdom.Element
   entries : Array[ContextMenuEntry]
   item_nodes : Array[ContextMenuItemNode?]

@@ -38,7 +38,7 @@ pub struct LinesDiff {
 
 ///|
 /// `MovedText` (`linesDiffComputer.ts:38`).
-struct MovedText {
+priv struct MovedText {
   line_range_mapping : LineRangeMapping
   /// The diff from the original text to the moved text. Must be contained in
   /// the original/modified line range. Can be empty if the text didn't

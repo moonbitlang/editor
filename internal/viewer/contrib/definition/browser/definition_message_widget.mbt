@@ -125,7 +125,7 @@ pub fn DefinitionMessageWidget::content_widget_handle(
     () => self.root,
     () => self.content_widget_position(),
     allow_editor_overflow=true,
-    after_render=(preference, _) => self.after_render(preference),
+    after_render=preference => self.after_render(preference),
   )
 }
 
