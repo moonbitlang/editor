@@ -9,11 +9,11 @@
 ///|
 /// Public overlay-widget owner for root callers. Package-local lifecycle code
 /// reads/writes its private `should_render` state directly.
-pub struct OverlayWidgets {
-  priv dom_node : @rdom.Element
-  priv overflowing_overlay_widgets_dom_node : @rdom.Element
-  priv widgets : Map[String, @rdom.Element]
-  priv mut should_render : Bool
+struct OverlayWidgets {
+  dom_node : @rdom.Element
+  overflowing_overlay_widgets_dom_node : @rdom.Element
+  widgets : Map[String, @rdom.Element]
+  mut should_render : Bool
 }
 
 ///|

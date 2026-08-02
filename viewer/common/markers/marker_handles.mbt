@@ -3,10 +3,10 @@
 /// The concrete store remains caller-owned; this adapter exposes only the
 /// change subscription, filtered read, and removal operations used by the
 /// decoration projection.
-pub struct MarkerServiceHandle {
-  priv on_did_change_markers : ((Array[@base_common.Uri]) -> Unit) -> @base_common.Disposable
-  priv read : (MarkerReadOptions) -> Array[Marker]
-  priv remove : (String, Array[@base_common.Uri]) -> Unit
+struct MarkerServiceHandle {
+  on_did_change_markers : ((Array[@base_common.Uri]) -> Unit) -> @base_common.Disposable
+  read : (MarkerReadOptions) -> Array[Marker]
+  remove : (String, Array[@base_common.Uri]) -> Unit
 }
 
 ///|
@@ -83,13 +83,13 @@ fn compare_resolved_marker_decorations(
 }
 
 ///|
-pub struct MarkerDecorationsHandle {
-  priv acquire_model : (@model.TextModel) -> @base_common.Disposable
-  priv on_did_change_marker_decorations : ((@model.TextModel) -> Unit) -> @base_common.Disposable
-  priv get_live_markers_for_model : (@model.TextModel) -> Array[
+struct MarkerDecorationsHandle {
+  acquire_model : (@model.TextModel) -> @base_common.Disposable
+  on_did_change_marker_decorations : ((@model.TextModel) -> Unit) -> @base_common.Disposable
+  get_live_markers_for_model : (@model.TextModel) -> Array[
     (@base_common.Range, Marker),
   ]
-  priv get_live_resolved_marker_decorations_for_model : (@model.TextModel) -> Array[
+  get_live_resolved_marker_decorations_for_model : (@model.TextModel) -> Array[
     ResolvedMarkerDecoration,
   ]
 }

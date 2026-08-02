@@ -1,25 +1,25 @@
 ///|
 /// Minimal host/contribution capability boundary for agent feedback. The
 /// handle owns no backing state; every callback is supplied by its creator.
-pub struct AgentFeedbackHandle {
-  priv on_did_change_feedback_callback : ((AgentFeedbackChangeEvent) -> Unit) -> @base_common.Disposable
-  priv on_did_change_navigation_callback : ((@base_common.Uri) -> Unit) -> @base_common.Disposable
-  priv is_feedback_enabled_callback : (@base_common.Uri) -> Bool
-  priv get_feedback_callback : (@base_common.Uri) -> Array[AgentFeedback]
-  priv get_navigation_bearing_callback : (@base_common.Uri, Array[String]) -> AgentFeedbackNavigationBearing
-  priv add_feedback_callback : (
+struct AgentFeedbackHandle {
+  on_did_change_feedback_callback : ((AgentFeedbackChangeEvent) -> Unit) -> @base_common.Disposable
+  on_did_change_navigation_callback : ((@base_common.Uri) -> Unit) -> @base_common.Disposable
+  is_feedback_enabled_callback : (@base_common.Uri) -> Bool
+  get_feedback_callback : (@base_common.Uri) -> Array[AgentFeedback]
+  get_navigation_bearing_callback : (@base_common.Uri, Array[String]) -> AgentFeedbackNavigationBearing
+  add_feedback_callback : (
     @base_common.Uri,
     @base_common.Range,
     String,
     AgentFeedbackKind?,
     AgentFeedbackState?,
   ) -> AgentFeedback
-  priv mark_feedback_submitted_callback : (@base_common.Uri) -> Unit
-  priv remove_feedback_callback : (@base_common.Uri, String) -> Unit
-  priv accept_feedback_callback : (@base_common.Uri, String) -> Unit
-  priv set_navigation_anchor_callback : (@base_common.Uri, String?) -> Unit
-  priv update_feedback_callback : (@base_common.Uri, String, String) -> Unit
-  priv add_reply_callback : (@base_common.Uri, String, String) -> Unit
+  mark_feedback_submitted_callback : (@base_common.Uri) -> Unit
+  remove_feedback_callback : (@base_common.Uri, String) -> Unit
+  accept_feedback_callback : (@base_common.Uri, String) -> Unit
+  set_navigation_anchor_callback : (@base_common.Uri, String?) -> Unit
+  update_feedback_callback : (@base_common.Uri, String, String) -> Unit
+  add_reply_callback : (@base_common.Uri, String, String) -> Unit
 }
 
 ///|

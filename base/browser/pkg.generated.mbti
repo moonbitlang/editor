@@ -64,9 +64,7 @@ pub fn wall_clock_now_ms() -> Double
 // Errors
 
 // Types and methods
-pub struct GlobalPointerMoveMonitor {
-  // private fields
-}
+type GlobalPointerMoveMonitor
 pub fn GlobalPointerMoveMonitor::GlobalPointerMoveMonitor() -> Self
 pub fn GlobalPointerMoveMonitor::dispose(Self) -> Unit
 pub fn GlobalPointerMoveMonitor::is_monitoring(Self) -> Bool

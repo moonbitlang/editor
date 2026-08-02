@@ -21,8 +21,8 @@ pub fn original_fs_path(uri : Uri) -> String {
 ///|
 /// `ExtUri` (resources.ts:139) — the single `IExtUri` implementation,
 /// parameterized by the `_ignorePathCasing` closure.
-pub struct ExtUri {
-  priv ignore_path_casing_fn : (Uri) -> Bool
+struct ExtUri {
+  ignore_path_casing_fn : (Uri) -> Bool
 }
 
 ///|

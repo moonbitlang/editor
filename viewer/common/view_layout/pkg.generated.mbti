@@ -87,9 +87,7 @@ pub struct EditorScrollDimensions {
 } derive(Eq, @debug.Debug)
 pub fn EditorScrollDimensions::EditorScrollDimensions(Double, Double, Double, Double) -> Self
 
-pub struct EditorScrollable {
-  // private fields
-}
+type EditorScrollable
 pub fn EditorScrollable::EditorScrollable(Double, (() -> Unit) -> @common.Disposable, () -> Double) -> Self
 pub fn EditorScrollable::dimensions(Self) -> ScrollDimensions
 pub fn EditorScrollable::dispose(Self) -> Unit
@@ -167,9 +165,7 @@ pub(all) struct LineWindow {
   end : Int
 } derive(Eq, @debug.Debug)
 
-pub struct LinesLayout {
-  // private fields
-}
+type LinesLayout
 pub fn LinesLayout::LinesLayout(Int, Int, Int, Int) -> Self
 pub fn LinesLayout::change_whitespace(Self, (WhitespaceChangeAccessor) -> Unit raise?) -> Bool raise?
 pub fn LinesLayout::find_insertion_index(Array[EditorWhitespace], Int, Int) -> Int
@@ -345,9 +341,7 @@ pub fn ScrollState::equals(Self, Self) -> Bool
 pub fn ScrollState::with_scroll_dimensions(Self, ScrollDimensionsUpdate, Bool) -> Self
 pub fn ScrollState::with_scroll_position(Self, ScrollPositionUpdate) -> Self
 
-pub struct Scrollable {
-  // private fields
-}
+type Scrollable
 pub fn Scrollable::Scrollable(force_integer_values~ : Bool, smooth_scroll_duration? : Double, schedule_at_next_animation_frame? : (() -> Unit) -> @common.Disposable, now? : () -> Double) -> Self
 pub fn Scrollable::dimensions(Self) -> ScrollDimensions
 pub fn Scrollable::dispose(Self) -> Unit
@@ -364,9 +358,7 @@ pub fn Scrollable::set_scroll_dimensions(Self, ScrollDimensionsUpdate, Bool) -> 
 pub fn Scrollable::set_smooth_scroll_duration(Self, Double) -> Unit
 pub fn Scrollable::validate_scroll_position(Self, ScrollPositionUpdate) -> ScrollPosition
 
-pub struct ScrollbarState {
-  // private fields
-}
+type ScrollbarState
 pub fn ScrollbarState::ScrollbarState(arrow_size? : Double, scrollbar_size~ : Double, opposite_scrollbar_size? : Double) -> Self
 pub fn ScrollbarState::clone(Self) -> Self
 pub fn ScrollbarState::desired_position_from_delta(Self, Double) -> Double
@@ -532,9 +524,7 @@ pub fn ViewportData::decorations_for_line(Self, Int) -> Array[LineDecoration]
 pub fn ViewportData::decorations_in_viewport(Self) -> Array[LineDecoration]
 pub fn ViewportData::line_data(Self, Int) -> ViewLineRenderingData?
 
-pub struct WhitespaceChangeAccessor {
-  // private fields
-}
+type WhitespaceChangeAccessor
 pub fn WhitespaceChangeAccessor::change_one_whitespace(Self, String, Int, Double) -> Unit
 pub fn WhitespaceChangeAccessor::insert_whitespace(Self, Int, Int, Double, Double) -> String
 pub fn WhitespaceChangeAccessor::remove_whitespace(Self, String) -> Unit

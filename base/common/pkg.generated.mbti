@@ -146,24 +146,18 @@ pub fn CharacterSet::add(Self, Int) -> Unit
 pub fn CharacterSet::clear(Self) -> Unit
 pub fn CharacterSet::has(Self, Int) -> Bool
 
-pub struct Disposable {
-  // private fields
-}
+type Disposable
 pub fn Disposable::dispose(Self) -> Unit
 pub fn Disposable::from(() -> Unit) -> Self
 
-pub struct Emitter[T] {
-  // private fields
-}
+type Emitter[T]
 pub fn[T] Emitter::Emitter() -> Self[T]
 pub fn[T] Emitter::dispose(Self[T]) -> Unit
 pub fn[T] Emitter::event(Self[T], (T) -> Unit) -> Disposable
 pub fn[T] Emitter::fire(Self[T], T) -> Unit
 pub fn[T] Emitter::has_listeners(Self[T]) -> Bool
 
-pub struct ExtUri {
-  // private fields
-}
+type ExtUri
 pub fn ExtUri::ExtUri((Uri) -> Bool) -> Self
 pub fn ExtUri::add_trailing_path_separator(Self, Uri, sep? : String) -> Uri
 pub fn ExtUri::basename(Self, Uri, suffix? : String) -> String
@@ -214,9 +208,7 @@ pub fn LineRangeSet::intersects(Self, LineRange) -> Bool
 pub fn LineRangeSet::ranges(Self) -> Array[LineRange]
 pub fn LineRangeSet::to_string(Self) -> String
 
-pub struct MicrotaskEmitter[T] {
-  // private fields
-}
+type MicrotaskEmitter[T]
 pub fn[T] MicrotaskEmitter::MicrotaskEmitter(merge? : (Array[T]) -> T, schedule? : (() -> Unit) -> Unit) -> Self[T]
 pub fn[T] MicrotaskEmitter::dispose(Self[T]) -> Unit
 pub fn[T] MicrotaskEmitter::event(Self[T], (T) -> Unit) -> Disposable

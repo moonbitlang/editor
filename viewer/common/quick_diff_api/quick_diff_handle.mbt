@@ -1,9 +1,9 @@
 ///|
 /// Minimal baseline-content capability used by the quick-diff contribution.
 /// The handle owns no captured backing state or lifecycle.
-pub struct QuickDiffHandle {
-  priv get_original_content_callback : (@base_common.Uri) -> String?
-  priv on_did_change_original_callback : ((@base_common.Uri) -> Unit) -> @base_common.Disposable
+struct QuickDiffHandle {
+  get_original_content_callback : (@base_common.Uri) -> String?
+  on_did_change_original_callback : ((@base_common.Uri) -> Unit) -> @base_common.Disposable
 }
 
 ///|

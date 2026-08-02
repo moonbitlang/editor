@@ -8,10 +8,10 @@
 ///|
 /// Public scrollbar owner for root callers. Package-local lifecycle code
 /// reads/writes its private `should_render` state directly.
-pub struct EditorScrollbar {
-  priv editor_scrollable : @scrollbar.ScrollableElementDom
-  priv scrollbar_dom_node : @scrollbar.CachedDomNode
-  priv mut should_render : Bool
+struct EditorScrollbar {
+  editor_scrollable : @scrollbar.ScrollableElementDom
+  scrollbar_dom_node : @scrollbar.CachedDomNode
+  mut should_render : Bool
 }
 
 ///|

@@ -1,71 +1,71 @@
 ///|
 /// Runtime viewer options that affect view-model construction and layout.
-pub struct ViewerOptions {
-  priv soft_wrap : Bool
-  priv tab_size : Int
-  priv wrapping_indent : @editor_api.WrappingIndent
-  priv render_whitespace : @editor_api.RenderWhitespace
-  priv render_control_characters : Bool
-  priv render_line_highlight : @editor_api.RenderLineHighlight
-  priv render_line_highlight_only_when_focus : Bool
+struct ViewerOptions {
+  soft_wrap : Bool
+  tab_size : Int
+  wrapping_indent : @editor_api.WrappingIndent
+  render_whitespace : @editor_api.RenderWhitespace
+  render_control_characters : Bool
+  render_line_highlight : @editor_api.RenderLineHighlight
+  render_line_highlight_only_when_focus : Bool
   /// `renderValidationDecorations`. Product default `On` — Monaco defaults to
   /// `Editable`, which hides validation squiggles in readonly editors, and the
   /// readonly viewer's diagnostics rendering is a shipped feature. Hosts can
   /// pass `Editable`/`Off` for Monaco's semantics.
-  priv render_validation_decorations : @editor_api.RenderValidationDecorations
+  render_validation_decorations : @editor_api.RenderValidationDecorations
   /// The color theme, Monaco's standalone `theme` option
   /// (`IStandaloneEditorConstructionOptions.theme`, also accepted by
   /// `updateOptions`). Mirrored onto the view root as `data-theme`.
-  priv theme : String
+  theme : String
   /// The message shown while the viewer has no rendered model — Monaco's
   /// `placeholder` editor option.
-  priv placeholder : String
+  placeholder : String
   /// Width in pixels of the line-decorations gutter lane between the line
   /// numbers and the content — Monaco's `lineDecorationsWidth` editor option
   /// (default `10`, `editorOptions.ts:3304-3307`). Features that draw gutter
   /// decorations (e.g. agent feedback) reserve extra lane width on top
   /// through `update_options`.
-  priv line_decorations_width : Int
+  line_decorations_width : Int
   /// Minimum digit slots reserved by the line-number band — Monaco's
   /// `lineNumbersMinChars` editor option (default `5`, minimum `1`,
   /// `editorOptions.ts:6379-6381`). The band widens past this when the model
   /// has more-digit line numbers.
-  priv line_numbers_min_chars : Int
+  line_numbers_min_chars : Int
   /// Monaco's `folding` editor option (default `true`): whether code folding
   /// is enabled.
-  priv folding : Bool
+  folding : Bool
   /// Monaco's `showFoldingControls` editor option (default `mouseover`):
   /// when the gutter chevrons are visible. `always`/`never`/`mouseover`.
-  priv show_folding_controls : @editor_api.ShowFoldingControls
+  show_folding_controls : @editor_api.ShowFoldingControls
   /// Monaco's `foldingHighlight` editor option (default `true`): whether
   /// folded ranges get the `folded-background` highlight.
-  priv folding_highlight : Bool
+  folding_highlight : Bool
   /// Monaco's `foldingMaximumRegions` editor option (default `5000`).
-  priv folding_maximum_regions : Int
+  folding_maximum_regions : Int
   /// Monaco's `unfoldOnClickAfterEndOfLine` editor option (default `false`).
-  priv unfold_on_click_after_end_of_line : Bool
+  unfold_on_click_after_end_of_line : Bool
   /// Monaco's `smoothScrolling` option (`false` by default). Physical mouse
   /// wheels animate for 125 ms when enabled; trackpads remain immediate.
-  priv smooth_scrolling : Bool
+  smooth_scrolling : Bool
   /// Monaco's `showUnused` editor option (default `true`,
   /// `editorOptions.ts:6645-6647`): adds the `showUnused` root class that
   /// gates the `squiggly-unnecessary` / `squiggly-inline-unnecessary`
   /// styling (`EditorClassName.compute`, `editorOptions.ts:1680-1682`).
-  priv show_unused : Bool
+  show_unused : Bool
   /// Monaco's `showDeprecated` editor option (default `true`,
   /// `editorOptions.ts:6649-6653`): adds the `showDeprecated` root class
   /// gating the `squiggly-inline-deprecated` strike-through.
-  priv show_deprecated : Bool
+  show_deprecated : Bool
   /// Monaco's `fontFamily`/`fontWeight`/`fontSize`/`lineHeight`/
   /// `letterSpacing` editor options, defaulting to `EDITOR_FONT_DEFAULTS`.
   /// `line_height` follows `BareFontInfo._create`'s rules: `0` derives the
   /// golden-ratio height from `font_size`, values below `8` multiply the
   /// font size (ems), anything else is pixels.
-  priv font_family : String
-  priv font_weight : String
-  priv font_size : Double
-  priv line_height : Double
-  priv letter_spacing : Double
+  font_family : String
+  font_weight : String
+  font_size : Double
+  line_height : Double
+  letter_spacing : Double
 } derive(Eq, Debug)
 
 ///|

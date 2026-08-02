@@ -150,31 +150,31 @@ fn RunOnceScheduler::dispose(self : RunOnceScheduler) -> Unit {
 ///|
 /// The public owner type retains only its caller-proven methods; its lifecycle
 /// and retained-render state stay private to `browser/view`.
-pub struct ViewLines {
-  priv dom_node : @scrollbar.CachedDomNode
-  priv lines_content : @scrollbar.CachedDomNode
+struct ViewLines {
+  dom_node : @scrollbar.CachedDomNode
+  lines_content : @scrollbar.CachedDomNode
   /// Monaco's `_textRangeRestingSpot` (viewLines.ts ctor): the detached node
   /// `DomReadingContext.endNode` parks DOM ranges on between reads.
-  priv text_range_resting_spot : @rdom.Element
-  priv mut window : @view_layout.LineWindow
-  priv mut lines : Array[ViewLine]
-  priv mut typical_halfwidth_character_width : Double
-  priv mut is_viewport_wrapping : Bool
-  priv mut can_use_layer_hinting : Bool
-  priv mut view_line_options : ViewLineOptions
-  priv view_line_options_ref : Ref[ViewLineOptions]
-  priv mut read_configuration : () -> ViewLinesConfiguration
-  priv mut view_line_to_model_line : (Int) -> Int
-  priv mut model_line_text_direction : (Int) -> @view_layout.TextDirection
-  priv line_factory : () -> ViewLine
-  priv async_update_line_widths : RunOnceScheduler
-  priv last_rendered_data : LastRenderedData
-  priv mut max_line_width : Double
-  priv mut last_layout : @view_layout.ViewLayout?
-  priv mut should_render : Bool
-  priv mut content_viewport_geometry_lease_count : Int
-  priv mut rendered_scroll_left : Double?
-  priv mut visible_content_width : Double?
+  text_range_resting_spot : @rdom.Element
+  mut window : @view_layout.LineWindow
+  mut lines : Array[ViewLine]
+  mut typical_halfwidth_character_width : Double
+  mut is_viewport_wrapping : Bool
+  mut can_use_layer_hinting : Bool
+  mut view_line_options : ViewLineOptions
+  view_line_options_ref : Ref[ViewLineOptions]
+  mut read_configuration : () -> ViewLinesConfiguration
+  mut view_line_to_model_line : (Int) -> Int
+  mut model_line_text_direction : (Int) -> @view_layout.TextDirection
+  line_factory : () -> ViewLine
+  async_update_line_widths : RunOnceScheduler
+  last_rendered_data : LastRenderedData
+  mut max_line_width : Double
+  mut last_layout : @view_layout.ViewLayout?
+  mut should_render : Bool
+  mut content_viewport_geometry_lease_count : Int
+  mut rendered_scroll_left : Double?
+  mut visible_content_width : Double?
 }
 
 ///|

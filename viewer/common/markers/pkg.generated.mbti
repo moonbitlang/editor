@@ -64,17 +64,13 @@ pub(all) struct MarkerData {
 pub fn MarkerData::MarkerData(severity~ : MarkerSeverity, message~ : String, start_line_number~ : Int, start_column~ : Int, end_line_number~ : Int, end_column~ : Int, code? : String, source? : String, model_version_id? : Int, related_information? : Array[RelatedInformation], tags? : Array[MarkerTag], origin? : String) -> Self
 pub fn MarkerData::to_marker(Self, String, @common.Uri) -> Marker?
 
-pub struct MarkerDecorationsHandle {
-  // private fields
-}
+type MarkerDecorationsHandle
 pub fn MarkerDecorationsHandle::acquire_model(Self, @model.TextModel) -> @common.Disposable
 pub fn MarkerDecorationsHandle::get_live_markers_for_model(Self, @model.TextModel) -> Array[(@common.Range, Marker)]
 pub fn MarkerDecorationsHandle::get_live_resolved_marker_decorations_for_model(Self, @model.TextModel) -> Array[ResolvedMarkerDecoration]
 pub fn MarkerDecorationsHandle::on_did_change_marker_decorations(Self, (@model.TextModel) -> Unit) -> @common.Disposable
 
-pub struct MarkerDecorationsService {
-  // private fields
-}
+type MarkerDecorationsService
 pub fn MarkerDecorationsService::MarkerDecorationsService(MarkerServiceHandle) -> Self
 pub fn MarkerDecorationsService::acquire_model(Self, @model.TextModel) -> @common.Disposable
 pub fn MarkerDecorationsService::add_marker_suppression(Self, @common.Uri, @common.Range) -> @common.Disposable
@@ -123,9 +119,7 @@ pub fn MarkerService::remove_owner_resource(Self, String, @common.Uri) -> Unit
 pub fn MarkerService::set_diagnostics(Self, String, @common.Uri, Array[@language.Diagnostic]) -> Unit
 pub fn MarkerService::statistics(Self) -> MarkerStatistics
 
-pub struct MarkerServiceHandle {
-  // private fields
-}
+type MarkerServiceHandle
 pub fn MarkerServiceHandle::on_did_change_markers(Self, (Array[@common.Uri]) -> Unit) -> @common.Disposable
 pub fn MarkerServiceHandle::read(Self, MarkerReadOptions) -> Array[Marker]
 pub fn MarkerServiceHandle::remove(Self, String, Array[@common.Uri]) -> Unit

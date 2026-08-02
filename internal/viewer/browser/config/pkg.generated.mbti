@@ -14,9 +14,7 @@ pub fn font_measurements() -> FontMeasurementsImpl
 // Errors
 
 // Types and methods
-pub struct FontMeasurementsImpl {
-  // private fields
-}
+type FontMeasurementsImpl
 pub fn FontMeasurementsImpl::clear_all_font_infos(Self) -> Unit
 pub fn FontMeasurementsImpl::on_did_change(Self, () -> Unit) -> @common.Disposable
 pub fn FontMeasurementsImpl::read_font_info(Self, @moonbitlang/editor/viewer/common/config.BareFontInfo) -> @moonbitlang/editor/viewer/common/config.FontInfo

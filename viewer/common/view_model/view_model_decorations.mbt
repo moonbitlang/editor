@@ -33,10 +33,10 @@ pub fn filter_validation_decorations(
 ///|
 /// `ViewModelDecorations` (`viewModelDecorations.ts:16`): the lazy,
 /// viewport-cached decoration provider for one view model.
-pub struct ViewModelDecorations {
-  priv computer : InlineModelDecorationsComputer
-  priv mut cached_model_decorations_resolver : ViewDecorationsCollection?
-  priv mut cached_model_decorations_resolver_view_range : @base_common.Range?
+struct ViewModelDecorations {
+  computer : InlineModelDecorationsComputer
+  mut cached_model_decorations_resolver : ViewDecorationsCollection?
+  mut cached_model_decorations_resolver_view_range : @base_common.Range?
 }
 
 ///|

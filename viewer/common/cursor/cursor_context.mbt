@@ -7,10 +7,10 @@
 /// and content-version tracking. The port stores the three exact conversion
 /// functions it consumes instead of turning Monaco's structural interface into
 /// a runtime MoonBit trait object.
-pub struct CursorContext {
-  priv view_to_model_ : (@base_common.Position) -> @base_common.Position
-  priv view_range_to_model_ : (@base_common.Range) -> @base_common.Range
-  priv model_to_view_ : (@base_common.Position) -> @base_common.Position
+struct CursorContext {
+  view_to_model_ : (@base_common.Position) -> @base_common.Position
+  view_range_to_model_ : (@base_common.Range) -> @base_common.Range
+  model_to_view_ : (@base_common.Position) -> @base_common.Position
 }
 
 ///|

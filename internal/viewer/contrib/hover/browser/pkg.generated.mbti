@@ -128,15 +128,11 @@ pub(all) enum EditorEvent {
   EscapePressed
 }
 
-pub struct HoverRowsRender {
-  // private fields
-}
+type HoverRowsRender
 pub fn HoverRowsRender::dispose(Self) -> Unit
 pub fn HoverRowsRender::mount_into(Self, @dom.Element) -> Bool
 
-pub struct MarkdownDocumentHoverBridge {
-  // private fields
-}
+type MarkdownDocumentHoverBridge
 pub fn MarkdownDocumentHoverBridge::MarkdownDocumentHoverBridge(@markdown_document.MarkdownDocumentView, @model.TextModel, @hover.ContentHoverComputer, @markers.MarkerDecorationsHandle, Int, () -> Bool, (async () -> Unit noraise) -> Unit) -> Self
 pub fn MarkdownDocumentHoverBridge::activate(Self) -> Unit
 pub fn MarkdownDocumentHoverBridge::after_projection_replaced(Self) -> Unit

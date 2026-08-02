@@ -5,14 +5,14 @@
 // persistence channel is not ported.
 
 ///|
-pub struct FontMeasurementsImpl {
-  priv cache_keys : Array[String]
-  priv cache : Map[String, @common_config.FontInfo]
-  priv mut evict_untrusted_readings_pending : Bool
-  priv did_change : @base_common.Emitter[Unit]
-  priv read_widths : (@common_config.BareFontInfo, Array[CharWidthRequest]) -> Unit
-  priv read_pixel_ratio : () -> Double
-  priv schedule_timeout : (() -> Unit, Int) -> Unit
+struct FontMeasurementsImpl {
+  cache_keys : Array[String]
+  cache : Map[String, @common_config.FontInfo]
+  mut evict_untrusted_readings_pending : Bool
+  did_change : @base_common.Emitter[Unit]
+  read_widths : (@common_config.BareFontInfo, Array[CharWidthRequest]) -> Unit
+  read_pixel_ratio : () -> Double
+  schedule_timeout : (() -> Unit, Int) -> Unit
 }
 
 ///|

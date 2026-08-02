@@ -111,11 +111,11 @@ priv struct TokenizationSupportEntry {
 /// `Array[String]?` without parsing, copying, or adding `Color` object
 /// behavior. Lazy tokenization factories are not part of the synchronous
 /// `LineTokenizer` API and are intentionally absent.
-pub struct TokenizationRegistry {
-  priv tokenizers : Map[String, TokenizationSupportEntry]
-  priv next_id : Ref[Int]
-  priv did_change : @base_common.Emitter[TokenizationChangedEvent]
-  priv mut color_map : Array[String]?
+struct TokenizationRegistry {
+  tokenizers : Map[String, TokenizationSupportEntry]
+  next_id : Ref[Int]
+  did_change : @base_common.Emitter[TokenizationChangedEvent]
+  mut color_map : Array[String]?
 }
 
 ///|

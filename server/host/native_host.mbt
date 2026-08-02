@@ -1,7 +1,7 @@
 ///|
 /// Native filesystem host for the reference remote server.
-pub struct NativeServerHost {
-  priv poll_interval_ms : Int
+struct NativeServerHost {
+  poll_interval_ms : Int
 }
 
 ///|

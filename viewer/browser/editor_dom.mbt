@@ -230,8 +230,8 @@ pub fn EditorDomMouseEvent::stop_propagation(
 ///|
 /// `EditorMouseEventFactory` (editorDom.ts:149-194): DOM-listener wrappers
 /// producing `EditorDomMouseEvent`s anchored to the editor's view DOM node.
-pub struct EditorMouseEventFactory {
-  priv editor_view_dom_node : @rdom.Element
+struct EditorMouseEventFactory {
+  editor_view_dom_node : @rdom.Element
 }
 
 ///|
@@ -337,11 +337,11 @@ pub fn EditorMouseEventFactory::on_mouse_move(
 /// `GlobalEditorPointerMoveMonitor` (editorDom.ts:231-280): wraps the base
 /// monitor and installs a capturing keydown listener that cancels monitoring
 /// when a non-modifier key is pressed.
-pub struct GlobalEditorPointerMoveMonitor {
-  priv editor_view_dom_node : @rdom.Element
-  priv global_pointer_move_monitor : @base_browser.GlobalPointerMoveMonitor
-  priv mut keydown_listener : @base_common.Disposable?
-  priv mut disposed : Bool
+struct GlobalEditorPointerMoveMonitor {
+  editor_view_dom_node : @rdom.Element
+  global_pointer_move_monitor : @base_browser.GlobalPointerMoveMonitor
+  mut keydown_listener : @base_common.Disposable?
+  mut disposed : Bool
 }
 
 ///|

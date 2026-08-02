@@ -41,21 +41,21 @@ priv struct ContextMenuSubmenuView {
 ///|
 /// One reusable browser menu owned for a Viewer's entire contribution
 /// lifetime. Each `show` replaces the transient entry DOM and listeners.
-pub struct ContextMenuWidget {
-  priv container : @rdom.Element
-  priv mut menu : @rdom.Element
-  priv callbacks : ContextMenuWidgetCallbacks
-  priv mut entries : Array[ContextMenuEntry]
-  priv mut item_nodes : Array[ContextMenuItemNode?]
-  priv show_listeners : Array[@base_common.Disposable]
-  priv mut submenu : ContextMenuSubmenuView?
-  priv mut submenu_show_timer : @base_common.Disposable?
-  priv mut submenu_hide_timer : @base_common.Disposable?
-  priv mut focus_to_return : @rdom.Element?
-  priv mut focused_entry_index : Int
-  priv mut theme : String
-  priv mut visible : Bool
-  priv mut disposed : Bool
+struct ContextMenuWidget {
+  container : @rdom.Element
+  mut menu : @rdom.Element
+  callbacks : ContextMenuWidgetCallbacks
+  mut entries : Array[ContextMenuEntry]
+  mut item_nodes : Array[ContextMenuItemNode?]
+  show_listeners : Array[@base_common.Disposable]
+  mut submenu : ContextMenuSubmenuView?
+  mut submenu_show_timer : @base_common.Disposable?
+  mut submenu_hide_timer : @base_common.Disposable?
+  mut focus_to_return : @rdom.Element?
+  mut focused_entry_index : Int
+  mut theme : String
+  mut visible : Bool
+  mut disposed : Bool
 }
 
 ///|

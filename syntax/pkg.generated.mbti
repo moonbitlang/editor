@@ -59,9 +59,7 @@ pub struct TokenizationChangedEvent {
   changed_color_map : Bool
 }
 
-pub struct TokenizationRegistry {
-  // private fields
-}
+type TokenizationRegistry
 pub fn TokenizationRegistry::TokenizationRegistry() -> Self
 pub fn TokenizationRegistry::get(Self, String) -> &LineTokenizer?
 pub fn TokenizationRegistry::get_color_map(Self) -> Array[String]?

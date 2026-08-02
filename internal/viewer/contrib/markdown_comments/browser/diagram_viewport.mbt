@@ -137,8 +137,8 @@ priv enum DiagramViewportMountResult {
 /// comment. Successful direct Diago and Mermaid SVG children are enhanced. The
 /// caller retains ownership of the Markdown target and disposes this handle
 /// before replacing or removing that target.
-pub struct MarkdownCommentDiagramViewports {
-  priv lifetime : MarkdownCommentDiagramViewportLifetime
+struct MarkdownCommentDiagramViewports {
+  lifetime : MarkdownCommentDiagramViewportLifetime
 }
 
 ///|

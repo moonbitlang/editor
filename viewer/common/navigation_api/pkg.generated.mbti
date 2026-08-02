@@ -13,9 +13,7 @@ import {
 // Errors
 
 // Types and methods
-pub struct LocationOpenerHandle {
-  // private fields
-}
+type LocationOpenerHandle
 pub fn LocationOpenerHandle::LocationOpenerHandle(open~ : async (OpenLocationRequest) -> Bool noraise) -> Self
 pub async fn LocationOpenerHandle::open(Self, OpenLocationRequest) -> Bool noraise
 
@@ -30,16 +28,12 @@ pub(all) struct OpenLocationRequest {
   mode : OpenLocationMode
 } derive(@debug.Debug)
 
-pub struct TextModelReference {
-  // private fields
-}
+type TextModelReference
 pub fn TextModelReference::TextModelReference(@model.TextModel, release~ : () -> Unit) -> Self
 pub fn TextModelReference::dispose(Self) -> Unit
 pub fn TextModelReference::model(Self) -> @model.TextModel
 
-pub struct TextModelResolverHandle {
-  // private fields
-}
+type TextModelResolverHandle
 pub fn TextModelResolverHandle::TextModelResolverHandle(resolve~ : async (@common.Uri, @language.CancellationToken) -> TextModelReference? noraise) -> Self
 pub async fn TextModelResolverHandle::resolve(Self, @common.Uri, @language.CancellationToken) -> TextModelReference? noraise
 

@@ -59,10 +59,10 @@ priv struct AttachedViewStateChange {
 
 ///|
 /// One externally-owned attached-view handle.
-pub struct AttachedViewImpl {
-  priv id : Int
-  priv mut state_value : AttachedViewState?
-  priv handle_state_change : (AttachedViewImpl, AttachedViewState) -> Unit
+struct AttachedViewImpl {
+  id : Int
+  mut state_value : AttachedViewState?
+  handle_state_change : (AttachedViewImpl, AttachedViewState) -> Unit
 }
 
 ///|

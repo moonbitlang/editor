@@ -2,8 +2,8 @@
 /// Mutable collector shared by nested `begin_view_event_batch` scopes.  Event
 /// order is the append order; only the outermost matching `end` dispatches the
 /// collected batch.
-pub struct ViewEventCollector {
-  priv view_events : Array[ViewEvent]
+struct ViewEventCollector {
+  view_events : Array[ViewEvent]
 }
 
 ///|

@@ -13,9 +13,7 @@ import {
 // Errors
 
 // Types and methods
-pub struct MarkdownDocumentView {
-  // private fields
-}
+type MarkdownDocumentView
 pub fn MarkdownDocumentView::MarkdownDocumentView(String, Int, String, @common.Uri, @markdown.MarkdownResourceKind, String, () -> Unit, (Bool) -> Unit, () -> Unit, show_unused? : Bool) -> Self
 pub fn MarkdownDocumentView::append_projected_range_spans(Self, @common.OffsetRange, String) -> Array[@dom.Element]
 pub fn MarkdownDocumentView::apply_marker_unused_visibility(Self, Bool) -> Unit

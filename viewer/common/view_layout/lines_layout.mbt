@@ -151,9 +151,9 @@ fn javascript_to_int32(value : Double) -> Int {
 ///|
 /// Mutable accessor handed to `change_whitespace`, mirroring Monaco's
 /// `IWhitespaceChangeAccessor`.
-pub struct WhitespaceChangeAccessor {
-  priv layout : LinesLayout
-  priv mut had_a_change : Bool
+struct WhitespaceChangeAccessor {
+  layout : LinesLayout
+  mut had_a_change : Bool
 }
 
 ///|
@@ -204,17 +204,17 @@ pub fn WhitespaceChangeAccessor::remove_whitespace(
 ///|
 /// Vertical line layout: lines (uniform `default_line_height`) and the
 /// whitespaces (view zones) that push them down.
-pub struct LinesLayout {
-  priv instance_id : String
-  priv pending_changes : PendingChanges
-  priv mut last_whitespace_id : Int
-  priv mut arr : Array[EditorWhitespace]
-  priv mut prefix_sum_valid_index : Int
-  priv mut min_width : Int
-  priv mut line_count : Int
-  priv mut padding_top : Int
-  priv mut padding_bottom : Int
-  priv mut default_line_height : Int
+struct LinesLayout {
+  instance_id : String
+  pending_changes : PendingChanges
+  mut last_whitespace_id : Int
+  mut arr : Array[EditorWhitespace]
+  mut prefix_sum_valid_index : Int
+  mut min_width : Int
+  mut line_count : Int
+  mut padding_top : Int
+  mut padding_bottom : Int
+  mut default_line_height : Int
 }
 
 ///|

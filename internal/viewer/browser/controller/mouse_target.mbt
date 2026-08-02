@@ -816,8 +816,8 @@ fn create_empty_content_data_in_lines(
 /// `MouseTargetFactory` (mouseTarget.ts:517-1114). Monaco holds a
 /// `ViewContext` + `IPointerHandlerHelper`; the helper substitutes for both
 /// here.
-pub struct MouseTargetFactory {
-  priv view_helper : PointerHandlerHelper
+struct MouseTargetFactory {
+  view_helper : PointerHandlerHelper
 }
 
 ///|

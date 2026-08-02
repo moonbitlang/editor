@@ -19,20 +19,20 @@ pub let definition_peek_height_in_lines : Int = 18
 /// Browser DOM shell for one Peek Definition session. `preview_host` is empty
 /// shell-owned space: the root Viewer mounts and tears down the nested Viewer
 /// there without creating a dependency cycle.
-pub struct DefinitionPeekWidget {
-  priv root : @rdom.Element
-  priv title_filename : @rdom.Element
-  priv title_dirname : @rdom.Element
-  priv title_meta : @rdom.Element
-  priv list : @rdom.Element
-  priv preview_host : @rdom.Element
-  priv status : @rdom.Element
-  priv callbacks : DefinitionPeekWidgetCallbacks
-  priv persistent_listeners : Array[@base_common.Disposable]
-  priv result_listeners : Array[@base_common.Disposable]
-  priv mut locations : Array[@language.Location]
-  priv mut selected_index : Int
-  priv mut disposed : Bool
+struct DefinitionPeekWidget {
+  root : @rdom.Element
+  title_filename : @rdom.Element
+  title_dirname : @rdom.Element
+  title_meta : @rdom.Element
+  list : @rdom.Element
+  preview_host : @rdom.Element
+  status : @rdom.Element
+  callbacks : DefinitionPeekWidgetCallbacks
+  persistent_listeners : Array[@base_common.Disposable]
+  result_listeners : Array[@base_common.Disposable]
+  mut locations : Array[@language.Location]
+  mut selected_index : Int
+  mut disposed : Bool
 }
 
 ///|

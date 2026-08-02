@@ -141,9 +141,7 @@ pub fn HoverController::widget_view(Self) -> HoverWidgetView?
 pub fn HoverController::widget_view_with_loading(Self, HoverPart?) -> HoverWidgetView?
 pub fn HoverController::widget_visible(Self) -> Bool
 
-pub struct HoverDebouncer {
-  // private fields
-} derive(Eq, @debug.Debug)
+type HoverDebouncer derive(Eq, @debug.Debug)
 pub fn HoverDebouncer::HoverDebouncer(default_delay_ms? : Int) -> Self
 pub fn HoverDebouncer::cancel(Self) -> Self
 pub fn HoverDebouncer::schedule(Self, HoverOperationOptions, delay_ms? : Int) -> (Int, Self)
@@ -213,9 +211,7 @@ pub struct HoverParticipantHandle {
 }
 pub fn HoverParticipantHandle::HoverParticipantHandle(Int, (HoverComputeContext) -> Array[HoverPart], suggest_hover_anchor? : (@view_model.InjectedText?, @common.Range, Double?, Double?) -> HoverAnchor?, compute_async? : async (HoverComputeContext, @language.CancellationToken) -> Array[HoverPart] noraise, create_loading_message? : (HoverAnchor) -> HoverPart?) -> Self
 
-pub struct HoverParticipantOwner {
-  // private fields
-} derive(Eq, @debug.Debug)
+type HoverParticipantOwner derive(Eq, @debug.Debug)
 pub fn HoverParticipantOwner::HoverParticipantOwner() -> Self
 
 pub struct HoverParticipantRegistry {
@@ -236,9 +232,7 @@ pub(all) struct HoverPositionPart {
   force_show_at_range : Bool
 }
 
-pub struct HoverRequestStamp {
-  // private fields
-}
+type HoverRequestStamp
 pub fn HoverRequestStamp::cancellation_token(Self) -> @language.CancellationToken
 pub fn HoverRequestStamp::generation(Self) -> Int
 pub fn HoverRequestStamp::is_current(Self, @model.TextModel?, Int) -> Bool
@@ -287,15 +281,11 @@ pub struct HoverWidgetView {
   parts : Array[HoverPart]
 } derive(Eq)
 
-pub struct MarkdownHoverParticipant {
-  // private fields
-}
+type MarkdownHoverParticipant
 pub fn MarkdownHoverParticipant::MarkdownHoverParticipant(@languages.LanguageHandle) -> Self
 pub fn MarkdownHoverParticipant::hover_participant_handle(Self) -> HoverParticipantHandle
 
-pub struct MarkerHoverParticipant {
-  // private fields
-}
+type MarkerHoverParticipant
 pub fn MarkerHoverParticipant::MarkerHoverParticipant(@markers.MarkerDecorationsHandle) -> Self
 pub fn MarkerHoverParticipant::hover_participant_handle(Self) -> HoverParticipantHandle
 

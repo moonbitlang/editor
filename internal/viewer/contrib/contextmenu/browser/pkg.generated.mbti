@@ -16,9 +16,7 @@ pub(all) enum ContextMenuEntry {
   ContextMenuSubmenu(label~ : String, entries~ : Array[ContextMenuEntry])
 }
 
-pub struct ContextMenuWidget {
-  // private fields
-}
+type ContextMenuWidget
 pub fn ContextMenuWidget::ContextMenuWidget(ContextMenuWidgetCallbacks) -> Self
 pub fn ContextMenuWidget::dispose(Self) -> Unit
 pub fn ContextMenuWidget::get_dom_node(Self) -> @dom.Element

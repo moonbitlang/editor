@@ -87,8 +87,8 @@ fn WrappingCharacterClassifier::get(
 
 ///|
 /// Monaco `MonospaceLineBreaksComputerFactory`.
-pub struct MonospaceLineBreaksComputerFactory {
-  priv classifier : WrappingCharacterClassifier
+struct MonospaceLineBreaksComputerFactory {
+  classifier : WrappingCharacterClassifier
 }
 
 ///|
@@ -129,14 +129,14 @@ priv struct LineBreaksRequest {
 ///|
 /// Monaco `ILineBreaksComputer`: requests batch up through `add_request` and
 /// `finalize` computes them in one pass.
-pub struct LineBreaksComputer {
-  priv classifier : WrappingCharacterClassifier
-  priv font_info : @config.FontInfo
-  priv tab_size : Int
-  priv wrapping_column : Int
-  priv wrapping_indent : @editor_api.WrappingIndent
-  priv word_break : WordBreak
-  priv requests : Array[LineBreaksRequest]
+struct LineBreaksComputer {
+  classifier : WrappingCharacterClassifier
+  font_info : @config.FontInfo
+  tab_size : Int
+  wrapping_column : Int
+  wrapping_indent : @editor_api.WrappingIndent
+  word_break : WordBreak
+  requests : Array[LineBreaksRequest]
 }
 
 ///|

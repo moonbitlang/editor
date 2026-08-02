@@ -120,18 +120,18 @@ priv struct ViewZonesContext {
 ///|
 /// Browser `ViewZones` part. The registry is model-scoped because its owner
 /// `View` is created and disposed with one attached `ViewModel`.
-pub struct ViewZones {
-  priv dom_node : @rdom.Element
-  priv margin_dom_node : @rdom.Element
-  priv dom_node_cache : FastViewZoneDomNode
-  priv margin_dom_node_cache : FastViewZoneDomNode
-  priv zones : Map[String, RegisteredViewZone]
-  priv mut line_height : Int
-  priv mut content_width : Double
-  priv mut content_left : Double
-  priv mut context : ViewZonesContext?
-  priv mut should_render : Bool
-  priv mut disposed : Bool
+struct ViewZones {
+  dom_node : @rdom.Element
+  margin_dom_node : @rdom.Element
+  dom_node_cache : FastViewZoneDomNode
+  margin_dom_node_cache : FastViewZoneDomNode
+  zones : Map[String, RegisteredViewZone]
+  mut line_height : Int
+  mut content_width : Double
+  mut content_left : Double
+  mut context : ViewZonesContext?
+  mut should_render : Bool
+  mut disposed : Bool
 }
 
 ///|

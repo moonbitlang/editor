@@ -53,14 +53,14 @@ pub struct ContentWidgetRenderedCoordinate {
 /// Required source methods remain getter closures so their values stay live;
 /// optional source fields and callbacks remain independently optional instead
 /// of being expanded into mandatory trait methods plus `has_*` sentinels.
-pub struct ContentWidgetHandle {
-  priv get_id : () -> String
-  priv get_dom_node : () -> @rdom.Element
-  priv get_position : () -> ContentWidgetPosition?
-  priv allow_editor_overflow : Bool
-  priv use_display_none : Bool
-  priv before_render : (() -> ContentWidgetDimension? raise)?
-  priv after_render : ((
+struct ContentWidgetHandle {
+  get_id : () -> String
+  get_dom_node : () -> @rdom.Element
+  get_position : () -> ContentWidgetPosition?
+  allow_editor_overflow : Bool
+  use_display_none : Bool
+  before_render : (() -> ContentWidgetDimension? raise)?
+  after_render : ((
     ContentWidgetPositionPreference?,
     ContentWidgetRenderedCoordinate?,
   ) -> Unit raise)?
@@ -147,22 +147,22 @@ priv struct Widget {
 ///|
 /// Public widget owner for root callers. Package-local lifecycle code
 /// reads/writes its private `should_render` / `dom_node` state directly.
-pub struct ContentWidgets {
-  priv dom_node : @rdom.Element
-  priv overflowing_content_widgets_dom_node : @rdom.Element
+struct ContentWidgets {
+  dom_node : @rdom.Element
+  overflowing_content_widgets_dom_node : @rdom.Element
   /// Monaco `ViewContentWidgets._viewDomNode`: the editor's root node, the
   /// page-space reference box for `_layoutBoxInPage`.
-  priv view_dom_node : @rdom.Element
-  priv widgets : Map[String, Widget]
+  view_dom_node : @rdom.Element
+  widgets : Map[String, Widget]
   /// Live stand-ins for Monaco's retained `ViewContext`: configuration reads
   /// and model-to-view conversion happen when their source events arrive, not
   /// from a later render snapshot.
-  priv mut read_layout_info : () -> (Double, Double)
-  priv mut model_position_to_valid_view_position : (
+  mut read_layout_info : () -> (Double, Double)
+  mut model_position_to_valid_view_position : (
     @base_common.Position,
     @model.PositionAffinity?,
   ) -> @base_common.Position?
-  priv mut should_render : Bool
+  mut should_render : Bool
 }
 
 ///|

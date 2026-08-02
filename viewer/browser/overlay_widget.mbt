@@ -1,9 +1,9 @@
 ///|
 /// Immutable unmanaged overlay-widget handle for the viewer's existing
 /// null-position/self-positioned subset. The caller retains DOM ownership.
-pub struct OverlayWidget {
-  priv id : String
-  priv dom_node : @rdom.Element
+struct OverlayWidget {
+  id : String
+  dom_node : @rdom.Element
 }
 
 ///|

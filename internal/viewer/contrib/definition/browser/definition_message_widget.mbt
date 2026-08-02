@@ -3,11 +3,11 @@
 /// definition action's plain-text message. The widget retains a model-space
 /// anchor and exposes the standard content-widget contract; the root Viewer
 /// owns mounting, layout, and dismissal policy.
-pub struct DefinitionMessageWidget {
-  priv root : @rdom.Element
-  priv message : @rdom.Element
-  priv mut position : @base_common.Position?
-  priv mut disposed : Bool
+struct DefinitionMessageWidget {
+  root : @rdom.Element
+  message : @rdom.Element
+  mut position : @base_common.Position?
+  mut disposed : Bool
 }
 
 ///|

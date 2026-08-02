@@ -27,26 +27,26 @@ struct CursorRenderData {
 ///|
 /// Public cursor owner for controller callers. Package-local lifecycle code
 /// reads/writes its private `should_render` / `render_data` state directly.
-pub struct ViewCursors {
-  priv dom_node : @rdom.Element
-  priv cursor : @rdom.Element
-  priv mut should_render : Bool
+struct ViewCursors {
+  dom_node : @rdom.Element
+  cursor : @rdom.Element
+  mut should_render : Bool
   /// Monaco `ViewCursor._renderData`, stored by `prepare_render` and written
   /// out by `render`. `None` when the cursor's view line is outside the
   /// rendered window or its line node is not measurable yet — Monaco's
   /// "Outside viewport → null" arms (`viewCursor.ts:177-180`).
-  priv mut render_data : CursorRenderData?
+  mut render_data : CursorRenderData?
   /// The caret's view position captured alongside `render_data` — Monaco's
   /// current `ViewCursor._position`. This advances immediately on a cursor
   /// event and is used by the next prepare pass.
-  priv mut last_position : @base_common.Position?
+  mut last_position : @base_common.Position?
   /// The position paired with the currently painted `render_data`. Monaco's
   /// `ViewCursors.getLastRenderData` returns the array produced by the last
   /// `render`, so an incoming cursor event must not combine its new logical
   /// position with the previous frame's rectangle.
-  priv mut last_rendered_position : @base_common.Position?
+  mut last_rendered_position : @base_common.Position?
   /// The last cursor-state selection shape used by `_getClassName`.
-  priv mut selection_is_empty : Bool
+  mut selection_is_empty : Bool
 }
 
 ///|

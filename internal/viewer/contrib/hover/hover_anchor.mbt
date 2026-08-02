@@ -16,8 +16,8 @@ pub enum HoverAnchorType {
 /// Monaco compares participant objects by identity; the multi-target MoonBit
 /// port mints an explicit identity so copying or rebuilding a participant
 /// handle cannot change anchor equality or adoption.
-pub struct HoverParticipantOwner {
-  priv id : Int
+struct HoverParticipantOwner {
+  id : Int
 } derive(Eq, Debug)
 
 ///|

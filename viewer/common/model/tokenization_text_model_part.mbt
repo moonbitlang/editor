@@ -24,12 +24,12 @@ pub(all) struct ModelTokensChangedRange {
 ///|
 /// Public model tokenization part. Reads are passive; attached visible ranges
 /// and the background worker drive lexing.
-pub struct TokenizationTextModelPart {
-  priv model_state : TokenizationModelState
-  priv backend : TokenizerSyntaxTokenBackend
-  priv did_change_tokens : @base_common.Emitter[ModelTokensChangedEvent]
-  priv mut backend_token_subscription : @base_common.Disposable?
-  priv mut disposed : Bool
+struct TokenizationTextModelPart {
+  model_state : TokenizationModelState
+  backend : TokenizerSyntaxTokenBackend
+  did_change_tokens : @base_common.Emitter[ModelTokensChangedEvent]
+  mut backend_token_subscription : @base_common.Disposable?
+  mut disposed : Bool
 }
 
 ///|

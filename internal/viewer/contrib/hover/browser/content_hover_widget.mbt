@@ -39,11 +39,11 @@ pub(all) struct RenderedContentHover {
 /// releases its previous render. This opaque browser-only value is shared by
 /// the code content widget and the DOM-anchored Markdown widget so Markdown
 /// rendering policy and retained listener disposal have one implementation.
-pub struct HoverRowsRender {
-  priv fragment : @rdom.DocumentFragment
-  priv disposables : Array[@base_common.Disposable]
-  priv mut transferred : Bool
-  priv mut disposed : Bool
+struct HoverRowsRender {
+  fragment : @rdom.DocumentFragment
+  disposables : Array[@base_common.Disposable]
+  mut transferred : Bool
+  mut disposed : Bool
 }
 
 ///|

@@ -24,16 +24,16 @@ pub fn number_as_pixels(value : CssLength) -> String {
 /// The narrow `FastDomNode` cache used by scrolling. Each setter compares the
 /// exact CSS value before touching `element.style`, preserving Monaco's hot-
 /// path no-op behavior for retained rows.
-pub struct CachedDomNode {
-  priv dom_node : @rdom.Element
-  priv mut width : String
-  priv mut height : String
-  priv mut top : String
-  priv mut left : String
-  priv mut line_height : String
-  priv mut position : String
-  priv mut layer_hint : Bool
-  priv mut contain : String
+struct CachedDomNode {
+  dom_node : @rdom.Element
+  mut width : String
+  mut height : String
+  mut top : String
+  mut left : String
+  mut line_height : String
+  mut position : String
+  mut layer_hint : Bool
+  mut contain : String
 }
 
 ///|
