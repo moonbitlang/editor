@@ -1,6 +1,7 @@
 # Literate MoonBit fixture
 
 ```mbt check
+///|
 fn literate_answer() -> Int {
   42
 }

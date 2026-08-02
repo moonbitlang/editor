@@ -393,7 +393,8 @@ test('renders and refreshes the editor-owned readonly Markdown presentation', as
     expect(report.metrics.rootCount).toBe(1);
     expect(report.metrics.codeBlocks).toBe(3);
     expect(report.metrics.keywordTokens).toBeGreaterThan(0);
-    expect(report.metrics.semanticLines).toBe(7);
+    expect(report.metrics.semanticLines).toBe(8);
+    expect(report.metrics.phraseDividers).toBe(1);
     expect(report.metrics.diagnostics).toBeGreaterThan(0);
     expect(report.metrics.sourceUri).toBe(
       'inmemory://component/literate.mbt.md',
@@ -416,6 +417,45 @@ test('renders and refreshes the editor-owned readonly Markdown presentation', as
     await expect(
       page.locator(`${article} [data-markdown-code-block="2"]`),
     ).not.toHaveAttribute('data-markdown-semantic', /.+/);
+    const phraseDivider = page.locator(
+      `${article} [data-markdown-phrase-divider="true"]`,
+    );
+    await expect(phraseDivider).toHaveCount(1);
+    await expect(phraseDivider).toHaveText('///|');
+    await expect(phraseDivider).toHaveAttribute('role', 'separator');
+    const dividerPresentation = await phraseDivider.evaluate((node) => {
+      const sourceStart = Number(
+        node.getAttribute('data-markdown-source-start'),
+      );
+      const sourceEnd = Number(node.getAttribute('data-markdown-source-end'));
+      const rect = node.getBoundingClientRect();
+      const blockRect = node
+        .closest('[data-markdown-code-block]')
+        .getBoundingClientRect();
+      const token = node.querySelector('span');
+      const rule = getComputedStyle(node, '::after');
+      return {
+        sourceStart,
+        sourceEnd,
+        tokenColor: getComputedStyle(token).color,
+        ruleContent: rule.content,
+        ruleColor: rule.backgroundColor,
+        width: rect.width,
+        blockWidth: blockRect.width,
+      };
+    });
+    expect(
+      initialSource.slice(
+        dividerPresentation.sourceStart,
+        dividerPresentation.sourceEnd,
+      ),
+    ).toBe('///|');
+    expect(dividerPresentation.tokenColor).toBe('rgba(0, 0, 0, 0)');
+    expect(dividerPresentation.ruleContent).toBe('\"\"');
+    expect(dividerPresentation.ruleColor).not.toBe('rgba(0, 0, 0, 0)');
+    expect(dividerPresentation.width).toBeGreaterThan(
+      dividerPresentation.blockWidth * 0.9,
+    );
     const nestedSemanticLine = page
       .locator(`${article} [data-markdown-code-line]`)
       .filter({ hasText: 'let planet' });
@@ -572,7 +612,7 @@ test('renders and refreshes the editor-owned readonly Markdown presentation', as
     );
     const projectedHoverRanges =
       `${article} .moonbit-viewer-markdown-hover-range`;
-    await expect(page.locator(projectedHoverRanges)).toHaveCount(3);
+    await expect(page.locator(projectedHoverRanges)).toHaveCount(4);
     expect(
       await page.locator(projectedHoverRanges).evaluateAll((nodes) =>
         nodes.every(

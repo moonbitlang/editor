@@ -377,6 +377,15 @@ test('opens Markdown documents through the native protocol and hovers literate M
   await expect(
     markdown.locator('[data-markdown-code-block="0"]'),
   ).toHaveAttribute('data-markdown-semantic', 'moonbit-check');
+  const phraseDivider = markdown.locator(
+    '[data-markdown-phrase-divider="true"]',
+  );
+  await expect(phraseDivider).toHaveCount(1);
+  await expect(phraseDivider).toHaveText('///|');
+  await expect(phraseDivider).toHaveAttribute('role', 'separator');
+  expect(await page.evaluate(() => globalThis.__readonlyEditorSource)).toContain(
+    '///|',
+  );
   const symbol = markdown
     .locator('[data-markdown-code-line]', { hasText: 'literate_answer' })
     .locator('span', { hasText: 'literate_answer' })
@@ -398,7 +407,7 @@ test('opens Markdown documents through the native protocol and hovers literate M
   });
   await expect(hover).toHaveAttribute(
     'data-markdown-hover-returned-range',
-    '4:4-4:19',
+    '5:4-5:19',
   );
 });
 

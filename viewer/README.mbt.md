@@ -182,7 +182,9 @@ nonmatching fences, case changes, and tab-separated forms remain static. The
 Markdown document exposes one projection-owned semantic pointer mapping. A real
 DOM caret in a semantic row is converted through the retained
 `MarkdownCodeLine` boundary map to the original model's 1-based position;
-synthetic indentation never becomes a provider position. The
+synthetic indentation never becomes a provider position. An exact column-zero
+`///|` item marker in those semantic rows is visually replaced by a horizontal
+divider while the original model and DOM text remain unchanged. The
 presentation-local hover and definition bridges consume that mapping and query
 providers against the original model/URI/revision, with no virtual model or
 URI. Live original-model marker decorations are projected into those same rows

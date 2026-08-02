@@ -346,14 +346,48 @@ fn render_semantic_tokenized_code_lines(
     if line_index > 0 {
       result.write_string("<br/>")
     }
+    let phrase_divider_attributes = if markdown_semantic_line_is_phrase_divider(
+        code_line,
+      ) {
+      " data-markdown-phrase-divider=\"true\" role=\"separator\" aria-label=\"MoonBit item separator\""
+    } else {
+      ""
+    }
     result.write_string(
-      "<span class=\"moonbit-viewer-markdown-code-line\" data-markdown-block-index=\"\{code_block.block_index}\" data-markdown-code-line=\"\{line_index}\" data-markdown-source-line=\"\{code_line.source_line_number}\" data-markdown-source-start=\"\{code_line.source_range.start}\" data-markdown-source-end=\"\{code_line.source_range.end_exclusive}\">",
+      "<span class=\"moonbit-viewer-markdown-code-line\" data-markdown-block-index=\"\{code_block.block_index}\" data-markdown-code-line=\"\{line_index}\" data-markdown-source-line=\"\{code_line.source_line_number}\" data-markdown-source-start=\"\{code_line.source_range.start}\" data-markdown-source-end=\"\{code_line.source_range.end_exclusive}\"\{phrase_divider_attributes}>",
     )
     result.write_string(rendered_lines[line_index])
     result.write_string("</span>")
   }
   result.write_string(suffix)
   result.to_string()
+}
+
+///|
+/// Recognizes only a source-bearing, column-zero MoonBit item marker. cmark
+/// may prepend synthetic spaces when a fence is nested in Markdown containers;
+/// the exact four-unit source range and boundary map keep those spaces from
+/// widening the language-level marker contract.
+fn markdown_semantic_line_is_phrase_divider(
+  code_line : @markdown_core.MarkdownCodeLine,
+) -> Bool {
+  let marker = "///|"
+  guard code_line.source_range.length() == marker.length() &&
+    code_line.displayed_text.has_suffix(marker) else {
+    return false
+  }
+  let padding = code_line.displayed_text.length() - marker.length()
+  guard padding >= 0 &&
+    code_line.source_offset_at_displayed_boundary(padding) ==
+    Some(code_line.source_range.start) else {
+    return false
+  }
+  for index in 0..<padding {
+    if code_line.displayed_text[index] != ' ' {
+      return false
+    }
+  }
+  true
 }
 
 ///|
