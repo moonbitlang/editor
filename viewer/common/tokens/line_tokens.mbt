@@ -47,7 +47,18 @@ struct LineTokens {
   tokens_count : Int
   text : String
   language_id_codec : @services.LanguageIdCodec
-} derive(Debug)
+}
+
+///|
+/// Structural diagnostics without publishing an inherent `to_repr` method.
+pub impl Debug for LineTokens with fn to_repr(self) {
+  Repr::record({
+    "tokens": Repr(self.tokens),
+    "tokens_count": Repr(self.tokens_count),
+    "text": Repr(self.text),
+    "language_id_codec": Repr(self.language_id_codec),
+  })
+}
 
 ///|
 pub fn LineTokens::LineTokens(

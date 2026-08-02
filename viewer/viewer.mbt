@@ -132,7 +132,16 @@ priv struct HorizontalRevealRangeRequest {
 struct ViewerViewState {
   scroll_top : Double
   scroll_left : Double
-} derive(Debug)
+}
+
+///|
+/// Structural diagnostics without publishing an inherent `to_repr` method.
+pub impl Debug for ViewerViewState with fn to_repr(self) {
+  Repr::record({
+    "scroll_top": Repr(self.scroll_top),
+    "scroll_left": Repr(self.scroll_left),
+  })
+}
 
 ///|
 /// Creates a viewer instance. An omitted service bundle is created and owned

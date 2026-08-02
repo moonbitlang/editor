@@ -14,9 +14,10 @@ in `pkg.generated.mbti` has a non-test cross-package caller. Representation
 details, full-versus-sliced variants, metadata decoders used only inside this
 package, and conformance-only helpers are private. `TokenMetadata(UInt)` remains
 the deliberate scalar-construction boundary introduced by the typed-metadata
-port. `LineTokens` deliberately
-retains `derive(Debug)` for diagnostics even though production code does not
-invoke it. No future-only export is currently reserved; if one is deliberately
+port. `LineTokens` deliberately retains a public `Debug` implementation for
+diagnostics even though production code does not invoke it; the implementation
+is explicit so the opaque type does not also publish an inherent `to_repr`
+method. No future-only export is currently reserved; if one is deliberately
 staged later, it belongs in `exports.mbt` until a production caller lands.
 
 ```mermaid
