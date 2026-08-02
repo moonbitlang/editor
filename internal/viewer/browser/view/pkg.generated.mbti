@@ -22,18 +22,11 @@ pub fn convert_view_to_model_mouse_target(@browser.MouseTarget, @view_model.Coor
 
 pub fn empty_editor_class_name(show_unused? : Bool, show_deprecated? : Bool) -> String
 
-pub fn render_line_input_for_viewport(@view_layout.ViewportData, Int, ViewLineOptions, selection_view_range~ : @common.Range?) -> @view_layout.RenderLineInput
-
 // Errors
 
 // Types and methods
-pub(all) struct ContentWidgetDimension {
-  width : Double
-  height : Double
-} derive(Eq, @debug.Debug)
-
 type ContentWidgetHandle
-pub fn ContentWidgetHandle::ContentWidgetHandle(() -> String, () -> @dom.Element, () -> ContentWidgetPosition?, allow_editor_overflow? : Bool, use_display_none? : Bool, before_render? : () -> ContentWidgetDimension? raise, after_render? : (ContentWidgetPositionPreference?, ContentWidgetRenderedCoordinate?) -> Unit raise) -> Self
+pub fn ContentWidgetHandle::ContentWidgetHandle(() -> String, () -> @dom.Element, () -> ContentWidgetPosition?, allow_editor_overflow? : Bool, after_render? : (ContentWidgetPositionPreference?) -> Unit raise) -> Self
 
 pub(all) struct ContentWidgetPosition {
   position : @common.Position?
@@ -48,36 +41,10 @@ pub(all) enum ContentWidgetPositionPreference {
   Exact
 } derive(Eq)
 
-pub struct ContentWidgetRenderedCoordinate {
-  top : Double
-  left : Double
-} derive(Eq, @debug.Debug)
-
 type ContentWidgets
-pub fn ContentWidgets::ContentWidgets(@dom.Document, @dom.Element) -> Self
 pub fn ContentWidgets::add_widget(Self, ContentWidgetHandle) -> Unit
-pub fn ContentWidgets::dom_node(Self) -> @dom.Element
-pub fn ContentWidgets::install_live_view_context(Self, () -> (Double, Double), (@common.Position) -> @common.Position?) -> Unit
 pub fn ContentWidgets::install_live_view_context_with_affinity(Self, () -> (Double, Double), (@common.Position, @model.PositionAffinity?) -> @common.Position?) -> Unit
-pub fn ContentWidgets::overflowing_content_widgets_dom_node(Self) -> @dom.Element
-pub fn ContentWidgets::prepare_render_widgets(Self, ContentWidgetsRenderContext) -> Unit
-pub fn ContentWidgets::render_widgets(Self, Double, Double) -> Unit
 pub fn ContentWidgets::set_widget_position(Self, ContentWidgetHandle) -> Unit
-
-pub(all) struct ContentWidgetsRenderContext {
-  vertical_offset_for_line : (Int) -> Double
-  line_height_for_line : (Int) -> Double
-  visible_range_for_position : (@common.Position) -> Double?
-  typical_fullwidth_character_width : Double
-  scroll_top : Double
-  scroll_left : Double
-  viewport_width : Double
-  viewport_height : Double
-}
-
-type CursorRenderData derive(Eq, @debug.Debug)
-
-type DecorationOverlayPiece derive(Eq, @debug.Debug)
 
 type EditorScrollbar
 pub fn EditorScrollbar::content(Self) -> @dom.Element
@@ -105,7 +72,6 @@ pub(all) enum PartFingerprint {
   ViewLinesGpu
 } derive(Eq, @debug.Debug)
 pub fn PartFingerprint::collect(@dom.Element?, @dom.Element) -> Bytes
-pub fn PartFingerprint::from_int(Int) -> Self
 pub fn PartFingerprint::to_int(Self) -> Int
 
 pub struct View {
@@ -122,7 +88,7 @@ pub struct View {
 pub fn View::View(view_zones_configuration_reader? : () -> (Int, Double, Double)) -> Self
 pub fn View::add_disposable(Self, @common.Disposable) -> Unit
 pub fn View::apply_squiggly_theme(Self) -> Unit
-pub fn View::begin_view_event_batch(Self) -> ViewEventCollector
+pub fn View::begin_view_event_batch(Self) -> Unit
 pub fn View::change_view_zones(Self, (@browser.ViewZoneChangeAccessor) -> Unit raise) -> Unit
 pub fn View::dispose(Self) -> Unit
 pub fn View::emit_view_event(Self, ViewEvent) -> Unit
@@ -196,26 +162,8 @@ pub(all) enum ViewEvent {
   ViewZonesChanged
 }
 
-type ViewEventCollector
-pub fn ViewEventCollector::emit(Self, ViewEvent) -> Unit
-
 type ViewFocusChangedEvent
 pub fn ViewFocusChangedEvent::ViewFocusChangedEvent(Bool) -> Self
-
-pub struct ViewLineOptions {
-  line_height : Int
-  space_width : Double
-  middot_width : Double
-  wsmiddot_width : Double
-  use_monospace_optimizations : Bool
-  can_use_halfwidth_rightwards_arrow : Bool
-  stop_rendering_line_after : Int
-  render_whitespace : @editor_api.RenderWhitespace
-  render_control_characters : Bool
-  font_ligatures : Bool
-  vertical_scrollbar_size : Double
-} derive(Eq, @debug.Debug)
-pub fn ViewLineOptions::ViewLineOptions(line_height? : Int, space_width? : Double, middot_width? : Double, wsmiddot_width? : Double, use_monospace_optimizations? : Bool, can_use_halfwidth_rightwards_arrow? : Bool, stop_rendering_line_after? : Int, render_whitespace? : @editor_api.RenderWhitespace, render_control_characters? : Bool, font_ligatures? : Bool, vertical_scrollbar_size? : Double) -> Self
 
 type ViewLines
 pub fn ViewLines::acquire_content_viewport_geometry(Self) -> @common.Disposable
@@ -225,13 +173,7 @@ pub fn ViewLines::get_position_from_dom_info(Self, @view_model.ViewModel, @dom.E
 pub fn ViewLines::install_geometry_readers(Self, (Int) -> Int, (Int) -> @view_layout.TextDirection) -> Unit
 pub fn ViewLines::install_live_configuration_reader(Self, () -> ViewLinesConfiguration) -> Unit
 
-pub struct ViewLinesConfiguration {
-  line_height : Int
-  typical_halfwidth_character_width : Double
-  is_viewport_wrapping : Bool
-  can_use_layer_hinting : Bool
-  view_line_options : ViewLineOptions
-} derive(Eq, @debug.Debug)
+type ViewLinesConfiguration derive(Eq, @debug.Debug)
 pub fn ViewLinesConfiguration::ViewLinesConfiguration(line_height? : Int, typical_halfwidth_character_width? : Double, is_viewport_wrapping? : Bool, can_use_layer_hinting? : Bool, space_width? : Double, middot_width? : Double, wsmiddot_width? : Double, use_monospace_optimizations? : Bool, can_use_halfwidth_rightwards_arrow? : Bool, stop_rendering_line_after? : Int, render_whitespace? : @editor_api.RenderWhitespace, render_control_characters? : Bool, font_ligatures? : Bool, vertical_scrollbar_size? : Double) -> Self
 
 pub(all) struct ViewRenderInput {
@@ -262,9 +204,7 @@ type ViewTokensChangedEvent
 pub fn ViewTokensChangedEvent::ViewTokensChangedEvent(Array[ViewTokenChangeRange]) -> Self
 
 type ViewZones
-pub fn ViewZones::did_render(Self) -> Unit
 pub fn ViewZones::refresh_hidden_area_source_visibility(Self) -> Bool
-pub fn ViewZones::should_render(Self) -> Bool
 
 // Type aliases
 

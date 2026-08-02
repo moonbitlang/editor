@@ -59,6 +59,10 @@ pub fn register_viewer(
     did_resolve_hover: Emitter(),
     did_observe_scroll_frame: Emitter(),
   }
+  offer_browser_hidden_lines_diagnostic(set_hidden_lines_for_browser_diagnostic)
+  offer_browser_scroll_frame_diagnostic(
+    viewer_id, subscribe_scroll_frames_for_browser_diagnostic,
+  )
   @base_common.Disposable::from(() => {
     unregister_if_current(viewer_id, registration_id)
   })
@@ -67,7 +71,7 @@ pub fn register_viewer(
 ///|
 /// Removes one viewer's controls and all of its testing listeners. Unknown or
 /// already-removed ids are no-ops.
-pub fn unregister_viewer(viewer_id : String) -> Unit {
+fn unregister_viewer(viewer_id : String) -> Unit {
   match viewer_entries.get(viewer_id) {
     Some(entry) => {
       viewer_entries.remove(viewer_id)
@@ -80,7 +84,7 @@ pub fn unregister_viewer(viewer_id : String) -> Unit {
 ///|
 /// Returns whether the registered viewer currently has a model. Missing ids
 /// are treated as detached/disposed viewers.
-pub fn has_model(viewer_id : String) -> Bool {
+fn has_model(viewer_id : String) -> Bool {
   match viewer_entries.get(viewer_id) {
     Some(entry) => (entry.has_model)()
     None => false
@@ -90,7 +94,7 @@ pub fn has_model(viewer_id : String) -> Bool {
 ///|
 /// Applies hidden areas through a registered viewer's private control seam.
 /// Returns `false` when the id has already been unregistered.
-pub fn set_hidden_areas(
+fn set_hidden_areas(
   viewer_id : String,
   ranges : Array[@base_common.Range],
   source? : String,
@@ -104,6 +108,78 @@ pub fn set_hidden_areas(
     None => false
   }
 }
+
+///|
+/// Primitive-only browser bridge for exercising the private hidden-area path
+/// without publishing `set_hidden_areas` as MoonBit API. Viewer lookup stays
+/// in the generation-aware registry, so disposed and reused ids remain safe.
+fn set_hidden_lines_for_browser_diagnostic(
+  viewer_id : String,
+  start_line : Int,
+  end_line : Int,
+  source : String,
+  hidden : Bool,
+) -> Bool {
+  let ranges = if hidden {
+    [@base_common.Range(start_line, 1, end_line, 1)]
+  } else {
+    []
+  }
+  set_hidden_areas(viewer_id, ranges, source~)
+}
+
+///|
+/// Product hosts do not install the optional probe, leaving the private
+/// control absent from their JavaScript surface as well as MoonBit's API.
+extern "js" fn offer_browser_hidden_lines_diagnostic(
+  set_hidden_lines : (String, Int, Int, String, Bool) -> Bool,
+) -> Unit =
+  #| (setHiddenLines) => globalThis.__viewerPrivateTestProbe?.acceptSetHiddenLines?.(setHiddenLines)
+
+///|
+/// Installs the scroll-frame listener only when the browser performance probe
+/// already exists. Product hosts cross this bridge once during registration
+/// and retain the publisher's no-listener fast path for every later frame.
+fn subscribe_scroll_frames_for_browser_diagnostic(viewer_id : String) -> Unit {
+  on_did_observe_scroll_frame(viewer_id, event => {
+    forward_scroll_frame_for_browser_diagnostic(
+      event.viewer_id,
+      match event.phase {
+        StateCommitted => "state-committed"
+        RenderStarted => "render-started"
+        RenderFinished => "render-finished"
+      },
+      event.scroll_top,
+      event.scroll_left,
+    )
+  })
+  |> ignore
+}
+
+///|
+extern "js" fn offer_browser_scroll_frame_diagnostic(
+  viewer_id : String,
+  subscribe : (String) -> Unit,
+) -> Unit =
+  #| (viewerId, subscribe) => {
+  #|   if (globalThis.__scrollProbe) subscribe(viewerId);
+  #| }
+
+///|
+extern "js" fn forward_scroll_frame_for_browser_diagnostic(
+  viewer_id : String,
+  phase : String,
+  scroll_top : Double,
+  scroll_left : Double,
+) -> Unit =
+  #| (viewerId, phase, scrollTop, scrollLeft) => {
+  #|   globalThis.__scrollProbe?.recordLocalPhase({
+  #|     viewerId,
+  #|     phase,
+  #|     scrollTop,
+  #|     scrollLeft,
+  #|   });
+  #| }
 
 ///|
 /// Subscribes to view-model-build observations for one registered viewer.
@@ -147,7 +223,7 @@ pub fn on_did_resolve_hover(
 ///|
 /// Subscribes to ordered scroll state/render observations for one registered
 /// viewer. Missing or unregistered ids return an inert disposable.
-pub fn on_did_observe_scroll_frame(
+fn on_did_observe_scroll_frame(
   viewer_id : String,
   listener : (ScrollFrameObservation) -> Unit,
 ) -> @base_common.Disposable {

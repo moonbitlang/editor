@@ -27,25 +27,27 @@ fn EditorScrollbar::EditorScrollbar(
   editor_scrollable.set_wrapper_class(
     "monaco-scrollable-element editor-scrollable",
   )
-  editor_scrollable.wrapper.set_attribute("data-view-part", "editor-scrollable")
-  editor_scrollable.content.set_attribute("data-view-part", "lines-content")
+  editor_scrollable
+  .wrapper()
+  .set_attribute("data-view-part", "editor-scrollable")
+  editor_scrollable.content().set_attribute("data-view-part", "lines-content")
   editor_scrollable.update_from_model(
     { width: 0.0, scroll_width: 0.0, height: 0.0, scroll_height: 0.0 },
     { scroll_left: 0.0, scroll_top: 0.0 },
   )
-  let scrollbar_dom_node = @scrollbar.CachedDomNode(editor_scrollable.wrapper)
+  let scrollbar_dom_node = @scrollbar.CachedDomNode(editor_scrollable.wrapper())
   scrollbar_dom_node.set_position("absolute")
   { editor_scrollable, scrollbar_dom_node, should_render: true }
 }
 
 ///|
 fn EditorScrollbar::get_dom_node(self : EditorScrollbar) -> @rdom.Element {
-  self.editor_scrollable.wrapper
+  self.editor_scrollable.wrapper()
 }
 
 ///|
 pub fn EditorScrollbar::content(self : EditorScrollbar) -> @rdom.Element {
-  self.editor_scrollable.content
+  self.editor_scrollable.content()
 }
 
 ///|

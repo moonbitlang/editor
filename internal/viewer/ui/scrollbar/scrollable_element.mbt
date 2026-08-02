@@ -3,7 +3,7 @@
 /// Monaco-shaped DOM shell and the custom scrollbar node geometry; callers
 /// decide whether scroll positions are written back into `ViewLayout` or a
 /// native content element.
-pub struct ScrollableElementDom {
+struct ScrollableElementDom {
   wrapper : @rdom.Element
   content : @rdom.Element
   vertical_bar : @rdom.Element
@@ -26,6 +26,22 @@ pub struct ScrollableElementDom {
   mut hide_generation : Int
   mut hide_timeout : @base_common.Disposable?
   mut disposed : Bool
+}
+
+///|
+/// Returns the retained outer scrolling shell.
+pub fn ScrollableElementDom::wrapper(
+  self : ScrollableElementDom,
+) -> @rdom.Element {
+  self.wrapper
+}
+
+///|
+/// Returns the retained native content element.
+pub fn ScrollableElementDom::content(
+  self : ScrollableElementDom,
+) -> @rdom.Element {
+  self.content
 }
 
 ///|

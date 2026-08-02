@@ -28,7 +28,7 @@ struct MouseWheelClassifier {
 }
 
 ///|
-pub fn MouseWheelClassifier::MouseWheelClassifier() -> MouseWheelClassifier {
+fn MouseWheelClassifier::MouseWheelClassifier() -> MouseWheelClassifier {
   { capacity: 5, memory: [], front: -1, rear: -1 }
 }
 
@@ -78,7 +78,7 @@ pub fn MouseWheelClassifier::accept_standard_wheel_event(
 }
 
 ///|
-pub fn MouseWheelClassifier::accept(
+fn MouseWheelClassifier::accept(
   self : MouseWheelClassifier,
   timestamp : Double,
   delta_x : Double,

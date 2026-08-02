@@ -19,7 +19,7 @@
 ///|
 /// One decoration piece (`<div class="cdr {className}">`) inside its line's
 /// overlay row, at `left` with either a pixel width or `width:100%`.
-struct DecorationOverlayPiece {
+priv struct DecorationOverlayPiece {
   line_index : Int
   class_name : String
   left : Double

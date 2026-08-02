@@ -1,31 +1,4 @@
 ///|
-/// The Monaco-shaped option identifiers that view parts query from
-/// `ViewConfigurationChangedEvent.hasChanged`.  The root `Viewer` maps its
-/// concrete option diffs to this semantic set; view parts never need to know
-/// about the root option record.
-pub(all) enum ViewConfigurationOption {
-  LayoutInfo
-  FontInfo
-  LineHeight
-  WrappingInfo
-  RevealHorizontalRightPadding
-  CursorSurroundingLines
-  CursorSurroundingLinesStyle
-  DisableLayerHinting
-  StickyScroll
-  RenderWhitespace
-  RenderControlCharacters
-  RenderLineHighlight
-  RenderLineHighlightOnlyWhenFocus
-  RenderValidationDecorations
-  ReadOnly
-  CursorBlinking
-  EffectiveCursorStyle
-  CursorSmoothCaretAnimation
-  EffectiveEditContext
-} derive(Eq, Debug)
-
-///|
 /// Source-shaped configuration payload.  `changed_options` is a typed bitset
 /// represented as a deduplicated array because the readonly viewer has a
 /// deliberately small option surface.
@@ -148,19 +121,4 @@ pub fn ViewTokensChangedEvent::ViewTokensChangedEvent(
   ranges : Array[ViewTokenChangeRange],
 ) -> ViewTokensChangedEvent {
   { ranges, }
-}
-
-///|
-/// Closed readonly-view event union containing only events emitted by the
-/// current Viewer and consumed by at least one browser view part.
-pub(all) enum ViewEvent {
-  ViewConfigurationChanged(ViewConfigurationChangedEvent)
-  ViewCursorStateChanged(ViewCursorStateChangedEvent)
-  ViewDecorationsChanged
-  ViewFlushed
-  ViewFocusChanged(ViewFocusChangedEvent)
-  ViewLineMappingChanged
-  ViewScrollChanged(ViewScrollChangedEvent)
-  ViewTokensChanged(ViewTokensChangedEvent)
-  ViewZonesChanged
 }

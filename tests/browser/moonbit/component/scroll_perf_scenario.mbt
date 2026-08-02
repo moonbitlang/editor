@@ -66,20 +66,6 @@ fn run_scroll_perf_test() -> Unit {
     }
   })
   |> ignore
-  @viewer_testing.on_did_observe_scroll_frame(viewer.get_id(), event => {
-    let phase = match event.phase {
-      StateCommitted => "state-committed"
-      RenderStarted => "render-started"
-      RenderFinished => "render-finished"
-    }
-    forward_scroll_perf_phase(
-      event.viewer_id,
-      phase,
-      event.scroll_top,
-      event.scroll_left,
-    )
-  })
-  |> ignore
   let zone = @rdom.document().create_element("div")
   zone.set_inner_html("scroll performance view zone")
   viewer.set_model(Some(model))
@@ -184,20 +170,4 @@ extern "js" fn install_scroll_perf_controls(
   #|     dispose: disposeViewer,
   #|     setSelection,
   #|   };
-  #| }
-
-///|
-extern "js" fn forward_scroll_perf_phase(
-  viewer_id : String,
-  phase : String,
-  scroll_top : Double,
-  scroll_left : Double,
-) -> Unit =
-  #| (viewerId, phase, scrollTop, scrollLeft) => {
-  #|   globalThis.__scrollProbe?.recordLocalPhase({
-  #|     viewerId,
-  #|     phase,
-  #|     scrollTop,
-  #|     scrollLeft,
-  #|   });
   #| }

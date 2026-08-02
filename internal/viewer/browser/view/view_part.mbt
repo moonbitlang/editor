@@ -1,26 +1,4 @@
 ///|
-/// `PartFingerprint` (`vscode/src/vs/editor/browser/view/viewPart.ts:34-46`,
-/// checked-in vscode submodule). The
-/// numeric values are load-bearing: they are written into `data-mprt`
-/// attributes and compared by index in `ElementPath`'s predicates, so the
-/// enum order must never change. `TextArea`, `Minimap` and `ViewLinesGpu`
-/// keep their slots (7/9/10) but are never written — the viewer has no such
-/// parts (Monaco's checkout writes no `ViewLinesGpu` either).
-pub(all) enum PartFingerprint {
-  None
-  ContentWidgets
-  OverflowingContentWidgets
-  OverflowGuard
-  OverlayWidgets
-  OverflowingOverlayWidgets
-  ScrollableElement
-  TextArea
-  ViewLines
-  Minimap
-  ViewLinesGpu
-} derive(Eq, Debug)
-
-///|
 pub fn PartFingerprint::to_int(self : PartFingerprint) -> Int {
   match self {
     None => 0
@@ -38,7 +16,7 @@ pub fn PartFingerprint::to_int(self : PartFingerprint) -> Int {
 }
 
 ///|
-pub fn PartFingerprint::from_int(value : Int) -> PartFingerprint {
+fn PartFingerprint::from_int(value : Int) -> PartFingerprint {
   match value {
     1 => ContentWidgets
     2 => OverflowingContentWidgets
