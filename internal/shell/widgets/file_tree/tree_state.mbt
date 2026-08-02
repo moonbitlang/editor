@@ -40,63 +40,70 @@ priv enum RevealStep {
 }
 
 ///|
-/// Builds a node from a resolved stat. Children render in the level order
-/// `compare` describes (see `TreeNode::from_stats`).
+/// Builds a node from a resolved stat. Children use the explorer's one level
+/// ordering policy (see `TreeNode::from_stats`).
 fn TreeNode::from_stat(
   stat : @workspace.WorkspaceStat,
   expanded~ : Bool,
-  compare? : (@workspace.WorkspaceStat, @workspace.WorkspaceStat) -> Int = (
-    left,
-    right,
-  ) => default_workspace_stat_compare(left, right),
 ) -> TreeNode {
   {
     uri: stat.uri,
     name: stat.name,
     kind: stat.kind,
-    children: stat.children.map(stats => TreeNode::from_stats(stats, compare~)),
+    children: stat.children.map(TreeNode::from_stats),
     expanded,
     resolve_failed: false,
   }
 }
 
 ///|
-/// Orders one resolved directory level with the host comparator, followed by
-/// the provider's own order for exact ties. `Array::sort_by` is unstable, so
-/// the source position is an explicit last sort key rather than an assumed
-/// tie-break.
+/// Orders one resolved directory level. `Array::sort_by` is unstable, so the
+/// provider position is an explicit last sort key for otherwise identical
+/// entries.
 fn TreeNode::from_stats(
   stats : Array[@workspace.WorkspaceStat],
-  compare~ : (@workspace.WorkspaceStat, @workspace.WorkspaceStat) -> Int,
 ) -> @vec.Vector[TreeNode] {
   let order = Array::makei(stats.length(), index => index)
   order.sort_by((left, right) => {
-    match compare(stats[left], stats[right]) {
+    match workspace_stat_compare(stats[left], stats[right]) {
       0 => left.compare(right)
-      by_host => by_host
+      by_entry => by_entry
     }
   })
-  Vector(
-    order.map(index => {
-      TreeNode::from_stat(stats[index], expanded=false, compare~)
-    }),
-  )
+  Vector(order.map(index => TreeNode::from_stat(stats[index], expanded=false)))
 }
 
 ///|
-/// The widget default: directories before files, with equal kinds left in the
-/// provider's order.
-fn default_workspace_stat_compare(
+/// The complete explorer order: package overview files first, then directories
+/// before files, then UTF-16 code-unit lexicographic names. MoonBit's default
+/// `String` order is shortlex, so filenames use `lexical_compare` explicitly.
+fn workspace_stat_compare(
   left : @workspace.WorkspaceStat,
   right : @workspace.WorkspaceStat,
 ) -> Int {
+  fn entry_rank(stat : @workspace.WorkspaceStat) -> Int {
+    guard stat.kind is File else { return 0 }
+    match stat.name {
+      "README" | [.. "README.", ..] => -3
+      "pkg.generated.mbti" => -2
+      "moon.pkg" => -1
+      _ => 0
+    }
+  }
   fn kind_rank(kind : @workspace.WorkspaceEntryKind) -> Int {
     match kind {
       Directory => 0
       File => 1
     }
   }
-  kind_rank(left.kind).compare(kind_rank(right.kind))
+  match entry_rank(left).compare(entry_rank(right)) {
+    0 =>
+      match kind_rank(left.kind).compare(kind_rank(right.kind)) {
+        0 => left.name.lexical_compare(right.name)
+        by_kind => by_kind
+      }
+    by_rank => by_rank
+  }
 }
 
 ///|
@@ -105,22 +112,18 @@ fn TreeNode::with_resolved(
   self : TreeNode,
   uri : @base_common.Uri,
   stat : @workspace.WorkspaceStat,
-  compare? : (@workspace.WorkspaceStat, @workspace.WorkspaceStat) -> Int = (
-    left,
-    right,
-  ) => default_workspace_stat_compare(left, right),
 ) -> TreeNode? {
   if self.uri == uri {
     return Some({
       ..self,
-      children: stat.children.map(stats => TreeNode::from_stats(stats, compare~)),
+      children: stat.children.map(TreeNode::from_stats),
       resolve_failed: false,
     })
   }
   guard self.children is Some(children) else { return None }
   for index in 0..<children.length() {
     let child = children[index]
-    if child.with_resolved(uri, stat, compare~) is Some(next) {
+    if child.with_resolved(uri, stat) is Some(next) {
       return Some({ ..self, children: Some(children.set(index, next)) })
     }
   }

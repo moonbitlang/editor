@@ -56,9 +56,9 @@ if accepts(payload, current_model_identity) {
 - `RemoteWorkspaceTreeProvider` maps one-level resolves to protocol requests.
   On connect/reconnect the tree refreshes; a bounded depth-first walk uses the
   raw provider order to auto-open the first MoonBit file (otherwise the first
-  file). The explorer's single comparator leads every level with its README
-  (any extension), `pkg.generated.mbti`, and `moon.pkg`, followed by directories
-  before files in UTF-16 code-unit lexicographic name order.
+  file). The file-tree package's single ordering policy leads every level with
+  its README (any extension), `pkg.generated.mbti`, and `moon.pkg`, followed by
+  directories before files in UTF-16 code-unit lexicographic name order.
 - `RemoteDocumentProvider` maps read/watch/close to protocol packets. Active URI
   and generation guards discard stale async results. Every snapshot becomes a
   new `TextModel`; reloads save/restore viewer scroll state, while user opens
