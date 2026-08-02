@@ -295,6 +295,30 @@ test('the pinned toc bar outlines sections and navigation expands the chain', as
   await expect(page.locator(tocRow)).toHaveCount(4);
   await expect(page.locator(tocRow).nth(3)).toHaveAttribute('data-toc-depth', '3');
 
+  // Keyboard navigation to a middle section collapses the overlay, restores
+  // focus to its persistent toggle, and honors the viewport scroll inset.
+  const betaRow = page.locator(tocRow, { hasText: 'Beta' });
+  await betaRow.focus();
+  await betaRow.press('Enter');
+  await expect(page.locator(tocToggle)).toHaveAttribute(
+    'aria-expanded',
+    'false',
+  );
+  await expect(page.locator(tocToggle)).toBeFocused();
+  const betaVisible = await page.locator(`${article} > h2`, { hasText: 'Beta' })
+    .evaluate((node) => {
+      const rect = node.getBoundingClientRect();
+      const toc = node
+        .closest('.moonbit-viewer-markdown-document')
+        .querySelector('.moonbit-viewer-markdown-toc')
+        .getBoundingClientRect();
+      return rect.top >= toc.bottom - 1;
+    });
+  expect(betaVisible).toBe(true);
+
+  await page.locator(tocToggle).click();
+  await expect(page.locator(tocToggle)).toHaveAttribute('aria-expanded', 'true');
+
   // The Deep section starts auto-collapsed; clicking its row expands it and
   // scrolls its heading into the viewport.
   expect(facts.collapsed).toEqual([facts.deep]);

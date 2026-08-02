@@ -195,6 +195,7 @@ pub fn MarkdownDocumentView::MarkdownDocumentView(
                 // TOC to its compact state before reveal math runs. Otherwise
                 // the expanded overlay can cover the heading aligned to the
                 // viewport start edge.
+                @base_browser.focus_prevent_scroll(view.toc_toggle)
                 view.toc_nav.set_attribute("data-toc-expanded", "false")
                 view.toc_toggle.set_attribute("aria-expanded", "false")
                 (view.on_toc_navigate)(offset)

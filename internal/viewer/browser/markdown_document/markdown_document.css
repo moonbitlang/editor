@@ -46,6 +46,13 @@
   padding-top: 32px;
 }
 
+.moonbit-viewer-markdown-document:has(
+    > .moonbit-viewer-markdown-toc[data-toc-visible="true"]
+  )
+  > .moonbit-viewer-markdown-document-viewport {
+  scroll-padding-top: 32px;
+}
+
 .moonbit-viewer-markdown-document-article
   > :where(h1, h2, h3, h4, h5, h6, p, ul, ol, dl, hr, details) {
   max-width: var(--markdown-prose-measure);
