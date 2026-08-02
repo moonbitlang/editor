@@ -299,17 +299,32 @@ test('the pinned toc bar outlines sections and navigation expands the chain', as
   // scrolls its heading into the viewport.
   expect(facts.collapsed).toEqual([facts.deep]);
   await page.locator(tocRow, { hasText: 'Deep' }).click();
+  await expect(page.locator(tocToggle)).toHaveAttribute(
+    'aria-expanded',
+    'false',
+  );
+  await expect(page.locator(tocRow).first()).toBeHidden();
   await expect.poll(() => visibleByText(page, 'deep three')).toBe(true);
   expect((await foldFacts(page)).collapsed).toEqual([]);
-  const deepVisible = await page.locator(`${article} > *`, { hasText: 'deep one' })
-    .first()
+  const deepVisible = await page.locator(`${article} > h3`, { hasText: 'Deep' })
     .evaluate((node) => {
       const rect = node.getBoundingClientRect();
       const viewport = node.closest('.moonbit-viewer-markdown-document-viewport')
         .getBoundingClientRect();
-      return rect.top >= viewport.top - 1 && rect.top <= viewport.bottom;
+      const toc = node
+        .closest('.moonbit-viewer-markdown-document')
+        .querySelector('.moonbit-viewer-markdown-toc')
+        .getBoundingClientRect();
+      return {
+        insideViewport:
+          rect.top >= viewport.top - 1 && rect.top <= viewport.bottom,
+        belowCollapsedToc: rect.top >= toc.bottom - 1,
+      };
     });
-  expect(deepVisible).toBe(true);
+  expect(deepVisible).toEqual({
+    insideViewport: true,
+    belowCollapsedToc: true,
+  });
 
   // A revealed-by-navigation fence hovers, and the fold conversation still
   // never re-parsed the document.
@@ -318,4 +333,13 @@ test('the pinned toc bar outlines sections and navigation expands the chain', as
   await releaseLatestHover(page, 1, 'post-navigation hover');
   await expect(page.locator(hoverWidget)).toContainText('post-navigation hover');
   expect(await projectionGeneration(page)).toBe(generation);
+
+  // The mounted white-box suite owns the two-section visibility policy. This
+  // browser assertion owns the CSS branch: a hidden bar must not reserve the
+  // visible-TOC title clearance.
+  await page.locator(tocBar).evaluate((node) =>
+    node.setAttribute('data-toc-visible', 'false'),
+  );
+  await expect(page.locator(tocBar)).toBeHidden();
+  await expect(page.locator(article)).toHaveCSS('padding-top', '16px');
 });

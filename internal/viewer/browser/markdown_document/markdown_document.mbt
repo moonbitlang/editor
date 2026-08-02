@@ -190,7 +190,15 @@ pub fn MarkdownDocumentView::MarkdownDocumentView(
         match row.get_attribute("data-toc-offset") {
           Some(raw) =>
             match markdown_parse_section_index(raw) {
-              Some(offset) => (view.on_toc_navigate)(offset)
+              Some(offset) => {
+                // Row activation is a completed navigation, so return the
+                // TOC to its compact state before reveal math runs. Otherwise
+                // the expanded overlay can cover the heading aligned to the
+                // viewport start edge.
+                view.toc_nav.set_attribute("data-toc-expanded", "false")
+                view.toc_toggle.set_attribute("aria-expanded", "false")
+                (view.on_toc_navigate)(offset)
+              }
               None => ()
             }
           None => ()
