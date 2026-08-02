@@ -22,7 +22,7 @@ imports them and public names remain MoonBit-owned.
 ## Runtime Shape
 
 ```mermaid
-flowchart LR
+flowchart TB
   A[host document] --> B[TextModel<br>common/model]
   B --> C[ViewModel<br>common/view_model]
   C --> D[ViewLayout<br>common/view_layout]
@@ -494,3 +494,281 @@ script:
   always refer to the original model.
 - Keep conversions at model/view, protocol, and DOM boundaries; do not pass an
   unlabelled integer between coordinate spaces.
+
+## Hover Source-Location Pipeline
+
+Hover is a cross-package query over the original `TextModel`. The DOM neither
+stores a filesystem path nor chooses a language provider or CLI command. Its
+only job is to identify a rendered character boundary. Presentation-specific
+code maps that boundary back to the original model; the reference host later
+maps the model URI to a server-side workspace path.
+
+```mermaid
+flowchart LR
+  subgraph PM["Presentation-specific pointer mapping"]
+    PTR["Pointer coordinates"] --> PRES{"Active presentation"}
+    PRES -->|Code| CODE["Browser caret hit<br>+ retained CharacterMapping"]
+    PRES -->|Markdown| MD["Browser caret hit<br>+ retained semantic source boundaries"]
+    CODE --> VP["1-based view Position"]
+    VP --> CONV["CoordinatesConverter"]
+    CONV --> MP["1-based model Position"]
+    MD --> MP
+  end
+
+  MP --> OFF["0-based TextModel UTF-16 offset"]
+  OFF --> REG["Languages provider registry"]
+  REG --> RLP["readonly-remote HoverProvider"]
+  RLP --> WIRE["Wire request<br>URI + revision + UTF-16 offset"]
+  WIRE --> SRV["Server cached TextModel"]
+  SRV --> LOC["Safe relative path<br>+ 1-based line:column"]
+  LOC --> CLI["moon ide hover --loc ... --output-json"]
+  CLI --> RESULT["Hover contents + original-model range"]
+  RESULT --> FRESH["Freshness gates"]
+  FRESH --> UI["Hover widget + range decoration"]
+```
+
+There are two presentation-specific entrances and one shared semantic path:
+
+- **Code** uses the browser caret API and the `CharacterMapping` retained by
+  each rendered `ViewLine`. It first produces a view position, then converts
+  that position through the `ViewModel` projection.
+- **Markdown** uses UTF-16 source boundaries retained on semantic rendered
+  rows. Its presentation-local bridge maps the DOM caret directly into the
+  original model. It does not manufacture a Markdown-only model and does not
+  pass through Code's `ViewLine` mapping.
+- Both paths query the same `ContentHoverComputer`, `Languages` registry, and
+  providers against the original caller-owned `TextModel`.
+
+### Coordinate spaces
+
+Every conversion changes either the coordinate owner, the origin, or both.
+The names below are therefore semantic types, even where the runtime value is
+represented by an ordinary integer or `Position`.
+
+| Space | Shape and unit | Owner | Conversion boundary |
+| --- | --- | --- | --- |
+| Pointer geometry | client/page/editor-relative CSS pixels | browser controller | Browser event coordinates are normalized before hit testing. |
+| DOM caret | token span plus a normalized 0-based UTF-16 text offset | active browser presentation | The browser caret API answers a DOM boundary, not a source location. |
+| View position | 1-based UTF-16 `Position` in rendered view lines | Code `View`/`ViewModel` | `CharacterMapping` maps the token span and DOM offset to a view column. Markdown does not use this space. |
+| Model position | 1-based UTF-16 `Position` in the original source model | `TextModel` | `CoordinatesConverter` removes wrapping, folding, and injected-text projection. |
+| Model offset | 0-based UTF-16 offset from the start of the original document | `TextSnapshot` | `TextModel::get_offset_at` and `get_position_at` are the only position/offset authorities. |
+| Remote document position | URI, document revision, and 0-based UTF-16 offset | `shell/remote_protocol` | The browser sends document identity, not a trusted filesystem path. |
+| Native CLI location | safe root-relative path plus 1-based UTF-16 line and column | `server/host` | The server resolves the URI and reconstructs the position from its revision-matched model. |
+| Returned hover range | 1-based UTF-16 `Range` in the original model | `language.Hover` | Presentation code projects it back to visible rows only for painting. |
+
+The UTF-16 choice is deliberate: MoonBit `String`, browser text-node offsets,
+editor positions, snapshots, and the remote protocol must agree even when a
+source line contains non-BMP characters represented by surrogate pairs. A
+Unicode character can therefore occupy two columns/offset units. No stage may
+silently reinterpret these values as UTF-8 byte offsets or Unicode scalar
+indices.
+
+### Code presentation: DOM caret to model position
+
+For Code, the pointer controller performs the following steps:
+
+1. `EditorMouseEventFactory` records page, client, and editor-relative pointer
+   coordinates. `MouseHandler` asks `MouseTargetFactory` to classify the hit.
+2. For ordinary text, the factory calls the available browser caret API
+   (`caretRangeFromPoint`, with the browser-specific caret-position path as a
+   fallback). The result is normalized to a token span and a UTF-16 offset in
+   that span. Margin, widget, scrollbar, empty-content, and outside-editor hits
+   follow separate target branches and cannot accidentally become text hover.
+3. `ViewLines` walks from the token span to its retained `.view-line`, finds
+   the corresponding rendered view line, and asks that line's
+   `CharacterMapping` for the view column. The mapping was produced together
+   with the token-span HTML and retained with the `ViewLine`; it is not
+   reconstructed from CSS geometry or token text after the event.
+4. The resulting `MouseTarget` is still in view coordinates. At the root
+   Viewer event boundary, `convert_view_to_model_mouse_target` rebuilds every
+   position-bearing target arm through the active `CoordinatesConverter`.
+   This is where wrapped view rows, folded source lines, and injected text
+   collapse back to a position in the original model.
+5. Hover anchor discovery accepts content-text hits, plus the narrow
+   near-end-of-line empty-content case, and creates a collapsed model-space
+   range at the pointer position. The anchor is the query position; it is not
+   yet the semantic token range eventually returned by the provider.
+
+The critical invariant is that a public editor mouse target and a hover anchor
+are already in **model space**. Code above the Viewer boundary must never treat
+them as view coordinates or apply the conversion a second time.
+
+### Markdown presentation: DOM caret to model position
+
+Markdown is rendered as a semantic document rather than as Code `ViewLine`
+rows, so reusing Code hit testing would invent the wrong coordinate space. A
+successful cmark projection instead retains exact UTF-16 source boundaries for
+source-bearing semantic rows. The Markdown hover bridge:
+
+1. accepts a real DOM caret over a source-bearing row;
+2. resolves the caret within the rendered text tree;
+3. maps that boundary through the retained projection to the original model
+   position and 0-based model offset; and
+4. launches the same hover computer against the original `TextModel`.
+
+Ordinary prose, synthetic indentation, mismatched projections, and unsafe DOM
+zones fail closed rather than guessing a source location. The bridge is owned
+by the active Markdown presentation and is cancelled before source, theme, or
+projection replacement.
+
+### Model position to language provider
+
+`MarkdownHoverParticipant` queries providers at the start of the model-space
+anchor range. Here, "Markdown" describes the hover content format, not the
+Markdown document presentation: the same participant is used after either
+presentation has found a model anchor. The `Languages` query surface is
+offset-addressed, so it first calls `TextModel::get_offset_at`. The registry
+then calls `TextModel::get_position_at` before invoking the provider because
+the two contracts intentionally differ:
+
+- the registry/query boundary carries a document offset; and
+- `language.HoverProvider` receives a model plus a model `Position`.
+
+The apparent offset-to-position round trip is therefore a checked boundary,
+not an assumption that the two integers are interchangeable. `Languages`
+snapshots providers whose language/scheme/path selector matches the model,
+preserves registry priority, forwards cancellation, and returns the first
+non-empty live hover result.
+
+The reference workbench registers `RemoteLanguageClient` for the
+`readonly-remote` URI scheme. Consequently the model URI selects the remote
+provider; neither the DOM class name nor the rendered token type selects it.
+An embedder may register a different provider for another language or URI
+scheme without changing pointer mapping or hover rendering.
+
+### Remote request and native `moon ide hover`
+
+The reference host crosses the browser/native boundary using a revision-bound
+UTF-16 offset rather than a line/column pair or client-supplied disk path.
+The sequence below expands the Code entrance. Markdown replaces the initial
+DOM-to-anchor messages with its retained semantic projection and joins the
+same sequence at the hover computer.
+
+```mermaid
+sequenceDiagram
+  participant D as Browser DOM
+  participant C as Pointer controller
+  participant V as View and ViewModel
+  participant H as Hover computer
+  participant L as Languages registry
+  participant W as RemoteLanguageClient
+  participant S as RemoteServer
+  participant N as MoonWorkspaceLanguageProvider
+  participant M as moon CLI
+
+  D->>C: mousemove(clientX, clientY)
+  C->>D: caret hit test at pointer
+  D-->>C: token span + DOM text offset
+  C->>V: resolve rendered character boundary
+  V-->>C: view Position
+  C->>V: convert view target to model target
+  V-->>H: model-space range anchor
+  H->>L: hover_at(model, UTF-16 offset)
+  L->>W: provide_hover(model, model Position)
+  W->>S: Hover(uri, revision, UTF-16 offset)
+  S->>S: require matching cached document
+  S->>S: rebuild TextModel and offset -> Position
+  S->>N: provide_hover(model, Position)
+  N->>N: URI -> safe path; capture workspace root
+  N->>N: require disk snapshot == model snapshot
+  N->>M: ide hover --loc path:line:column --output-json
+  M-->>N: JSON hover or no-hover result
+  N->>N: recheck disk and model snapshots
+  N-->>S: Hover(contents, original-model range)
+  S->>S: require cached document still current
+  S-->>W: HoverResult(uri, revision, hover)
+  W->>W: require captured client freshness stamp
+  W-->>L: accepted Hover
+  L-->>H: first non-empty live result
+  H-->>D: render rows and paint projected range
+```
+
+`RemoteLanguageClient` captures the current model freshness stamp, converts
+the provider position back to the model's UTF-16 offset, and sends:
+
+```text
+Hover {
+  id,
+  uri,
+  document_revision,
+  offset
+}
+```
+
+The reference workbench sends the model's non-empty revision. The server
+requires that revision and URI to match its session-local cached document. It
+rebuilds a `TextModel` from that exact cached snapshot and obtains the provider
+position with `get_position_at(offset)`. This prevents the client and server
+from independently calculating line/column against different text. The server
+API permits an empty expected revision for other callers, but the reference
+hover path does not use that compatibility case.
+
+`MoonWorkspaceLanguageProvider` then performs the host-only conversion:
+
+1. resolve a URI such as `readonly-remote://workspace/src/main.mbt` through the
+   server's containment policy to the safe root-relative path `src/main.mbt`;
+2. capture the current workspace root, which becomes the process working
+   directory;
+3. require the disk signature and normalized text to match the request model;
+4. construct `src/main.mbt:<line>:<column>` from the resolved path and the
+   server-reconstructed, 1-based model position; and
+5. run:
+
+   ```text
+   moon ide hover --loc src/main.mbt:<line>:<column> --output-json
+   ```
+
+The browser is never trusted to supply `src/main.mbt`, an absolute path, or the
+workspace root. URI containment and filesystem ownership remain native-server
+responsibilities.
+
+### Result path and stale-result rejection
+
+The CLI adapter parses Markdown/plain hover contents plus its optional source
+range. If a valid payload omits a range, the adapter supplies a one-column
+range at the requested model position. The range always belongs to the
+original `TextModel`; Code projects it through the `ViewModel` for decoration
+painting, while Markdown projects it into semantic row fragments.
+
+Hover is asynchronous, so correctness requires more than translating the
+initial pointer accurately. A result is displayed only while all applicable
+guards still hold:
+
+- the hover operation and cancellation token are current;
+- the active model identity, version, URI, revision, and content generation
+  still match the request captured by the workbench;
+- the server session still caches the same document revision and normalized
+  text;
+- the native disk snapshot matches the model before the CLI call and remains
+  unchanged after it; and
+- for Markdown, the attach, projection, block, source-offset, and presentation
+  generations still identify the same rendered source boundary.
+
+A failed hit test, unsupported presentation location, unmatched provider,
+cancelled request, stale generation, URI containment failure, disk/model
+mismatch, nonzero CLI exit, or empty hover is an ordinary no-hover result. No
+layer should compensate by guessing a nearby source position or displaying a
+result produced for older text.
+
+### Ownership map
+
+| Stage | Owning package | Architectural responsibility |
+| --- | --- | --- |
+| Code DOM classification and caret hit testing | `internal/viewer/browser/controller` | Turns pointer geometry into a typed view-space `MouseTarget`. |
+| Retained Code DOM/source rendering map | `internal/viewer/browser/view` | Owns `ViewLine` DOM and its renderer-produced `CharacterMapping`. |
+| Model/view projection | `viewer/common/view_model` | Converts wrapping, folding, and injected-text view coordinates to original-model coordinates. |
+| Markdown caret/source projection | `internal/viewer/contrib/hover/browser` | Maps semantic Markdown DOM boundaries directly to the original model. |
+| Hover computation and anchoring | `internal/viewer/contrib/hover` | Owns hover anchors, participant scheduling, cancellation, and normalized results. |
+| Provider selection | `viewer/common/languages` and `language` | Owns selector matching, provider lifetime, and backend-neutral hover values. |
+| Browser protocol adapter | `internal/shell/workbench` | Registers the remote provider and guards client-side model freshness. |
+| Wire coordinate contract | `shell/remote_protocol` | Carries URI, revision, and 0-based UTF-16 offset; it is not LSP. |
+| Server cache and URI containment | `server/server` | Reconstructs the revision-matched model position and rejects unsafe paths. |
+| Native Moon CLI adapter | `server/host` | Owns workspace root, disk coherence checks, `--loc` construction, process execution, and output parsing. |
+
+As an illustrative wrapped-line example, a caret at DOM offset `3` may map to
+view position `18:4`, then through the projection to original-model position
+`12:47`, and finally to document offset `642`. The wire request carries the
+model URI, its revision, and `642`; the server reconstructs `12:47` against the
+same revision, resolves the URI to `src/main.mbt`, and runs the CLI at
+`src/main.mbt:12:47`. The numbers are illustrative, but the ownership and
+conversion order are mandatory.
