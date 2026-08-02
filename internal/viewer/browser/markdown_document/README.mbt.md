@@ -83,6 +83,11 @@ The view owns two fold mechanics and no fold policy:
   first child; one delegated article click listener installed at construction
   routes toggle clicks to the handler set by
   `set_section_fold_toggle_handler`.
+- `set_toc_entries` exposes outlines of at least three sections through a
+  compact, overlaid navigation panel. The collapsed summary stays outside
+  article flow and projection ordinals; activating a row collapses the panel,
+  restores focus to its toggle without scrolling, and hands the source offset
+  to the root Viewer for expansion and reveal.
 
 Which sections exist, what starts collapsed, and how state survives a source or
 theme replacement belong to the root Viewer (`viewer/markdown_folding.mbt`).
