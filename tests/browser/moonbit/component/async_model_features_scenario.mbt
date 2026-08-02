@@ -209,7 +209,12 @@ impl @language.HoverProvider for DeferredAsyncFeatureProvider with fn provide_ho
 
 ///|
 fn async_feature_source(marker : String) -> String {
-  "pub fn target() -> Int { // " + marker + "\n  1\n}\n"
+  (
+    $|pub fn target() -> Int { // \{marker}
+    $|  1
+    $|}
+    $|
+  )
 }
 
 ///|

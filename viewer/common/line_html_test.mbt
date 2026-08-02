@@ -24,7 +24,13 @@ test "line html escapes text and merges span decorations" {
 
 ///|
 test "empty lines emit an empty view-line content wrapper" {
-  let doc = @model.TextSnapshot("a\n\nb")
+  let doc = @model.TextSnapshot(
+    (
+      #|a
+      #|
+      #|b
+    ),
+  )
   // Monaco emits an empty inner `<span></span>` for a blank line.
   assert_eq(
     @common.render_line_html(

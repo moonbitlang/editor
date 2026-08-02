@@ -52,7 +52,18 @@ test "RenderingContext snapshots current viewport and forwards includeViewZones"
     "moonbit",
     1,
     "rev-1",
-    "a\nb\nc\nd\ne\nf\ng\nh\ni\nj",
+    (
+      #|a
+      #|b
+      #|c
+      #|d
+      #|e
+      #|f
+      #|g
+      #|h
+      #|i
+      #|j
+    ),
   )
   let view_model = @view_model.ViewModel(model)
   let layout = @view_layout.ViewLayout(line_height=20, line_count=10)

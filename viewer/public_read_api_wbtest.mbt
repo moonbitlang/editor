@@ -93,9 +93,25 @@ test "read API: get_value returns the normalized document text" {
   let cases : Array[(String, String)] = [
     ("alpha\r\nbeta", "alpha\nbeta"),
     ("alpha\rbeta", "alpha\nbeta"),
-    ("a\r\nb\rc\nd", "a\nb\nc\nd"),
+    (
+      "a\r\nb\rc\nd",
+      (
+        #|a
+        #|b
+        #|c
+        #|d
+      ),
+    ),
     ("tail\r\n", "tail\n"),
-    ("🙂\r\nβ\r中\n", "🙂\nβ\n中\n"),
+    (
+      "🙂\r\nβ\r中\n",
+      (
+        #|🙂
+        #|β
+        #|中
+        #|
+      ),
+    ),
     ("\u{FEFF}head\r\ntail", "\u{FEFF}head\ntail"),
   ]
   for sample in cases {
@@ -109,14 +125,23 @@ test "read API: get_value returns the normalized document text" {
 /// Vertical offsets at the uniform 18px line height: top of line k = (k-1)*18,
 /// bottom of line k = k*18.
 test "read API: vertical offsets at uniform line height" {
-  with_test_viewer("a\nb\nc\nd\ne", viewer => {
-    assert_eq(viewer.get_top_for_line_number(1), 0.0)
-    assert_eq(viewer.get_top_for_line_number(3), 36.0)
-    assert_eq(viewer.get_top_for_position(3, 1), 36.0)
-    assert_eq(viewer.get_top_for_line_number(5), 72.0)
-    assert_eq(viewer.get_bottom_for_line_number(1), 18.0)
-    assert_eq(viewer.get_bottom_for_line_number(5), 90.0)
-  })
+  with_test_viewer(
+    (
+      #|a
+      #|b
+      #|c
+      #|d
+      #|e
+    ),
+    viewer => {
+      assert_eq(viewer.get_top_for_line_number(1), 0.0)
+      assert_eq(viewer.get_top_for_line_number(3), 36.0)
+      assert_eq(viewer.get_top_for_position(3, 1), 36.0)
+      assert_eq(viewer.get_top_for_line_number(5), 72.0)
+      assert_eq(viewer.get_bottom_for_line_number(1), 18.0)
+      assert_eq(viewer.get_bottom_for_line_number(5), 90.0)
+    },
+  )
 }
 
 ///|
@@ -125,13 +150,28 @@ test "read API: vertical offsets at uniform line height" {
 /// places it at the zone's own top (36) — Monaco's
 /// `getVerticalOffsetForLineNumber(n, includeViewZones)` whitespace-before delta.
 test "read API: include_view_zones shifts the vertical offset past a zone" {
-  with_test_viewer("a\nb\nc\nd\ne", viewer => {
-    viewer.test_set_layout_view_zones([(2, 30)])
-    assert_eq(viewer.get_top_for_line_number(3, include_view_zones=false), 66.0)
-    assert_eq(viewer.get_top_for_line_number(3, include_view_zones=true), 36.0)
-    // The bottom of line 5 includes the zone height regardless.
-    assert_eq(viewer.get_bottom_for_line_number(5), 120.0)
-  })
+  with_test_viewer(
+    (
+      #|a
+      #|b
+      #|c
+      #|d
+      #|e
+    ),
+    viewer => {
+      viewer.test_set_layout_view_zones([(2, 30)])
+      assert_eq(
+        viewer.get_top_for_line_number(3, include_view_zones=false),
+        66.0,
+      )
+      assert_eq(
+        viewer.get_top_for_line_number(3, include_view_zones=true),
+        36.0,
+      )
+      // The bottom of line 5 includes the zone height regardless.
+      assert_eq(viewer.get_bottom_for_line_number(5), 120.0)
+    },
+  )
 }
 
 ///|

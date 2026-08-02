@@ -1,6 +1,13 @@
 ///|
 test "ViewModel dispose clears only projected owner-0 hidden decorations" {
-  let model = cursor_reference_model("one\ntwo\nthree\nfour")
+  let model = cursor_reference_model(
+    (
+      #|one
+      #|two
+      #|three
+      #|four
+    ),
+  )
   let unrelated_owner0 = model.delta_decorations([], [
     {
       range: Range(1, 1, 1, 2),
@@ -43,7 +50,15 @@ test "projected dispose clears zero one and many hidden decoration ids" {
   zero.lines.dispose()
   assert_eq(zero_model.get_all_decorations().length(), 0)
 
-  let many_model = cursor_reference_model("one\ntwo\nthree\nfour\nfive")
+  let many_model = cursor_reference_model(
+    (
+      #|one
+      #|two
+      #|three
+      #|four
+      #|five
+    ),
+  )
   let many = ViewModel(many_model)
   assert_true(many.set_hidden_areas([Range(2, 1, 2, 1), Range(4, 1, 4, 1)]))
   assert_eq(many.lines.hidden_areas_decoration_ids.length(), 2)

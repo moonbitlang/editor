@@ -1,7 +1,16 @@
 ///|
 fn hidden_outgoing_fixture() -> (@model.TextModel, ViewModel) {
   let model = cursor_reference_model(
-    "one\ntwo\nthree\nfour\nfive\nsix\nseven\neight",
+    (
+      #|one
+      #|two
+      #|three
+      #|four
+      #|five
+      #|six
+      #|seven
+      #|eight
+    ),
   )
   (model, ViewModel(model))
 }

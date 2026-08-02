@@ -12,7 +12,7 @@ fn quick_diff_gutter_decorations(viewer : Viewer) -> Array[String] {
     match decoration.options.lines_decorations_class_name {
       Some(class_name) =>
         if class_name.contains("dirty-diff") {
-          rendered.push(decoration.range.to_string() + " " + class_name)
+          rendered.push("\{decoration.range.to_string()} \{class_name}")
         }
       None => ()
     }
@@ -36,11 +36,22 @@ test "quick diff: stored original decorates the gutter on model attach" {
   )
   // test_model builds its TextModel on the same inmemory://model/test-model
   // resource the service was primed with.
-  viewer.set_model(Some(test_model("a\nnew\nb\ninserted\ntail")))
+  viewer.set_model(
+    Some(
+      test_model(
+        (
+          #|a
+          #|new
+          #|b
+          #|inserted
+          #|tail
+        ),
+      ),
+    ),
+  )
   assert_eq(
     quick_diff_gutter_decorations(viewer).join("; "),
-    "[2,1 -> 2,1] dirty-diff-glyph dirty-diff-modified primary; " +
-    "[4,1 -> 4,1] dirty-diff-glyph dirty-diff-added primary",
+    "[2,1 -> 2,1] dirty-diff-glyph dirty-diff-modified primary; [4,1 -> 4,1] dirty-diff-glyph dirty-diff-added primary",
   )
   viewer.dispose()
   backings.dispose()
@@ -62,7 +73,16 @@ test "quick diff: original arriving after attach updates, clearing removes" {
   // decorator requests the MAX_VALUE column and the model validates it down
   // to the end of line 1 ("a" → column 2), as Monaco's deltaDecorations
   // does.
-  quick_diff.set_original_content(resource, Some("a\nx\nb"))
+  quick_diff.set_original_content(
+    resource,
+    Some(
+      (
+        #|a
+        #|x
+        #|b
+      ),
+    ),
+  )
   assert_eq(
     quick_diff_gutter_decorations(viewer).join("; "),
     "[1,2 -> 1,2] dirty-diff-glyph dirty-diff-deleted primary",
@@ -85,7 +105,16 @@ test "quick diff: an original for another resource does not decorate" {
     path="/other-model",
   )
   viewer.set_model(Some(test_model("a\nb")))
-  quick_diff.set_original_content(other, Some("a\nx\nb"))
+  quick_diff.set_original_content(
+    other,
+    Some(
+      (
+        #|a
+        #|x
+        #|b
+      ),
+    ),
+  )
   assert_eq(quick_diff_gutter_decorations(viewer).length(), 0)
   viewer.dispose()
   backings.dispose()
@@ -119,9 +148,30 @@ test "quick diff: one central state follows model swap, removal, and reattach" {
     authority="model",
     path="/test-model",
   )
-  let first = test_model("a\nfirst\ntail")
-  let second = test_model("a\nsecond\ntail")
-  quick_diff.set_original_content(resource, Some("a\nold\ntail"))
+  let first = test_model(
+    (
+      #|a
+      #|first
+      #|tail
+    ),
+  )
+  let second = test_model(
+    (
+      #|a
+      #|second
+      #|tail
+    ),
+  )
+  quick_diff.set_original_content(
+    resource,
+    Some(
+      (
+        #|a
+        #|old
+        #|tail
+      ),
+    ),
+  )
   viewer.set_model(Some(first))
   assert_true(state.collection.length() > 0)
   assert_true(first.get_all_decorations().length() > 0)
@@ -152,8 +202,23 @@ test "quick diff: disposal window is live and later service events are silent" {
     authority="model",
     path="/test-model",
   )
-  let model = test_model("a\nnew\ntail")
-  quick_diff.set_original_content(resource, Some("a\nold\ntail"))
+  let model = test_model(
+    (
+      #|a
+      #|new
+      #|tail
+    ),
+  )
+  quick_diff.set_original_content(
+    resource,
+    Some(
+      (
+        #|a
+        #|old
+        #|tail
+      ),
+    ),
+  )
   viewer.set_model(Some(model))
   assert_true(state.collection.length() > 0)
   let original_change_deliveries = Ref(0)

@@ -45,7 +45,7 @@ fn create_decoration(
     "",
     description="dirty-diff-decoration",
     is_whole_line~,
-    lines_decorations_class_name="dirty-diff-glyph " + class_name,
+    lines_decorations_class_name="dirty-diff-glyph \{class_name}",
   )
 }
 

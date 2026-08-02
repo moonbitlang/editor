@@ -24,7 +24,14 @@ test "cursor page size uses exact viewport formula and marker fallbacks" {
 
 ///|
 test "cursor page positive override and selection use wrapped-line movement" {
-  let text = "a\nbb\nccc\ndddd\neeeee\nffffff\nggggggg"
+  let text =
+    #|a
+    #|bb
+    #|ccc
+    #|dddd
+    #|eeeee
+    #|ffffff
+    #|ggggggg
   let view_model = ViewModel::with_options(
     cursor_reference_model(text),
     ViewModelOptions(tab_size=4),
@@ -39,7 +46,13 @@ test "cursor page positive override and selection use wrapped-line movement" {
 ///|
 test "cursor page preserves desired column across an empty target line" {
   let view_model = ViewModel::with_options(
-    cursor_reference_model("abc\n\nxyz"),
+    cursor_reference_model(
+      (
+        #|abc
+        #|
+        #|xyz
+      ),
+    ),
     ViewModelOptions(tab_size=4),
   )
   cursor_reference_set_position(view_model, 1, 3)

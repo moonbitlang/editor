@@ -58,7 +58,7 @@ pub fn SourcePath::normalize_root_relative_path(
   }
   guard segments is [first, ..] else { return SourcePathError(InvalidPath) }
   let normalized = for i in 1..<segments.length(); normalized = first {
-    continue normalized + "/" + segments[i]
+    continue "\{normalized}/\{segments[i]}"
   } nobreak {
     normalized
   }
@@ -82,7 +82,7 @@ pub fn SourcePath::display_name(self : SourcePath) -> String {
 /// simple embedders: `file:///local/<path>` (the old string concatenation
 /// made `local` a URI authority, i.e. a UNC-shaped fsPath).
 pub fn SourcePath::file_uri(self : SourcePath) -> @base_common.Uri {
-  @base_common.Uri::file("/local/" + self.value)
+  @base_common.Uri::file("/local/\{self.value}")
 }
 
 ///|

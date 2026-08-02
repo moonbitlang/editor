@@ -35,14 +35,10 @@ fn prepare_lines_decorations_render(
     }
     return output
   }
-  let common = "\" style=\"left:" +
-    decorations_left.to_string() +
-    "px;width:" +
-    decorations_width.to_string() +
-    "px;\"></div>"
+  let common = "\" style=\"left:\{decorations_left.to_string()}px;width:\{decorations_width.to_string()}px;\"></div>"
   for class_names in class_names_per_line {
     let line_output = for class_name in class_names; line_output = "" {
-      continue line_output + "<div class=\"cldr " + class_name + common
+      continue "\{line_output}<div class=\"cldr \{class_name}\{common}"
     } nobreak {
       line_output
     }

@@ -180,7 +180,7 @@ fn AgentFeedbackEditorWidget::update_title(
   if self.comments.length() == 1 {
     self.title.set_inner_html(@base_common.escape_html(self.comments[0].text))
   } else {
-    self.title.set_inner_html(self.comments.length().to_string() + " comments")
+    self.title.set_inner_html("\{self.comments.length().to_string()} comments")
   }
 }
 
@@ -270,13 +270,10 @@ fn AgentFeedbackEditorWidget::build_item(
   line_info.set_attribute("class", "agent-feedback-widget-line-info")
   let range = comment.range
   if range.start_line_number == range.end_line_number {
-    line_info.set_inner_html("Line " + range.start_line_number.to_string())
+    line_info.set_inner_html("Line \{range.start_line_number.to_string()}")
   } else {
     line_info.set_inner_html(
-      "Lines " +
-      range.start_line_number.to_string() +
-      "-" +
-      range.end_line_number.to_string(),
+      "Lines \{range.start_line_number.to_string()}-\{range.end_line_number.to_string()}",
     )
   }
   meta.append_child(line_info.as_node())
@@ -439,7 +436,7 @@ fn AgentFeedbackEditorWidget::start_editing(
     @base_browser.set_style_property(
       textarea,
       "height",
-      height.to_string() + "px",
+      "\{height.to_string()}px",
     )
     (self.host.on_layout)(self.id)
   }
@@ -527,7 +524,7 @@ fn AgentFeedbackEditorWidget::open_reply_composer(
     @base_browser.set_style_property(
       textarea,
       "height",
-      height.to_string() + "px",
+      "\{height.to_string()}px",
     )
     (self.host.on_layout)(self.id)
   }
@@ -633,7 +630,7 @@ pub fn AgentFeedbackEditorWidget::focus_feedback(
   for comment_id, node in self.item_nodes {
     let base = "agent-feedback-widget-item agent-feedback-widget-item-agentFeedback"
     if comment_id == feedback_id {
-      node.set_attribute("class", base + " focused")
+      node.set_attribute("class", "\{base} focused")
     } else {
       node.set_attribute("class", base)
     }
@@ -697,8 +694,8 @@ pub fn AgentFeedbackEditorWidget::set_position(
   top : Double,
   left : Double,
 ) -> Unit {
-  @base_browser.set_style_property(self.root, "top", top.to_string() + "px")
-  @base_browser.set_style_property(self.root, "left", left.to_string() + "px")
+  @base_browser.set_style_property(self.root, "top", "\{top.to_string()}px")
+  @base_browser.set_style_property(self.root, "left", "\{left.to_string()}px")
 }
 
 ///|
@@ -778,12 +775,12 @@ fn AgentFeedbackEditorWidget::dispose_all_markdown_targets(
 
 ///|
 fn feedback_comment_target_key(comment_id : String) -> String {
-  "comment:" + comment_id
+  "comment:\{comment_id}"
 }
 
 ///|
 fn feedback_reply_target_key(comment_id : String, reply_index : Int) -> String {
-  "reply:" + comment_id + ":" + reply_index.to_string()
+  "reply:\{comment_id}:\{reply_index.to_string()}"
 }
 
 ///|
@@ -795,7 +792,7 @@ fn widget_icon_button(
 ) -> @rdom.Element {
   let button = @rdom.document().create_element("button")
   button.set_attribute("type", "button")
-  button.set_attribute("class", "agent-feedback-widget-action " + class_name)
+  button.set_attribute("class", "agent-feedback-widget-action \{class_name}")
   button.set_attribute("title", title)
   button.set_attribute("data-agent-feedback-action", action)
   button.add_event_listener("click", event => {

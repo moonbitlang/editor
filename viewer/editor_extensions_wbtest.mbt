@@ -27,13 +27,13 @@ test "contributions instantiate centrally in the reviewed order and expose every
       ("quickDiff.decorator", QuickDiff(_)) => ()
       ("editor.contrib.contextmenu", ContextMenu(_)) => ()
       ("editor.contrib.definition", Definition(_)) => ()
-      _ => fail("contribution id and concrete variant diverged: " + id)
+      _ => fail("contribution id and concrete variant diverged: \{id}")
     }
   }
   assert_eq(actual, expected)
   for id in expected {
     guard viewer.contributions.lookup(id) is Some(_) else {
-      fail("missing known contribution: " + id)
+      fail("missing known contribution: \{id}")
     }
   }
   assert_true(viewer.contributions.lookup("editor.contrib.unknown") is None)

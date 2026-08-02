@@ -39,9 +39,9 @@ fn editor_server_listening_messages(
 ) -> Array[String] {
   let messages = ["Readonly editor native server listening on:"]
   if bind_host == "0.0.0.0" {
-    messages.push("  Local:   " + editor_server_url("127.0.0.1", port))
+    messages.push("  Local:   \{editor_server_url("127.0.0.1", port)}")
     match network_host {
-      Some(host) => messages.push("  Network: " + editor_server_url(host, port))
+      Some(host) => messages.push("  Network: \{editor_server_url(host, port)}")
       None =>
         messages.push(
           "  Network: use this device's LAN IPv4 address on port \{port}",
@@ -51,9 +51,9 @@ fn editor_server_listening_messages(
       "  WARNING: no authentication; use only on a trusted network.",
     )
   } else if bind_host == "127.0.0.1" {
-    messages.push("  Local:   " + editor_server_url(bind_host, port))
+    messages.push("  Local:   \{editor_server_url(bind_host, port)}")
   } else {
-    messages.push("  Network: " + editor_server_url(bind_host, port))
+    messages.push("  Network: \{editor_server_url(bind_host, port)}")
     messages.push(
       "  WARNING: no authentication; use only on a trusted network.",
     )

@@ -233,7 +233,7 @@ test "listener closure captures context and bucket can dispose subscriptions" {
   source
   .token()
   .on_cancellation_requested(
-    () => context.val = context.val + "cancelled",
+    () => context.val = "\{context.val}cancelled",
     disposables=subscriptions,
   )
   |> ignore

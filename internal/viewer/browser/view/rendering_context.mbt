@@ -139,7 +139,7 @@ fn RenderingContext::restricted(
 
 ///|
 fn RenderingContext::margin_transform(self : RenderingContext) -> String {
-  "transform:translateY(" + self.translate_y.to_string() + "px)"
+  "transform:translateY(\{self.translate_y.to_string()}px)"
 }
 
 ///|

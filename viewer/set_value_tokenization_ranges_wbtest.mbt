@@ -52,7 +52,29 @@ test "flush visible token ranges stay valid in old and new projection domains" {
   )
   defer registration.dispose()
   // Growth keeps the old visible upper bound.
-  assert_flush_token_range_domains("one\ntwo", "one\ntwo\nthree\nfour", 2, 4, 2)
+  assert_flush_token_range_domains(
+    "one\ntwo",
+    (
+      #|one
+      #|two
+      #|three
+      #|four
+    ),
+    2,
+    4,
+    2,
+  )
   // Shrink clamps the old visible upper bound to the new line count.
-  assert_flush_token_range_domains("one\ntwo\nthree\nfour", "one\ntwo", 4, 2, 2)
+  assert_flush_token_range_domains(
+    (
+      #|one
+      #|two
+      #|three
+      #|four
+    ),
+    "one\ntwo",
+    4,
+    2,
+    2,
+  )
 }

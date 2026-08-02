@@ -87,9 +87,7 @@ fn ViewCursors::get_dom_node(self : ViewCursors) -> @rdom.Element {
 /// `false` in the readonly product, `:333-335`). The smooth-caret-animation
 /// suffix rides on an unmodeled option (off by default).
 fn cursors_layer_class(has_selection : Bool) -> String {
-  "cursors-layer" +
-  (if has_selection { " has-selection" } else { "" }) +
-  " cursor-line-style cursor-solid"
+  "cursors-layer\{(if has_selection { " has-selection" } else { "" })} cursor-line-style cursor-solid"
 }
 
 ///|
@@ -173,9 +171,7 @@ fn ViewCursors::on_focus_changed(self : ViewCursors, is_focused : Bool) -> Unit 
 /// `FastDomNode` (`viewCursor.ts:267-273`), with the `show`/`hide` visibility
 /// (`:115-127`) folded in.
 fn cursor_style(data : CursorRenderData, visible~ : Bool) -> String {
-  "display:block;visibility:" +
-  (if visible { "inherit" } else { "hidden" }) +
-  ";top:\{data.top}px;left:\{data.left}px;padding-left:\{data.padding_left}px;width:\{data.width}px;height:\{data.height}px;line-height:\{data.height}px"
+  "display:block;visibility:\{(if visible { "inherit" } else { "hidden" })};top:\{data.top}px;left:\{data.left}px;padding-left:\{data.padding_left}px;width:\{data.width}px;height:\{data.height}px;line-height:\{data.height}px"
 }
 
 ///|

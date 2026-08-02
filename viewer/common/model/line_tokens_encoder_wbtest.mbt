@@ -59,7 +59,7 @@ test "raw UTF16 encoder preserves lone surrogates pair halves FEFF and BMP bound
   let high = Int::unsafe_to_char(0xD83D).to_string()
   let low = Int::unsafe_to_char(0xDE0A).to_string()
   for held in [d800, dbff, dc00, dfff, high, low, "\u{FEFF}", "A"] {
-    let line = held + "x"
+    let line = "\{held}x"
     let words = encode_raw_start_offsets(
       [{ start: 0, end: 1, tag: Keyword }],
       line.length(),

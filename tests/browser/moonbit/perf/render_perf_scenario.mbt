@@ -80,12 +80,12 @@ fn run_next_sample(
   let name = if sample_index.val < 0 {
     "warmup"
   } else {
-    "sample_" + sample_index.val.to_string()
+    "sample_\{sample_index.val.to_string()}"
   }
   let uri = try! @base_common.Uri::from(
     scheme="inmemory",
     authority="model",
-    path="/" + "perf/large_" + name + ".mbt",
+    path="/perf/large_\{name}.mbt",
   )
   viewer.set_model(
     Some(
@@ -94,7 +94,7 @@ fn run_next_sample(
         @base_common.basename_or_authority(uri),
         "moonbit",
         sample_index.val + 2,
-        "perf-" + name,
+        "perf-\{name}",
         large_text,
       ),
     ),
@@ -145,7 +145,7 @@ fn finish_perf_report(
   samples : Array[Double],
 ) -> Unit {
   if samples.length() != 3 {
-    ctx.fail("expected 3 measured samples, got " + samples.length().to_string())
+    ctx.fail("expected 3 measured samples, got \{samples.length().to_string()}")
   }
   let (best, median, worst) = sample_summary(samples)
   ctx.metric_int("warmupCount", 1)
@@ -192,7 +192,14 @@ fn large_source_text(count : Int) -> String {
     builder.write_string(index.to_string())
     builder.write_string("() -> Int {\n  ")
     builder.write_string(index.to_string())
-    builder.write_string("\n}\n\n")
+    builder.write_string(
+      (
+        #|
+        #|}
+        #|
+        #|
+      ),
+    )
   }
   builder.to_string()
 }

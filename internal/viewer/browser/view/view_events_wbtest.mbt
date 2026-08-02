@@ -81,7 +81,7 @@ test "dispatcher gives every handler a whole batch before reentrant FIFO batch" 
   let did_reenter = Ref(false)
   let dispatcher = ViewEventDispatcher::ViewEventDispatcher(events => {
     let batch = view_event_test_batch_name(events)
-    deliveries.push("h1:" + batch)
+    deliveries.push("h1:\{batch}")
     if !did_reenter.val {
       did_reenter.val = true
       match holder.val {
@@ -93,7 +93,7 @@ test "dispatcher gives every handler a whole batch before reentrant FIFO batch" 
         None => abort("dispatcher test holder missing")
       }
     }
-    deliveries.push("h2:" + batch)
+    deliveries.push("h2:\{batch}")
   })
   holder.val = Some(dispatcher)
   emit_dispatcher_test_batch(dispatcher, [ViewFlushed, ViewZonesChanged])
@@ -112,7 +112,7 @@ test "ViewZones outgoing continuation waits for reentrant internal delivery" {
   let holder : Ref[ViewEventDispatcher?] = { val: None }
   let dispatcher = ViewEventDispatcher::ViewEventDispatcher(events => {
     let batch = view_event_test_batch_name(events)
-    deliveries.push("h1:" + batch)
+    deliveries.push("h1:\{batch}")
     if batch == "line-mapping" {
       match holder.val {
         Some(dispatcher) =>
@@ -122,7 +122,7 @@ test "ViewZones outgoing continuation waits for reentrant internal delivery" {
         None => abort("dispatcher test holder missing")
       }
     }
-    deliveries.push("h2:" + batch)
+    deliveries.push("h2:\{batch}")
   })
   holder.val = Some(dispatcher)
   dispatcher.emit_view_event(ViewLineMappingChanged)

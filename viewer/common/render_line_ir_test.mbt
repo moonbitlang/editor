@@ -1,6 +1,12 @@
 ///|
 test "viewport data exposes one-based inclusive line data" {
-  let doc = @model.TextSnapshot("a\nbb\nccc")
+  let doc = @model.TextSnapshot(
+    (
+      #|a
+      #|bb
+      #|ccc
+    ),
+  )
   let view_model = view_model_for(doc)
   let viewport = @view_model.viewport_data_from_view_model(
     view_model,
@@ -95,7 +101,7 @@ test "render view line escapes text and returns character mapping" {
 test "render view line supports pseudo decorations and large token splitting" {
   let mut long = ""
   for _ in 0..<121 {
-    long = long + "a"
+    long = "\{long}a"
   }
   let input = @view_layout.RenderLineInput::from_view_line(
     simple_view_line(long, [LinePart(long.length(), "tok-long")]),
@@ -124,7 +130,13 @@ test "render view line supports pseudo decorations and large token splitting" {
 
 ///|
 test "empty line preserves compatibility wrapper" {
-  let doc = @model.TextSnapshot("a\n\nb")
+  let doc = @model.TextSnapshot(
+    (
+      #|a
+      #|
+      #|b
+    ),
+  )
   // Monaco emits an empty inner `<span></span>` for a blank line.
   assert_eq(
     @common.render_line_html(

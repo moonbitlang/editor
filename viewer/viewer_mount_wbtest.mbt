@@ -368,7 +368,28 @@ fn assert_pending_smooth_exit_cancels(exit : PendingSmoothExit) -> Unit raise {
     options=ViewerOptions(smooth_scrolling=true, font_size=12, line_height=18),
   )
   let first = test_model(
-    "01\n02\n03\n04\n05\n06\n07\n08\n09\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20",
+    (
+      #|01
+      #|02
+      #|03
+      #|04
+      #|05
+      #|06
+      #|07
+      #|08
+      #|09
+      #|10
+      #|11
+      #|12
+      #|13
+      #|14
+      #|15
+      #|16
+      #|17
+      #|18
+      #|19
+      #|20
+    ),
   )
   let replacement = test_model("replacement")
   viewer.attach(@rdom.document().create_element("div"))

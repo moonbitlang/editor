@@ -230,8 +230,8 @@ pub fn AgentFeedbackInputWidget::set_position(
   top : Double,
   left : Double,
 ) -> Unit {
-  @base_browser.set_style_property(self.root, "top", top.to_string() + "px")
-  @base_browser.set_style_property(self.root, "left", left.to_string() + "px")
+  @base_browser.set_style_property(self.root, "top", "\{top.to_string()}px")
+  @base_browser.set_style_property(self.root, "left", "\{left.to_string()}px")
 }
 
 ///|
@@ -338,19 +338,19 @@ pub fn AgentFeedbackInputWidget::auto_size(
   @base_browser.set_style_property(
     self.textarea,
     "min-width",
-    min_width.to_string() + "px",
+    "\{min_width.to_string()}px",
   )
   @base_browser.set_style_property(
     self.textarea,
     "width",
-    width.to_string() + "px",
+    "\{width.to_string()}px",
   )
   let height = input_textarea_grown_height(self.textarea)
   let clamped_height = height.max(input_line_height_px)
   @base_browser.set_style_property(
     self.textarea,
     "height",
-    clamped_height.to_string() + "px",
+    "\{clamped_height.to_string()}px",
   )
 }
 

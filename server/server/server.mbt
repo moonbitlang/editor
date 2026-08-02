@@ -160,7 +160,7 @@ pub fn remote_document_uri(raw_path : String) -> @base_common.Uri? {
     ParsedSourcePath(path) =>
       Some(
         @base_common.Uri::parse(
-          "readonly-remote://workspace/" + path.to_string(),
+          "readonly-remote://workspace/\{path.to_string()}",
         ),
       ) catch {
         _ => None
@@ -196,7 +196,7 @@ pub fn resolve_remote_document_uri(
       RemotePathError(
         ProtocolError(
           ProtocolInvalidUri,
-          "Invalid remote workspace path " + error.to_string(),
+          "Invalid remote workspace path \{error.to_string()}",
           request_id~,
         ),
       )

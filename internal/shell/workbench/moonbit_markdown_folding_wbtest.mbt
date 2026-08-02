@@ -10,7 +10,11 @@ test "workbench opts MoonBit Markdown comments into documentation folding" {
     "moonbit",
     1,
     "moonbit-revision",
-    "///|\n/// Registered docs\npub fn registered() -> Unit {}",
+    (
+      #|///|
+      #|/// Registered docs
+      #|pub fn registered() -> Unit {}
+    ),
   )
   defer moonbit.dispose()
   guard handle.markdown_comment_provider_render_result(moonbit) is Some(result) else {

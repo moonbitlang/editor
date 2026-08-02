@@ -745,7 +745,7 @@ pub fn Viewer::get_editor_type(self : Viewer) -> String {
 /// This editor's unique id, Monaco's `getId()`: the editor type plus the
 /// process-wide instance counter.
 pub fn Viewer::get_id(self : Viewer) -> String {
-  self.get_editor_type() + ":" + self.editor_id.to_string()
+  "\{self.get_editor_type()}:\{self.editor_id.to_string()}"
 }
 
 ///|

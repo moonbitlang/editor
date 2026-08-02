@@ -13,11 +13,7 @@
 
 ///|
 fn cursor_reference_text() -> String {
-  "    \tMy First Line\t \r\n" +
-  "\tMy Second Line\n" +
-  "    Third Line🐶\n" +
-  "\r\n" +
-  "1"
+  "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
 }
 
 ///|
@@ -167,7 +163,11 @@ test "issue #23983: Calling model.setValue() resets cursor position" {
   with_test_viewer("first line\nsecond line", viewer => {
     viewer.set_selection(Selection(Position(2, 2), Position(2, 2)))
     viewer.set_value(
-      "different first line\ndifferent second line\nnew third line",
+      (
+        #|different first line
+        #|different second line
+        #|new third line
+      ),
     )
     assert_cursor(viewer, Selection(Position(1, 1), Position(1, 1)))
   })
@@ -176,7 +176,16 @@ test "issue #23983: Calling model.setValue() resets cursor position" {
 ///|
 test "issue #7100: Mouse word selection is strange when non-word character is at the end of line" {
   with_test_viewer(
-    "before.a\nbefore\nhello:\nthere:\nthis is strange:\nhere\nit\nis",
+    (
+      #|before.a
+      #|before
+      #|hello:
+      #|there:
+      #|this is strange:
+      #|here
+      #|it
+      #|is
+    ),
     viewer => {
       viewer.dispatch_mouse(
         reference_mouse_data(Position(3, 7), mouse_down_count=2),
@@ -196,28 +205,42 @@ test "issue #7100: Mouse word selection is strange when non-word character is at
 
 ///|
 test "issue #112039: shift-continuing a double/triple-click and drag selection does not remember its starting mode" {
-  with_test_viewer("just some text\nand another line\nand another one", viewer => {
-    viewer.dispatch_mouse(
-      reference_mouse_data(Position(2, 6), mouse_down_count=2),
-    )
-    viewer.dispatch_mouse(
-      reference_mouse_data(Position(1, 8), in_selection_mode=true),
-    )
-    assert_cursor(viewer, Selection(Position(2, 12), Position(1, 6)))
-  })
+  with_test_viewer(
+    (
+      #|just some text
+      #|and another line
+      #|and another one
+    ),
+    viewer => {
+      viewer.dispatch_mouse(
+        reference_mouse_data(Position(2, 6), mouse_down_count=2),
+      )
+      viewer.dispatch_mouse(
+        reference_mouse_data(Position(1, 8), in_selection_mode=true),
+      )
+      assert_cursor(viewer, Selection(Position(2, 12), Position(1, 6)))
+    },
+  )
 }
 
 ///|
 test "issue #158236: Shift click selection does not work on line number indicator" {
-  with_test_viewer("just some text\nand another line\nand another one", viewer => {
-    viewer.dispatch_mouse(reference_mouse_data(Position(3, 5)))
-    viewer.dispatch_mouse(
-      reference_mouse_data(
-        Position(2, 1),
-        in_selection_mode=true,
-        started_on_line_numbers=true,
-      ),
-    )
-    assert_cursor(viewer, Selection(Position(3, 5), Position(2, 1)))
-  })
+  with_test_viewer(
+    (
+      #|just some text
+      #|and another line
+      #|and another one
+    ),
+    viewer => {
+      viewer.dispatch_mouse(reference_mouse_data(Position(3, 5)))
+      viewer.dispatch_mouse(
+        reference_mouse_data(
+          Position(2, 1),
+          in_selection_mode=true,
+          started_on_line_numbers=true,
+        ),
+      )
+      assert_cursor(viewer, Selection(Position(3, 5), Position(2, 1)))
+    },
+  )
 }

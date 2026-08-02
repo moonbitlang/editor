@@ -7,7 +7,15 @@ test "validation decoration filtering preserves readonly policy" {
 
 ///|
 test "view model produces viewport data from layout window" {
-  let view_model = @view_model.ViewModel(plain_text_model("a\nbb\nccc"))
+  let view_model = @view_model.ViewModel(
+    plain_text_model(
+      (
+        #|a
+        #|bb
+        #|ccc
+      ),
+    ),
+  )
   let viewport = @view_model.viewport_data_from_view_model(
     view_model,
     { start: 2, end: 4 },
@@ -53,7 +61,10 @@ test "view model produces viewport data from layout window" {
 /// viewport's per-line `LineDecoration`s through `ViewModelDecorations` →
 /// `InlineModelDecorationsComputer` → `line_decorations_for_line`.
 test "viewport line decorations come from model decoration storage" {
-  let text = "alpha beta\ngamma delta\nepsilon"
+  let text =
+    #|alpha beta
+    #|gamma delta
+    #|epsilon
   let model = @model.TextModel(
     try! @base_common.Uri::from(
       scheme="inmemory",

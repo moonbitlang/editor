@@ -152,7 +152,12 @@ test "containsRTL 2" {
 test "getValueLengthInRange" {
   for
     raw in [
-      "My First Line\r\nMy Second Line\r\nMy Third Line", "My First Line\nMy Second Line\nMy Third Line",
+      "My First Line\r\nMy Second Line\r\nMy Third Line",
+      (
+        #|My First Line
+        #|My Second Line
+        #|My Third Line
+      ),
     ] {
     let m = wb_model(raw)
     assert_eq(m.get_value_length_in_range(rng(1, 1, 1, 1)), "".length())
@@ -180,15 +185,27 @@ test "getValueLengthInRange" {
     )
     assert_eq(
       m.get_value_length_in_range(rng(1, 2, 3, 1)),
-      "y First Line\nMy Second Line\n".length(),
+      (
+        #|y First Line
+        #|My Second Line
+        #|
+      ).length(),
     )
     assert_eq(
       m.get_value_length_in_range(rng(1, 2, 3, 1000)),
-      "y First Line\nMy Second Line\nMy Third Line".length(),
+      (
+        #|y First Line
+        #|My Second Line
+        #|My Third Line
+      ).length(),
     )
     assert_eq(
       m.get_value_length_in_range(rng(1, 1, 1000, 1000)),
-      "My First Line\nMy Second Line\nMy Third Line".length(),
+      (
+        #|My First Line
+        #|My Second Line
+        #|My Third Line
+      ).length(),
     )
   }
 }

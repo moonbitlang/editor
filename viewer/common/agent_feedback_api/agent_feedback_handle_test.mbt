@@ -41,7 +41,7 @@ test "AgentFeedbackHandle forwards its exact callback floor" {
       [feedback]
     },
     get_navigation_bearing=(_, item_ids) => {
-      calls.push("bearing:" + item_ids.join(","))
+      calls.push("bearing:\{item_ids.join(",")}")
       { active_idx: 1, total_count: item_ids.length() }
     },
     add_feedback=(_, _, _, kind, state) => {
@@ -57,18 +57,18 @@ test "AgentFeedbackHandle forwards its exact callback floor" {
         Some(Submitted) => "submitted"
         Some(Resolved) => "resolved"
       }
-      calls.push("add:" + kind_label + ":" + state_label)
+      calls.push("add:\{kind_label}:\{state_label}")
       feedback
     },
     mark_feedback_submitted=_ => calls.push("submit"),
-    remove_feedback=(_, id) => calls.push("remove:" + id),
-    accept_feedback=(_, id) => calls.push("accept:" + id),
+    remove_feedback=(_, id) => calls.push("remove:\{id}"),
+    accept_feedback=(_, id) => calls.push("accept:\{id}"),
     set_navigation_anchor=(_, item_id) => {
       let anchor = item_id.unwrap_or("none")
-      calls.push("anchor:" + anchor)
+      calls.push("anchor:\{anchor}")
     },
-    update_feedback=(_, id, text) => calls.push("update:" + id + ":" + text),
-    add_reply=(_, id, text) => calls.push("reply:" + id + ":" + text),
+    update_feedback=(_, id, text) => calls.push("update:\{id}:\{text}"),
+    add_reply=(_, id, text) => calls.push("reply:\{id}:\{text}"),
   )
   let feedback_subscription = handle.on_did_change_feedback(event => {
     changed_ids.push(event.feedback_items[0].id)
@@ -106,10 +106,7 @@ test "AgentFeedbackHandle forwards its exact callback floor" {
   navigation_subscription.dispose()
   assert_eq(
     calls.join("|"),
-    "subscribe-feedback|subscribe-navigation|enabled|get|bearing:a,b|" +
-    "add:none:none|add:agent:created|submit|remove:feedback-1|" +
-    "accept:feedback-2|anchor:feedback-2|update:feedback-2:updated|" +
-    "reply:feedback-2:reply|dispose-feedback|dispose-navigation",
+    "subscribe-feedback|subscribe-navigation|enabled|get|bearing:a,b|add:none:none|add:agent:created|submit|remove:feedback-1|accept:feedback-2|anchor:feedback-2|update:feedback-2:updated|reply:feedback-2:reply|dispose-feedback|dispose-navigation",
   )
 }
 

@@ -150,7 +150,7 @@ test "mark_feedback_submitted transitions accepted items and reports counts" {
     state=Created,
   )
   service.mark_feedback_submitted(resource)
-  assert_eq(submitted_ids, user_item.id + "," + agent_item.id)
+  assert_eq(submitted_ids, "\{user_item.id},\{agent_item.id}")
   assert_eq(user_count, 1)
   assert_eq(agent_review_count, 1)
   assert_eq(reply_count, 1)

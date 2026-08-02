@@ -55,15 +55,7 @@ fn tth_mode(line : String) -> Array[UInt] {
 test "TextToHtmlTokenizer 1" {
   let actual = tokenize_to_string(".abc..def...gh", LanguageIdCodec(), tth_mode)
   assert_eq(
-    actual,
-    "<div class=\"monaco-tokenized-source\">" +
-    "<span class=\"mtk7\">.</span>" +
-    "<span class=\"mtk9\">abc</span>" +
-    "<span class=\"mtk7\">..</span>" +
-    "<span class=\"mtk9\">def</span>" +
-    "<span class=\"mtk7\">...</span>" +
-    "<span class=\"mtk9\">gh</span>" +
-    "</div>",
+    actual, "<div class=\"monaco-tokenized-source\"><span class=\"mtk7\">.</span><span class=\"mtk9\">abc</span><span class=\"mtk7\">..</span><span class=\"mtk9\">def</span><span class=\"mtk7\">...</span><span class=\"mtk9\">gh</span></div>",
   )
 }
 
@@ -74,15 +66,10 @@ test "TextToHtmlTokenizer 2" {
     LanguageIdCodec(),
     tth_mode,
   )
-  let one = "<span class=\"mtk7\">.</span>" +
-    "<span class=\"mtk9\">abc</span>" +
-    "<span class=\"mtk7\">..</span>" +
-    "<span class=\"mtk9\">def</span>" +
-    "<span class=\"mtk7\">...</span>" +
-    "<span class=\"mtk9\">gh</span>"
+  let one = "<span class=\"mtk7\">.</span><span class=\"mtk9\">abc</span><span class=\"mtk7\">..</span><span class=\"mtk9\">def</span><span class=\"mtk7\">...</span><span class=\"mtk9\">gh</span>"
   assert_eq(
     actual,
-    "<div class=\"monaco-tokenized-source\">" + one + "<br/>" + one + "</div>",
+    "<div class=\"monaco-tokenized-source\">\{one}<br/>\{one}</div>",
   )
 }
 
@@ -109,55 +96,35 @@ test "tokenizeLineToHTML" {
   let world = "<span style=\"color: #0000ff;text-decoration: underline;\">"
   assert_eq(
     tokenize_line_to_html(text, view, color_map, 0, 17, 4, true),
-    "<div>" +
-    bold +
-    "Ciao</span>" +
-    space +
-    hello +
-    space +
-    world +
-    "world!</span>" +
-    "</div>",
+    "<div>\{bold}Ciao</span>\{space}\{hello}\{space}\{world}world!</span></div>",
   )
   assert_eq(
     tokenize_line_to_html(text, view, color_map, 0, 12, 4, true),
-    "<div>" +
-    bold +
-    "Ciao</span>" +
-    space +
-    hello +
-    space +
-    world +
-    "w</span>" +
-    "</div>",
+    "<div>\{bold}Ciao</span>\{space}\{hello}\{space}\{world}w</span></div>",
   )
   assert_eq(
     tokenize_line_to_html(text, view, color_map, 0, 11, 4, true),
-    "<div>" + bold + "Ciao</span>" + space + hello + space + "</div>",
+    "<div>\{bold}Ciao</span>\{space}\{hello}\{space}</div>",
   )
   assert_eq(
     tokenize_line_to_html(text, view, color_map, 1, 11, 4, true),
-    "<div>" + bold + "iao</span>" + space + hello + space + "</div>",
+    "<div>\{bold}iao</span>\{space}\{hello}\{space}</div>",
   )
   assert_eq(
     tokenize_line_to_html(text, view, color_map, 4, 11, 4, true),
-    "<div>" +
-    "<span style=\"color: #000000;\">&#160;</span>" +
-    hello +
-    space +
-    "</div>",
+    "<div><span style=\"color: #000000;\">&#160;</span>\{hello}\{space}</div>",
   )
   assert_eq(
     tokenize_line_to_html(text, view, color_map, 5, 11, 4, true),
-    "<div>" + hello + space + "</div>",
+    "<div>\{hello}\{space}</div>",
   )
   assert_eq(
     tokenize_line_to_html(text, view, color_map, 5, 10, 4, true),
-    "<div>" + hello + "</div>",
+    "<div>\{hello}</div>",
   )
   assert_eq(
     tokenize_line_to_html(text, view, color_map, 6, 9, 4, true),
-    "<div>" + "<span style=\"color: #00ff00;\">ell</span>" + "</div>",
+    "<div><span style=\"color: #00ff00;\">ell</span></div>",
   )
 }
 
@@ -188,26 +155,15 @@ test "tokenizeLineToHTML handle spaces #35954" {
   let world = "<span style=\"color: #0000ff;text-decoration: underline;\">"
   assert_eq(
     tokenize_line_to_html(text, view, color_map, 0, 21, 4, true),
-    "<div>" +
-    lead +
-    bold +
-    mid +
-    hello +
-    space +
-    world +
-    "world!</span>" +
-    "</div>",
+    "<div>\{lead}\{bold}\{mid}\{hello}\{space}\{world}world!</span></div>",
   )
   assert_eq(
     tokenize_line_to_html(text, view, color_map, 0, 17, 4, true),
-    "<div>" + lead + bold + mid + hello + space + world + "wo</span>" + "</div>",
+    "<div>\{lead}\{bold}\{mid}\{hello}\{space}\{world}wo</span></div>",
   )
   assert_eq(
     tokenize_line_to_html(text, view, color_map, 0, 3, 4, true),
-    "<div>" +
-    lead +
-    "<span style=\"color: #ff0000;font-style: italic;font-weight: bold;\">C</span>" +
-    "</div>",
+    "<div>\{lead}<span style=\"color: #ff0000;font-style: italic;font-weight: bold;\">C</span></div>",
   )
 }
 
@@ -228,18 +184,10 @@ test "tokenizeLineToHTML with tabs and non-zero startOffset #263387" {
   let view = view_tokens(text, tokens)
   assert_eq(
     tokenize_line_to_html(text, view, color_map, 0, 4, 4, true),
-    "<div>" +
-    "<span style=\"color: #000000;\">&#160; &#160; </span>" +
-    "<span style=\"color: #ff0000;\">a</span>" +
-    "<span style=\"color: #000000;\"> &#160; </span>" +
-    "<span style=\"color: #00ff00;\">b</span>" +
-    "</div>",
+    "<div><span style=\"color: #000000;\">&#160; &#160; </span><span style=\"color: #ff0000;\">a</span><span style=\"color: #000000;\"> &#160; </span><span style=\"color: #00ff00;\">b</span></div>",
   )
   assert_eq(
     tokenize_line_to_html(text, view, color_map, 2, 4, 4, true),
-    "<div>" +
-    "<span style=\"color: #000000;\">&#160; &#160;</span>" +
-    "<span style=\"color: #00ff00;\">b</span>" +
-    "</div>",
+    "<div><span style=\"color: #000000;\">&#160; &#160;</span><span style=\"color: #00ff00;\">b</span></div>",
   )
 }

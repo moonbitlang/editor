@@ -208,31 +208,16 @@ fn ScrollableElementDom::write_vertical_bar(
   if self.vertical_state.is_needed() {
     self.vertical_bar.set_attribute(
       "style",
-      "width:" +
-      self.vertical_size.to_string() +
-      "px;height:" +
-      self.vertical_state.rectangle_large_size().to_string() +
-      "px;right:0px;top:0px",
+      "width:\{self.vertical_size.to_string()}px;height:\{self.vertical_state.rectangle_large_size().to_string()}px;right:0px;top:0px",
     )
     self.vertical_slider.set_attribute(
       "style",
-      "width:" +
-      self.vertical_size.to_string() +
-      "px;" +
-      "height:" +
-      self.vertical_state.slider_size().to_string() +
-      "px;transform:translateY(" +
-      self.vertical_state.slider_position().to_string() +
-      "px)",
+      "width:\{self.vertical_size.to_string()}px;height:\{self.vertical_state.slider_size().to_string()}px;transform:translateY(\{self.vertical_state.slider_position().to_string()}px)",
     )
   } else {
     self.vertical_bar.set_attribute(
       "style",
-      "width:" +
-      self.vertical_size.to_string() +
-      "px;height:" +
-      self.vertical_state.rectangle_large_size().to_string() +
-      "px;right:0px;top:0px",
+      "width:\{self.vertical_size.to_string()}px;height:\{self.vertical_state.rectangle_large_size().to_string()}px;right:0px;top:0px",
     )
     self.vertical_slider.set_attribute("style", "")
   }
@@ -252,35 +237,20 @@ fn ScrollableElementDom::write_horizontal_bar(
     self.scrollbar_class(vertical=false, needed~),
   )
   if self.horizontal_state.is_needed() {
-    let mut bar_style = "height:" +
-      self.horizontal_size.to_string() +
-      "px;width:" +
-      self.horizontal_state.rectangle_large_size().to_string() +
-      "px;bottom:0px"
+    let mut bar_style = "height:\{self.horizontal_size.to_string()}px;width:\{self.horizontal_state.rectangle_large_size().to_string()}px;bottom:0px"
     match horizontal_left {
-      Some(left) => bar_style = bar_style + ";left:" + left.to_string() + "px"
+      Some(left) => bar_style = "\{bar_style};left:\{left.to_string()}px"
       None => ()
     }
     self.horizontal_bar.set_attribute("style", bar_style)
     self.horizontal_slider.set_attribute(
       "style",
-      "height:" +
-      self.horizontal_size.to_string() +
-      "px;" +
-      "width:" +
-      self.horizontal_state.slider_size().to_string() +
-      "px;transform:translateX(" +
-      self.horizontal_state.slider_position().to_string() +
-      "px)",
+      "height:\{self.horizontal_size.to_string()}px;width:\{self.horizontal_state.slider_size().to_string()}px;transform:translateX(\{self.horizontal_state.slider_position().to_string()}px)",
     )
   } else {
-    let mut bar_style = "height:" +
-      self.horizontal_size.to_string() +
-      "px;width:" +
-      self.horizontal_state.rectangle_large_size().to_string() +
-      "px;bottom:0px"
+    let mut bar_style = "height:\{self.horizontal_size.to_string()}px;width:\{self.horizontal_state.rectangle_large_size().to_string()}px;bottom:0px"
     match horizontal_left {
-      Some(left) => bar_style = bar_style + ";left:" + left.to_string() + "px"
+      Some(left) => bar_style = "\{bar_style};left:\{left.to_string()}px"
       None => ()
     }
     self.horizontal_bar.set_attribute("style", bar_style)
@@ -296,11 +266,11 @@ fn ScrollableElementDom::scrollbar_class(
 ) -> String {
   let axis = if vertical { "vertical" } else { "horizontal" }
   if needed && self.bar_is_revealed(vertical) {
-    "visible scrollbar " + axis
+    "visible scrollbar \{axis}"
   } else {
-    let mut class_name = "invisible scrollbar " + axis
+    let mut class_name = "invisible scrollbar \{axis}"
     if needed && self.bar_has_fade(vertical) {
-      class_name = class_name + " fade"
+      class_name = "\{class_name} fade"
     }
     class_name
   }
@@ -488,13 +458,13 @@ fn ScrollableElementDom::write_shadows(
   )
   let mut top_left = "shadow"
   if top || left {
-    top_left = top_left + " top-left-corner"
+    top_left = "\{top_left} top-left-corner"
   }
   if top {
-    top_left = top_left + " top"
+    top_left = "\{top_left} top"
   }
   if left {
-    top_left = top_left + " left"
+    top_left = "\{top_left} left"
   }
   self.top_left_shadow.set_attribute("class", top_left)
 }

@@ -13,9 +13,25 @@ test "workbench keeps documents raw and exposes normalized model text" {
   let cases : Array[(String, String)] = [
     ("a\r\nb", "a\nb"),
     ("a\rb", "a\nb"),
-    ("a\r\nb\rc\nd", "a\nb\nc\nd"),
+    (
+      "a\r\nb\rc\nd",
+      (
+        #|a
+        #|b
+        #|c
+        #|d
+      ),
+    ),
     ("tail\r\n", "tail\n"),
-    ("🙂\r\nβ\r中\n", "🙂\nβ\n中\n"),
+    (
+      "🙂\r\nβ\r中\n",
+      (
+        #|🙂
+        #|β
+        #|中
+        #|
+      ),
+    ),
     ("\u{FEFF}head\r\ntail", "\u{FEFF}head\ntail"),
   ]
   for index, sample in cases {
@@ -25,7 +41,7 @@ test "workbench keeps documents raw and exposes normalized model text" {
       eol_boundary_uri(),
       "eol-boundary.mbt",
       "moonbit",
-      "revision-" + index.to_string(),
+      "revision-\{index.to_string()}",
       raw,
     )
     assert_eq(document.text, raw)

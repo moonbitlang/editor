@@ -254,7 +254,7 @@ priv suberror TestWidgetCallbackError {
 fn TestContentWidget::before_render(
   self : TestContentWidget,
 ) -> ContentWidgetDimension? raise {
-  content_widgets_test_log_event("before:" + self.id)
+  content_widgets_test_log_event("before:\{self.id}")
   if self.throw_before {
     raise TestWidgetCallbackError
   }
@@ -268,12 +268,7 @@ fn TestContentWidget::after_render(
   coordinate : ContentWidgetRenderedCoordinate?,
 ) -> Unit raise {
   content_widgets_test_log_event(
-    "after:" +
-    self.id +
-    ":" +
-    callback_position_name(position) +
-    ":" +
-    callback_coordinate_name(coordinate),
+    "after:\{self.id}:\{callback_position_name(position)}:\{callback_coordinate_name(coordinate)}",
   )
   if self.throw_after {
     raise TestWidgetCallbackError
@@ -324,7 +319,7 @@ fn callback_coordinate_name(
 ) -> String {
   match coordinate {
     Some(coordinate) =>
-      coordinate.top.to_string() + "," + coordinate.left.to_string()
+      "\{coordinate.top.to_string()},\{coordinate.left.to_string()}"
     None => "null"
   }
 }

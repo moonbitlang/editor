@@ -42,7 +42,7 @@ pub fn to_posix_path(os_path : String) -> String {
     char_code_at(os_path, 1) == char_colon &&
     (os_path.length() == 2 || char_code_at(os_path, 2) == char_forward_slash) {
     // starts with a drive letter
-    os_path = "/" + os_path
+    os_path = "/\{os_path}"
   }
   os_path
 }

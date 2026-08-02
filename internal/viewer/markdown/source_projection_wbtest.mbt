@@ -26,7 +26,16 @@ fn semantic_boundaries(line : MarkdownCodeLine) -> Array[Int?] {
 ///|
 test "projection keeps zero and identical code blocks distinct with full fence info" {
   assert_eq(render_markdown("plain").projection.code_blocks.length(), 0)
-  let source = "# Title\n\n```mbt  check extra\nsame()\n```\n\n```mbt check\nsame()\n```"
+  let source =
+    #|# Title
+    #|
+    #|```mbt  check extra
+    #|same()
+    #|```
+    #|
+    #|```mbt check
+    #|same()
+    #|```
   let projection = render_markdown(source).projection
   assert_eq(projection.code_blocks.length(), 2)
   let first = projection.code_blocks[0]
@@ -48,7 +57,20 @@ test "projection keeps zero and identical code blocks distinct with full fence i
 
 ///|
 test "root-element ordinals ignore omitted blocks and nested anchors" {
-  let source = "first\n\n<script>unsafe</script>\n\n[ref]: /target\n\n---\n\n> quoted\n\n```mbt\nx\n```"
+  let source =
+    #|first
+    #|
+    #|<script>unsafe</script>
+    #|
+    #|[ref]: /target
+    #|
+    #|---
+    #|
+    #|> quoted
+    #|
+    #|```mbt
+    #|x
+    #|```
   let rendered = render_markdown(source)
   assert_true(rendered.html.contains("CommonMark HTML block omitted"))
   let ordinals : Array[Int] = []
@@ -77,7 +99,11 @@ test "root-element ordinals ignore omitted blocks and nested anchors" {
 
 ///|
 test "UTF-16 boundaries round trip through astral code units before and inside a block" {
-  let source = "before 😊\n```mbt check\nlet 😊x = 1\n```"
+  let source =
+    #|before 😊
+    #|```mbt check
+    #|let 😊x = 1
+    #|```
   let block = projection_block(source, 0)
   assert_eq(
     block.block_source_range.start,
@@ -108,18 +134,26 @@ test "UTF-16 boundaries round trip through astral code units before and inside a
 test "isolated high and low surrogate units keep exact source boundary offsets" {
   for code_unit in [0xD800, 0xDFFF] {
     let lone = Int::unsafe_to_char(code_unit).to_string()
-    let source = lone + "\n```mbt check\n" + lone + "x\n```"
+    let source =
+      $|\{lone}
+      $|```mbt check
+      $|\{lone}x
+      $|```
     let parser_input = markdown_cmark_input(source)
     assert_eq(parser_input.length(), source.length())
     assert_eq(parser_input[0].to_int(), 0xFFFD)
     let block = projection_block(source, 0)
     assert_eq(block.block_source_range.start, lone.length() + 1)
     let line = block.code_lines[0]
-    let source_start = (lone + "\n```mbt check\n").length()
+    let source_start = (
+      $|\{lone}
+      $|```mbt check
+      $|
+    ).length()
     assert_eq(line.displayed_text.length(), 2)
     assert_eq(
       line.displayed_text,
-      Int::unsafe_to_char(0xFFFD).to_string() + "x",
+      "\{Int::unsafe_to_char(0xFFFD).to_string()}x",
     )
     assert_eq(semantic_boundaries(line), [
       Some(source_start),
@@ -131,25 +165,64 @@ test "isolated high and low surrogate units keep exact source boundary offsets" 
 
 ///|
 test "blank code lines empty blocks and unclosed fences retain source facts" {
-  let blank_source = "```mbt check\n\nx\n\n\n```"
+  let blank_source =
+    #|```mbt check
+    #|
+    #|x
+    #|
+    #|
+    #|```
   let blank_block = projection_block(blank_source, 0)
-  assert_eq(blank_block.code, "\nx\n\n")
+  assert_eq(
+    blank_block.code,
+    (
+      #|
+      #|x
+      #|
+      #|
+    ),
+  )
   assert_eq(blank_block.code_lines.length(), 3)
   assert_eq(blank_block.code_lines[0].displayed_text, "")
   assert_eq(blank_block.code_lines[1].displayed_text, "x")
   assert_eq(blank_block.code_lines[2].displayed_text, "")
   assert_eq(
     blank_block.code_lines[0].source_offset_at_displayed_boundary(0),
-    Some(projection_source_offset(blank_source, "\n\n") + 1),
+    Some(
+      projection_source_offset(
+        blank_source,
+        (
+          #|
+          #|
+          #|
+        ),
+      ) +
+      1,
+    ),
   )
 
   let empty = projection_block("```mbt check\n```", 0)
   assert_eq(empty.code, "")
   assert_eq(empty.code_lines.length(), 0)
 
-  let unclosed_source = "```mbt check\n\nx\n\n\n"
+  let unclosed_source =
+    #|```mbt check
+    #|
+    #|x
+    #|
+    #|
+    #|
   let unclosed = projection_block(unclosed_source, 0)
-  assert_eq(unclosed.code, "\nx\n\n\n")
+  assert_eq(
+    unclosed.code,
+    (
+      #|
+      #|x
+      #|
+      #|
+      #|
+    ),
+  )
   assert_eq(unclosed.code_lines.length(), 4)
   assert_eq(unclosed.code_lines[3].displayed_text, "")
   assert_eq(
@@ -160,7 +233,15 @@ test "blank code lines empty blocks and unclosed fences retain source facts" {
 
 ///|
 test "blockquote and list fences map only original code text" {
-  let source = "> ```mbt check\n> quote\n> ```\n\n- item\n  ```moonbit check\n  list\n  ```"
+  let source =
+    #|> ```mbt check
+    #|> quote
+    #|> ```
+    #|
+    #|- item
+    #|  ```moonbit check
+    #|  list
+    #|  ```
   let projection = render_markdown(source).projection
   assert_eq(projection.code_blocks.length(), 2)
   let quote = projection.code_blocks[0].code_lines[0]
@@ -214,7 +295,10 @@ test "literal tab content and uneven space-indented fences map exact source unit
     )
   }
 
-  let uneven_source = "  ```mbt check\n value\n  ```"
+  let uneven_source =
+    #|  ```mbt check
+    #| value
+    #|  ```
   let uneven_line = projection_block(uneven_source, 0).code_lines[0]
   let value_start = projection_source_offset(uneven_source, "value")
   assert_eq(uneven_line.displayed_text, "value")
@@ -235,7 +319,13 @@ test "literal tab content and uneven space-indented fences map exact source unit
 
 ///|
 test "source ranges project inside across lines and outside the code block" {
-  let source = "before\n```mbt check\nabc\ndef\n```\nafter"
+  let source =
+    #|before
+    #|```mbt check
+    #|abc
+    #|def
+    #|```
+    #|after
   let block = projection_block(source, 0)
   let abc = projection_source_offset(source, "abc")
   let def = projection_source_offset(source, "def")
@@ -271,7 +361,10 @@ test "source ranges project inside across lines and outside the code block" {
 
 ///|
 test "first EOL and block-end boundaries obey half-open mapping" {
-  let source = "```mbt check\nabc\n```"
+  let source =
+    #|```mbt check
+    #|abc
+    #|```
   let block = projection_block(source, 0)
   let line = block.code_lines[0]
   let abc = projection_source_offset(source, "abc")
@@ -316,7 +409,12 @@ test "unrepresentable displayed-source relationships keep static text and disabl
 
 ///|
 test "TextSnapshot normalization gives CRLF lone-CR and LF one projection space" {
-  let lf = "before\n```mbt check\none\ntwo\n```"
+  let lf =
+    #|before
+    #|```mbt check
+    #|one
+    #|two
+    #|```
   let mixed = "before\r\n```mbt check\rone\r\ntwo\r```"
   let normalized = @model.TextSnapshot(mixed).get_value()
   assert_eq(normalized, lf)

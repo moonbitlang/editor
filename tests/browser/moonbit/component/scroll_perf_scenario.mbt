@@ -116,9 +116,7 @@ fn scroll_perf_mount_host(visible_lines : Int) -> @rdom.Element? {
       host.set_attribute("class", "viewer-host scroll-perf-host")
       host.set_attribute(
         "style",
-        "width:800px;height:" +
-        (visible_lines * 18).to_string() +
-        "px;overflow:hidden;",
+        "width:800px;height:\{(visible_lines * 18).to_string()}px;overflow:hidden;",
       )
       app.append_child(host.as_node())
       Some(host)
@@ -131,7 +129,7 @@ fn scroll_perf_mount_host(visible_lines : Int) -> @rdom.Element? {
 fn scroll_perf_source_text(wide : Bool) -> String {
   let builder = StringBuilder()
   for line in 1..<=3000 {
-    builder.write_string("perf line " + line.to_string() + " ")
+    builder.write_string("perf line \{line.to_string()} ")
     let repetitions = if wide { 24 } else { 1 }
     for _ in 0..<repetitions {
       builder.write_string("alpha beta gamma delta epsilon zeta eta theta ")

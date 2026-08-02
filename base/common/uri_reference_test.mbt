@@ -532,9 +532,9 @@ test "URI#toString, user information in authority" {
 ///|
 fn check_file_uri_to_fs_path(input : String, expected : String) -> Unit raise {
   let value = Uri::parse(input)
-  assert_eq(value.fs_path(), expected, msg="Result for " + input)
+  assert_eq(value.fs_path(), expected, msg="Result for \{input}")
   let value2 = Uri::file(value.fs_path())
-  assert_eq(value2.fs_path(), expected, msg="Result for " + input)
+  assert_eq(value2.fs_path(), expected, msg="Result for \{input}")
   assert_eq(value.to_string(), value2.to_string())
 }
 
@@ -817,6 +817,6 @@ test "non-ASCII and astral path round-trips (D4)" {
 ///|
 test "panic toString with lone surrogate raises like URIError (D4)" {
   let lone = Int::unsafe_to_char(0xD800).to_string()
-  let value = Uri::from(scheme="s", authority="a", path="/" + lone)
+  let value = Uri::from(scheme="s", authority="a", path="/\{lone}")
   ignore(value.to_string())
 }

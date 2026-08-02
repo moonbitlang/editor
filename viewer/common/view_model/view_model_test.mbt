@@ -1,6 +1,14 @@
 ///|
 test "no-wrap converter preserves model and view positions through identity projections" {
-  let model = plain_text_model("fn main {\n  let x = 1\n  let y = 2\n}\n")
+  let model = plain_text_model(
+    (
+      #|fn main {
+      #|  let x = 1
+      #|  let y = 2
+      #|}
+      #|
+    ),
+  )
   let converter = @view_model.ViewModel(model).coordinates_converter()
   let position = @base_common.Position(2, 7)
   assert_true(converter.model_position_to_view_position(position) == position)
@@ -25,7 +33,13 @@ test "view model constructs the closed projected coordinates converter" {
 
 ///|
 test "no-wrap view lines match view line rendering data" {
-  let model = plain_text_model("fn main {\n  let x = 1\n}")
+  let model = plain_text_model(
+    (
+      #|fn main {
+      #|  let x = 1
+      #|}
+    ),
+  )
   let view_model = @view_model.ViewModel(model)
   let lines = view_model.lines()
   let direct_line = lines.get_view_line_data(2)

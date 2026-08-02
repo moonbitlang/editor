@@ -245,7 +245,11 @@ fn run_definition_browser_test() -> Unit {
     () => provider_multiple.val = true,
     () => {
       markdown_model.set_value(
-        markdown_definition_source() + "\n\nProjection generation changed.",
+        (
+          $|\{markdown_definition_source()}
+          $|
+          $|Projection generation changed.
+        ),
       )
     },
   )

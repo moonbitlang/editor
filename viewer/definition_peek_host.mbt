@@ -414,7 +414,7 @@ fn Viewer::open_definition_peek_shell(
       @base_browser.set_style_property(
         widget_dom_node,
         "right",
-        layout.vertical_scrollbar_width.to_string() + "px",
+        "\{layout.vertical_scrollbar_width.to_string()}px",
       )
       @base_browser.set_style_property(widget_dom_node, "width", "auto")
       let zone = @editor_browser.ViewZone(
@@ -427,14 +427,14 @@ fn Viewer::open_definition_peek_shell(
           @base_browser.set_style_property(
             widget_dom_node,
             "top",
-            top.to_string() + "px",
+            "\{top.to_string()}px",
           )
         },
         on_computed_height=height => {
           @base_browser.set_style_property(
             widget_dom_node,
             "height",
-            height.to_string() + "px",
+            "\{height.to_string()}px",
           )
         },
       )
@@ -446,7 +446,7 @@ fn Viewer::open_definition_peek_shell(
       }
       state.peek.zone_id = Some(added_id.val)
       let overlay = overlay_widget(
-        "moonbit.viewer.definitionPeek." + self.get_id(),
+        "moonbit.viewer.definitionPeek.\{self.get_id()}",
         widget_dom_node,
       )
       self.add_overlay_widget(overlay)

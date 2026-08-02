@@ -76,19 +76,14 @@ fn margin_view_overlays_render(
   // clip is viewport-fixed; the rows container carries the vertical rail
   // translation (the viewer's `margin_transform`).
   self.overlays.render_lines(context.viewport)
-  let margin_style = "width:" + self.content_left.to_string() + "px"
+  let margin_style = "width:\{self.content_left.to_string()}px"
   if self.dom_node.get_attribute("style") != Some(margin_style) {
     self.dom_node.set_attribute("style", margin_style)
   }
   self.render_focused()
   let overlays = self.overlays.dom_node.element()
   let height = context.dimensions.scroll_height.min(1000000.0)
-  let overlays_style = context.margin_transform +
-    ";width:" +
-    self.content_left.to_string() +
-    "px;height:" +
-    height.to_string() +
-    "px"
+  let overlays_style = "\{context.margin_transform};width:\{self.content_left.to_string()}px;height:\{height.to_string()}px"
   if overlays.get_attribute("style") != Some(overlays_style) {
     overlays.set_attribute("style", overlays_style)
   }

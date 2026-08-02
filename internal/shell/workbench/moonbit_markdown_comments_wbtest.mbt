@@ -2,13 +2,25 @@
 test "MoonBit Markdown comments prefix a core-shaped block with its item boundary" {
   let blocks = moonbit_markdown_comments_in_snapshot(
     TextSnapshot(
-      "///|\n/// # Sample API\n///\n/// Uses **shell rendering**.\npub fn sample() -> Unit {}",
+      (
+        #|///|
+        #|/// # Sample API
+        #|///
+        #|/// Uses **shell rendering**.
+        #|pub fn sample() -> Unit {}
+      ),
     ),
   )
   assert_eq(blocks, [
     {
       line_range: LineRange(1, 5),
-      markdown: "---\n\n# Sample API\n\nUses **shell rendering**.",
+      markdown: (
+        #|---
+        #|
+        #|# Sample API
+        #|
+        #|Uses **shell rendering**.
+      ),
     },
   ])
 }
@@ -17,15 +29,50 @@ test "MoonBit Markdown comments prefix a core-shaped block with its item boundar
 test "MoonBit Markdown comments render separators and ignore detached groups" {
   let blocks = moonbit_markdown_comments_in_snapshot(
     TextSnapshot(
-      "///|\nlet first = 1\n/// detached\n///| shadow\n///|\n\n/// separated\n///|\n/// Valid docs\npub fn valid() -> Unit {}\n///|\n/// Second docs\npub fn second() -> Unit {}",
+      (
+        #|///|
+        #|let first = 1
+        #|/// detached
+        #|///| shadow
+        #|///|
+        #|
+        #|/// separated
+        #|///|
+        #|/// Valid docs
+        #|pub fn valid() -> Unit {}
+        #|///|
+        #|/// Second docs
+        #|pub fn second() -> Unit {}
+      ),
     ),
   )
   assert_eq(blocks, [
     { line_range: LineRange(1, 2), markdown: "---" },
-    { line_range: LineRange(4, 5), markdown: "---\n\nshadow" },
+    {
+      line_range: LineRange(4, 5),
+      markdown: (
+        #|---
+        #|
+        #|shadow
+      ),
+    },
     { line_range: LineRange(5, 6), markdown: "---" },
-    { line_range: LineRange(8, 10), markdown: "---\n\nValid docs" },
-    { line_range: LineRange(11, 13), markdown: "---\n\nSecond docs" },
+    {
+      line_range: LineRange(8, 10),
+      markdown: (
+        #|---
+        #|
+        #|Valid docs
+      ),
+    },
+    {
+      line_range: LineRange(11, 13),
+      markdown: (
+        #|---
+        #|
+        #|Second docs
+      ),
+    },
   ])
 }
 
@@ -33,22 +80,52 @@ test "MoonBit Markdown comments render separators and ignore detached groups" {
 test "MoonBit Markdown comments anchor a file header with marker-line text" {
   let blocks = moonbit_markdown_comments_in_snapshot(
     TextSnapshot(
-      "///| Port of `uri.ts`: the `URI` class.\n///\n/// Reviewed deviations:\n/// - D3: hand-rolled scanners.\n\n///|\n/// Item docs\npub fn item() -> Unit {}",
+      (
+        #|///| Port of `uri.ts`: the `URI` class.
+        #|///
+        #|/// Reviewed deviations:
+        #|/// - D3: hand-rolled scanners.
+        #|
+        #|///|
+        #|/// Item docs
+        #|pub fn item() -> Unit {}
+      ),
     ),
   )
   assert_eq(blocks, [
     {
       line_range: LineRange(1, 5),
-      markdown: "---\n\nPort of `uri.ts`: the `URI` class.\n\nReviewed deviations:\n- D3: hand-rolled scanners.",
+      markdown: (
+        #|---
+        #|
+        #|Port of `uri.ts`: the `URI` class.
+        #|
+        #|Reviewed deviations:
+        #|- D3: hand-rolled scanners.
+      ),
     },
-    { line_range: LineRange(6, 8), markdown: "---\n\nItem docs" },
+    {
+      line_range: LineRange(6, 8),
+      markdown: (
+        #|---
+        #|
+        #|Item docs
+      ),
+    },
   ])
 }
 
 ///|
 test "MoonBit Markdown comments render consecutive undocumented item separators" {
   let blocks = moonbit_markdown_comments_in_snapshot(
-    TextSnapshot("///|\nfn first {}\n///|\nfn second {}"),
+    TextSnapshot(
+      (
+        #|///|
+        #|fn first {}
+        #|///|
+        #|fn second {}
+      ),
+    ),
   )
   assert_eq(blocks, [
     { line_range: LineRange(1, 2), markdown: "---" },
@@ -77,7 +154,14 @@ test "MoonBit Markdown comments keep an EOF half-open range after CRLF normaliza
     TextSnapshot("let before = 1\r\n///|\r\n/// EOF docs"),
   )
   assert_eq(blocks, [
-    { line_range: LineRange(2, 4), markdown: "---\n\nEOF docs" },
+    {
+      line_range: LineRange(2, 4),
+      markdown: (
+        #|---
+        #|
+        #|EOF docs
+      ),
+    },
   ])
 }
 
@@ -93,7 +177,11 @@ test "workbench installs the provider only for MoonBit models" {
     "moonbit",
     1,
     "moonbit-revision",
-    "///|\n/// Registered docs\npub fn registered() -> Unit {}",
+    (
+      #|///|
+      #|/// Registered docs
+      #|pub fn registered() -> Unit {}
+    ),
   )
   let plaintext = @model.TextModel(
     try! @base_common.Uri::parse("inmemory://workbench/provider.txt"),
@@ -111,7 +199,14 @@ test "workbench installs the provider only for MoonBit models" {
     fail("expected the workbench MoonBit provider")
   }
   assert_eq(blocks, [
-    { line_range: LineRange(1, 3), markdown: "---\n\nRegistered docs" },
+    {
+      line_range: LineRange(1, 3),
+      markdown: (
+        #|---
+        #|
+        #|Registered docs
+      ),
+    },
   ])
   assert_true(handle.markdown_comment_provider_result(plaintext) is None)
 }

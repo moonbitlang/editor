@@ -6,7 +6,12 @@
 ///|
 test "Markdown comments mark only exact mermaid fences and keep safe fallback source" {
   let exact = @markdown_core.render_markdown(
-    "```mermaid\nflowchart LR\nA[<script>alert(1)</script>] --> B\n```",
+    (
+      #|```mermaid
+      #|flowchart LR
+      #|A[<script>alert(1)</script>] --> B
+      #|```
+    ),
     language_id="moonbit",
     code_block_renderer=render_markdown_comment_code_block,
   )
@@ -20,7 +25,12 @@ test "Markdown comments mark only exact mermaid fences and keep safe fallback so
   assert_false(exact.html.contains("<script>"))
 
   let differently_cased = @markdown_core.render_markdown(
-    "```Mermaid\nflowchart LR\nA --> B\n```",
+    (
+      #|```Mermaid
+      #|flowchart LR
+      #|A --> B
+      #|```
+    ),
     language_id="moonbit",
     code_block_renderer=render_markdown_comment_code_block,
   )
@@ -28,7 +38,12 @@ test "Markdown comments mark only exact mermaid fences and keep safe fallback so
   assert_true(differently_cased.html.contains("monaco-tokenized-source"))
 
   let unlabelled = @markdown_core.render_markdown(
-    "```\nflowchart LR\nA --> B\n```",
+    (
+      #|```
+      #|flowchart LR
+      #|A --> B
+      #|```
+    ),
     language_id="mermaid",
     code_block_renderer=render_markdown_comment_code_block,
   )
@@ -353,7 +368,13 @@ fn markdown_contribution_state(
 
 ///|
 test "Markdown comments replace start middle EOF blocks while preserving model truth" {
-  let source = "one\ntwo\nthree\nfour\nfive\nsix"
+  let source =
+    #|one
+    #|two
+    #|three
+    #|four
+    #|five
+    #|six
   let blocks = [
     markdown_contribution_block(1, 2, "# start"),
     markdown_contribution_block(3, 5, "middle"),
@@ -490,7 +511,11 @@ test "Markdown comment fallbacks leave source visible for absent empty invalid a
 
   // Invalid ranges cannot create a zone or hidden source.
   with_markdown_contribution_viewer(
-    "one\ntwo\nthree",
+    (
+      #|one
+      #|two
+      #|three
+    ),
     (viewer, _) => assert_markdown_contribution_visible_fallback(viewer),
     provider_blocks=[
       markdown_contribution_block(0, 2, "before model"),
@@ -502,7 +527,11 @@ test "Markdown comment fallbacks leave source visible for absent empty invalid a
   // Several individually valid blocks that cover every model line trigger
   // the all-lines safeguard as one normalized result.
   with_markdown_contribution_viewer(
-    "one\ntwo\nthree",
+    (
+      #|one
+      #|two
+      #|three
+    ),
     (viewer, _) => assert_markdown_contribution_visible_fallback(viewer),
     provider_blocks=[
       markdown_contribution_block(1, 2, "first"),
@@ -531,7 +560,13 @@ test "Peek preview leaves Markdown-comment source unprojected" {
 ///|
 test "same-key Markdown update retains the ViewZone and target identities" {
   with_markdown_contribution_viewer(
-    "one\ntwo\nthree\nfour\nfive",
+    (
+      #|one
+      #|two
+      #|three
+      #|four
+      #|five
+    ),
     (viewer, provider_blocks) => {
       let state = markdown_contribution_state(viewer)
       let first = state.rendered["2:4"]
@@ -552,7 +587,15 @@ test "same-key Markdown update retains the ViewZone and target identities" {
       provider_blocks.val = [
         markdown_contribution_block(2, 4, "updated **body**"),
       ]
-      viewer.set_value("ONE\nTWO\nTHREE\nFOUR\nFIVE")
+      viewer.set_value(
+        (
+          #|ONE
+          #|TWO
+          #|THREE
+          #|FOUR
+          #|FIVE
+        ),
+      )
 
       let updated = state.rendered["2:4"]
       assert_eq(state.rendered.length(), 1)
@@ -592,7 +635,13 @@ test "same-key Markdown update retains the ViewZone and target identities" {
       )
       markdown_contribution_test_dispatch(updated.dom.source_toggle, "click")
       viewer.set_value(
-        "LATEST\nLATEST TWO\nLATEST THREE\nLATEST FOUR\nLATEST FIVE",
+        (
+          #|LATEST
+          #|LATEST TWO
+          #|LATEST THREE
+          #|LATEST FOUR
+          #|LATEST FIVE
+        ),
       )
       // A hidden block keeps its already-rendered source untouched and skips
       // range extraction/tokenization until it is selected again.
@@ -616,7 +665,11 @@ test "same-key Markdown update retains the ViewZone and target identities" {
 ///|
 test "Markdown comment theme changes retain the ViewZone and render target" {
   with_markdown_contribution_viewer(
-    "one\ntwo\nthree",
+    (
+      #|one
+      #|two
+      #|three
+    ),
     (viewer, _provider_blocks) => {
       let state = markdown_contribution_state(viewer)
       let entry = state.rendered["2:3"]
@@ -644,7 +697,14 @@ test "Markdown comment theme changes retain the ViewZone and render target" {
     },
     provider_blocks=[
       markdown_contribution_block(
-        2, 3, "```mermaid\nflowchart LR\nA --> B\n```",
+        2,
+        3,
+        (
+          #|```mermaid
+          #|flowchart LR
+          #|A --> B
+          #|```
+        ),
       ),
     ],
   )
@@ -653,7 +713,14 @@ test "Markdown comment theme changes retain the ViewZone and render target" {
 ///|
 test "Markdown comment reconciliation adds removes and moves blocks by stable range key" {
   with_markdown_contribution_viewer(
-    "one\ntwo\nthree\nfour\nfive\nsix",
+    (
+      #|one
+      #|two
+      #|three
+      #|four
+      #|five
+      #|six
+    ),
     (viewer, provider_blocks) => {
       let state = markdown_contribution_state(viewer)
       let removed_outer = state.rendered["1:2"].zone.dom_node
@@ -664,7 +731,16 @@ test "Markdown comment reconciliation adds removes and moves blocks by stable ra
         markdown_contribution_block(3, 4, "retained"),
         markdown_contribution_block(5, 6, "added"),
       ]
-      viewer.set_value("ONE\nTWO\nTHREE\nFOUR\nFIVE\nSIX")
+      viewer.set_value(
+        (
+          #|ONE
+          #|TWO
+          #|THREE
+          #|FOUR
+          #|FIVE
+          #|SIX
+        ),
+      )
 
       assert_eq(state.rendered.length(), 3)
       assert_false(state.rendered.contains("1:2"))
@@ -705,7 +781,13 @@ test "reentrant ViewZone events leave nested flush and replacement projections c
   // A ViewZone listener flushes the same model while the outer refresh has
   // installed its temporary zone but has not yet installed its hidden source.
   with_markdown_contribution_viewer(
-    "one\ntwo\nthree\nfour\nfive",
+    (
+      #|one
+      #|two
+      #|three
+      #|four
+      #|five
+    ),
     (viewer, provider_blocks) => {
       let state = markdown_contribution_state(viewer)
       provider_blocks.val = [
@@ -723,7 +805,13 @@ test "reentrant ViewZone events leave nested flush and replacement projections c
             markdown_contribution_block(4, 5, "nested generation"),
           ]
           viewer.set_value(
-            "nested one\nnested two\nnested three\nnested four\nnested five",
+            (
+              #|nested one
+              #|nested two
+              #|nested three
+              #|nested four
+              #|nested five
+            ),
           )
         }
       })
@@ -745,7 +833,13 @@ test "reentrant ViewZone events leave nested flush and replacement projections c
       assert_eq(viewer.test_view_model().line_count(), 4)
       assert_eq(
         viewer.get_value(),
-        "nested one\nnested two\nnested three\nnested four\nnested five",
+        (
+          #|nested one
+          #|nested two
+          #|nested three
+          #|nested four
+          #|nested five
+        ),
       )
       assert_eq(viewer.get_model().unwrap().get_line_content(4), "nested four")
     },
@@ -756,12 +850,24 @@ test "reentrant ViewZone events leave nested flush and replacement projections c
   // ViewModel must be cleaned, and only the replacement model's newer range
   // may survive after the stale outer stack resumes.
   with_markdown_contribution_viewer(
-    "old one\nold two\nold three\nold four\nold five",
+    (
+      #|old one
+      #|old two
+      #|old three
+      #|old four
+      #|old five
+    ),
     (viewer, provider_blocks) => {
       let state = markdown_contribution_state(viewer)
       let old_view_model = viewer.test_view_model()
       let replacement = test_model(
-        "new one\nnew two\nnew three\nnew four\nnew five",
+        (
+          #|new one
+          #|new two
+          #|new three
+          #|new four
+          #|new five
+        ),
       )
       provider_blocks.val = [
         markdown_contribution_block(2, 3, "stale old-model range"),
@@ -796,7 +902,13 @@ test "reentrant ViewZone events leave nested flush and replacement projections c
       assert_eq(viewer.test_view_model().get_whitespaces().length(), 1)
       assert_eq(
         viewer.get_value(),
-        "new one\nnew two\nnew three\nnew four\nnew five",
+        (
+          #|new one
+          #|new two
+          #|new three
+          #|new four
+          #|new five
+        ),
       )
 
       // End the replacement's ownership before disposing the caller-owned
@@ -829,7 +941,15 @@ test "reentrant provider reserves the nested content generation before returning
     log_service=log_service.log_handle(),
   )
   defer services.dispose()
-  let model = test_model("one\ntwo\nthree\nfour\nfive")
+  let model = test_model(
+    (
+      #|one
+      #|two
+      #|three
+      #|four
+      #|five
+    ),
+  )
   defer model.dispose()
   let viewer = Viewer::Viewer(services~)
   defer viewer.dispose()
@@ -846,7 +966,13 @@ test "reentrant provider reserves the nested content generation before returning
       markdown_contribution_block(4, 5, "nested provider result"),
     ]
     viewer.set_value(
-      "provider one\nprovider two\nprovider three\nprovider four\nprovider five",
+      (
+        #|provider one
+        #|provider two
+        #|provider three
+        #|provider four
+        #|provider five
+      ),
     )
   })
 
@@ -864,14 +990,24 @@ test "reentrant provider reserves the nested content generation before returning
   assert_eq(viewer.test_view_model().get_whitespaces().length(), 1)
   assert_eq(
     viewer.get_value(),
-    "provider one\nprovider two\nprovider three\nprovider four\nprovider five",
+    (
+      #|provider one
+      #|provider two
+      #|provider three
+      #|provider four
+      #|provider five
+    ),
   )
 }
 
 ///|
 test "Markdown comment model detach replacement reattach and Viewer disposal release ownership" {
   with_markdown_contribution_viewer(
-    "one\ntwo\nthree",
+    (
+      #|one
+      #|two
+      #|three
+    ),
     (viewer, _provider_blocks) => {
       let state = markdown_contribution_state(viewer)
       let first_view_model = viewer.test_view_model()
@@ -886,7 +1022,13 @@ test "Markdown comment model detach replacement reattach and Viewer disposal rel
 
       // Reattach after the explicit no-model state creates fresh per-model
       // ViewZone/DOM ownership under the same Viewer-lived contribution.
-      let second_model = test_model("second one\nsecond two\nsecond three")
+      let second_model = test_model(
+        (
+          #|second one
+          #|second two
+          #|second three
+        ),
+      )
       defer second_model.dispose()
       viewer.set_model(Some(second_model))
       let second_view_model = viewer.test_view_model()
@@ -899,7 +1041,13 @@ test "Markdown comment model detach replacement reattach and Viewer disposal rel
 
       // A direct replacement clears the outgoing source/resources before
       // installing a third model's fresh entry.
-      let third_model = test_model("third one\nthird two\nthird three")
+      let third_model = test_model(
+        (
+          #|third one
+          #|third two
+          #|third three
+        ),
+      )
       defer third_model.dispose()
       viewer.set_model(Some(third_model))
       let third_view_model = viewer.test_view_model()
@@ -940,7 +1088,15 @@ test "headless Markdown contribution never hides source without replacement DOM"
     log_service=log_service.log_handle(),
   )
   defer services.dispose()
-  let model = test_model("one\ntwo\nthree\nfour\nfive")
+  let model = test_model(
+    (
+      #|one
+      #|two
+      #|three
+      #|four
+      #|five
+    ),
+  )
   defer model.dispose()
   let viewer = Viewer::Viewer(services~)
   defer viewer.dispose()
@@ -948,10 +1104,27 @@ test "headless Markdown contribution never hides source without replacement DOM"
   assert_eq(markdown_contribution_state(viewer).rendered.length(), 0)
   assert_true(viewer.test_view_model().get_hidden_areas() == [])
   assert_eq(viewer.test_view_model().line_count(), 5)
-  assert_eq(viewer.get_value(), "one\ntwo\nthree\nfour\nfive")
+  assert_eq(
+    viewer.get_value(),
+    (
+      #|one
+      #|two
+      #|three
+      #|four
+      #|five
+    ),
+  )
 
   provider_blocks.val = [markdown_contribution_block(1, 2, "changed")]
-  viewer.set_value("ONE\nTWO\nTHREE\nFOUR\nFIVE")
+  viewer.set_value(
+    (
+      #|ONE
+      #|TWO
+      #|THREE
+      #|FOUR
+      #|FIVE
+    ),
+  )
   assert_eq(markdown_contribution_state(viewer).rendered.length(), 0)
   assert_true(viewer.test_view_model().get_hidden_areas() == [])
   assert_eq(viewer.test_view_model().line_count(), 5)
@@ -960,7 +1133,12 @@ test "headless Markdown contribution never hides source without replacement DOM"
 ///|
 test "Markdown comment height callbacks ignore zero disconnected stale and disposed observations" {
   with_markdown_contribution_viewer(
-    "one\ntwo\nthree\nfour",
+    (
+      #|one
+      #|two
+      #|three
+      #|four
+    ),
     (viewer, provider_blocks) => {
       let state = markdown_contribution_state(viewer)
       let entry = state.rendered["2:3"]
@@ -1008,7 +1186,7 @@ test "Markdown comment height callbacks ignore zero disconnected stale and dispo
       viewer.apply_markdown_comment_height(
         state,
         "2:3",
-        entry.zone_id + "-stale",
+        "\{entry.zone_id}-stale",
         entry.generation,
         40,
       )
@@ -1016,7 +1194,14 @@ test "Markdown comment height callbacks ignore zero disconnected stale and dispo
       assert_eq(entry.zone.height_in_px, Some(24.0))
 
       provider_blocks.val = []
-      viewer.set_value("ONE\nTWO\nTHREE\nFOUR")
+      viewer.set_value(
+        (
+          #|ONE
+          #|TWO
+          #|THREE
+          #|FOUR
+        ),
+      )
       viewer.cancel_render_frame()
       if mounted_test_frame_count() > 0 {
         run_one_mounted_test_frame()

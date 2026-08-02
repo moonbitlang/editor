@@ -151,19 +151,19 @@ pub fn TokenMetadata::get_class_name_from_metadata(
   self : TokenMetadata,
 ) -> String {
   let foreground = self.get_foreground()
-  let mut class_name = "mtk" + foreground.to_string()
+  let mut class_name = "mtk\{foreground.to_string()}"
   let font_style = self.get_font_style()
   if (font_style & FONT_STYLE_ITALIC) != 0 {
-    class_name = class_name + " mtki"
+    class_name = "\{class_name} mtki"
   }
   if (font_style & FONT_STYLE_BOLD) != 0 {
-    class_name = class_name + " mtkb"
+    class_name = "\{class_name} mtkb"
   }
   if (font_style & FONT_STYLE_UNDERLINE) != 0 {
-    class_name = class_name + " mtku"
+    class_name = "\{class_name} mtku"
   }
   if (font_style & FONT_STYLE_STRIKETHROUGH) != 0 {
-    class_name = class_name + " mtks"
+    class_name = "\{class_name} mtks"
   }
   class_name
 }
@@ -176,22 +176,22 @@ fn TokenMetadata::get_inline_style_from_metadata(
 ) -> String {
   let foreground = self.get_foreground()
   let font_style = self.get_font_style()
-  let mut result = "color: " + color_map[foreground] + ";"
+  let mut result = "color: \{color_map[foreground]};"
   if (font_style & FONT_STYLE_ITALIC) != 0 {
-    result = result + "font-style: italic;"
+    result = "\{result}font-style: italic;"
   }
   if (font_style & FONT_STYLE_BOLD) != 0 {
-    result = result + "font-weight: bold;"
+    result = "\{result}font-weight: bold;"
   }
   let mut text_decoration = ""
   if (font_style & FONT_STYLE_UNDERLINE) != 0 {
-    text_decoration = text_decoration + " underline"
+    text_decoration = "\{text_decoration} underline"
   }
   if (font_style & FONT_STYLE_STRIKETHROUGH) != 0 {
-    text_decoration = text_decoration + " line-through"
+    text_decoration = "\{text_decoration} line-through"
   }
   if text_decoration != "" {
-    result = result + "text-decoration:" + text_decoration + ";"
+    result = "\{result}text-decoration:\{text_decoration};"
   }
   result
 }

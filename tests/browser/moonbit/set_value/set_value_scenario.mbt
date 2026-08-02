@@ -117,8 +117,7 @@ fn run_set_value_test() -> Unit {
       ctx.metric_int("modified", modified)
       ctx.assert_true(
         modified == 1,
-        "expected one modified gutter piece after the flush, saw " +
-        modified.to_string(),
+        "expected one modified gutter piece after the flush, saw \{modified.to_string()}",
       )
       // The flush destroyed the folding decorations; the content-change
       // subscription re-derived the same region.
@@ -146,11 +145,7 @@ fn run_set_value_test() -> Unit {
       wait_for_text(ctx, "gamma_document_marker", 80, () => {
         ctx.assert_true(
           viewer.get_scroll_top() == scrolled_top,
-          "the scroll position did not survive the flush (saw " +
-          viewer.get_scroll_top().to_string() +
-          ", expected " +
-          scrolled_top.to_string() +
-          ")",
+          "the scroll position did not survive the flush (saw \{viewer.get_scroll_top().to_string()}, expected \{scrolled_top.to_string()})",
         )
         ctx.assert_true(
           @support.query_attribute(
@@ -181,11 +176,7 @@ fn wait_for_text(
   }
   if remaining <= 0 {
     ctx.fail(
-      "timed out waiting for text: " +
-      needle +
-      " (saw: " +
-      @support.query_text(".viewer-host") +
-      ")",
+      "timed out waiting for text: \{needle} (saw: \{@support.query_text(".viewer-host")})",
     )
     ctx.finish()
     return

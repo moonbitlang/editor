@@ -64,66 +64,73 @@ fn reset_cursor_mouse_reveal(viewer : Viewer) -> Unit {
 
 ///|
 test "registered cursor keys move and extend the primary selection" {
-  with_test_viewer("  abc\nxy\nlast", viewer => {
-    viewer.set_position(Position(2, 1))
-    assert_true(dispatch_navigation_key(viewer, "ArrowLeft"))
-    assert_position(viewer.get_position().unwrap(), Position(1, 6))
+  with_test_viewer(
+    (
+      #|  abc
+      #|xy
+      #|last
+    ),
+    viewer => {
+      viewer.set_position(Position(2, 1))
+      assert_true(dispatch_navigation_key(viewer, "ArrowLeft"))
+      assert_position(viewer.get_position().unwrap(), Position(1, 6))
 
-    viewer.set_position(Position(1, 6))
-    assert_true(dispatch_navigation_key(viewer, "ArrowRight"))
-    assert_position(viewer.get_position().unwrap(), Position(2, 1))
+      viewer.set_position(Position(1, 6))
+      assert_true(dispatch_navigation_key(viewer, "ArrowRight"))
+      assert_position(viewer.get_position().unwrap(), Position(2, 1))
 
-    viewer.set_position(Position(2, 2))
-    assert_true(dispatch_navigation_key(viewer, "ArrowUp"))
-    assert_position(viewer.get_position().unwrap(), Position(1, 2))
-    viewer.set_position(Position(2, 2))
-    assert_true(dispatch_navigation_key(viewer, "ArrowDown"))
-    assert_position(viewer.get_position().unwrap(), Position(3, 2))
+      viewer.set_position(Position(2, 2))
+      assert_true(dispatch_navigation_key(viewer, "ArrowUp"))
+      assert_position(viewer.get_position().unwrap(), Position(1, 2))
+      viewer.set_position(Position(2, 2))
+      assert_true(dispatch_navigation_key(viewer, "ArrowDown"))
+      assert_position(viewer.get_position().unwrap(), Position(3, 2))
 
-    viewer.set_position(Position(1, 5))
-    assert_true(dispatch_navigation_key(viewer, "Home"))
-    assert_position(viewer.get_position().unwrap(), Position(1, 3))
-    viewer.set_position(Position(1, 5))
-    assert_true(dispatch_navigation_key(viewer, "End"))
-    assert_position(viewer.get_position().unwrap(), Position(1, 6))
+      viewer.set_position(Position(1, 5))
+      assert_true(dispatch_navigation_key(viewer, "Home"))
+      assert_position(viewer.get_position().unwrap(), Position(1, 3))
+      viewer.set_position(Position(1, 5))
+      assert_true(dispatch_navigation_key(viewer, "End"))
+      assert_position(viewer.get_position().unwrap(), Position(1, 6))
 
-    viewer.set_position(Position(1, 2))
-    assert_true(dispatch_navigation_key(viewer, "ArrowRight", shift=true))
-    assert_selection_eq(
-      viewer.get_selection().unwrap(),
-      Selection(Position(1, 2), Position(1, 3)),
-    )
-    viewer.set_position(Position(2, 2))
-    assert_true(dispatch_navigation_key(viewer, "ArrowLeft", shift=true))
-    assert_selection_eq(
-      viewer.get_selection().unwrap(),
-      Selection(Position(2, 2), Position(2, 1)),
-    )
-    viewer.set_position(Position(2, 2))
-    assert_true(dispatch_navigation_key(viewer, "ArrowUp", shift=true))
-    assert_selection_eq(
-      viewer.get_selection().unwrap(),
-      Selection(Position(2, 2), Position(1, 2)),
-    )
-    viewer.set_position(Position(2, 2))
-    assert_true(dispatch_navigation_key(viewer, "ArrowDown", shift=true))
-    assert_selection_eq(
-      viewer.get_selection().unwrap(),
-      Selection(Position(2, 2), Position(3, 2)),
-    )
-    viewer.set_position(Position(1, 5))
-    assert_true(dispatch_navigation_key(viewer, "Home", shift=true))
-    assert_selection_eq(
-      viewer.get_selection().unwrap(),
-      Selection(Position(1, 5), Position(1, 3)),
-    )
-    viewer.set_position(Position(1, 5))
-    assert_true(dispatch_navigation_key(viewer, "End", shift=true))
-    assert_selection_eq(
-      viewer.get_selection().unwrap(),
-      Selection(Position(1, 5), Position(1, 6)),
-    )
-  })
+      viewer.set_position(Position(1, 2))
+      assert_true(dispatch_navigation_key(viewer, "ArrowRight", shift=true))
+      assert_selection_eq(
+        viewer.get_selection().unwrap(),
+        Selection(Position(1, 2), Position(1, 3)),
+      )
+      viewer.set_position(Position(2, 2))
+      assert_true(dispatch_navigation_key(viewer, "ArrowLeft", shift=true))
+      assert_selection_eq(
+        viewer.get_selection().unwrap(),
+        Selection(Position(2, 2), Position(2, 1)),
+      )
+      viewer.set_position(Position(2, 2))
+      assert_true(dispatch_navigation_key(viewer, "ArrowUp", shift=true))
+      assert_selection_eq(
+        viewer.get_selection().unwrap(),
+        Selection(Position(2, 2), Position(1, 2)),
+      )
+      viewer.set_position(Position(2, 2))
+      assert_true(dispatch_navigation_key(viewer, "ArrowDown", shift=true))
+      assert_selection_eq(
+        viewer.get_selection().unwrap(),
+        Selection(Position(2, 2), Position(3, 2)),
+      )
+      viewer.set_position(Position(1, 5))
+      assert_true(dispatch_navigation_key(viewer, "Home", shift=true))
+      assert_selection_eq(
+        viewer.get_selection().unwrap(),
+        Selection(Position(1, 5), Position(1, 3)),
+      )
+      viewer.set_position(Position(1, 5))
+      assert_true(dispatch_navigation_key(viewer, "End", shift=true))
+      assert_selection_eq(
+        viewer.get_selection().unwrap(),
+        Selection(Position(1, 5), Position(1, 6)),
+      )
+    },
+  )
 }
 
 ///|
@@ -210,94 +217,101 @@ test "cursor key precondition and exact chords fall through when unmatched" {
 
 ///|
 test "live single-cursor mouse branches use the shared transition spine" {
-  with_test_viewer("alpha beta!\nsecond line\nthird", viewer => {
-    let events : Array[@view_model.CursorStateChangedEvent] = []
-    viewer
-    .test_view_model()
-    .on_cursor_state_changed(event => events.push(event))
-    |> ignore
+  with_test_viewer(
+    (
+      #|alpha beta!
+      #|second line
+      #|third
+    ),
+    viewer => {
+      let events : Array[@view_model.CursorStateChangedEvent] = []
+      viewer
+      .test_view_model()
+      .on_cursor_state_changed(event => events.push(event))
+      |> ignore
 
-    // Ordinary click and drag.
-    viewer.dispatch_mouse(mouse_dispatch_data(Position(1, 3)))
-    assert_cursor(viewer, Selection(Position(1, 3), Position(1, 3)))
-    assert_last_cursor_transition(events, "mouse")
-    viewer.dispatch_mouse(
-      mouse_dispatch_data(Position(1, 6), in_selection_mode=true),
-    )
-    assert_cursor(viewer, Selection(Position(1, 3), Position(1, 6)))
-    assert_last_cursor_transition(events, "mouse")
+      // Ordinary click and drag.
+      viewer.dispatch_mouse(mouse_dispatch_data(Position(1, 3)))
+      assert_cursor(viewer, Selection(Position(1, 3), Position(1, 3)))
+      assert_last_cursor_transition(events, "mouse")
+      viewer.dispatch_mouse(
+        mouse_dispatch_data(Position(1, 6), in_selection_mode=true),
+      )
+      assert_cursor(viewer, Selection(Position(1, 3), Position(1, 6)))
+      assert_last_cursor_transition(events, "mouse")
 
-    // Double click and its word-granularity drag continuation.
-    viewer.dispatch_mouse(
-      mouse_dispatch_data(Position(1, 8), mouse_down_count=2),
-    )
-    assert_cursor(viewer, Selection(Position(1, 7), Position(1, 11)))
-    assert_last_cursor_transition(events, "mouse")
-    viewer.dispatch_mouse(
-      mouse_dispatch_data(
-        Position(1, 2),
-        in_selection_mode=true,
-        mouse_down_count=2,
-      ),
-    )
-    assert_cursor(viewer, Selection(Position(1, 11), Position(1, 1)))
-    assert_last_cursor_transition(events, "mouse")
+      // Double click and its word-granularity drag continuation.
+      viewer.dispatch_mouse(
+        mouse_dispatch_data(Position(1, 8), mouse_down_count=2),
+      )
+      assert_cursor(viewer, Selection(Position(1, 7), Position(1, 11)))
+      assert_last_cursor_transition(events, "mouse")
+      viewer.dispatch_mouse(
+        mouse_dispatch_data(
+          Position(1, 2),
+          in_selection_mode=true,
+          mouse_down_count=2,
+        ),
+      )
+      assert_cursor(viewer, Selection(Position(1, 11), Position(1, 1)))
+      assert_last_cursor_transition(events, "mouse")
 
-    // Triple click and its whole-line drag continuation.
-    viewer.dispatch_mouse(
-      mouse_dispatch_data(Position(2, 4), mouse_down_count=3),
-    )
-    assert_cursor(viewer, Selection(Position(2, 1), Position(3, 1)))
-    assert_last_cursor_transition(events, "mouse")
-    viewer.dispatch_mouse(
-      mouse_dispatch_data(
-        Position(1, 4),
-        in_selection_mode=true,
-        mouse_down_count=3,
-      ),
-    )
-    assert_cursor(viewer, Selection(Position(3, 1), Position(1, 1)))
-    assert_last_cursor_transition(events, "mouse")
+      // Triple click and its whole-line drag continuation.
+      viewer.dispatch_mouse(
+        mouse_dispatch_data(Position(2, 4), mouse_down_count=3),
+      )
+      assert_cursor(viewer, Selection(Position(2, 1), Position(3, 1)))
+      assert_last_cursor_transition(events, "mouse")
+      viewer.dispatch_mouse(
+        mouse_dispatch_data(
+          Position(1, 4),
+          in_selection_mode=true,
+          mouse_down_count=3,
+        ),
+      )
+      assert_cursor(viewer, Selection(Position(3, 1), Position(1, 1)))
+      assert_last_cursor_transition(events, "mouse")
 
-    // Gutter click/drag takes the same live whole-line paths.
-    viewer.dispatch_mouse(
-      mouse_dispatch_data(Position(1, 4), started_on_line_numbers=true),
-    )
-    assert_cursor(viewer, Selection(Position(1, 1), Position(2, 1)))
-    assert_last_cursor_transition(events, "mouse")
-    viewer.dispatch_mouse(
-      mouse_dispatch_data(
-        Position(2, 3),
-        started_on_line_numbers=true,
-        in_selection_mode=true,
-      ),
-    )
-    assert_cursor(viewer, Selection(Position(1, 1), Position(3, 1)))
-    assert_last_cursor_transition(events, "mouse")
+      // Gutter click/drag takes the same live whole-line paths.
+      viewer.dispatch_mouse(
+        mouse_dispatch_data(Position(1, 4), started_on_line_numbers=true),
+      )
+      assert_cursor(viewer, Selection(Position(1, 1), Position(2, 1)))
+      assert_last_cursor_transition(events, "mouse")
+      viewer.dispatch_mouse(
+        mouse_dispatch_data(
+          Position(2, 3),
+          started_on_line_numbers=true,
+          in_selection_mode=true,
+        ),
+      )
+      assert_cursor(viewer, Selection(Position(1, 1), Position(3, 1)))
+      assert_last_cursor_transition(events, "mouse")
 
-    // Four or more clicks route SelectAll through its source-shaped keyboard
-    // command body even though the caller is pointer dispatch.
-    viewer.dispatch_mouse(
-      mouse_dispatch_data(Position(2, 2), mouse_down_count=4),
-    )
-    assert_cursor(viewer, Selection(Position(1, 1), Position(3, 6)))
-    assert_last_cursor_transition(events, "keyboard")
-    viewer.dispatch_mouse(
-      mouse_dispatch_data(Position(2, 2), mouse_down_count=5),
-    )
-    // Repeating SelectAll is an exact-state no-op.
-    assert_eq(events.length(), 9)
+      // Four or more clicks route SelectAll through its source-shaped keyboard
+      // command body even though the caller is pointer dispatch.
+      viewer.dispatch_mouse(
+        mouse_dispatch_data(Position(2, 2), mouse_down_count=4),
+      )
+      assert_cursor(viewer, Selection(Position(1, 1), Position(3, 6)))
+      assert_last_cursor_transition(events, "keyboard")
+      viewer.dispatch_mouse(
+        mouse_dispatch_data(Position(2, 2), mouse_down_count=5),
+      )
+      // Repeating SelectAll is an exact-state no-op.
+      assert_eq(events.length(), 9)
 
-    // `_validateViewColumn` clamps a below-minimum pointer column before the
-    // ordinary MoveTo adapter commits its view state.
-    viewer.dispatch_mouse(mouse_dispatch_data(Position(1, 0)))
-    assert_cursor(viewer, Selection(Position(1, 1), Position(1, 1)))
-    assert_position(
-      viewer.test_cursor().get_view_selection().get_position(),
-      Position(1, 1),
-    )
-    assert_last_cursor_transition(events, "mouse")
-  })
+      // `_validateViewColumn` clamps a below-minimum pointer column before the
+      // ordinary MoveTo adapter commits its view state.
+      viewer.dispatch_mouse(mouse_dispatch_data(Position(1, 0)))
+      assert_cursor(viewer, Selection(Position(1, 1), Position(1, 1)))
+      assert_position(
+        viewer.test_cursor().get_view_selection().get_position(),
+        Position(1, 1),
+      )
+      assert_last_cursor_transition(events, "mouse")
+    },
+  )
 }
 
 ///|
@@ -545,7 +559,11 @@ test "cursor Smooth reveal downgrades an exact one-line vertical delta" {
 test "line drag keeps wrapped injected-text view position authoritative" {
   let options = ViewerOptions(soft_wrap=true)
   with_test_viewer(
-    "a\nabcdef\nlast",
+    (
+      #|a
+      #|abcdef
+      #|last
+    ),
     viewer => {
       viewer.test_set_soft_wrap_column(5)
       install_cursor_test_injected_text(viewer, Position(2, 4), "X")
@@ -641,32 +659,43 @@ test "dollar punctuation keeps its one-unit word anchor through continuation" {
 
 ///|
 test "shift gutter forward from Simple uses line continuation" {
-  with_test_viewer("one\ntwo\nthree", viewer => {
-    viewer.set_position(Position(1, 2))
-    assert_true(
-      viewer.test_cursor().model_state().selection_start_kind == Simple,
-    )
-    viewer.dispatch_mouse(
-      mouse_dispatch_data(
-        Position(2, 2),
-        started_on_line_numbers=true,
-        in_selection_mode=true,
-        reveal_type=None,
-      ),
-    )
-    let state = viewer.test_cursor().get_primary_cursor_state()
-    assert_position(state.view_state.position, Position(3, 1))
-    assert_position(state.model_state.position, Position(3, 1))
-    assert_true(state.model_state.selection_start_kind == Simple)
-    assert_cursor(viewer, Selection(Position(1, 2), Position(3, 1)))
-  })
+  with_test_viewer(
+    (
+      #|one
+      #|two
+      #|three
+    ),
+    viewer => {
+      viewer.set_position(Position(1, 2))
+      assert_true(
+        viewer.test_cursor().model_state().selection_start_kind == Simple,
+      )
+      viewer.dispatch_mouse(
+        mouse_dispatch_data(
+          Position(2, 2),
+          started_on_line_numbers=true,
+          in_selection_mode=true,
+          reveal_type=None,
+        ),
+      )
+      let state = viewer.test_cursor().get_primary_cursor_state()
+      assert_position(state.view_state.position, Position(3, 1))
+      assert_position(state.model_state.position, Position(3, 1))
+      assert_true(state.model_state.selection_start_kind == Simple)
+      assert_cursor(viewer, Selection(Position(1, 2), Position(3, 1)))
+    },
+  )
 }
 
 ///|
 test "mouse reveal uses wrapped injected-text view cursor without round trip" {
   let options = ViewerOptions(soft_wrap=true)
   with_mounted_test_viewer(
-    "a\nabcdefghijklmnop\nlast",
+    (
+      #|a
+      #|abcdefghijklmnop
+      #|last
+    ),
     viewer => {
       viewer.test_set_soft_wrap_column(6)
       install_cursor_test_injected_text(

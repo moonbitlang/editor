@@ -75,7 +75,11 @@ fn zone_test_view_model() -> @view_model.ViewModel {
     "moonbit",
     1,
     "",
-    "line one\nline two\nline three",
+    (
+      #|line one
+      #|line two
+      #|line three
+    ),
   )
   let view_model = @view_model.ViewModel(model)
   view_model.view_layout.change_whitespace(accessor => {

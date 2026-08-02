@@ -83,26 +83,22 @@ fn wait_for_text(
     ctx.metric_int("deleted", deleted)
     ctx.assert_true(
       added == 1,
-      "expected one added gutter piece, saw " + added.to_string(),
+      "expected one added gutter piece, saw \{added.to_string()}",
     )
     ctx.assert_true(
       modified == 1,
-      "expected one modified gutter piece, saw " + modified.to_string(),
+      "expected one modified gutter piece, saw \{modified.to_string()}",
     )
     ctx.assert_true(
       deleted == 1,
-      "expected one deleted gutter piece, saw " + deleted.to_string(),
+      "expected one deleted gutter piece, saw \{deleted.to_string()}",
     )
     ctx.finish()
     return
   }
   if remaining <= 0 {
     ctx.fail(
-      "timed out waiting for text: " +
-      needle +
-      " (saw: " +
-      @support.query_text(".viewer-host") +
-      ")",
+      "timed out waiting for text: \{needle} (saw: \{@support.query_text(".viewer-host")})",
     )
     ctx.finish()
     return

@@ -111,8 +111,7 @@ fn DefinitionMessageWidget::after_render(
   let below = if preference == Some(Below) { " below" } else { "" }
   self.root.set_attribute(
     "class",
-    "monaco-editor-overlaymessage moonbit-viewer-definition-message fadeIn" +
-    below,
+    "monaco-editor-overlaymessage moonbit-viewer-definition-message fadeIn\{below}",
   )
 }
 

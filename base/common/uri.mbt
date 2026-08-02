@@ -224,7 +224,7 @@ fn reference_resolution(scheme : String, path : String) -> String {
       if path == "" {
         "/"
       } else if char_code_at(path, 0) != char_forward_slash {
-        "/" + path
+        "/\{path}"
       } else {
         path
       }
@@ -721,7 +721,7 @@ pub fn uri_to_fs_path(uri : Uri, keep_drive_letter_casing : Bool) -> String {
   let mut value = ""
   if uri.authority != "" && uri.path.length() > 1 && uri.scheme == "file" {
     // unc path: file://shares/c$/far/boo
-    value = "//" + uri.authority + uri.path
+    value = "//\{uri.authority}\{uri.path}"
   } else if char_code_at(uri.path, 0) == char_forward_slash &&
     (
       (
@@ -767,10 +767,10 @@ fn as_formatted(uri : Uri, skip_encoding : Bool) -> String {
   let query = uri.query
   let fragment = uri.fragment
   if scheme != "" {
-    res = res + scheme + ":"
+    res = "\{res}\{scheme}:"
   }
   if authority != "" || scheme == "file" {
-    res = res + "//"
+    res = "\{res}//"
   }
   if authority != "" {
     let mut idx = index_of_char(authority, '@'.to_int(), 0)
@@ -784,10 +784,10 @@ fn as_formatted(uri : Uri, skip_encoding : Bool) -> String {
       } else {
         // <user>:<pass>@<auth>
         res = res + encoder(js_slice(userinfo, 0, end=idx), false, false)
-        res = res + ":"
+        res = "\{res}:"
         res = res + encoder(js_slice(userinfo, idx + 1), false, true)
       }
-      res = res + "@"
+      res = "\{res}@"
     }
     authority = to_lower_js(authority)
     idx = last_index_of_char(authority, char_colon)
@@ -806,33 +806,27 @@ fn as_formatted(uri : Uri, skip_encoding : Bool) -> String {
       char_code_at(path, 2) == char_colon {
       let code = char_code_at(path, 1)
       if code >= 'A'.to_int() && code <= 'Z'.to_int() {
-        path = "/" +
-          Int::unsafe_to_char(code + 32).to_string() +
-          ":" +
-          js_slice(path, 3) // "/c:".length === 3
+        path = "/\{Int::unsafe_to_char(code + 32).to_string()}:\{js_slice(path, 3)}" // "/c:".length === 3
       }
     } else if path.length() >= 2 && char_code_at(path, 1) == char_colon {
       let code = char_code_at(path, 0)
       if code >= 'A'.to_int() && code <= 'Z'.to_int() {
-        path = Int::unsafe_to_char(code + 32).to_string() +
-          ":" +
-          js_slice(path, 2) // "/c:".length === 3
+        path = "\{Int::unsafe_to_char(code + 32).to_string()}:\{js_slice(path, 2)}" // "/c:".length === 3
       }
     }
     // encode the rest of the path
     res = res + encoder(path, true, false)
   }
   if query != "" {
-    res = res + "?" + encoder(query, false, false)
+    res = "\{res}?\{encoder(query, false, false)}"
   }
   if fragment != "" {
-    res = res +
-      "#" +
-      (if !skip_encoding {
-        encode_uri_component_fast(fragment, false, false)
-      } else {
-        fragment
-      })
+    let encoded_fragment = if !skip_encoding {
+      encode_uri_component_fast(fragment, false, false)
+    } else {
+      fragment
+    }
+    res = "\{res}#\{encoded_fragment}"
   }
   res
 }

@@ -37,9 +37,7 @@ pub fn should_render_line_highlight_in_content(
 /// `CurrentLineHighlightOverlay._renderOne`'s class string
 /// (`currentLineHighlight.ts:210`).
 pub fn current_line_content_class(in_margin~ : Bool, exact~ : Bool) -> String {
-  "current-line" +
-  (if in_margin { " current-line-both" } else { "" }) +
-  (if exact { " current-line-exact" } else { "" })
+  "current-line\{(if in_margin { " current-line-both" } else { "" })}\{(if exact { " current-line-exact" } else { "" })}"
 }
 
 ///|
@@ -50,10 +48,7 @@ pub fn current_line_margin_class(
   other~ : Bool,
   exact~ : Bool,
 ) -> String {
-  "current-line" +
-  (if in_margin { " current-line-margin" } else { "" }) +
-  (if other { " current-line-margin-both" } else { "" }) +
-  (if in_margin && exact { " current-line-exact-margin" } else { "" })
+  "current-line\{(if in_margin { " current-line-margin" } else { "" })}\{(if other { " current-line-margin-both" } else { "" })}\{(if in_margin && exact { " current-line-exact-margin" } else { "" })}"
 }
 
 ///|

@@ -33,7 +33,11 @@ test "code override receives MoonBit DTO, fence language, and active language" {
   let observed_source_line = Ref(0)
   let observed_active = Ref("")
   let rendered = render_markdown(
-    "```mbt extra\nlet answer = 42\n```",
+    (
+      #|```mbt extra
+      #|let answer = 42
+      #|```
+    ),
     language_id="moonbit",
     code_block_renderer=fn(block, active_language_id) {
       observed_code.val = block.code

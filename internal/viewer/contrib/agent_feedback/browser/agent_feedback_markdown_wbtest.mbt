@@ -208,7 +208,7 @@ fn agent_feedback_test_comment(
   let feedback : @agent_feedback_api.AgentFeedback = {
     id,
     kind: AgentReview,
-    resource: @base_common.Uri::file("/feedback/" + id + ".mbt"),
+    resource: @base_common.Uri::file("/feedback/\{id}.mbt"),
     range: Range(line, 1, line, 2),
     text,
     replies,
@@ -241,7 +241,7 @@ fn AgentFeedbackEditorWidget::test_wrap_markdown_disposable(
   dispose_count : Ref[Int],
 ) -> Unit {
   guard self.markdown_disposables.get(key) is Some(original) else {
-    abort("missing Markdown target " + key)
+    abort("missing Markdown target \{key}")
   }
   self.markdown_disposables.set(
     key,
@@ -259,7 +259,13 @@ test "feedback comments and replies use the shared safe Markdown output" {
     "safe",
     1,
     "<img src=x onerror=alert(1)> [unsafe](javascript:alert(1)) **safe**",
-    ["**reply**\n\n<script>alert(2)</script>"],
+    [
+      (
+        #|**reply**
+        #|
+        #|<script>alert(2)</script>
+      ),
+    ],
   )
   let widget = AgentFeedbackEditorWidget(
     agent_feedback_test_host(Ref(0)),

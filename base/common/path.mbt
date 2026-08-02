@@ -183,7 +183,7 @@ fn normalize_string(
           }
         }
         if allow_above_root {
-          res = if res.length() > 0 { res + separator + ".." } else { ".." }
+          res = if res.length() > 0 { "\{res}\{separator}.." } else { ".." }
           last_segment_length = 2
         }
       } else {
@@ -240,7 +240,7 @@ pub fn Win32::resolve(path_segments : Array[String]) -> String {
       // absolute path, get cwd for that drive, or the process cwd if
       // the drive cwd is not available. We're sure the device is not
       // a UNC path at this points, because UNC paths are always absolute.
-      path = match env("=" + resolved_device) {
+      path = match env("=\{resolved_device}") {
         Some(value) => value
         None => cwd()
       }
@@ -248,7 +248,7 @@ pub fn Win32::resolve(path_segments : Array[String]) -> String {
       // to our drive. If not, default to the drive's root.
       if to_lower_js(js_slice(path, 0, end=2)) != to_lower_js(resolved_device) &&
         char_code_at(path, 2) == char_backward_slash {
-        path = resolved_device + "\\"
+        path = "\{resolved_device}\\"
       }
     }
     let len = path.length()
@@ -295,7 +295,7 @@ pub fn Win32::resolve(path_segments : Array[String]) -> String {
             }
             if j == len || j != last {
               // We matched a UNC root
-              device = "\\\\" + first_part + "\\" + js_slice(path, last, end=j)
+              device = "\\\\\{first_part}\\\{js_slice(path, last, end=j)}"
               root_end = j
             }
           }
@@ -331,7 +331,7 @@ pub fn Win32::resolve(path_segments : Array[String]) -> String {
         break
       }
     } else {
-      resolved_tail = js_slice(path, root_end) + "\\" + resolved_tail
+      resolved_tail = "\{js_slice(path, root_end)}\\\{resolved_tail}"
       resolved_absolute = is_abs
       if is_abs && resolved_device.length() > 0 {
         break
@@ -352,7 +352,7 @@ pub fn Win32::resolve(path_segments : Array[String]) -> String {
     is_path_separator,
   )
   if resolved_absolute {
-    resolved_device + "\\" + resolved_tail
+    "\{resolved_device}\\\{resolved_tail}"
   } else {
     let joined = resolved_device + resolved_tail
     if joined.length() > 0 {
@@ -415,13 +415,11 @@ pub fn Win32::normalize(path : String) -> String {
             // We matched a UNC root only
             // Return the normalized version of the UNC root since there
             // is nothing left to process
-            return "\\\\" + first_part + "\\" + js_slice(path, last) + "\\"
+            return "\\\\\{first_part}\\\{js_slice(path, last)}\\"
           }
           if j != last {
             // We matched a UNC root with leftovers
-            device = Some(
-              "\\\\" + first_part + "\\" + js_slice(path, last, end=j),
-            )
+            device = Some("\\\\\{first_part}\\\{js_slice(path, last, end=j)}")
             root_end = j
           }
         }
@@ -449,7 +447,7 @@ pub fn Win32::normalize(path : String) -> String {
     tail = "."
   }
   if tail.length() > 0 && is_path_separator(char_code_at(path, len - 1)) {
-    tail = tail + "\\"
+    tail = "\{tail}\\"
   }
   if !is_abs && device is None && path.contains(":") {
     // If the original path was not absolute and if we have not been able to
@@ -459,19 +457,19 @@ pub fn Win32::normalize(path : String) -> String {
     if tail.length() >= 2 &&
       is_windows_device_root(char_code_at(tail, 0)) &&
       char_code_at(tail, 1) == char_colon {
-      return ".\\" + tail
+      return ".\\\{tail}"
     }
     let mut index = index_of_char(path, char_colon, 0)
     while index != -1 {
       if index == len - 1 || is_path_separator(char_code_at(path, index + 1)) {
-        return ".\\" + tail
+        return ".\\\{tail}"
       }
       index = index_of_char(path, char_colon, index + 1)
     }
   }
   match device {
-    None => if is_abs { "\\" + tail } else { tail }
-    Some(device) => if is_abs { device + "\\" + tail } else { device + tail }
+    None => if is_abs { "\\\{tail}" } else { tail }
+    Some(device) => if is_abs { "\{device}\\\{tail}" } else { device + tail }
   }
 }
 
@@ -506,7 +504,7 @@ pub fn Win32::join(paths : Array[String]) -> String {
     if arg.length() > 0 {
       match joined {
         None => continue Some(arg), Some(arg)
-        Some(so_far) => continue Some(so_far + "\\" + arg), first_part
+        Some(so_far) => continue Some("\{so_far}\\\{arg}"), first_part
       }
     }
   } nobreak {
@@ -557,7 +555,7 @@ pub fn Win32::join(paths : Array[String]) -> String {
 
     // Replace the slashes if needed
     if slash_count >= 2 {
-      joined = "\\" + js_slice(joined, slash_count)
+      joined = "\\\{js_slice(joined, slash_count)}"
     }
   }
   Win32::normalize(joined)
@@ -607,7 +605,7 @@ pub fn Win32::relative(from : String, to : String) -> String {
         return join_range(to_split[:], i, "\\")
       }
       if from_len > length {
-        return "..\\".repeat(from_len - 1 - i) + ".."
+        return "\{"..\\".repeat(from_len - 1 - i)}.."
       }
       return ""
     }
@@ -1014,13 +1012,13 @@ pub fn Posix::resolve(path_segments : Array[String]) -> String {
       i -= 1
       continue
     }
-    resolved_path = path + "/" + resolved_path
+    resolved_path = "\{path}/\{resolved_path}"
     resolved_absolute = char_code_at(path, 0) == char_forward_slash
     i -= 1
   }
   if !resolved_absolute {
     let cwd = posix_cwd()
-    resolved_path = cwd + "/" + resolved_path
+    resolved_path = "\{cwd}/\{resolved_path}"
     resolved_absolute = char_code_at(cwd, 0) == char_forward_slash
   }
 
@@ -1035,7 +1033,7 @@ pub fn Posix::resolve(path_segments : Array[String]) -> String {
     is_posix_path_separator,
   )
   if resolved_absolute {
-    return "/" + resolved_path
+    return "/\{resolved_path}"
   }
   if resolved_path.length() > 0 {
     resolved_path
@@ -1063,10 +1061,10 @@ pub fn Posix::normalize(path : String) -> String {
     return if trailing_separator { "./" } else { "." }
   }
   if trailing_separator {
-    path = path + "/"
+    path = "\{path}/"
   }
   if is_abs {
-    "/" + path
+    "/\{path}"
   } else {
     path
   }

@@ -290,7 +290,7 @@ pub fn AgentFeedbackService::add_feedback(
   state? : @agent_feedback_api.AgentFeedbackState = Accepted,
 ) -> @agent_feedback_api.AgentFeedback {
   let feedback : @agent_feedback_api.AgentFeedback = {
-    id: "viewer-feedback-" + self.next_feedback_handle.to_string(),
+    id: "viewer-feedback-\{self.next_feedback_handle.to_string()}",
     text,
     resource,
     range,

@@ -11,10 +11,23 @@ test "set_value keeps the model and view model instances" {
   with_test_viewer("one\ntwo", viewer => {
     let model_before = viewer.get_model().unwrap()
     let model_data_generation_before = viewer.model_slot.generation
-    viewer.set_value("a\nb\nc")
+    viewer.set_value(
+      (
+        #|a
+        #|b
+        #|c
+      ),
+    )
     assert_true(viewer.get_model().unwrap().same(model_before))
     assert_eq(viewer.model_slot.generation, model_data_generation_before)
-    assert_eq(viewer.get_value(), "a\nb\nc")
+    assert_eq(
+      viewer.get_value(),
+      (
+        #|a
+        #|b
+        #|c
+      ),
+    )
     assert_eq(viewer.test_view_model().line_count(), 3)
   })
 }
@@ -78,12 +91,19 @@ test "set_value preserves the headless model slot without browser state" {
 
 ///|
 test "set_value resets the cursor to the origin" {
-  with_test_viewer("one\ntwo\nthree", viewer => {
-    viewer.test_cursor().move_to(Position(3, 2), false) |> ignore
-    assert_true(viewer.get_position().unwrap() == Position(3, 2))
-    viewer.set_value("a\nb")
-    assert_true(viewer.get_position().unwrap() == Position(1, 1))
-  })
+  with_test_viewer(
+    (
+      #|one
+      #|two
+      #|three
+    ),
+    viewer => {
+      viewer.test_cursor().move_to(Position(3, 2), false) |> ignore
+      assert_true(viewer.get_position().unwrap() == Position(3, 2))
+      viewer.set_value("a\nb")
+      assert_true(viewer.get_position().unwrap() == Position(1, 1))
+    },
+  )
 }
 
 ///|

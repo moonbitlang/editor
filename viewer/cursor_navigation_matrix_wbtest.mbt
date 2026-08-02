@@ -66,43 +66,67 @@ test "Home End cover whitespace empty wrapped continuation and boundaries" {
 
 ///|
 test "nonempty selection collapse paths cover Left Right Up Down" {
-  with_test_viewer("abcdefgh\nabcdefgh\nabcdefgh\nabcdefgh\nabcdefgh", viewer => {
-    let selection = @core.Selection(Position(2, 3), Position(4, 5))
-    viewer.set_selection(selection)
-    assert_true(dispatch_navigation_key(viewer, "ArrowLeft"))
-    assert_position(viewer.get_position().unwrap(), Position(2, 3))
-    assert_true(viewer.get_selection().unwrap().is_empty())
+  with_test_viewer(
+    (
+      #|abcdefgh
+      #|abcdefgh
+      #|abcdefgh
+      #|abcdefgh
+      #|abcdefgh
+    ),
+    viewer => {
+      let selection = @core.Selection(Position(2, 3), Position(4, 5))
+      viewer.set_selection(selection)
+      assert_true(dispatch_navigation_key(viewer, "ArrowLeft"))
+      assert_position(viewer.get_position().unwrap(), Position(2, 3))
+      assert_true(viewer.get_selection().unwrap().is_empty())
 
-    viewer.set_selection(selection)
-    assert_true(dispatch_navigation_key(viewer, "ArrowRight"))
-    assert_position(viewer.get_position().unwrap(), Position(4, 5))
-    assert_true(viewer.get_selection().unwrap().is_empty())
+      viewer.set_selection(selection)
+      assert_true(dispatch_navigation_key(viewer, "ArrowRight"))
+      assert_position(viewer.get_position().unwrap(), Position(4, 5))
+      assert_true(viewer.get_selection().unwrap().is_empty())
 
-    viewer.set_selection(selection)
-    assert_true(dispatch_navigation_key(viewer, "ArrowUp"))
-    assert_position(viewer.get_position().unwrap(), Position(1, 3))
-    assert_true(viewer.get_selection().unwrap().is_empty())
+      viewer.set_selection(selection)
+      assert_true(dispatch_navigation_key(viewer, "ArrowUp"))
+      assert_position(viewer.get_position().unwrap(), Position(1, 3))
+      assert_true(viewer.get_selection().unwrap().is_empty())
 
-    viewer.set_selection(selection)
-    assert_true(dispatch_navigation_key(viewer, "ArrowDown"))
-    assert_position(viewer.get_position().unwrap(), Position(5, 5))
-    assert_true(viewer.get_selection().unwrap().is_empty())
-  })
+      viewer.set_selection(selection)
+      assert_true(dispatch_navigation_key(viewer, "ArrowDown"))
+      assert_position(viewer.get_position().unwrap(), Position(5, 5))
+      assert_true(viewer.get_selection().unwrap().is_empty())
+    },
+  )
 }
 
 ///|
 test "wrapped vertical navigation converts across folded model lines" {
-  with_test_viewer("one\ntwo\nthree\nfour\nfive", viewer => {
-    let view_model = viewer.test_view_model()
-    assert_true(view_model.set_hidden_areas([Range(2, 1, 4, 1)]))
-    viewer.set_position(Position(1, 2))
-    assert_true(dispatch_navigation_key(viewer, "ArrowDown"))
-    assert_position(viewer.get_position().unwrap(), Position(5, 2))
-    assert_position(viewer.test_cursor().view_state().position, Position(2, 2))
-    assert_true(dispatch_navigation_key(viewer, "ArrowUp"))
-    assert_position(viewer.get_position().unwrap(), Position(1, 2))
-    assert_position(viewer.test_cursor().view_state().position, Position(1, 2))
-  })
+  with_test_viewer(
+    (
+      #|one
+      #|two
+      #|three
+      #|four
+      #|five
+    ),
+    viewer => {
+      let view_model = viewer.test_view_model()
+      assert_true(view_model.set_hidden_areas([Range(2, 1, 4, 1)]))
+      viewer.set_position(Position(1, 2))
+      assert_true(dispatch_navigation_key(viewer, "ArrowDown"))
+      assert_position(viewer.get_position().unwrap(), Position(5, 2))
+      assert_position(
+        viewer.test_cursor().view_state().position,
+        Position(2, 2),
+      )
+      assert_true(dispatch_navigation_key(viewer, "ArrowUp"))
+      assert_position(viewer.get_position().unwrap(), Position(1, 2))
+      assert_position(
+        viewer.test_cursor().view_state().position,
+        Position(1, 2),
+      )
+    },
+  )
 }
 
 ///|

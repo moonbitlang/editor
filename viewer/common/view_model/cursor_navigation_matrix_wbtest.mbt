@@ -113,7 +113,17 @@ test "PageUp PageDown preserve visible-column leftovers at tab sizes two and fou
 test "Page axes cover marker zero positive and selection combinations" {
   let view_model = ViewModel::with_options(
     cursor_reference_model(
-      "one\ntwo\nthree\nfour\nfive\nsix\nseven\neight\nnine",
+      (
+        #|one
+        #|two
+        #|three
+        #|four
+        #|five
+        #|six
+        #|seven
+        #|eight
+        #|nine
+      ),
     ),
     ViewModelOptions(tab_size=4),
   )

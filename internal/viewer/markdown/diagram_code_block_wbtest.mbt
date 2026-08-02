@@ -1,13 +1,17 @@
 ///|
 test "exact diago fence renders wrapped SVG before the caller override" {
   let override_called = Ref(false)
-  let rendered = render_markdown("```diago extra\na -> b\n```", code_block_renderer=fn(
-    _,
-    _,
-  ) {
-    override_called.val = true
-    "<pre data-fallback=\"caller\">fallback</pre>"
-  })
+  let rendered = render_markdown(
+    (
+      #|```diago extra
+      #|a -> b
+      #|```
+    ),
+    code_block_renderer=fn(_, _) {
+      override_called.val = true
+      "<pre data-fallback=\"caller\">fallback</pre>"
+    },
+  )
   assert_false(override_called.val)
   assert_true(
     rendered.html.contains(
@@ -21,7 +25,13 @@ test "exact diago fence renders wrapped SVG before the caller override" {
 
 ///|
 test "exact d2 alias renders through the same Diago adapter" {
-  let rendered = render_markdown("```d2\nsource -> viewer\n```")
+  let rendered = render_markdown(
+    (
+      #|```d2
+      #|source -> viewer
+      #|```
+    ),
+  )
   assert_true(
     rendered.html.contains(
       "class=\"moonbit-viewer-markdown-diagram\" data-diagram-language=\"diago\"",
@@ -34,7 +44,11 @@ test "exact d2 alias renders through the same Diago adapter" {
 ///|
 test "invalid diago falls through to the supplied tokenized renderer" {
   let rendered = render_markdown(
-    "```diago\na ->\n```",
+    (
+      #|```diago
+      #|a ->
+      #|```
+    ),
     code_block_renderer=render_tokenized_code_block,
   )
   assert_true(rendered.html.contains("monaco-tokenized-source"))
@@ -45,7 +59,13 @@ test "invalid diago falls through to the supplied tokenized renderer" {
 
 ///|
 test "invalid diago without an override falls through to cmark code HTML" {
-  let rendered = render_markdown("```diago\na ->\n```")
+  let rendered = render_markdown(
+    (
+      #|```diago
+      #|a ->
+      #|```
+    ),
+  )
   assert_true(rendered.html.contains("<pre><code class=\"language-diago\">"))
   assert_true(rendered.html.contains("a -&gt;"))
   assert_false(rendered.html.contains("moonbit-viewer-markdown-diagram"))
@@ -54,22 +74,46 @@ test "invalid diago without an override falls through to cmark code HTML" {
 
 ///|
 test "unsupported and differently cased fences remain ordinary cmark code" {
-  let unknown = render_markdown("```graph\na -> b\n```")
+  let unknown = render_markdown(
+    (
+      #|```graph
+      #|a -> b
+      #|```
+    ),
+  )
   assert_true(unknown.html.contains("<pre><code class=\"language-graph\">"))
   assert_false(unknown.html.contains("moonbit-viewer-markdown-diagram"))
   assert_true(unknown.has_code_block)
 
-  let uml = render_markdown("```uml\nAlice -> Bob\n```")
+  let uml = render_markdown(
+    (
+      #|```uml
+      #|Alice -> Bob
+      #|```
+    ),
+  )
   assert_true(uml.html.contains("<pre><code class=\"language-uml\">"))
   assert_false(uml.html.contains("moonbit-viewer-markdown-diagram"))
   assert_true(uml.has_code_block)
 
-  let plantuml = render_markdown("```plantuml\nAlice -> Bob\n```")
+  let plantuml = render_markdown(
+    (
+      #|```plantuml
+      #|Alice -> Bob
+      #|```
+    ),
+  )
   assert_true(plantuml.html.contains("<pre><code class=\"language-plantuml\">"))
   assert_false(plantuml.html.contains("moonbit-viewer-markdown-diagram"))
   assert_true(plantuml.has_code_block)
 
-  let differently_cased = render_markdown("```Diago\na -> b\n```")
+  let differently_cased = render_markdown(
+    (
+      #|```Diago
+      #|a -> b
+      #|```
+    ),
+  )
   assert_true(
     differently_cased.html.contains("<pre><code class=\"language-Diago\">"),
   )
@@ -82,7 +126,11 @@ test "unsupported and differently cased fences remain ordinary cmark code" {
 ///|
 test "active diago language does not turn unlabelled or indented code into diagrams" {
   let unlabelled = render_markdown(
-    "```\na -> b\n```",
+    (
+      #|```
+      #|a -> b
+      #|```
+    ),
     language_id="diago",
     code_block_renderer=render_tokenized_code_block,
   )

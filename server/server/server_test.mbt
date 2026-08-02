@@ -12,7 +12,7 @@ test "validates readonly remote workspace uris" {
   let absolute = expect_uri("readonly-remote://workspace//tmp/main.mbt")
   match @server.resolve_remote_document_uri(absolute) {
     RemotePathError(error) => assert_true(error.code == ProtocolInvalidUri)
-    ParsedRemotePath(path) => fail("unexpected path " + path.to_string())
+    ParsedRemotePath(path) => fail("unexpected path \{path.to_string()}")
   }
 
   let wrong_scheme = expect_uri(
@@ -20,7 +20,7 @@ test "validates readonly remote workspace uris" {
   )
   match @server.resolve_remote_document_uri(wrong_scheme) {
     RemotePathError(error) => assert_true(error.code == ProtocolInvalidUri)
-    ParsedRemotePath(path) => fail("unexpected path " + path.to_string())
+    ParsedRemotePath(path) => fail("unexpected path \{path.to_string()}")
   }
 }
 
@@ -364,7 +364,7 @@ async test "dispatches language requests through configured providers" {
 fn expect_remote_uri(path : String) -> @base_common.Uri raise {
   match @server.remote_document_uri(path) {
     Some(uri) => uri
-    None => fail("invalid remote path " + path)
+    None => fail("invalid remote path \{path}")
   }
 }
 
@@ -449,7 +449,7 @@ impl @server.ServerHost for FakeServerHost with fn read_text_file(
               display_name=path.display_name(),
               revision=self.revisions
                 .get(key)
-                .unwrap_or("rev-" + text.length().to_string()),
+                .unwrap_or("rev-\{text.length().to_string()}"),
             ),
           )
         None => ServerHostReadError(FileNotFound, "missing file")

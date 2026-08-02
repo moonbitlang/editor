@@ -96,8 +96,7 @@ pub fn MarkdownDocumentHoverWidget::is_visible(
 
 ///|
 fn markdown_hover_range_string(range : @base_common.Range) -> String {
-  "\{range.start_line_number}:\{range.start_column}-" +
-  "\{range.end_line_number}:\{range.end_column}"
+  "\{range.start_line_number}:\{range.start_column}-\{range.end_line_number}:\{range.end_column}"
 }
 
 ///|
@@ -1162,7 +1161,7 @@ fn MarkdownDocumentHoverBridge::refresh_diagnostics(
           }
           let mut class_name = "moonbit-viewer-markdown-diagnostic"
           if resolved.options.class_name != "" {
-            class_name = class_name + " " + resolved.options.class_name
+            class_name = "\{class_name} \{resolved.options.class_name}"
           }
           self.append_projected_span(
             line,

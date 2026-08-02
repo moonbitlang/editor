@@ -4,28 +4,72 @@
 ///|
 test "Markdown comment folded previews require provider opt-in" {
   assert_eq(markdown_comment_folded_preview("---", true), None)
-  assert_eq(markdown_comment_folded_preview("---\n\nOnly summary", true), None)
   assert_eq(
     markdown_comment_folded_preview(
-      "---\n\n# Summary\n\nMore **documentation**.\n\n- detail", true,
+      (
+        #|---
+        #|
+        #|Only summary
+      ),
+      true,
     ),
-    Some("---\n\n# Summary"),
+    None,
+  )
+  assert_eq(
+    markdown_comment_folded_preview(
+      (
+        #|---
+        #|
+        #|# Summary
+        #|
+        #|More **documentation**.
+        #|
+        #|- detail
+      ),
+      true,
+    ),
+    Some(
+      (
+        #|---
+        #|
+        #|# Summary
+      ),
+    ),
   )
   assert_eq(
     markdown_comment_folded_preview(
       "---\r\n\r\nWindows summary\r\n\r\nWindows details", true,
     ),
-    Some("---\n\nWindows summary"),
+    Some(
+      (
+        #|---
+        #|
+        #|Windows summary
+      ),
+    ),
   )
   assert_eq(
     markdown_comment_folded_preview(
       "---\rClassic summary\r\rClassic details", true,
     ),
-    Some("---\n\nClassic summary"),
+    Some(
+      (
+        #|---
+        #|
+        #|Classic summary
+      ),
+    ),
   )
   assert_eq(
     markdown_comment_folded_preview(
-      "---\n\nSummary\n\nOrdinary Markdown stays expanded.", false,
+      (
+        #|---
+        #|
+        #|Summary
+        #|
+        #|Ordinary Markdown stays expanded.
+      ),
+      false,
     ),
     None,
   )
@@ -35,17 +79,39 @@ test "Markdown comment folded previews require provider opt-in" {
   )
   assert_eq(
     markdown_comment_folded_preview(
-      "```mermaid\nflowchart LR\nA --> B\n```", true,
+      (
+        #|```mermaid
+        #|flowchart LR
+        #|A --> B
+        #|```
+      ),
+      true,
     ),
     None,
   )
-  assert_eq(markdown_comment_folded_preview("\n\nOnly line\n\n", true), None)
+  assert_eq(
+    markdown_comment_folded_preview(
+      (
+        #|
+        #|
+        #|Only line
+        #|
+        #|
+      ),
+      true,
+    ),
+    None,
+  )
 }
 
 ///|
 test "foldable Markdown comments start collapsed and preserve state across body replacement" {
   with_markdown_contribution_viewer(
-    "one\ntwo\nthree",
+    (
+      #|one
+      #|two
+      #|three
+    ),
     (viewer, provider_blocks) => {
       let state = markdown_contribution_state(viewer)
       let entry = state.rendered["1:2"]
@@ -73,10 +139,24 @@ test "foldable Markdown comments start collapsed and preserve state across body 
 
       provider_blocks.val = [
         markdown_contribution_block(
-          1, 2, "---\n\nUpdated summary\n\nUpdated details",
+          1,
+          2,
+          (
+            #|---
+            #|
+            #|Updated summary
+            #|
+            #|Updated details
+          ),
         ),
       ]
-      viewer.set_value("ONE\nTWO\nTHREE")
+      viewer.set_value(
+        (
+          #|ONE
+          #|TWO
+          #|THREE
+        ),
+      )
       let updated = state.rendered["1:2"]
       assert_true(updated.fold_expanded.val)
       assert_eq(
@@ -90,7 +170,15 @@ test "foldable Markdown comments start collapsed and preserve state across body 
     },
     provider_blocks=[
       markdown_contribution_block(
-        1, 2, "---\n\nSummary line\n\nFull documentation",
+        1,
+        2,
+        (
+          #|---
+          #|
+          #|Summary line
+          #|
+          #|Full documentation
+        ),
       ),
     ],
     provider_foldable=true,
@@ -100,7 +188,11 @@ test "foldable Markdown comments start collapsed and preserve state across body 
 ///|
 test "separator-only and one-line foldable Markdown comments have no control" {
   with_markdown_contribution_viewer(
-    "one\ntwo\nthree",
+    (
+      #|one
+      #|two
+      #|three
+    ),
     (viewer, _provider_blocks) => {
       let state = markdown_contribution_state(viewer)
       for key in ["1:2", "2:3"] {
@@ -118,7 +210,15 @@ test "separator-only and one-line foldable Markdown comments have no control" {
     },
     provider_blocks=[
       markdown_contribution_block(1, 2, "---"),
-      markdown_contribution_block(2, 3, "---\n\nOne line"),
+      markdown_contribution_block(
+        2,
+        3,
+        (
+          #|---
+          #|
+          #|One line
+        ),
+      ),
     ],
     provider_foldable=true,
   )
@@ -142,7 +242,15 @@ test "ordinary providers cannot opt in by beginning Markdown with a separator" {
     },
     provider_blocks=[
       markdown_contribution_block(
-        1, 2, "---\n\nOrdinary summary\n\nOrdinary details",
+        1,
+        2,
+        (
+          #|---
+          #|
+          #|Ordinary summary
+          #|
+          #|Ordinary details
+        ),
       ),
     ],
   )

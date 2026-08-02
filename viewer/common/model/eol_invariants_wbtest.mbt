@@ -98,15 +98,48 @@ test "fixed-LF construction corpus keeps one coherent coordinate system" {
     ("one\ntwo", "one\ntwo", ["one", "two"]),
     ("one\r\ntwo", "one\ntwo", ["one", "two"]),
     ("one\rtwo", "one\ntwo", ["one", "two"]),
-    ("a\r\nb\nc\rd", "a\nb\nc\nd", ["a", "b", "c", "d"]),
+    (
+      "a\r\nb\nc\rd",
+      (
+        #|a
+        #|b
+        #|c
+        #|d
+      ),
+      ["a", "b", "c", "d"],
+    ),
     ("\r\na", "\na", ["", "a"]),
     ("a\r\n", "a\n", ["a", ""]),
-    ("a\r\n\r\nb", "a\n\nb", ["a", "", "b"]),
+    (
+      "a\r\n\r\nb",
+      (
+        #|a
+        #|
+        #|b
+      ),
+      ["a", "", "b"],
+    ),
     ("\r\n", "\n", ["", ""]),
     ("a\r", "a\n", ["a", ""]),
     ("\rX", "\nX", ["", "X"]),
-    ("\r\r", "\n\n", ["", "", ""]),
-    ("\n\r", "\n\n", ["", "", ""]),
+    (
+      "\r\r",
+      (
+        #|
+        #|
+        #|
+      ),
+      ["", "", ""],
+    ),
+    (
+      "\n\r",
+      (
+        #|
+        #|
+        #|
+      ),
+      ["", "", ""],
+    ),
     ("a\u{2028}b\u{2029}c", "a\u{2028}b\u{2029}c", ["a\u{2028}b\u{2029}c"]),
     ("\u{FEFF}a\r\nb", "\u{FEFF}a\nb", ["\u{FEFF}a", "b"]),
     ("a\u{FEFF}b\r\nc", "a\u{FEFF}b\nc", ["a\u{FEFF}b", "c"]),
@@ -142,20 +175,20 @@ test "lone surrogate code units survive EOL and range boundaries" {
   let dc00 = Int::unsafe_to_char(0xDC00).to_string()
   let dfff = Int::unsafe_to_char(0xDFFF).to_string()
   for held in [d800, dbff, dc00, dfff] {
-    let leading = TextSnapshot("\r" + held)
-    eol_assert_same_code_units(leading.get_value(), "\n" + held)
+    let leading = TextSnapshot("\r\{held}")
+    eol_assert_same_code_units(leading.get_value(), "\n\{held}")
     eol_assert_same_code_units(leading.get_line_content(2), held)
     eol_assert_same_code_units(leading.slice(OffsetRange(1, 2)), held)
     eol_assert_same_code_units(
       leading.get_value_in_range(Range(2, 1, 2, 2)),
       held,
     )
-    let trailing = TextSnapshot(held + "\r\n")
-    eol_assert_same_code_units(trailing.get_value(), held + "\n")
+    let trailing = TextSnapshot("\{held}\r\n")
+    eol_assert_same_code_units(trailing.get_value(), "\{held}\n")
     eol_assert_same_code_units(trailing.get_line_content(1), held)
     eol_assert_same_code_units(trailing.slice(OffsetRange(0, 1)), held)
-    let model = wb_model("a\r\n" + held)
-    eol_assert_same_code_units(model.get_value(), "a\n" + held)
+    let model = wb_model("a\r\n\{held}")
+    eol_assert_same_code_units(model.get_value(), "a\n\{held}")
     eol_assert_same_code_units(
       model.get_value_in_range(Range(2, 1, 2, 2)),
       held,
@@ -174,7 +207,19 @@ test "lone surrogate code units survive EOL and range boundaries" {
 /// offset bounds are all UTF-16 bounds, and returned value length must equal
 /// both the slice length and the end-minus-start offset difference.
 test "every small offset range agrees with value and length" {
-  for value in ["", "a", "a\nb", "\na", "a\n", "a\n\nb"] {
+  for
+    value in [
+      "",
+      "a",
+      "a\nb",
+      "\na",
+      "a\n",
+      (
+        #|a
+        #|
+        #|b
+      ),
+    ] {
     let snapshot = TextSnapshot(value)
     let model = wb_model(value)
     for start in 0..<=snapshot.get_length() {
@@ -239,8 +284,8 @@ test "held-unit ORACLE local adaptation preserves one unit and fresh metadata" {
   assert_eq(bare_cr.text, "\n")
   assert_eq(bare_cr.get_length(), 1)
   assert_eq(bare_cr.line_count(), 2)
-  let bom_cr = TextSnapshot(bom + "\r")
-  assert_eq(bom_cr.text, bom + "\n")
+  let bom_cr = TextSnapshot("\{bom}\r")
+  assert_eq(bom_cr.text, "\{bom}\n")
   assert_eq(bom_cr.get_length(), 2)
   for held in [d800, dbff] {
     let bare = TextSnapshot(held)
@@ -253,22 +298,22 @@ test "held-unit ORACLE local adaptation preserves one unit and fresh metadata" {
     assert_eq(prefixed_bom.text[0].to_int(), 0xFEFF)
     assert_eq(prefixed_bom.text[1].to_int(), held[0].to_int())
     assert_eq(prefixed_bom.might_contain_non_basic_ascii(), true)
-    let accepted_prefix = TextSnapshot("a" + held)
+    let accepted_prefix = TextSnapshot("a\{held}")
     assert_eq(accepted_prefix.get_length(), 2)
     assert_eq(accepted_prefix.text[0].to_int(), 'a')
     assert_eq(accepted_prefix.text[1].to_int(), held[0].to_int())
     assert_eq(accepted_prefix.might_contain_non_basic_ascii(), true)
-    let model = wb_model("a" + held)
+    let model = wb_model("a\{held}")
     assert_eq(model.get_value_length(), 2)
     assert_eq(model.get_value().length(), 2)
     assert_eq(model.snapshot.text[1].to_int(), held[0].to_int())
     assert_eq(model.get_value()[1].to_int(), held[0].to_int())
     assert_eq(model.might_contain_non_basic_ascii(), true)
-    let before_cr = TextSnapshot(held + "\r")
+    let before_cr = TextSnapshot("\{held}\r")
     assert_eq(before_cr.get_length(), 2)
     assert_eq(before_cr.text[0].to_int(), held[0].to_int())
     assert_eq(before_cr.text[1].to_int(), 10)
-    let after_cr = TextSnapshot("\r" + held)
+    let after_cr = TextSnapshot("\r\{held}")
     assert_eq(after_cr.get_length(), 2)
     assert_eq(after_cr.text[0].to_int(), 10)
     assert_eq(after_cr.text[1].to_int(), held[0].to_int())

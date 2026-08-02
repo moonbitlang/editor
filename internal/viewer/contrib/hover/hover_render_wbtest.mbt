@@ -33,14 +33,24 @@ test "hover markdown delegates safe conversion to the shared core" {
 test "hover fenced code renders through viewer token classes and reports the fact" {
   register_hover_test_tokenizer()
   let moonbit = render_hover_markdown_for_test(
-    "```moonbit\nfn rendered() -> Unit {}\n```",
+    (
+      #|```moonbit
+      #|fn rendered() -> Unit {}
+      #|```
+    ),
   )
   assert_true(moonbit.has_code_block)
   assert_true(moonbit.html.contains("monaco-tokenized-source"))
   assert_true(moonbit.html.contains("mtk3")) // keyword color id
   assert_true(moonbit.html.contains("fn"))
 
-  let mbt_alias = render_hover_markdown_for_test("```mbt\nlet answer = 42\n```")
+  let mbt_alias = render_hover_markdown_for_test(
+    (
+      #|```mbt
+      #|let answer = 42
+      #|```
+    ),
+  )
   assert_true(mbt_alias.has_code_block)
   assert_true(mbt_alias.html.contains("monaco-tokenized-source"))
   assert_true(mbt_alias.html.contains("mtk3")) // keyword color id
@@ -50,7 +60,11 @@ test "hover fenced code renders through viewer token classes and reports the fac
 test "unlabelled hover code uses the active model language" {
   register_hover_test_tokenizer()
   let rendered = render_hover_markdown_for_test(
-    "```\nfn active_language() -> Unit {}\n```",
+    (
+      #|```
+      #|fn active_language() -> Unit {}
+      #|```
+    ),
   )
   assert_true(rendered.has_code_block)
   assert_true(rendered.html.contains("monaco-tokenized-source"))
@@ -61,7 +75,11 @@ test "unlabelled hover code uses the active model language" {
 test "hover unknown fenced code keeps content as default plain text" {
   register_hover_test_tokenizer()
   let rendered = render_hover_markdown_for_test(
-    "```unknown\nnot really code\n```",
+    (
+      #|```unknown
+      #|not really code
+      #|```
+    ),
   )
   assert_true(rendered.has_code_block)
   assert_true(rendered.html.contains("monaco-tokenized-source"))

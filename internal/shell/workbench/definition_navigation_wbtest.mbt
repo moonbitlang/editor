@@ -1,8 +1,6 @@
 ///|
 fn definition_navigation_test_uri(name : String) -> @base_common.Uri {
-  try! @base_common.Uri::parse(
-    "readonly-remote://workspace/src/" + name + ".mbt",
-  )
+  try! @base_common.Uri::parse("readonly-remote://workspace/src/\{name}.mbt")
 }
 
 ///|

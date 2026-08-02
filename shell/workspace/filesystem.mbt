@@ -122,7 +122,7 @@ pub async fn read_document(
     return DocumentReadFailed(
       DocumentError(
         InvalidUri,
-        "No filesystem provider is registered for URI scheme " + uri.scheme,
+        "No filesystem provider is registered for URI scheme \{uri.scheme}",
         uri~,
       ),
     )

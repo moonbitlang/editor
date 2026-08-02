@@ -2033,7 +2033,7 @@ fn assert_segments(
 ///|
 /// A token part `mtk<cls>` ending at `end_index` (Monaco's `createPart`).
 fn p(end_index : Int, cls : Int) -> LinePart {
-  LinePart(end_index, "mtk" + cls.to_string())
+  LinePart(end_index, "mtk\{cls.to_string()}")
 }
 
 ///|
@@ -2180,7 +2180,13 @@ fn cmap(out : RenderLineOutput2) -> String {
 /// Asserts the inner HTML equals Monaco's inflated snapshot HTML.
 fn assert_html(out : RenderLineOutput2, expected : String) -> Unit raise {
   guard inner(out) == expected else {
-    fail("Monaco render html mismatch:\n got: \{inner(out)}\n exp: \{expected}")
+    fail(
+      (
+        $|Monaco render html mismatch:
+        $| got: \{inner(out)}
+        $| exp: \{expected}
+      ),
+    )
   }
 }
 
@@ -2189,7 +2195,11 @@ fn assert_html(out : RenderLineOutput2, expected : String) -> Unit raise {
 fn assert_map(out : RenderLineOutput2, expected : String) -> Unit raise {
   guard cmap(out) == expected else {
     fail(
-      "Monaco render mapping mismatch:\n got: \{cmap(out)}\n exp: \{expected}",
+      (
+        $|Monaco render mapping mismatch:
+        $| got: \{cmap(out)}
+        $| exp: \{expected}
+      ),
     )
   }
   let mapping = out.character_mapping

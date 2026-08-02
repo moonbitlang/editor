@@ -312,10 +312,7 @@ pub fn DefinitionPeekWidget::set_locations(
     position_label.append_child(
       document
       .create_text_node(
-        ":" +
-        position.line_number.to_string() +
-        ":" +
-        position.column.to_string(),
+        ":\{position.line_number.to_string()}:\{position.column.to_string()}",
       )
       .as_node(),
     )
@@ -539,9 +536,9 @@ fn DefinitionPeekWidget::update_title(self : DefinitionPeekWidget) -> Unit {
   let location = self.locations[self.selected_index]
   let count = self.locations.length()
   let meta = if count == 1 {
-    count.to_string() + " result"
+    "\{count.to_string()} result"
   } else {
-    count.to_string() + " results"
+    "\{count.to_string()} results"
   }
   self.set_title(
     @base_common.basename_or_authority(location.uri),
@@ -613,9 +610,5 @@ fn definition_peek_item_class(selected : Bool) -> String {
 ///|
 fn definition_peek_location_label(location : @language.Location) -> String {
   let start = location.range.get_start_position()
-  location.uri.to_string() +
-  ":" +
-  start.line_number.to_string() +
-  ":" +
-  start.column.to_string()
+  "\{location.uri.to_string()}:\{start.line_number}:\{start.column}"
 }

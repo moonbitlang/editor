@@ -10,7 +10,7 @@
 
 ///|
 fn feedback_storage_key(resource : @base_common.Uri) -> String {
-  "readonly-editor:agent-feedback:" + resource.to_string()
+  "readonly-editor:agent-feedback:\{resource.to_string()}"
 }
 
 ///|
@@ -141,7 +141,7 @@ fn feedback_item_from_json(
   }
   restored_feedback_count.val += 1
   Some({
-    id: "workbench-restored-" + restored_feedback_count.val.to_string(),
+    id: "workbench-restored-\{restored_feedback_count.val.to_string()}",
     text,
     resource,
     range: Range(sl.to_int(), sc.to_int(), el.to_int(), ec.to_int()),

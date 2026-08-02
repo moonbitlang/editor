@@ -261,11 +261,12 @@ fn markdown_test_render_code_block(
   )
   match code_block.language_id {
     Some("mermaid") =>
-      "<div class=\"moonbit-viewer-markdown-diagram\" " +
-      "data-diagram-language=\"mermaid\" " +
-      "data-mermaid-state=\"fallback\">\n" +
-      fallback +
-      "\n</div>\n"
+      (
+        $|<div class="moonbit-viewer-markdown-diagram" data-diagram-language="mermaid" data-mermaid-state="fallback">
+        $|\{fallback}
+        $|</div>
+        $|
+      )
     _ => fallback
   }
 }
@@ -493,11 +494,11 @@ test "safe DOM and native-link URI policy resolve only allowed schemes" {
   )
   ignore(
     render_markdown(
-      "<a href=\"https://raw.example\">raw</a>\n\n" +
-      "[absolute](https://example.test/a) [relative](guide) " +
-      "[mail](mailto:dev@example.test) [file](file:///tmp/a) " +
-      "[command](command:test) [javascript](javascript:alert(1)) " +
-      "[data](data:text/plain,x)",
+      (
+        #|<a href="https://raw.example">raw</a>
+        #|
+        #|[absolute](https://example.test/a) [relative](guide) [mail](mailto:dev@example.test) [file](file:///tmp/a) [command](command:test) [javascript](javascript:alert(1)) [data](data:text/plain,x)
+      ),
       options~,
       target~,
     ),
@@ -609,7 +610,11 @@ test "diagram wheel ownership follows the dynamic viewport marker and listener l
   install_markdown_test_dom()
   let target = markdown_test_target()
   let rendered = render_markdown(
-    "```graph\nsource\n```",
+    (
+      #|```graph
+      #|source
+      #|```
+    ),
     options=MarkdownRenderOptions(code_block_renderer=fn(_block, _language) {
       "<div class=\"moonbit-viewer-markdown-diagram\" data-diagram-language=\"diago\"><svg></svg></div>"
     }),
@@ -693,7 +698,11 @@ test "postprocess removes non-checkbox inputs and disables task checkboxes" {
   let target = markdown_test_target()
   ignore(
     render_markdown(
-      "```\nignored\n```",
+      (
+        #|```
+        #|ignored
+        #|```
+      ),
       options=MarkdownRenderOptions(code_block_renderer=fn(_block, _language) {
         "<input type=\"text\"><input type=\"checkbox\">"
       }),
@@ -713,9 +722,18 @@ test "Mermaid is exact-lowercase and the option controls all CDN work" {
   let mermaid_loader = markdown_test_mermaid_loader("resolve", "resolve")
   let target = markdown_test_target()
   let source = "<script>alert('escaped')</script>&"
-  let markdown = "```mermaid\n" +
-    source +
-    "\n```\n\n```Mermaid\ncase-sensitive\n```\n\n```mermaid-extra\nother\n```"
+  let markdown =
+    $|```mermaid
+    $|\{source}
+    $|```
+    $|
+    $|```Mermaid
+    $|case-sensitive
+    $|```
+    $|
+    $|```mermaid-extra
+    $|other
+    $|```
   let rendered = render_markdown_with_mermaid_loader(
     markdown,
     mermaid_loader,
@@ -757,7 +775,7 @@ test "Mermaid is exact-lowercase and the option controls all CDN work" {
   markdown_test_flush_mermaid_microtasks()
   assert_eq(markdown_test_mermaid_load_count(), 1)
   assert_eq(markdown_test_mermaid_render_count(), 1)
-  assert_eq(markdown_test_mermaid_render_source(0), source + "\n")
+  assert_eq(markdown_test_mermaid_render_source(0), "\{source}\n")
   assert_eq(markdown_test_count(enabled_target, "svg"), 1)
   enabled.dispose.dispose()
 }
@@ -769,8 +787,17 @@ test "successful Mermaid commits use the pinned CDN config unique ids and size c
   let target = markdown_test_target()
   let size_changes = Ref(0)
   let rendered = render_markdown_with_mermaid_loader(
-    "```mermaid\ngraph TD\n  A --> B\n```\n\n" +
-    "```mermaid\nsequenceDiagram\n  A->>B: hello\n```",
+    (
+      #|```mermaid
+      #|graph TD
+      #|  A --> B
+      #|```
+      #|
+      #|```mermaid
+      #|sequenceDiagram
+      #|  A->>B: hello
+      #|```
+    ),
     mermaid_loader,
     options=MarkdownRenderOptions(
       code_block_renderer=markdown_test_render_code_block,
@@ -803,10 +830,21 @@ test "successful Mermaid commits use the pinned CDN config unique ids and size c
   assert_true(markdown_test_mermaid_config_has_secure(0, "themeVariables"))
   assert_true(markdown_test_mermaid_config_has_secure(0, "themeCSS"))
   assert_true(markdown_test_mermaid_config_has_secure(0, "darkMode"))
-  assert_eq(markdown_test_mermaid_render_source(0), "graph TD\n  A --> B\n")
+  assert_eq(
+    markdown_test_mermaid_render_source(0),
+    (
+      #|graph TD
+      #|  A --> B
+      #|
+    ),
+  )
   assert_eq(
     markdown_test_mermaid_render_source(1),
-    "sequenceDiagram\n  A->>B: hello\n",
+    (
+      #|sequenceDiagram
+      #|  A->>B: hello
+      #|
+    ),
   )
   assert_false(
     markdown_test_mermaid_render_id(0) == markdown_test_mermaid_render_id(1),
@@ -824,7 +862,12 @@ test "Mermaid ids avoid host and temporary-element collisions" {
   markdown_test_seed_mermaid_id_collisions()
   let target = markdown_test_target()
   let rendered = render_markdown_with_mermaid_loader(
-    "```mermaid\ngraph TD\n  A --> B\n```",
+    (
+      #|```mermaid
+      #|graph TD
+      #|  A --> B
+      #|```
+    ),
     mermaid_loader,
     options=MarkdownRenderOptions(
       code_block_renderer=markdown_test_render_code_block,
@@ -856,7 +899,12 @@ test "Mermaid load and syntax failures keep fallback and retry cleanly" {
   let load_target = markdown_test_target()
   let load_size_changes = Ref(0)
   let load_failure = render_markdown_with_mermaid_loader(
-    "```mermaid\ngraph TD\n  offline --> fallback\n```",
+    (
+      #|```mermaid
+      #|graph TD
+      #|  offline --> fallback
+      #|```
+    ),
     load_mermaid_loader,
     options=MarkdownRenderOptions(
       code_block_renderer=markdown_test_render_code_block,
@@ -888,7 +936,11 @@ test "Mermaid load and syntax failures keep fallback and retry cleanly" {
   let syntax_target = markdown_test_target()
   let syntax_size_changes = Ref(0)
   let syntax_failure = render_markdown_with_mermaid_loader(
-    "```mermaid\nthis is invalid Mermaid\n```",
+    (
+      #|```mermaid
+      #|this is invalid Mermaid
+      #|```
+    ),
     syntax_mermaid_loader,
     options=MarkdownRenderOptions(
       code_block_renderer=markdown_test_render_code_block,
@@ -925,7 +977,12 @@ test "target reuse and dispose reject late Mermaid render commits" {
   let target = markdown_test_target()
   let first_size_changes = Ref(0)
   let first = render_markdown_with_mermaid_loader(
-    "```mermaid\ngraph TD\n  old --> stale\n```",
+    (
+      #|```mermaid
+      #|graph TD
+      #|  old --> stale
+      #|```
+    ),
     mermaid_loader,
     options=MarkdownRenderOptions(
       code_block_renderer=markdown_test_render_code_block,
@@ -940,7 +997,12 @@ test "target reuse and dispose reject late Mermaid render commits" {
 
   let second_size_changes = Ref(0)
   let second = render_markdown_with_mermaid_loader(
-    "```mermaid\ngraph TD\n  current --> visible\n```",
+    (
+      #|```mermaid
+      #|graph TD
+      #|  current --> visible
+      #|```
+    ),
     mermaid_loader,
     options=MarkdownRenderOptions(
       code_block_renderer=markdown_test_render_code_block,
@@ -976,7 +1038,12 @@ test "target reuse and dispose reject late Mermaid render commits" {
 
   let third_size_changes = Ref(0)
   let third = render_markdown_with_mermaid_loader(
-    "```mermaid\ngraph TD\n  disposed --> fallback\n```",
+    (
+      #|```mermaid
+      #|graph TD
+      #|  disposed --> fallback
+      #|```
+    ),
     mermaid_loader,
     options=MarkdownRenderOptions(
       code_block_renderer=markdown_test_render_code_block,
@@ -1009,7 +1076,12 @@ test "theme rerender keeps the last SVG until the newest epoch succeeds" {
   let target = markdown_test_target()
   let size_changes = Ref(0)
   let rendered = render_markdown_with_mermaid_loader(
-    "```mermaid\ngraph TD\n  theme --> redraw\n```",
+    (
+      #|```mermaid
+      #|graph TD
+      #|  theme --> redraw
+      #|```
+    ),
     mermaid_loader,
     options=MarkdownRenderOptions(
       code_block_renderer=markdown_test_render_code_block,

@@ -5,7 +5,7 @@
 ///|
 fn icon_svg(class : String, children : Array[@svg.Svg]) -> @html.Html {
   @svg.svg(
-    class="icon " + class,
+    class="icon \{class}",
     width=16,
     height=16,
     view_box="0 0 16 16",

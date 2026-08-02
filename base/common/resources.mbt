@@ -359,7 +359,7 @@ pub fn ExtUri::add_trailing_path_separator(
       char_code_at(p, p.length() - 1) == char_forward_slash
   }
   if !is_root_sep && !has_trailing_path_separator(resource, sep~) {
-    return try! resource.with_(path=resource.path + "/")
+    return try! resource.with_(path="\{resource.path}/")
   }
   resource
 }

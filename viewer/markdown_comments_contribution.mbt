@@ -177,9 +177,7 @@ fn Viewer::markdown_comment_contribution(
 ///|
 fn markdown_comment_key(block : @language.MarkdownCommentBlock) -> String {
   let range = block.line_range
-  range.start_line_number.to_string() +
-  ":" +
-  range.end_line_number_exclusive.to_string()
+  "\{range.start_line_number.to_string()}:\{range.end_line_number_exclusive.to_string()}"
 }
 
 ///|
@@ -285,11 +283,12 @@ fn render_markdown_comment_code_block(
   )
   match code_block.language_id {
     Some("mermaid") =>
-      "<div class=\"moonbit-viewer-markdown-diagram\" " +
-      "data-diagram-language=\"mermaid\" " +
-      "data-mermaid-state=\"fallback\">\n" +
-      fallback +
-      "\n</div>\n"
+      (
+        $|<div class="moonbit-viewer-markdown-diagram" data-diagram-language="mermaid" data-mermaid-state="fallback">
+        $|\{fallback}
+        $|</div>
+        $|
+      )
     _ => fallback
   }
 }
@@ -365,7 +364,13 @@ fn markdown_comment_folded_preview(
   if trimmed_preview.has_prefix("```") || trimmed_preview.has_prefix("~~~") {
     return None
   }
-  Some("---\n\n" + preview)
+  Some(
+    (
+      $|---
+      $|
+      $|\{preview}
+    ),
+  )
 }
 
 ///|

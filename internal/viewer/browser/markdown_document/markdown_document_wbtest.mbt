@@ -132,10 +132,7 @@ test "semantic tokenized HTML has one source-bearing element per projected line"
   assert_eq(blank.displayed_text, "")
   assert_true(
     html.contains(
-      "data-markdown-code-line=\"1\" " +
-      "data-markdown-source-line=\"\{blank.source_line_number}\" " +
-      "data-markdown-source-start=\"\{blank.source_range.start}\" " +
-      "data-markdown-source-end=\"\{blank.source_range.end_exclusive}\">",
+      "data-markdown-code-line=\"1\" data-markdown-source-line=\"\{blank.source_line_number}\" data-markdown-source-start=\"\{blank.source_range.start}\" data-markdown-source-end=\"\{blank.source_range.end_exclusive}\">",
     ),
   )
   assert_false(html.contains("&#8203;"))
@@ -178,7 +175,11 @@ test "semantic line wrapping preserves escaped delimiter text and every blank li
 ///|
 test "semantic wrapping keeps astral UTF-16 text and fails closed on isolated surrogate cleanup" {
   let astral = projected_document_code_block(
-    "```mbt check\nlet planet = \"🪐\"\n```",
+    (
+      #|```mbt check
+      #|let planet = "🪐"
+      #|```
+    ),
   )
   let astral_html = render_markdown_document_code_block(
     astral,
@@ -235,7 +236,13 @@ test "semantic wrapping tokenizes the whole block before splitting lines" {
 
 ///|
 test "semantic wrapper fails closed when shared tokenizer line shape drifts" {
-  let block = projected_document_code_block("```mbt check\nlet exact = 1\n```")
+  let block = projected_document_code_block(
+    (
+      #|```mbt check
+      #|let exact = 1
+      #|```
+    ),
+  )
   let malformed =
     #|<div class="monaco-tokenized-source"><span class="mtk1">wrong</span></div>
   assert_eq(render_semantic_tokenized_code_lines(block, malformed), malformed)

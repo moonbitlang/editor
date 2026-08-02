@@ -555,13 +555,20 @@ fn assert_cursor(viewer : Viewer, expected : @core.Selection) -> Unit raise {
 /// `set_model`. With a measured viewport the whole short document is the
 /// window.
 test "set_model populates the view model without attaching" {
-  with_test_viewer("alpha\nbeta\ngamma", viewer => {
-    viewer.test_set_viewport(width=800.0, height=400.0)
-    let window = viewer.test_window()
-    assert_eq(window.start, 1)
-    assert_eq(window.end, 4)
-    assert_eq(viewer.test_view_model().line_count(), 3)
-  })
+  with_test_viewer(
+    (
+      #|alpha
+      #|beta
+      #|gamma
+    ),
+    viewer => {
+      viewer.test_set_viewport(width=800.0, height=400.0)
+      let window = viewer.test_window()
+      assert_eq(window.start, 1)
+      assert_eq(window.end, 4)
+      assert_eq(viewer.test_view_model().line_count(), 3)
+    },
+  )
 }
 
 ///|

@@ -79,7 +79,12 @@ test "view models react first to model changes" {
 ///|
 test "issue #44805: No visible lines via API call" {
   let model = view_model_impl_reference_model(
-    "line1\nline2\nline3", "/issue-44805-api.mbt",
+    (
+      #|line1
+      #|line2
+      #|line3
+    ),
+    "/issue-44805-api.mbt",
   )
   let view_model = ViewModel(model)
   assert_eq(view_model.line_count(), 3)
@@ -107,7 +112,12 @@ test "issue #44805: No visible lines via API call" {
 ///|
 test "model-token callback converts wrapped and hidden ranges before outgoing delivery" {
   let model = view_model_impl_reference_model(
-    "abcdefghij\nhidden\nuvwxyz", "/model-token-order.mbt",
+    (
+      #|abcdefghij
+      #|hidden
+      #|uvwxyz
+    ),
+    "/model-token-order.mbt",
   )
   let original : Ref[@model.ModelTokensChangedEvent?] = Ref(None)
   let _model_subscription = model.on_did_change_tokens(event => {

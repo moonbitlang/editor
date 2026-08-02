@@ -31,9 +31,25 @@ test "selection clipboard uses normalized offsets and text for every EOL form" {
   let cases : Array[(String, String)] = [
     ("a\r\nb", "a\nb"),
     ("a\rb", "a\nb"),
-    ("a\r\nb\rc\nd", "a\nb\nc\nd"),
+    (
+      "a\r\nb\rc\nd",
+      (
+        #|a
+        #|b
+        #|c
+        #|d
+      ),
+    ),
     ("tail\r\n", "tail\n"),
-    ("🙂\r\nβ\r中\n", "🙂\nβ\n中\n"),
+    (
+      "🙂\r\nβ\r中\n",
+      (
+        #|🙂
+        #|β
+        #|中
+        #|
+      ),
+    ),
     ("\u{FEFF}head\r\ntail", "\u{FEFF}head\ntail"),
   ]
   for sample in cases {

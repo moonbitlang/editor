@@ -20,7 +20,7 @@ test "folding decoration controls preserve mouseover always and never policies" 
   assert_eq(always.description, "folding-expanded-visual-decoration")
   assert_eq(
     always.first_line_decoration_class_name,
-    Some("alwaysShowFoldIcons " + FOLDING_EXPANDED_ICON_CLASS),
+    Some("alwaysShowFoldIcons \{FOLDING_EXPANDED_ICON_CLASS}"),
   )
 
   provider.update_options(

@@ -22,7 +22,7 @@ async fn main {
     moon_command=config.moon_command,
     browse_root=config.browse_root,
   ) catch {
-    error => abort("Readonly editor native server failed: " + error.to_string())
+    error => abort("Readonly editor native server failed: \{error.to_string()}")
   }
 }
 

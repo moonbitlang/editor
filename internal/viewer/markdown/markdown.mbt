@@ -131,7 +131,7 @@ fn markdown_code_block_text(block : @cmark.CodeBlock) -> String {
   if lines.length() == 0 {
     ""
   } else {
-    lines.join("\n") + "\n"
+    "\{lines.join("\n")}\n"
   }
 }
 
@@ -147,7 +147,7 @@ fn markdown_conversion_result(
   let html = convert() catch {
     _ =>
       return {
-        html: "<p>" + @common.escape_html(markdown) + "</p>\n",
+        html: "<p>\{@common.escape_html(markdown)}</p>\n",
         has_code_block: false,
         projection: empty_markdown_document_projection(),
       }

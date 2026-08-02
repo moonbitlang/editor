@@ -41,9 +41,10 @@ fn render_diago_svg(source : String) -> String? {
 
 ///|
 fn wrap_diagram_svg(language_id : String, svg : String) -> String {
-  "<div class=\"moonbit-viewer-markdown-diagram\" data-diagram-language=\"" +
-  language_id +
-  "\">\n" +
-  svg +
-  "\n</div>\n"
+  (
+    $|<div class="moonbit-viewer-markdown-diagram" data-diagram-language="\{language_id}">
+    $|\{svg}
+    $|</div>
+    $|
+  )
 }

@@ -32,11 +32,7 @@ fn prepare_line_numbers_render(
   left~ : Double,
   width~ : Double,
 ) -> Array[String] {
-  let common = "<div class=\"line-numbers\" style=\"left:" +
-    left.to_string() +
-    "px;width:" +
-    width.to_string() +
-    "px;\">"
+  let common = "<div class=\"line-numbers\" style=\"left:\{left.to_string()}px;width:\{width.to_string()}px;\">"
   let output : Array[String] = []
   for index in 0..<viewport.lines.length() {
     let view_line = viewport.start_line_number + index
@@ -53,7 +49,7 @@ fn prepare_line_numbers_render(
       output.push("")
       continue
     }
-    output.push(common + model_position.line_number.to_string() + "</div>")
+    output.push("\{common}\{model_position.line_number.to_string()}</div>")
   }
   output
 }

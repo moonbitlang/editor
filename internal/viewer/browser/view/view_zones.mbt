@@ -673,7 +673,7 @@ fn ViewZones::report_callback_error(
     Some(context) =>
       context.log_service.error(
         "viewer.viewZones",
-        callback_name + " callback failed",
+        "\{callback_name} callback failed",
       )
     None => ()
   }
@@ -774,12 +774,12 @@ let offscreen_absolute_top : Double = -1000000.0
 
 ///|
 fn css_pixels(value : Int) -> String {
-  value.to_string() + "px"
+  "\{value.to_string()}px"
 }
 
 ///|
 fn css_pixels_double(value : Double) -> String {
-  value.to_string() + "px"
+  "\{value.to_string()}px"
 }
 
 ///|

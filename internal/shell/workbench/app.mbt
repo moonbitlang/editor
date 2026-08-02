@@ -837,13 +837,13 @@ fn model_to_view(model : @model.TextModel) -> WorkbenchDocumentView {
 ///|
 fn text_model_harness_json(model : @model.TextModel) -> String {
   let mut payload = "{"
-  payload = payload + "\"uri\":" + json_string(model.uri.to_string())
-  payload = payload + ",\"displayName\":" + json_string(model.display_name)
-  payload = payload + ",\"languageId\":" + json_string(model.language_id)
-  payload = payload + ",\"version\":" + model.version.to_string()
-  payload = payload + ",\"revision\":" + json_string(model.revision)
-  payload = payload + ",\"text\":" + json_string(model.snapshot.text)
-  payload = payload + "}"
+  payload = "\{payload}\"uri\":\{json_string(model.uri.to_string())}"
+  payload = "\{payload},\"displayName\":\{json_string(model.display_name)}"
+  payload = "\{payload},\"languageId\":\{json_string(model.language_id)}"
+  payload = "\{payload},\"version\":\{model.version.to_string()}"
+  payload = "\{payload},\"revision\":\{json_string(model.revision)}"
+  payload = "\{payload},\"text\":\{json_string(model.snapshot.text)}"
+  payload = "\{payload}}"
   payload
 }
 
@@ -924,7 +924,7 @@ fn view_topbar(
       ]),
     ]),
     @html.div(
-      class="source-status source-status-" + model.status,
+      class="source-status source-status-\{model.status}",
       status_text(model),
     ),
   ])
@@ -982,7 +982,7 @@ fn view_diagnostics(model : WorkbenchModel) -> @html.Html {
       children.push(
         @html.div(
           class="diagnostic-item",
-          diagnostic.severity.label() + ": " + diagnostic.message,
+          "\{diagnostic.severity.label()}: \{diagnostic.message}",
         ),
       )
     }
@@ -1025,7 +1025,7 @@ fn document_meta(model : WorkbenchModel) -> String {
       } else {
         document.language_id
       }
-      language + " " + document.revision
+      "\{language} \{document.revision}"
     }
     None => "moonbit"
   }
@@ -1034,7 +1034,7 @@ fn document_meta(model : WorkbenchModel) -> String {
 ///|
 fn status_text(model : WorkbenchModel) -> String {
   let count = if model.viewer_has_frame {
-    model.line_count.to_string() + " lines"
+    "\{model.line_count.to_string()} lines"
   } else {
     ""
   }
@@ -1042,7 +1042,7 @@ fn status_text(model : WorkbenchModel) -> String {
   if count == "" {
     label
   } else {
-    label + " - " + count
+    "\{label} - \{count}"
   }
 }
 

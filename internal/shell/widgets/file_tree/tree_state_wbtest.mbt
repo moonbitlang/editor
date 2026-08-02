@@ -42,8 +42,8 @@ fn resolved_root() -> TreeNode {
       name: "workspace",
       kind: Directory,
       children: Some([
-        file_stat(root_raw + "/moon.mod", "moon.mod"),
-        dir_stat(root_raw + "/src", "src"),
+        file_stat("\{root_raw}/moon.mod", "moon.mod"),
+        dir_stat("\{root_raw}/src", "src"),
       ]),
     },
     expanded=true,
@@ -68,13 +68,13 @@ test "one workspace comparator owns pins kind and lexical name order" {
     name: "workspace",
     kind: Directory,
     children: Some([
-      file_stat(root_raw + "/z", "z"),
-      dir_stat(root_raw + "/viewer", "viewer"),
-      file_stat(root_raw + "/aa", "aa"),
-      dir_stat(root_raw + "/base", "base"),
-      file_stat(root_raw + "/moon.pkg", "moon.pkg"),
-      file_stat(root_raw + "/pkg.generated.mbti", "pkg.generated.mbti"),
-      file_stat(root_raw + "/README.md", "README.md"),
+      file_stat("\{root_raw}/z", "z"),
+      dir_stat("\{root_raw}/viewer", "viewer"),
+      file_stat("\{root_raw}/aa", "aa"),
+      dir_stat("\{root_raw}/base", "base"),
+      file_stat("\{root_raw}/moon.pkg", "moon.pkg"),
+      file_stat("\{root_raw}/pkg.generated.mbti", "pkg.generated.mbti"),
+      file_stat("\{root_raw}/README.md", "README.md"),
     ]),
   }
   let ordered = TreeNode::from_stat(stat, expanded=true)
@@ -90,15 +90,15 @@ test "README pinning is file-only and accepts any extension" {
     name: "workspace",
     kind: Directory,
     children: Some([
-      file_stat(root_raw + "/other.txt", "other.txt"),
-      file_stat(root_raw + "/readme.md", "readme.md"),
-      dir_stat(root_raw + "/src", "src"),
-      file_stat(root_raw + "/READMEISH.txt", "READMEISH.txt"),
-      dir_stat(root_raw + "/README", "README"),
-      file_stat(root_raw + "/moon.pkg", "moon.pkg"),
-      file_stat(root_raw + "/README.mbt.md", "README.mbt.md"),
-      file_stat(root_raw + "/pkg.generated.mbti", "pkg.generated.mbti"),
-      file_stat(root_raw + "/README-file", "README"),
+      file_stat("\{root_raw}/other.txt", "other.txt"),
+      file_stat("\{root_raw}/readme.md", "readme.md"),
+      dir_stat("\{root_raw}/src", "src"),
+      file_stat("\{root_raw}/READMEISH.txt", "READMEISH.txt"),
+      dir_stat("\{root_raw}/README", "README"),
+      file_stat("\{root_raw}/moon.pkg", "moon.pkg"),
+      file_stat("\{root_raw}/README.mbt.md", "README.mbt.md"),
+      file_stat("\{root_raw}/pkg.generated.mbti", "pkg.generated.mbti"),
+      file_stat("\{root_raw}/README-file", "README"),
     ]),
   }
   let ordered = TreeNode::from_stat(stat, expanded=true)
@@ -107,8 +107,8 @@ test "README pinning is file-only and accepts any extension" {
     "README", "README.mbt.md", "pkg.generated.mbti", "moon.pkg", "README", "src",
     "READMEISH.txt", "other.txt", "readme.md",
   ])
-  assert_eq(rows[0].node.uri.to_string(), root_raw + "/README-file")
-  assert_eq(rows[4].node.uri.to_string(), root_raw + "/README")
+  assert_eq(rows[0].node.uri.to_string(), "\{root_raw}/README-file")
+  assert_eq(rows[4].node.uri.to_string(), "\{root_raw}/README")
 }
 
 ///|
@@ -118,10 +118,10 @@ test "workspace comparison orders entries through Array::sort_by" {
     name: "workspace",
     kind: Directory,
     children: Some([
-      dir_stat(root_raw + "/z", "z"),
-      file_stat(root_raw + "/z.mbt", "z.mbt"),
-      dir_stat(root_raw + "/aa", "aa"),
-      file_stat(root_raw + "/aa.mbt", "aa.mbt"),
+      dir_stat("\{root_raw}/z", "z"),
+      file_stat("\{root_raw}/z.mbt", "z.mbt"),
+      dir_stat("\{root_raw}/aa", "aa"),
+      file_stat("\{root_raw}/aa.mbt", "aa.mbt"),
     ]),
   }
   let root = TreeNode::from_stat(stat, expanded=true)
@@ -132,7 +132,7 @@ test "workspace comparison orders entries through Array::sort_by" {
 
 ///|
 test "workspace comparison orders lazily resolved levels the same way" {
-  let src_uri = uri(root_raw + "/src")
+  let src_uri = uri("\{root_raw}/src")
   let (expanded, _) = resolved_root().toggle(src_uri).unwrap()
   let resolved = expanded
     .with_resolved(src_uri, {
@@ -140,8 +140,8 @@ test "workspace comparison orders lazily resolved levels the same way" {
       name: "src",
       kind: Directory,
       children: Some([
-        file_stat(root_raw + "/src/main.mbt", "main.mbt"),
-        file_stat(root_raw + "/src/first.md", "first.md"),
+        file_stat("\{root_raw}/src/main.mbt", "main.mbt"),
+        file_stat("\{root_raw}/src/first.md", "first.md"),
       ]),
     })
     .unwrap()
@@ -153,14 +153,14 @@ test "workspace comparison orders lazily resolved levels the same way" {
 ///|
 test "directories start collapsed and expansion resolves once" {
   let original = resolved_root()
-  let src_uri = uri(root_raw + "/src")
+  let src_uri = uri("\{root_raw}/src")
   assert_false(original.find(src_uri).unwrap().expanded)
 
   // First expand: unresolved children ask for a provider resolve.
   let (expanded, effect) = original.toggle(src_uri).unwrap()
   match effect {
     ToggleResolve(resolve_uri) =>
-      assert_eq(resolve_uri.to_string(), root_raw + "/src")
+      assert_eq(resolve_uri.to_string(), "\{root_raw}/src")
     ToggleNone => fail("expected resolve effect")
   }
   // The original snapshot remains collapsed after producing the new root.
@@ -171,7 +171,7 @@ test "directories start collapsed and expansion resolves once" {
       uri: src_uri,
       name: "src",
       kind: Directory,
-      children: Some([file_stat(root_raw + "/src/main.mbt", "main.mbt")]),
+      children: Some([file_stat("\{root_raw}/src/main.mbt", "main.mbt")]),
     })
     .unwrap()
 
@@ -195,7 +195,7 @@ test "directories start collapsed and expansion resolves once" {
 ///|
 test "failed resolve is retried on the next expand" {
   let original = resolved_root()
-  let src_uri = uri(root_raw + "/src")
+  let src_uri = uri("\{root_raw}/src")
   let (expanded, _) = original.toggle(src_uri).unwrap()
   let failed = expanded.with_resolve_failed(src_uri).unwrap()
   assert_false(original.find(src_uri).unwrap().resolve_failed)
@@ -215,15 +215,15 @@ test "failed resolve is retried on the next expand" {
 ///|
 test "reveal expands resolved ancestors and stops at unresolved levels" {
   let original = resolved_root()
-  let target = uri(root_raw + "/src/lib/util.mbt")
-  let src_uri = uri(root_raw + "/src")
-  let lib_uri = uri(root_raw + "/src/lib")
+  let target = uri("\{root_raw}/src/lib/util.mbt")
+  let src_uri = uri("\{root_raw}/src")
+  let lib_uri = uri("\{root_raw}/src/lib")
 
   // src is unresolved: the reveal must resolve it first.
   let (src_expanded, step) = original.reveal_step(target)
   match step {
     RevealResolve(resolve_uri) =>
-      assert_eq(resolve_uri.to_string(), root_raw + "/src")
+      assert_eq(resolve_uri.to_string(), "\{root_raw}/src")
     _ => fail("expected resolve step for src")
   }
   assert_false(original.find(src_uri).unwrap().expanded)
@@ -233,7 +233,7 @@ test "reveal expands resolved ancestors and stops at unresolved levels" {
       uri: src_uri,
       name: "src",
       kind: Directory,
-      children: Some([dir_stat(root_raw + "/src/lib", "lib")]),
+      children: Some([dir_stat("\{root_raw}/src/lib", "lib")]),
     })
     .unwrap()
 
@@ -241,7 +241,7 @@ test "reveal expands resolved ancestors and stops at unresolved levels" {
   let (lib_expanded, step) = src_resolved.reveal_step(target)
   match step {
     RevealResolve(resolve_uri) =>
-      assert_eq(resolve_uri.to_string(), root_raw + "/src/lib")
+      assert_eq(resolve_uri.to_string(), "\{root_raw}/src/lib")
     _ => fail("expected resolve step for src/lib")
   }
   assert_false(src_resolved.find(lib_uri).unwrap().expanded)
@@ -251,7 +251,7 @@ test "reveal expands resolved ancestors and stops at unresolved levels" {
       uri: lib_uri,
       name: "lib",
       kind: Directory,
-      children: Some([file_stat(root_raw + "/src/lib/util.mbt", "util.mbt")]),
+      children: Some([file_stat("\{root_raw}/src/lib/util.mbt", "util.mbt")]),
     })
     .unwrap()
   let (revealed, step) = lib_resolved.reveal_step(target)
@@ -274,7 +274,7 @@ test "reveal of targets outside the tree is unreachable" {
     _ => fail("expected unreachable target outside the root")
   }
   assert_true(outside == root)
-  let (missing, step) = root.reveal_step(uri(root_raw + "/gone/file.mbt"))
+  let (missing, step) = root.reveal_step(uri("\{root_raw}/gone/file.mbt"))
   match step {
     RevealUnreachable => ()
     _ => fail("expected unreachable target in a missing directory")
@@ -323,11 +323,11 @@ extend MemoryTreeProvider with @workspace.WorkspaceTreeProvider::{root, resolve}
 async test "in-memory provider resolves one level per request" {
   let directories : Map[String, Array[@workspace.WorkspaceStat]] = Map([])
   directories[root_raw] = [
-    file_stat(root_raw + "/moon.mod", "moon.mod"),
-    dir_stat(root_raw + "/src", "src"),
+    file_stat("\{root_raw}/moon.mod", "moon.mod"),
+    dir_stat("\{root_raw}/src", "src"),
   ]
-  directories[root_raw + "/src"] = [
-    file_stat(root_raw + "/src/main.mbt", "main.mbt"),
+  directories["\{root_raw}/src"] = [
+    file_stat("\{root_raw}/src/main.mbt", "main.mbt"),
   ]
   let provider : MemoryTreeProvider = {
     root_uri: uri(root_raw),
@@ -337,7 +337,7 @@ async test "in-memory provider resolves one level per request" {
   match provider.resolve(provider.root()) {
     WorkspaceResolved(stat) => {
       let root = TreeNode::from_stat(stat, expanded=true)
-      let src_uri = uri(root_raw + "/src")
+      let src_uri = uri("\{root_raw}/src")
       let src = root.find(src_uri).unwrap()
       // The resolved level carries unresolved directory children.
       assert_true(src.children is None)
@@ -357,10 +357,10 @@ async test "in-memory provider resolves one level per request" {
     }
     WorkspaceResolveError(error) => fail(error.message)
   }
-  match provider.resolve(uri(root_raw + "/missing")) {
+  match provider.resolve(uri("\{root_raw}/missing")) {
     WorkspaceResolveError(error) => assert_true(error.code == FileNotFound)
     WorkspaceResolved(_) => fail("expected missing directory error")
   }
   assert_true(provider.resolve_counts.get(root_raw) is Some(1))
-  assert_true(provider.resolve_counts.get(root_raw + "/src") is Some(1))
+  assert_true(provider.resolve_counts.get("\{root_raw}/src") is Some(1))
 }

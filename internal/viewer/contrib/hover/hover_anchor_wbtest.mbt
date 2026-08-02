@@ -175,7 +175,12 @@ fn anchor_test_model() -> @model.TextModel {
     "moonbit",
     1,
     "rev-1",
-    "fn main {\n  value\n}\n",
+    (
+      #|fn main {
+      #|  value
+      #|}
+      #|
+    ),
   )
 }
 

@@ -118,7 +118,13 @@ test "matrix wrapped model decorations map exact line boundaries" {
 ///|
 /// Endpoint visibility and per-line font flags (`inlineDecorations.ts:105-141`).
 test "matrix viewport suppresses endpoint decorations and scopes font flags" {
-  let model = TestTextModel::create("first\nmiddle\nlast")
+  let model = TestTextModel::create(
+    (
+      #|first
+      #|middle
+      #|last
+    ),
+  )
   let outside_context : ReferenceInlineModelContext = {
     get_model_decorations: fn(_view_range, _minimap, _margin) {
       [

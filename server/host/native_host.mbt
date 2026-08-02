@@ -97,7 +97,7 @@ async fn read_native_directory(
   let dir_path = if relative == "" {
     normalized_root
   } else {
-    normalized_root + "/" + relative
+    "\{normalized_root}/\{relative}"
   }
   if !@fs.exists(dir_path) {
     return ServerHostResolveError(FileNotFound, "Directory does not exist.")
@@ -126,9 +126,9 @@ async fn read_native_directory(
   }
   let children : Array[@workspace.WorkspaceStat] = []
   for name in names {
-    let path = if relative is "" { name } else { relative + "/" + name }
+    let path = if relative is "" { name } else { "\{relative}/\{name}" }
     guard !skip_workspace_entry(path~, name~) else { continue }
-    let disk_kind = Some(@fs.kind(dir_path + "/" + name)) catch { _ => None }
+    let disk_kind = Some(@fs.kind("\{dir_path}/\{name}")) catch { _ => None }
     match (disk_kind, @server.remote_document_uri(path)) {
       (Some(Directory), Some(uri)) =>
         children.push({ uri, name, kind: Directory, children: None })
@@ -269,7 +269,7 @@ async fn realpath_or_normalized(path : String) -> String {
 
 ///|
 fn workspace_file_path(root : String, path : @workspace.SourcePath) -> String {
-  normalize_host_path(root) + "/" + path.to_string()
+  "\{normalize_host_path(root)}/\{path.to_string()}"
 }
 
 ///|
@@ -284,7 +284,7 @@ fn normalize_host_path(path : String) -> String {
 
 ///|
 fn is_under_root(root : String, target : String) -> Bool {
-  target == root || target.has_prefix(root + "/")
+  target == root || target.has_prefix("\{root}/")
 }
 
 ///|
@@ -604,7 +604,7 @@ async fn serve_static_route(
   }
   match static_route(request.path) {
     Some((file_name, content_type)) =>
-      serve_static_file(conn, asset_dir + "/" + file_name, content_type)
+      serve_static_file(conn, "\{asset_dir}/\{file_name}", content_type)
     None => serve_not_found(conn)
   }
 }

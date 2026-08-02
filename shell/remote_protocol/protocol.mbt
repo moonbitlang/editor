@@ -255,7 +255,7 @@ pub fn negotiate_protocol_version(version : Int) -> ProtocolNegotiation {
     ProtocolRejected(
       ProtocolError(
         ProtocolUnsupportedVersion,
-        "Unsupported remote protocol version " + version.to_string(),
+        "Unsupported remote protocol version \{version.to_string()}",
       ),
     )
   }
@@ -355,7 +355,7 @@ pub fn decode_client_packet(raw : String) -> ClientPacketDecodeResult {
               ClientPacketDecodeError(
                 ProtocolError(
                   ProtocolUnknownPacket,
-                  "Unknown client packet type " + kind,
+                  "Unknown client packet type \{kind}",
                   request_id=request_id(packet),
                 ),
               )
@@ -414,7 +414,7 @@ pub fn decode_server_packet(raw : String) -> ServerPacketDecodeResult {
               ServerPacketDecodeError(
                 ProtocolError(
                   ProtocolUnknownPacket,
-                  "Unknown server packet type " + kind,
+                  "Unknown server packet type \{kind}",
                   request_id=request_id(packet),
                 ),
               )
@@ -727,7 +727,7 @@ fn validate_packet_version(packet : Json) -> ProtocolError? {
     Some(
       ProtocolError(
         ProtocolUnsupportedVersion,
-        "Unsupported remote protocol version " + version.to_string(),
+        "Unsupported remote protocol version \{version.to_string()}",
         request_id=request_id(packet),
       ),
     )
@@ -770,7 +770,7 @@ fn parse_uri_field(
           ProtocolUriError(
             ProtocolError(
               ProtocolInvalidUri,
-              "Invalid document URI " + raw,
+              "Invalid document URI \{raw}",
               request_id=id,
             ),
           )
@@ -779,7 +779,7 @@ fn parse_uri_field(
       ProtocolUriError(
         ProtocolError(
           ProtocolInvalidPacket,
-          "Remote protocol packet is missing " + key + ".",
+          "Remote protocol packet is missing \{key}.",
           request_id=id,
         ),
       )
@@ -813,7 +813,7 @@ fn parse_source_document(value : Json, id : String) -> ProtocolDocumentResult {
               ProtocolDocumentError(
                 ProtocolError(
                   ProtocolInvalidUri,
-                  "Invalid document URI " + raw_uri,
+                  "Invalid document URI \{raw_uri}",
                   request_id=id,
                 ),
               )

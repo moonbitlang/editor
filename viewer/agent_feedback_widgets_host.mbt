@@ -134,7 +134,7 @@ fn Viewer::rebuild_agent_feedback_widgets(self : Viewer) -> Unit {
   let groups = @agent_feedback.group_nearby_session_editor_comments(comments)
   for index in groups.length()>..0 {
     let group = groups[index]
-    let widget_id = "agent-feedback-widget-" + wc.widget_id_pool.to_string()
+    let widget_id = "agent-feedback-widget-\{wc.widget_id_pool.to_string()}"
     wc.widget_id_pool += 1
     let widget = @agent_feedback_browser.AgentFeedbackEditorWidget(
       self.agent_feedback_widget_host(),
