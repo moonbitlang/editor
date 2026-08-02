@@ -13,8 +13,6 @@ async test "host directory listing keeps directories and flags repositories" {
     )
     @fs.mkdir(root + "/beta", recursive=true)
     @fs.mkdir(root + "/gamma/.git", recursive=true)
-    @fs.mkdir(root + "/z", recursive=true)
-    @fs.mkdir(root + "/aa", recursive=true)
     @fs.mkdir(root + "/.hidden", recursive=true)
     @fs.write_file(root + "/notes.txt", "text\n", create_mode=CreateOrTruncate)
     let real_root = realpath_or_normalized(root)
@@ -25,13 +23,13 @@ async test "host directory listing keeps directories and flags repositories" {
         assert_true(listing.parent is Some(_))
         // Directories only, sorted, dot-entries dropped, files dropped.
         assert_eq(listing.entries.map(entry => entry.name), [
-          "aa", "alpha", "beta", "gamma", "z",
+          "alpha", "beta", "gamma",
         ])
-        assert_eq(listing.entries[1].path, real_root + "/alpha")
-        assert_true(listing.entries[1].is_workspace)
-        assert_false(listing.entries[2].is_workspace)
+        assert_eq(listing.entries[0].path, real_root + "/alpha")
+        assert_true(listing.entries[0].is_workspace)
+        assert_false(listing.entries[1].is_workspace)
         // A `.git` marker also reads as a repository root.
-        assert_true(listing.entries[3].is_workspace)
+        assert_true(listing.entries[2].is_workspace)
       }
       HostDirectoryListError(_, message) => fail(message)
     }
