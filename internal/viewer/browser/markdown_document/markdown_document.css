@@ -42,6 +42,36 @@
   margin-inline: auto;
 }
 
+/* Use one predictable vertical cadence instead of the browser's element-by-
+ * element defaults: sections get a clear pause, headings stay attached to
+ * their content, and ordinary blocks retain a comfortable reading beat. */
+.moonbit-viewer-markdown-document-article
+  > :where(
+    p,
+    ul,
+    ol,
+    dl,
+    blockquote,
+    pre,
+    table,
+    details,
+    .moonbit-viewer-markdown-code-block
+  ) {
+  margin-block: 0 16px;
+}
+
+.moonbit-viewer-markdown-document-article > :is(h1, h2, h3, h4, h5, h6) {
+  margin-block: 32px 12px;
+}
+
+.moonbit-viewer-markdown-document-article > :first-child {
+  margin-top: 0;
+}
+
+.moonbit-viewer-markdown-document-article > :last-child {
+  margin-bottom: 0;
+}
+
 /* Preserve the browser's familiar quote inset inside the same outer measure.
  * Nested code and diagrams still fill the quote rather than receiving a
  * second prose constraint. */

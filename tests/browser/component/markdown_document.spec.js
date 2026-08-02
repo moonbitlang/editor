@@ -328,6 +328,70 @@ test('uses a restrained, stable Markdown type scale', async ({ page }) => {
   }
 });
 
+test('uses a deliberate vertical rhythm for Markdown sections and blocks', async ({
+  page,
+}) => {
+  await page.goto('/browser-tests/component.html?markdownDocument=1');
+  await page.waitForFunction(() =>
+    Boolean(globalThis.__markdownDocumentControls),
+  );
+
+  await page.locator(article).evaluate((articleNode) => {
+    const heading = document.createElement('h2');
+    heading.dataset.rhythmProbe = 'heading';
+    heading.textContent = 'Rhythm section';
+    const first = document.createElement('p');
+    first.dataset.rhythmProbe = 'first';
+    first.textContent = 'The heading stays attached to its first paragraph.';
+    const second = document.createElement('p');
+    second.dataset.rhythmProbe = 'second';
+    second.textContent = 'Adjacent prose keeps one steady reading beat.';
+    const code = document.createElement('div');
+    code.className = 'moonbit-viewer-markdown-code-block';
+    code.dataset.rhythmProbe = 'wide';
+    code.textContent = 'wide block';
+    const last = document.createElement('p');
+    last.dataset.rhythmProbe = 'last';
+    last.textContent = 'The document ends without trailing element margin.';
+    articleNode.append(heading, first, second, code, last);
+  });
+
+  const firstHeading = page.locator(`${article} > h1`).first();
+  const heading = page.locator('[data-rhythm-probe="heading"]');
+  const first = page.locator('[data-rhythm-probe="first"]');
+  const second = page.locator('[data-rhythm-probe="second"]');
+  const code = page.locator('[data-rhythm-probe="wide"]');
+  const last = page.locator('[data-rhythm-probe="last"]');
+
+  await expect(firstHeading).toHaveCSS('margin-top', '0px');
+  await expect(firstHeading).toHaveCSS('margin-bottom', '12px');
+  await expect(heading).toHaveCSS('margin-top', '32px');
+  await expect(heading).toHaveCSS('margin-bottom', '12px');
+  await expect(first).toHaveCSS('margin-top', '0px');
+  await expect(first).toHaveCSS('margin-bottom', '16px');
+  await expect(code).toHaveCSS('margin-bottom', '16px');
+  await expect(last).toHaveCSS('margin-bottom', '0px');
+
+  const geometry = await page.locator(article).evaluate((articleNode) => {
+    const rect = (probe) =>
+      articleNode
+        .querySelector(`[data-rhythm-probe="${probe}"]`)
+        .getBoundingClientRect();
+    const heading = rect('heading');
+    const first = rect('first');
+    const second = rect('second');
+    const code = rect('wide');
+    return {
+      headingToFirst: first.top - heading.bottom,
+      firstToSecond: second.top - first.bottom,
+      secondToWide: code.top - second.bottom,
+    };
+  });
+  expect(geometry.headingToFirst).toBeCloseTo(12, 1);
+  expect(geometry.firstToSecond).toBeCloseTo(16, 1);
+  expect(geometry.secondToWide).toBeCloseTo(16, 1);
+});
+
 test('centers prose without narrowing wide Markdown content', async ({
   page,
 }) => {
