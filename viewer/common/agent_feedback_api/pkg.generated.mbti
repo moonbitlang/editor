@@ -21,11 +21,6 @@ pub(all) struct AgentFeedback {
   state : AgentFeedbackState
 } derive(@debug.Debug)
 
-pub(all) struct AgentFeedbackAddedEvent {
-  feedback : AgentFeedback
-  has_existing_feedback_for_file : Bool
-} derive(@debug.Debug)
-
 pub(all) struct AgentFeedbackChangeEvent {
   resource : @common.Uri
   feedback_items : Array[AgentFeedback]
@@ -55,11 +50,6 @@ pub(all) struct AgentFeedbackNavigationBearing {
   active_idx : Int
   total_count : Int
 } derive(Eq, @debug.Debug)
-
-pub(all) struct AgentFeedbackReplyAddedEvent {
-  feedback : AgentFeedback
-  reply_count : Int
-} derive(@debug.Debug)
 
 pub(all) enum AgentFeedbackState {
   Created
