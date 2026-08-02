@@ -229,6 +229,7 @@ pub impl @debug.Debug for TextModel
 
 type TextSnapshot derive(@debug.Debug)
 pub fn TextSnapshot::TextSnapshot(String) -> Self
+pub fn TextSnapshot::equals(Self, Self) -> Bool
 pub fn TextSnapshot::get_length(Self) -> Int
 pub fn TextSnapshot::get_line_content(Self, Int) -> String
 pub fn TextSnapshot::get_line_first_non_whitespace_column(Self, Int) -> Int

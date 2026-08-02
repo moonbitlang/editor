@@ -55,12 +55,6 @@ fn run_scroll_perf_test() -> Unit {
   viewer.on_did_scroll_change(event => {
     if event.scroll_top_changed || event.scroll_left_changed {
       public_scroll_events.val += 1
-      forward_scroll_perf_phase(
-        viewer.get_id(),
-        "state-committed",
-        event.scroll_top,
-        event.scroll_left,
-      )
     }
   })
   |> ignore
@@ -176,20 +170,4 @@ extern "js" fn install_scroll_perf_controls(
   #|     dispose: disposeViewer,
   #|     setSelection,
   #|   };
-  #| }
-
-///|
-extern "js" fn forward_scroll_perf_phase(
-  viewer_id : String,
-  phase : String,
-  scroll_top : Double,
-  scroll_left : Double,
-) -> Unit =
-  #| (viewerId, phase, scrollTop, scrollLeft) => {
-  #|   globalThis.__scrollProbe?.recordLocalPhase({
-  #|     viewerId,
-  #|     phase,
-  #|     scrollTop,
-  #|     scrollLeft,
-  #|   });
   #| }

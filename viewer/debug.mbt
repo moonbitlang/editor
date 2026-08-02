@@ -59,4 +59,32 @@ fn Viewer::emit_scroll_frame_phase(
     scroll_top,
     scroll_left,
   )
+  forward_scroll_frame_phase(
+    self.get_id(),
+    match phase {
+      StateCommitted => "state-committed"
+      RenderStarted => "render-started"
+      RenderFinished => "render-finished"
+    },
+    scroll_top,
+    scroll_left,
+  )
 }
+
+///|
+/// Optional browser-diagnostic bridge. The hook is absent in product hosts and
+/// therefore keeps the private MoonBit trace out of the package interface.
+extern "js" fn forward_scroll_frame_phase(
+  viewer_id : String,
+  phase : String,
+  scroll_top : Double,
+  scroll_left : Double,
+) -> Unit =
+  #| (viewerId, phase, scrollTop, scrollLeft) => {
+  #|   globalThis.__scrollProbe?.recordLocalPhase({
+  #|     viewerId,
+  #|     phase,
+  #|     scrollTop,
+  #|     scrollLeft,
+  #|   });
+  #| }

@@ -143,7 +143,7 @@ fn TextSnapshot::get_value_length_in_range(
 /// its selected-EOL representation; the Viewer compares its coherent
 /// LF-normalized representation, including U+FEFF as ordinary content. Hosts
 /// use it for the refresh no-op early return (`modelService.ts:370-373`).
-fn TextSnapshot::equals(self : TextSnapshot, other : TextSnapshot) -> Bool {
+pub fn TextSnapshot::equals(self : TextSnapshot, other : TextSnapshot) -> Bool {
   self.text == other.text
 }
 
