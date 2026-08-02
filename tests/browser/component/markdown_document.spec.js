@@ -346,21 +346,48 @@ test('uses a deliberate vertical rhythm for Markdown sections and blocks', async
     const second = document.createElement('p');
     second.dataset.rhythmProbe = 'second';
     second.textContent = 'Adjacent prose keeps one steady reading beat.';
+    const divider = document.createElement('hr');
+    divider.dataset.rhythmProbe = 'divider';
+    const d2 = document.createElement('div');
+    d2.className =
+      'moonbit-viewer-markdown-diagram moonbit-viewer-markdown-diagram-viewport';
+    d2.dataset.rhythmProbe = 'd2';
     const code = document.createElement('div');
     code.className = 'moonbit-viewer-markdown-code-block';
     code.dataset.rhythmProbe = 'wide';
-    code.textContent = 'wide block';
+    const mermaid = document.createElement('div');
+    mermaid.className =
+      'moonbit-viewer-markdown-diagram moonbit-viewer-markdown-diagram-viewport';
+    mermaid.dataset.rhythmProbe = 'mermaid';
+    mermaid.textContent = 'nested Mermaid viewport';
+    code.appendChild(mermaid);
+    const finalHeading = document.createElement('h2');
+    finalHeading.dataset.rhythmProbe = 'final-heading';
+    finalHeading.textContent = 'Final foldable section';
     const last = document.createElement('p');
     last.dataset.rhythmProbe = 'last';
     last.textContent = 'The document ends without trailing element margin.';
-    articleNode.append(heading, first, second, code, last);
+    articleNode.append(
+      heading,
+      first,
+      second,
+      divider,
+      d2,
+      code,
+      finalHeading,
+      last,
+    );
   });
 
   const firstHeading = page.locator(`${article} > h1`).first();
   const heading = page.locator('[data-rhythm-probe="heading"]');
   const first = page.locator('[data-rhythm-probe="first"]');
   const second = page.locator('[data-rhythm-probe="second"]');
+  const divider = page.locator('[data-rhythm-probe="divider"]');
+  const d2 = page.locator('[data-rhythm-probe="d2"]');
   const code = page.locator('[data-rhythm-probe="wide"]');
+  const mermaid = page.locator('[data-rhythm-probe="mermaid"]');
+  const finalHeading = page.locator('[data-rhythm-probe="final-heading"]');
   const last = page.locator('[data-rhythm-probe="last"]');
 
   await expect(firstHeading).toHaveCSS('margin-top', '0px');
@@ -369,7 +396,12 @@ test('uses a deliberate vertical rhythm for Markdown sections and blocks', async
   await expect(heading).toHaveCSS('margin-bottom', '12px');
   await expect(first).toHaveCSS('margin-top', '0px');
   await expect(first).toHaveCSS('margin-bottom', '16px');
+  await expect(divider).toHaveCSS('margin-top', '0px');
+  await expect(divider).toHaveCSS('margin-bottom', '16px');
+  await expect(d2).toHaveCSS('margin-bottom', '16px');
   await expect(code).toHaveCSS('margin-bottom', '16px');
+  await expect(mermaid).toHaveCSS('margin-bottom', '0px');
+  await expect(finalHeading).toHaveCSS('margin-bottom', '12px');
   await expect(last).toHaveCSS('margin-bottom', '0px');
 
   const geometry = await page.locator(article).evaluate((articleNode) => {
@@ -380,16 +412,22 @@ test('uses a deliberate vertical rhythm for Markdown sections and blocks', async
     const heading = rect('heading');
     const first = rect('first');
     const second = rect('second');
-    const code = rect('wide');
+    const divider = rect('divider');
     return {
       headingToFirst: first.top - heading.bottom,
       firstToSecond: second.top - first.bottom,
-      secondToWide: code.top - second.bottom,
+      secondToDivider: divider.top - second.bottom,
     };
   });
   expect(geometry.headingToFirst).toBeCloseTo(12, 1);
   expect(geometry.firstToSecond).toBeCloseTo(16, 1);
-  expect(geometry.secondToWide).toBeCloseTo(16, 1);
+  expect(geometry.secondToDivider).toBeCloseTo(16, 1);
+
+  await last.evaluate((node) =>
+    node.setAttribute('data-markdown-section-hidden', ''),
+  );
+  await expect(last).toBeHidden();
+  await expect(finalHeading).toHaveCSS('margin-bottom', '0px');
 });
 
 test('centers prose without narrowing wide Markdown content', async ({
@@ -646,6 +684,40 @@ test('mounts zoom and drag controls for D2 and Mermaid in Markdown documents', a
     );
     await expect(d2).toHaveCount(1);
     await expect(mermaid).toHaveCount(1);
+    await expect(d2).toHaveCSS('margin-bottom', '16px');
+    await expect(mermaid).toHaveCSS('margin-bottom', '0px');
+    expect(
+      await mermaid.evaluate((node) => ({
+        nestedInCodeBlock: node.parentElement?.classList.contains(
+          'moonbit-viewer-markdown-code-block',
+        ),
+        wrapperMarginBottom: getComputedStyle(node.parentElement).marginBottom,
+        wrapperClass: node.parentElement?.className,
+        outerClass: node.parentElement?.parentElement?.className,
+        outerMarginBottom: getComputedStyle(node.parentElement?.parentElement)
+          .marginBottom,
+      })),
+    ).toEqual({
+      nestedInCodeBlock: true,
+      wrapperMarginBottom: '0px',
+      wrapperClass: 'moonbit-viewer-markdown-code-block',
+      outerClass: 'moonbit-viewer-markdown-document-article',
+      outerMarginBottom: '0px',
+    });
+    await page.locator(article).evaluate((articleNode) => {
+      const tail = document.createElement('p');
+      tail.dataset.diagramRhythmTail = 'true';
+      tail.textContent = 'A following block restores the diagram cadence.';
+      articleNode.appendChild(tail);
+    });
+    expect(
+      await mermaid.evaluate(
+        (node) => getComputedStyle(node.parentElement).marginBottom,
+      ),
+    ).toBe('16px');
+    await expect(
+      page.locator('[data-diagram-rhythm-tail="true"]'),
+    ).toHaveCSS('margin-bottom', '0px');
     await expect(d2).toHaveAttribute(
       'aria-label',
       'Interactive Diago diagram',

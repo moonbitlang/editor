@@ -53,11 +53,22 @@
     dl,
     blockquote,
     pre,
+    hr,
     table,
     details,
-    .moonbit-viewer-markdown-code-block
+    .moonbit-viewer-markdown-code-block,
+    .moonbit-viewer-markdown-diagram
   ) {
   margin-block: 0 16px;
+}
+
+/* Mermaid is mounted inside its code-block wrapper, which owns the outer
+ * cadence. Reset the viewport's shared document/comment margin so rendering
+ * the diagram cannot change the surrounding document rhythm. */
+.moonbit-viewer-markdown-document-article
+  > .moonbit-viewer-markdown-code-block
+  > .moonbit-viewer-markdown-diagram {
+  margin-bottom: 0;
 }
 
 .moonbit-viewer-markdown-document-article > :is(h1, h2, h3, h4, h5, h6) {
@@ -68,7 +79,10 @@
   margin-top: 0;
 }
 
-.moonbit-viewer-markdown-document-article > :last-child {
+.moonbit-viewer-markdown-document-article
+  > :not([data-markdown-section-hidden]):not(
+    :has(~ :not([data-markdown-section-hidden]))
+  ) {
   margin-bottom: 0;
 }
 
