@@ -34,28 +34,18 @@ test "explorer order pins package overview files above the default" {
 
 ///|
 test "explorer filename order is lexicographic rather than shortlex" {
-  let root : @workspace.WorkspaceStat = {
-    uri: try! @base_common.Uri::parse("readonly-remote://workspace"),
-    name: "workspace",
-    kind: Directory,
-    children: Some([
-      {
-        uri: try! @base_common.Uri::parse("readonly-remote://workspace/z"),
-        name: "z",
-        kind: File,
-        children: None,
-      },
-      {
-        uri: try! @base_common.Uri::parse("readonly-remote://workspace/aa"),
-        name: "aa",
-        kind: File,
-        children: None,
-      },
-    ]),
+  let z : @workspace.WorkspaceStat = {
+    uri: try! @base_common.Uri::parse("readonly-remote://workspace/z"),
+    name: "z",
+    kind: File,
+    children: None,
   }
-  let ordered = order_workspace_stat_children(root)
-  assert_eq(
-    ordered.children.map(children => children.map(child => child.name)),
-    Some(["aa", "z"]),
-  )
+  let aa : @workspace.WorkspaceStat = {
+    uri: try! @base_common.Uri::parse("readonly-remote://workspace/aa"),
+    name: "aa",
+    kind: File,
+    children: None,
+  }
+  assert_true(workspace_entry_compare(aa, z) < 0)
+  assert_true(workspace_entry_compare(z, aa) > 0)
 }

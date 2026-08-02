@@ -24,6 +24,14 @@ fn unranked(_stat : @workspace.WorkspaceStat) -> Int {
 }
 
 ///|
+fn lexical_by_name(
+  left : @workspace.WorkspaceStat,
+  right : @workspace.WorkspaceStat,
+) -> Int {
+  left.name.lexical_compare(right.name)
+}
+
+///|
 fn TreeNode::find(self : TreeNode, uri : @base_common.Uri) -> TreeNode? {
   if self.uri == uri {
     return Some(self)
@@ -108,6 +116,30 @@ test "a host rank orders a level around the directories-first default" {
   let unpinned = TreeNode::from_stat(stat, expanded=true, rank=unranked)
   assert_eq(unpinned.visible_rows().map(row => row.node.name), [
     "src", "docs", "moon.pkg", "last.txt", "first.md",
+  ])
+}
+
+///|
+test "a host comparator orders equal-rank entries through Array::sort_by" {
+  let stat : @workspace.WorkspaceStat = {
+    uri: uri(root_raw),
+    name: "workspace",
+    kind: Directory,
+    children: Some([
+      dir_stat(root_raw + "/z", "z"),
+      file_stat(root_raw + "/z.mbt", "z.mbt"),
+      dir_stat(root_raw + "/aa", "aa"),
+      file_stat(root_raw + "/aa.mbt", "aa.mbt"),
+    ]),
+  }
+  let root = TreeNode::from_stat(
+    stat,
+    expanded=true,
+    rank=unranked,
+    compare=lexical_by_name,
+  )
+  assert_eq(root.visible_rows().map(row => row.node.name), [
+    "aa", "z", "aa.mbt", "z.mbt",
   ])
 }
 

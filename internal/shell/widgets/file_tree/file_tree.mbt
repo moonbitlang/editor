@@ -24,15 +24,19 @@ priv enum FileTreeMsg {
 /// Creates a file tree over a workspace provider and reports file-open
 /// intents to the host.
 ///
-/// `rank` is the host's ordering policy for one directory level: entries
-/// render by ascending rank, and entries of equal rank keep the default
-/// directories-before-files order followed by the provider's order. The
-/// default ranks every entry alike, so pinning a name above directories is a
-/// negative rank and pushing one to the bottom is a positive one.
+/// `rank` and `compare` are the host's ordering policy for one directory level:
+/// entries render by ascending rank, then directories before files, then the
+/// host comparator. Equal entries keep the provider's order. The defaults rank
+/// every entry alike and compare every pair alike, so the widget preserves the
+/// provider's order within its directories-before-files grouping.
 pub fn FileTree::FileTree(
   provider : &@workspace.WorkspaceTreeProvider,
   on_open~ : (@base_common.Uri) -> Unit,
   rank? : (@workspace.WorkspaceStat) -> Int = _ => 0,
+  compare? : (@workspace.WorkspaceStat, @workspace.WorkspaceStat) -> Int = (
+    _left,
+    _right,
+  ) => 0,
 ) -> FileTree {
   let model : FileTreeModel = {
     root: None,
@@ -40,7 +44,14 @@ pub fn FileTree::FileTree(
     pending_reveal: None,
   }
   let (state, emit) = @rabbita.create_state(model, update=(emit, msg, model) => {
-    let (cmd, model) = model.update(provider, on_open, rank~, emit, msg)
+    let (cmd, model) = model.update(
+      provider,
+      on_open,
+      rank~,
+      compare~,
+      emit,
+      msg,
+    )
     (model, cmd)
   })
   let view_value = state.view(model => model.view(emit))
@@ -77,6 +88,7 @@ fn FileTreeModel::update(
   provider : &@workspace.WorkspaceTreeProvider,
   on_open : (@base_common.Uri) -> Unit,
   rank~ : (@workspace.WorkspaceStat) -> Int,
+  compare~ : (@workspace.WorkspaceStat, @workspace.WorkspaceStat) -> Int,
   emit : @rabbita.Emit[FileTreeMsg],
   msg : FileTreeMsg,
 ) -> (@rabbita.Cmd, FileTreeModel) {
@@ -84,7 +96,7 @@ fn FileTreeModel::update(
     Refresh =>
       (FileTree::resolve_directory(provider, emit, provider.root()), self)
     DirectoryResolved(uri, result) =>
-      self.with_directory_resolved(provider, emit, uri, result, rank~)
+      self.with_directory_resolved(provider, emit, uri, result, rank~, compare~)
     ToggleDirectory(uri) =>
       match self.root {
         Some(root) =>
@@ -118,13 +130,14 @@ fn FileTreeModel::with_directory_resolved(
   uri : @base_common.Uri,
   result : @workspace.WorkspaceResolveResult,
   rank~ : (@workspace.WorkspaceStat) -> Int,
+  compare~ : (@workspace.WorkspaceStat, @workspace.WorkspaceStat) -> Int,
 ) -> (@rabbita.Cmd, FileTreeModel) {
   match result {
     WorkspaceResolved(stat) => {
       let model = if uri == provider.root() {
         {
           ..self,
-          root: Some(TreeNode::from_stat(stat, expanded=true, rank~)),
+          root: Some(TreeNode::from_stat(stat, expanded=true, rank~, compare~)),
           pending_reveal: if self.pending_reveal is Some(_) {
             self.pending_reveal
           } else {
@@ -134,7 +147,7 @@ fn FileTreeModel::with_directory_resolved(
       } else {
         match self.root {
           Some(root) =>
-            match root.with_resolved(uri, stat, rank~) {
+            match root.with_resolved(uri, stat, rank~, compare~) {
               Some(root) => { ..self, root: Some(root) }
               None => self
             }

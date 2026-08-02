@@ -46,35 +46,6 @@ impl @workspace.WorkspaceTreeProvider for RemoteWorkspaceTreeProvider with fn re
 }
 
 ///|
-/// Explorer-only provider view: filename sorting belongs to the visible tree
-/// policy and must not change the raw provider order used by auto-open.
-priv struct ExplorerWorkspaceTreeProvider {}
-
-///|
-let explorer_workspace_tree_provider : &@workspace.WorkspaceTreeProvider = ExplorerWorkspaceTreeProvider::{
-
-}
-
-///|
-impl @workspace.WorkspaceTreeProvider for ExplorerWorkspaceTreeProvider with fn root(
-  _self,
-) {
-  workspace_tree_provider.root()
-}
-
-///|
-impl @workspace.WorkspaceTreeProvider for ExplorerWorkspaceTreeProvider with fn resolve(
-  _self,
-  uri,
-) {
-  match workspace_tree_provider.resolve(uri) {
-    WorkspaceResolved(stat) =>
-      WorkspaceResolved(order_workspace_stat_children(stat))
-    WorkspaceResolveError(error) => WorkspaceResolveError(error)
-  }
-}
-
-///|
 /// The explorer widget instance, created on first use so the protocol
 /// dispatch hooks installed at mount are already in place.
 let file_tree_cell : Ref[@file_tree.FileTree?] = Ref(None)
@@ -85,9 +56,10 @@ fn workspace_file_tree() -> @file_tree.FileTree {
     Some(tree) => tree
     None => {
       let tree = @file_tree.FileTree(
-        explorer_workspace_tree_provider,
+        workspace_tree_provider,
         on_open=uri => dispatch_workbench_msg(SelectWorkspace(uri)),
         rank=workspace_entry_rank,
+        compare=workspace_entry_compare,
       )
       file_tree_cell.val = Some(tree)
       tree
@@ -100,8 +72,7 @@ fn workspace_file_tree() -> @file_tree.FileTree {
 /// describe a MoonBit package to a reader — its README first (any extension,
 /// including `README.mbt.md`), then the generated `pkg.generated.mbti`
 /// interface, then `moon.pkg` — lead every directory level, above the widget's
-/// directories-before-files default. Everything else keeps that default after
-/// the level has been ordered lexicographically by name.
+/// directories-before-files default.
 fn workspace_entry_rank(stat : @workspace.WorkspaceStat) -> Int {
   guard stat.kind is File else { return 0 }
   match stat.name {
@@ -113,15 +84,14 @@ fn workspace_entry_rank(stat : @workspace.WorkspaceStat) -> Int {
 }
 
 ///|
-/// Applies the explorer's filename order before the file-tree widget groups
-/// entries by rank and kind. MoonBit's default `String` order is shortlex;
-/// filenames use UTF-16 code-unit lexicographic order instead.
-fn order_workspace_stat_children(
-  stat : @workspace.WorkspaceStat,
-) -> @workspace.WorkspaceStat {
-  guard stat.children is Some(children) else { return stat }
-  children.sort_by((left, right) => left.name.lexical_compare(right.name))
-  { ..stat, children: Some(children) }
+/// Explorer ordering policy for otherwise equal entries. MoonBit's default
+/// `String` order is shortlex; filenames use UTF-16 code-unit lexicographic
+/// order instead.
+fn workspace_entry_compare(
+  left : @workspace.WorkspaceStat,
+  right : @workspace.WorkspaceStat,
+) -> Int {
+  left.name.lexical_compare(right.name)
 }
 
 ///|
