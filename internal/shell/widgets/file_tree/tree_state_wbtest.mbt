@@ -17,17 +17,6 @@ fn file_stat(raw : String, name : String) -> @workspace.WorkspaceStat {
 let root_raw : String = "readonly-remote://workspace"
 
 ///|
-fn directories_then_lexical(
-  left : @workspace.WorkspaceStat,
-  right : @workspace.WorkspaceStat,
-) -> Int {
-  match default_workspace_stat_compare(left, right) {
-    0 => left.name.lexical_compare(right.name)
-    by_kind => by_kind
-  }
-}
-
-///|
 fn TreeNode::find(self : TreeNode, uri : @base_common.Uri) -> TreeNode? {
   if self.uri == uri {
     return Some(self)
@@ -73,62 +62,57 @@ test "orders resolved children directories first" {
 }
 
 ///|
-/// A host comparator that leads its level with `first.md`, sinks `last.txt`
-/// below the files, and otherwise keeps the widget's directories-first default.
-fn pin_first_and_last_rank(stat : @workspace.WorkspaceStat) -> Int {
-  match stat.name {
-    "first.md" => -1
-    "last.txt" => 1
-    _ => 0
-  }
-}
-
-///|
-fn pin_first_and_last_compare(
-  left : @workspace.WorkspaceStat,
-  right : @workspace.WorkspaceStat,
-) -> Int {
-  match pin_first_and_last_rank(left).compare(pin_first_and_last_rank(right)) {
-    0 => default_workspace_stat_compare(left, right)
-    by_rank => by_rank
-  }
-}
-
-///|
-test "a host comparator owns the complete level order" {
-  let level = [
-    file_stat(root_raw + "/moon.pkg", "moon.pkg"),
-    dir_stat(root_raw + "/src", "src"),
-    file_stat(root_raw + "/last.txt", "last.txt"),
-    dir_stat(root_raw + "/docs", "docs"),
-    file_stat(root_raw + "/first.md", "first.md"),
-  ]
+test "one workspace comparator owns pins kind and lexical name order" {
   let stat : @workspace.WorkspaceStat = {
     uri: uri(root_raw),
     name: "workspace",
     kind: Directory,
-    children: Some(level),
+    children: Some([
+      file_stat(root_raw + "/z", "z"),
+      dir_stat(root_raw + "/viewer", "viewer"),
+      file_stat(root_raw + "/aa", "aa"),
+      dir_stat(root_raw + "/base", "base"),
+      file_stat(root_raw + "/moon.pkg", "moon.pkg"),
+      file_stat(root_raw + "/pkg.generated.mbti", "pkg.generated.mbti"),
+      file_stat(root_raw + "/README.md", "README.md"),
+    ]),
   }
-
-  let ordered = TreeNode::from_stat(
-    stat,
-    expanded=true,
-    compare=pin_first_and_last_compare,
-  )
+  let ordered = TreeNode::from_stat(stat, expanded=true)
   assert_eq(ordered.visible_rows().map(row => row.node.name), [
-    "first.md", "src", "docs", "moon.pkg", "last.txt",
-  ])
-
-  // The widget default keeps directories before files and provider order
-  // within each group.
-  let default_order = TreeNode::from_stat(stat, expanded=true)
-  assert_eq(default_order.visible_rows().map(row => row.node.name), [
-    "src", "docs", "moon.pkg", "last.txt", "first.md",
+    "README.md", "pkg.generated.mbti", "moon.pkg", "base", "viewer", "aa", "z",
   ])
 }
 
 ///|
-test "a host comparator orders entries through Array::sort_by" {
+test "README pinning is file-only and accepts any extension" {
+  let stat : @workspace.WorkspaceStat = {
+    uri: uri(root_raw),
+    name: "workspace",
+    kind: Directory,
+    children: Some([
+      file_stat(root_raw + "/other.txt", "other.txt"),
+      file_stat(root_raw + "/readme.md", "readme.md"),
+      dir_stat(root_raw + "/src", "src"),
+      file_stat(root_raw + "/READMEISH.txt", "READMEISH.txt"),
+      dir_stat(root_raw + "/README", "README"),
+      file_stat(root_raw + "/moon.pkg", "moon.pkg"),
+      file_stat(root_raw + "/README.mbt.md", "README.mbt.md"),
+      file_stat(root_raw + "/pkg.generated.mbti", "pkg.generated.mbti"),
+      file_stat(root_raw + "/README-file", "README"),
+    ]),
+  }
+  let ordered = TreeNode::from_stat(stat, expanded=true)
+  let rows = ordered.visible_rows()
+  assert_eq(rows.map(row => row.node.name), [
+    "README", "README.mbt.md", "pkg.generated.mbti", "moon.pkg", "README", "src",
+    "READMEISH.txt", "other.txt", "readme.md",
+  ])
+  assert_eq(rows[0].node.uri.to_string(), root_raw + "/README-file")
+  assert_eq(rows[4].node.uri.to_string(), root_raw + "/README")
+}
+
+///|
+test "workspace comparison orders entries through Array::sort_by" {
   let stat : @workspace.WorkspaceStat = {
     uri: uri(root_raw),
     name: "workspace",
@@ -140,34 +124,26 @@ test "a host comparator orders entries through Array::sort_by" {
       file_stat(root_raw + "/aa.mbt", "aa.mbt"),
     ]),
   }
-  let root = TreeNode::from_stat(
-    stat,
-    expanded=true,
-    compare=directories_then_lexical,
-  )
+  let root = TreeNode::from_stat(stat, expanded=true)
   assert_eq(root.visible_rows().map(row => row.node.name), [
     "aa", "z", "aa.mbt", "z.mbt",
   ])
 }
 
 ///|
-test "a host comparator orders lazily resolved levels the same way" {
+test "workspace comparison orders lazily resolved levels the same way" {
   let src_uri = uri(root_raw + "/src")
   let (expanded, _) = resolved_root().toggle(src_uri).unwrap()
   let resolved = expanded
-    .with_resolved(
-      src_uri,
-      {
-        uri: src_uri,
-        name: "src",
-        kind: Directory,
-        children: Some([
-          file_stat(root_raw + "/src/main.mbt", "main.mbt"),
-          file_stat(root_raw + "/src/first.md", "first.md"),
-        ]),
-      },
-      compare=pin_first_and_last_compare,
-    )
+    .with_resolved(src_uri, {
+      uri: src_uri,
+      name: "src",
+      kind: Directory,
+      children: Some([
+        file_stat(root_raw + "/src/main.mbt", "main.mbt"),
+        file_stat(root_raw + "/src/first.md", "first.md"),
+      ]),
+    })
     .unwrap()
   assert_eq(resolved.visible_rows().map(row => row.node.name), [
     "src", "first.md", "main.mbt", "moon.mod",

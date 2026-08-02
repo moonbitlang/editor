@@ -15,7 +15,7 @@ import {
 
 // Types and methods
 type FileTree
-pub fn FileTree::FileTree(&@workspace.WorkspaceTreeProvider, on_open~ : (@common.Uri) -> Unit, compare? : (@workspace.WorkspaceStat, @workspace.WorkspaceStat) -> Int) -> Self
+pub fn FileTree::FileTree(&@workspace.WorkspaceTreeProvider, on_open~ : (@common.Uri) -> Unit) -> Self
 pub fn FileTree::refresh(Self) -> @cmd.Cmd
 pub fn FileTree::set_active(Self, @common.Uri) -> @cmd.Cmd
 pub fn FileTree::view(Self) -> @rabbita.Val[@html.Html]
