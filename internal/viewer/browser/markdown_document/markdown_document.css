@@ -36,6 +36,16 @@
   overflow-wrap: anywhere;
 }
 
+/* The collapsed TOC is deliberately overlaid so it never shifts scroll or
+ * source geometry. Reserve one compact row in the article when it is present;
+ * explicit first-child margins below must not let the title slip under it. */
+.moonbit-viewer-markdown-document:has(
+    > .moonbit-viewer-markdown-toc[data-toc-visible="true"]
+  )
+  .moonbit-viewer-markdown-document-article {
+  padding-top: 32px;
+}
+
 .moonbit-viewer-markdown-document-article
   > :where(h1, h2, h3, h4, h5, h6, p, ul, ol, dl, hr, details) {
   max-width: var(--markdown-prose-measure);

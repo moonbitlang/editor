@@ -281,6 +281,13 @@ test('the pinned toc bar outlines sections and navigation expands the chain', as
   await expect(page.locator(tocBar)).toHaveAttribute('data-toc-visible', 'true');
   await expect(page.locator(tocToggle)).toContainText('4 sections');
   await expect(page.locator(tocRow).first()).toBeHidden();
+  const collapsedTocBox = await page.locator(tocBar).boundingBox();
+  const titleBox = await page.locator(`${article} > h1`).boundingBox();
+  expect(collapsedTocBox).not.toBeNull();
+  expect(titleBox).not.toBeNull();
+  expect(titleBox.y).toBeGreaterThanOrEqual(
+    collapsedTocBox.y + collapsedTocBox.height - 1,
+  );
 
   // Expanding shows one row per section, indented by structural depth.
   await page.locator(tocToggle).click();
