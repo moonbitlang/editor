@@ -33,36 +33,6 @@ pub(all) enum HighlightTag {
 } derive(Eq, Debug)
 
 ///|
-/// Renders the tag's variant name. Used by the per-language lexer golden tests
-/// to label each token; production styling is the view model's metadata
-/// encoding (`mtk<colorId>`), not a per-tag string.
-pub impl Show for HighlightTag with fn output(self, logger) {
-  logger.write_string(
-    match self {
-      Keyword => "Keyword"
-      Identifier => "Identifier"
-      String => "String"
-      Number => "Number"
-      Comment => "Comment"
-      Punctuation => "Punctuation"
-      Plain => "Plain"
-      Operator => "Operator"
-      Delimiter => "Delimiter"
-      Type => "Type"
-      Function => "Function"
-      Variable => "Variable"
-      Constant => "Constant"
-      StringEscape => "StringEscape"
-      CommentDoc => "CommentDoc"
-      Regexp => "Regexp"
-      Tag => "Tag"
-      Attribute => "Attribute"
-      Invalid => "Invalid"
-    },
-  )
-}
-
-///|
 /// One highlighted span within a single line, in line-local UTF-16
 /// code-unit offsets. Token ranges must never split a surrogate pair: the
 /// viewer slices the document text at these offsets.
@@ -121,7 +91,7 @@ struct TokenizationRegistry {
 ///|
 /// Creates an empty tokenization registry with no color map, matching
 /// `vscode/src/vs/editor/common/tokenizationRegistry.ts:20-24`.
-pub fn TokenizationRegistry::TokenizationRegistry() -> TokenizationRegistry {
+fn TokenizationRegistry::new_impl() -> TokenizationRegistry {
   {
     tokenizers: Map([]),
     next_id: Ref(0),
@@ -135,7 +105,7 @@ pub fn TokenizationRegistry::TokenizationRegistry() -> TokenizationRegistry {
 /// Mirrors `TokenizationRegistry.handleChange`
 /// (`vscode/src/vs/editor/common/tokenizationRegistry.ts:26-31`): a language
 /// change never claims that the encoded-token color map changed.
-pub fn TokenizationRegistry::handle_change(
+fn TokenizationRegistry::handle_change_impl(
   self : TokenizationRegistry,
   language_ids : Array[String],
 ) -> Unit {
@@ -162,11 +132,11 @@ pub fn TokenizationRegistry::register(
   self.tokenizers[language_id] = { id, tokenizer }
   // The pinned source installs before notification; the disposer returns
   // immediately when a newer registration owns the key.
-  self.handle_change([language_id])
+  self.handle_change_impl([language_id])
   @base_common.Disposable::from(() => {
     if self.tokenizers.get(language_id) is Some(entry) && entry.id == id {
       self.tokenizers.remove(language_id)
-      self.handle_change([language_id])
+      self.handle_change_impl([language_id])
     }
   })
 }
@@ -190,7 +160,7 @@ pub fn TokenizationRegistry::get(
 /// (`vscode/src/vs/editor/common/tokenizationRegistry.ts:81-93`). With no
 /// lazy-factory API there is no pending state, so both registered and missing
 /// languages are resolved.
-pub fn TokenizationRegistry::is_resolved(
+fn TokenizationRegistry::is_resolved_impl(
   self : TokenizationRegistry,
   language_id : String,
 ) -> Bool {
@@ -206,7 +176,7 @@ pub fn TokenizationRegistry::is_resolved(
 /// reviewed `Color[]` to `Array[String]` reduction of
 /// `TokenizationRegistry.setColorMap`
 /// (`vscode/src/vs/editor/common/tokenizationRegistry.ts:95-101`).
-pub fn TokenizationRegistry::set_color_map(
+fn TokenizationRegistry::set_color_map_impl(
   self : TokenizationRegistry,
   color_map : Array[String],
 ) -> Unit {
@@ -221,7 +191,7 @@ pub fn TokenizationRegistry::set_color_map(
 /// Returns the retained CSS color-expression map, or `None` before one is set.
 /// Mirrors `TokenizationRegistry.getColorMap`
 /// (`vscode/src/vs/editor/common/tokenizationRegistry.ts:103-105`).
-pub fn TokenizationRegistry::get_color_map(
+fn TokenizationRegistry::get_color_map_impl(
   self : TokenizationRegistry,
 ) -> Array[String]? {
   self.color_map
@@ -231,7 +201,7 @@ pub fn TokenizationRegistry::get_color_map(
 /// Returns the CSS expression at Monaco's literal
 /// `ColorId.DefaultBackground = 2`, but only when the map length exceeds that
 /// index (`vscode/src/vs/editor/common/tokenizationRegistry.ts:107-112`).
-pub fn TokenizationRegistry::get_default_background(
+fn TokenizationRegistry::get_default_background_impl(
   self : TokenizationRegistry,
 ) -> String? {
   match self.color_map {
@@ -255,7 +225,7 @@ pub fn TokenizationRegistry::on_did_change(
 /// The process-wide registry, Monaco's `export const TokenizationRegistry`
 /// singleton (`common/languages.ts`). `Languages::set_tokens_provider`
 /// (the `monaco.languages.setTokensProvider` analog) registers into it.
-pub let tokenization_registry : TokenizationRegistry = TokenizationRegistry()
+pub let tokenization_registry : TokenizationRegistry = TokenizationRegistry::new_impl()
 
 ///|
 /// Whether `word` begins with an uppercase ASCII letter (`A`–`Z`), the shared

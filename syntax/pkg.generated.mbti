@@ -49,8 +49,7 @@ pub(all) struct LineToken {
   tag : HighlightTag
 } derive(Eq, @debug.Debug)
 
-pub struct PlainTokenizer {
-}
+type PlainTokenizer
 pub fn PlainTokenizer::PlainTokenizer() -> Self
 pub impl LineTokenizer for PlainTokenizer
 

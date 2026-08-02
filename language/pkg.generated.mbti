@@ -63,11 +63,7 @@ pub(all) enum HoverContent {
   Markdown(String)
 } derive(Eq, @debug.Debug)
 
-pub struct LanguageFilter {
-  language : String?
-  scheme : String?
-  pattern : String?
-} derive(@debug.Debug)
+type LanguageFilter derive(@debug.Debug)
 pub fn LanguageFilter::LanguageFilter(language? : String, scheme? : String, pattern? : String) -> Self
 pub fn LanguageFilter::matches(Self, @model.TextModel) -> Bool
 pub fn LanguageFilter::score(Self, @model.TextModel) -> Int

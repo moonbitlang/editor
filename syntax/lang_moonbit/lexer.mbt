@@ -13,7 +13,7 @@
 ///   'b' inside a plain `{ ... }` brace pair nested in an interpolation
 /// No MoonBit string construct survives a line end, so every line both
 /// enters and leaves at "n"; the stack only drives the within-line modes.
-pub struct MoonbitTokenizer {}
+struct MoonbitTokenizer {}
 
 ///|
 /// Creates the MoonBit tokenizer.

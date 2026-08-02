@@ -92,17 +92,6 @@ pub(open) trait DefinitionProvider {
 }
 
 ///|
-/// Asynchronous references provider for a readonly text model.
-pub(open) trait ReferencesProvider {
-  async fn provide_references(
-    Self,
-    @model.TextModel,
-    @base_common.Position,
-    CancellationToken,
-  ) -> Array[Location]
-}
-
-///|
 /// Document symbol provider for outline/navigation views.
 pub(open) trait DocumentSymbolProvider {
   async fn provide_document_symbols(Self, @model.TextModel, CancellationToken) -> Array[
