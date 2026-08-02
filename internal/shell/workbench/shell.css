@@ -49,6 +49,13 @@ body {
   background: var(--vscode-sideBar-border);
 }
 
+/* Keep the visible divider compact while giving pointer users a 24px target. */
+.workspace-resize-handle::after {
+  content: "";
+  position: absolute;
+  inset: 0 -10px;
+}
+
 .workspace-resize-handle:hover::before,
 .workspace-resize-handle:focus-visible::before {
   background: var(--vscode-focusBorder);

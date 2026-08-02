@@ -88,6 +88,11 @@ test('keeps the explorer compact and exposes an accessible splitter', async ({
   await expect(splitter).toHaveAttribute('aria-valuemin', '200');
   await expect(splitter).toHaveAttribute('aria-valuemax', '420');
   await expect(splitter).toHaveAttribute('aria-valuenow', '280');
+  await expect.poll(() =>
+    splitter.evaluate((element) =>
+      Number.parseFloat(getComputedStyle(element, '::after').width),
+    )
+  ).toBeGreaterThanOrEqual(24);
 
   await page.locator(
     '[data-workspace-id="readonly-remote://workspace/README.md"]',
@@ -155,6 +160,19 @@ test('keeps the explorer compact and exposes an accessible splitter', async ({
       return Math.abs(host.width - root.width);
     })
   ).toBeLessThan(1);
+
+  // A mobile-first load must retain the desktop default instead of treating
+  // the responsive 148px column as the user's preferred width.
+  await page.reload();
+  await expect(page.locator('.editor-shell')).toHaveAttribute(
+    'data-status',
+    'ready',
+  );
+  await expect(explorer).toHaveCSS('width', '148px');
+  await page.setViewportSize({ width: 800, height: 700 });
+  await expect(explorer).toHaveCSS('width', '280px');
+  await expect(splitter).toBeVisible();
+  await expect(splitter).toHaveAttribute('aria-valuenow', '280');
 });
 
 test('renders explorer rows with twisties and file icons', async ({ page }) => {

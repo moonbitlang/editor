@@ -355,7 +355,9 @@ extern "js" fn install_explorer_resize_handle() -> () -> Unit =
   #|     minWidth,
   #|     Math.min(420, Math.floor((ownerWindow.innerWidth || 840) * 0.5)),
   #|   );
-  #|   let width = Math.round(sidebar.getBoundingClientRect().width) || 280;
+  #|   let width = Math.round(Number.parseFloat(
+  #|     ownerWindow.getComputedStyle?.(main).getPropertyValue('--explorer-width'),
+  #|   )) || 280;
   #|   let activePointerId = null;
   #|   let startX = 0;
   #|   let startWidth = width;
