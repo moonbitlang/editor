@@ -1,7 +1,7 @@
 ///|
 /// Detects configuration-backed whole-line Markdown comments in `model`.
 /// Detection is synchronous and reads one immutable model snapshot.
-pub fn detect_markdown_comments(
+fn detect_markdown_comments(
   model : @model.TextModel,
   rule : @languages.CommentRule,
 ) -> Array[@language.MarkdownCommentBlock] {
@@ -11,7 +11,7 @@ pub fn detect_markdown_comments(
 ///|
 /// Detects configuration-backed whole-line Markdown comments in `snapshot`.
 /// The scan is deterministic, line-first, and linear in the snapshot text.
-pub fn detect_markdown_comments_in_snapshot(
+fn detect_markdown_comments_in_snapshot(
   snapshot : @model.TextSnapshot,
   rule : @languages.CommentRule,
 ) -> Array[@language.MarkdownCommentBlock] {
@@ -127,7 +127,7 @@ pub fn detect_markdown_comments_in_snapshot(
 /// Resolves the Markdown-comment source for `model` and normalizes it once.
 /// A matching provider is authoritative even when it returns an empty array;
 /// configuration-backed detection is used only when no provider matches.
-pub fn resolve_markdown_comment_blocks(
+fn resolve_markdown_comment_blocks(
   model : @model.TextModel,
   languages : @languages.LanguageHandle,
   log_service : @log.LogHandle,
@@ -141,7 +141,7 @@ pub fn resolve_markdown_comment_blocks(
 /// The normalized blocks plus the explicit presentation capability captured
 /// from the same winning provider registration. Configuration-backed detection
 /// is never foldable.
-pub(all) struct ResolvedMarkdownCommentBlocks {
+pub struct ResolvedMarkdownCommentBlocks {
   blocks : Array[@language.MarkdownCommentBlock]
   foldable : Bool
 }
@@ -181,7 +181,7 @@ pub fn resolve_markdown_comment_blocks_with_presentation(
 /// Normalizes raw detector or provider blocks against `model_line_count`.
 /// Ranges are 1-based and half-open. Invalid ranges and later overlaps are
 /// dropped with warning-level diagnostics; touching ranges remain distinct.
-pub fn normalize_markdown_comment_blocks(
+fn normalize_markdown_comment_blocks(
   blocks : Array[@language.MarkdownCommentBlock],
   model_line_count : Int,
   log_service : @log.LogHandle,
