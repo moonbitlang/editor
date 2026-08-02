@@ -121,20 +121,6 @@ fn ModelRawContentChangedEvent::merge(
 }
 
 ///|
-/// `IModelContentChange` (`model/mirrorTextModel.ts`): one change entry of
-/// the public content-changed payload.
-struct ModelContentChange {
-  /// The range that got replaced.
-  range : @base_common.Range
-  /// The offset of the range that got replaced.
-  range_offset : Int
-  /// The length of the range that got replaced.
-  range_length : Int
-  /// The new text for the range.
-  text : String
-} derive(Debug)
-
-///|
 /// The public `IModelContentChangedEvent` (`textModelEvents.ts:42-85`) minus
 /// `detailedReasons`/`detailedReasonsChangeLengths` (file-header deviation).
 /// The I-prefix drops per the repo naming policy.

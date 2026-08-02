@@ -1,3 +1,26 @@
+// Deliberate external/staged contracts without non-test construction in this
+// repository. Their public layouts make the surviving marker input/output APIs
+// usable while keeping the analyzer exception explicit in `exports.mbt`.
+
+///|
+/// Related-information location, `IRelatedInformation` (`markers.ts:42`).
+pub(all) struct RelatedInformation {
+  resource : @base_common.Uri
+  message : String
+  start_line_number : Int
+  start_column : Int
+  end_line_number : Int
+  end_column : Int
+} derive(Eq, Debug)
+
+///|
+/// A `{resource, marker}` pair for `change_all`, `IResourceMarker`
+/// (`markers.ts:124`).
+pub(all) struct ResourceMarker {
+  resource : @base_common.Uri
+  marker : MarkerData
+} derive(Eq, Debug)
+
 ///|
 /// Compatibility entry point for callers that still use the historical
 /// paired add/remove API. New viewer ownership uses `acquire_model` directly.

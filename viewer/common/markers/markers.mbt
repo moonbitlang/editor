@@ -126,17 +126,6 @@ fn MarkerTag::to_diagnostic_tag(self : MarkerTag) -> @language.DiagnosticTag {
 }
 
 ///|
-/// Related-information location, `IRelatedInformation` (`markers.ts:42`).
-struct RelatedInformation {
-  resource : @base_common.Uri
-  message : String
-  start_line_number : Int
-  start_column : Int
-  end_line_number : Int
-  end_column : Int
-} derive(Eq, Debug)
-
-///|
 /// Pre-sanitize marker input, `IMarkerData` (`markers.ts:109`). Monaco's
 /// `code?: string | { value; target }` object form (code links) is reduced to
 /// `String?` — the link target is out of scope (deviation).
@@ -234,14 +223,6 @@ fn MarkerData::to_marker(
     origin: self.origin,
   })
 }
-
-///|
-/// A `{resource, marker}` pair for `change_all`, `IResourceMarker`
-/// (`markers.ts:124`).
-struct ResourceMarker {
-  resource : @base_common.Uri
-  marker : MarkerData
-} derive(Eq, Debug)
 
 ///|
 /// A sanitized marker, `IMarker` (`markers.ts:129`). `range` is derived from the

@@ -45,7 +45,12 @@ pub(all) enum MinimapPosition {
   Gutter
 } derive(Eq, @debug.Debug)
 
-type ModelContentChange derive(@debug.Debug)
+pub(all) struct ModelContentChange {
+  range : @common.Range
+  range_offset : Int
+  range_length : Int
+  text : String
+} derive(@debug.Debug)
 
 pub struct ModelContentChangedEvent {
   changes : Array[ModelContentChange]

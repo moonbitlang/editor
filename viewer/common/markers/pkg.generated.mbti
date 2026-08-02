@@ -79,7 +79,14 @@ pub(all) enum MarkerTag {
   Deprecated
 } derive(Eq, @debug.Debug)
 
-type RelatedInformation derive(Eq, @debug.Debug)
+pub(all) struct RelatedInformation {
+  resource : @common.Uri
+  message : String
+  start_line_number : Int
+  start_column : Int
+  end_line_number : Int
+  end_column : Int
+} derive(Eq, @debug.Debug)
 
 pub struct ResolvedMarkerDecoration {
   range : @common.Range
@@ -87,7 +94,10 @@ pub struct ResolvedMarkerDecoration {
   options : @model.ModelDecorationOptions
 }
 
-type ResourceMarker derive(Eq, @debug.Debug)
+pub(all) struct ResourceMarker {
+  resource : @common.Uri
+  marker : MarkerData
+} derive(Eq, @debug.Debug)
 
 pub(all) struct SquigglyThemeColors {
   error : String?
