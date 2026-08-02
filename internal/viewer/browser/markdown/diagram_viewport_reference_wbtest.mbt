@@ -1,4 +1,4 @@
-// Algorithm/behavior reference coverage for:
+// Shared Markdown diagram viewport algorithm/behavior reference coverage for:
 // - vscode/extensions/mermaid-markdown-features/preview-src/shared/diagramManager.ts
 // - vscode/extensions/mermaid-markdown-features/preview-src/shared/diagramStyles.css
 // - vscode/extensions/mermaid-markdown-features/preview-src/chat/mermaidWebview.ts
@@ -458,14 +458,14 @@ extern "js" fn diagram_viewport_test_set_window_inner_height(
 
 ///|
 fn diagram_viewport_test_controller_count(
-  lifetime : MarkdownCommentDiagramViewportLifetime,
+  lifetime : MarkdownDiagramViewportLifetime,
 ) -> Int {
   lifetime.controllers.length()
 }
 
 ///|
 fn diagram_viewport_test_scale(
-  lifetime : MarkdownCommentDiagramViewportLifetime,
+  lifetime : MarkdownDiagramViewportLifetime,
   index : Int,
 ) -> Double {
   lifetime.controllers[index].scale
@@ -473,7 +473,7 @@ fn diagram_viewport_test_scale(
 
 ///|
 fn diagram_viewport_test_translate_x(
-  lifetime : MarkdownCommentDiagramViewportLifetime,
+  lifetime : MarkdownDiagramViewportLifetime,
   index : Int,
 ) -> Double {
   lifetime.controllers[index].translate_x
@@ -481,7 +481,7 @@ fn diagram_viewport_test_translate_x(
 
 ///|
 fn diagram_viewport_test_translate_y(
-  lifetime : MarkdownCommentDiagramViewportLifetime,
+  lifetime : MarkdownDiagramViewportLifetime,
   index : Int,
 ) -> Double {
   lifetime.controllers[index].translate_y
@@ -489,7 +489,7 @@ fn diagram_viewport_test_translate_y(
 
 ///|
 fn diagram_viewport_test_interacted(
-  lifetime : MarkdownCommentDiagramViewportLifetime,
+  lifetime : MarkdownDiagramViewportLifetime,
   index : Int,
 ) -> Bool {
   lifetime.controllers[index].has_interacted
@@ -497,7 +497,7 @@ fn diagram_viewport_test_interacted(
 
 ///|
 fn diagram_viewport_test_dragged(
-  lifetime : MarkdownCommentDiagramViewportLifetime,
+  lifetime : MarkdownDiagramViewportLifetime,
   index : Int,
 ) -> Bool {
   lifetime.controllers[index].has_dragged
@@ -505,7 +505,7 @@ fn diagram_viewport_test_dragged(
 
 ///|
 fn diagram_viewport_test_is_panning(
-  lifetime : MarkdownCommentDiagramViewportLifetime,
+  lifetime : MarkdownDiagramViewportLifetime,
   index : Int,
 ) -> Bool {
   lifetime.controllers[index].is_panning
@@ -513,7 +513,7 @@ fn diagram_viewport_test_is_panning(
 
 ///|
 fn diagram_viewport_test_is_resizing(
-  lifetime : MarkdownCommentDiagramViewportLifetime,
+  lifetime : MarkdownDiagramViewportLifetime,
   index : Int,
 ) -> Bool {
   lifetime.controllers[index].is_resizing
@@ -521,7 +521,7 @@ fn diagram_viewport_test_is_resizing(
 
 ///|
 fn diagram_viewport_test_custom_height(
-  lifetime : MarkdownCommentDiagramViewportLifetime,
+  lifetime : MarkdownDiagramViewportLifetime,
   index : Int,
 ) -> Double {
   lifetime.controllers[index].custom_height.unwrap_or(0.0)
@@ -529,7 +529,7 @@ fn diagram_viewport_test_custom_height(
 
 ///|
 fn diagram_viewport_test_node(
-  lifetime : MarkdownCommentDiagramViewportLifetime,
+  lifetime : MarkdownDiagramViewportLifetime,
   index : Int,
   node_name : String,
 ) -> @rdom.Element {
@@ -550,7 +550,7 @@ fn diagram_viewport_test_node(
 
 ///|
 fn diagram_viewport_test_attribute(
-  lifetime : MarkdownCommentDiagramViewportLifetime,
+  lifetime : MarkdownDiagramViewportLifetime,
   index : Int,
   node_name : String,
   attribute : String,
@@ -563,7 +563,7 @@ fn diagram_viewport_test_attribute(
 
 ///|
 fn diagram_viewport_test_class_contains(
-  lifetime : MarkdownCommentDiagramViewportLifetime,
+  lifetime : MarkdownDiagramViewportLifetime,
   index : Int,
   node_name : String,
   class_name : String,
@@ -576,7 +576,7 @@ fn diagram_viewport_test_class_contains(
 
 ///|
 fn diagram_viewport_test_icon_class(
-  lifetime : MarkdownCommentDiagramViewportLifetime,
+  lifetime : MarkdownDiagramViewportLifetime,
   index : Int,
   node_name : String,
 ) -> String {
@@ -597,7 +597,7 @@ extern "js" fn diagram_viewport_test_child_classes_raw(
 
 ///|
 fn diagram_viewport_test_child_classes(
-  lifetime : MarkdownCommentDiagramViewportLifetime,
+  lifetime : MarkdownDiagramViewportLifetime,
   index : Int,
 ) -> String {
   diagram_viewport_test_child_classes_raw(lifetime.controllers[index].wrapper)
@@ -605,7 +605,7 @@ fn diagram_viewport_test_child_classes(
 
 ///|
 fn diagram_viewport_test_transform(
-  lifetime : MarkdownCommentDiagramViewportLifetime,
+  lifetime : MarkdownDiagramViewportLifetime,
   index : Int,
 ) -> String {
   @base_browser.element_style_value(
@@ -616,7 +616,7 @@ fn diagram_viewport_test_transform(
 
 ///|
 fn diagram_viewport_test_wrapper_height(
-  lifetime : MarkdownCommentDiagramViewportLifetime,
+  lifetime : MarkdownDiagramViewportLifetime,
   index : Int,
 ) -> String {
   @base_browser.element_style_value(
@@ -627,7 +627,7 @@ fn diagram_viewport_test_wrapper_height(
 
 ///|
 fn diagram_viewport_test_svg_height_attribute(
-  lifetime : MarkdownCommentDiagramViewportLifetime,
+  lifetime : MarkdownDiagramViewportLifetime,
   index : Int,
 ) -> String {
   element_attribute_or_empty(lifetime.controllers[index].svg, "height")
@@ -651,7 +651,7 @@ extern "js" fn diagram_viewport_test_set_geometry_raw(
 
 ///|
 fn diagram_viewport_test_set_geometry(
-  lifetime : MarkdownCommentDiagramViewportLifetime,
+  lifetime : MarkdownDiagramViewportLifetime,
   index : Int,
   viewport_width : Double,
   viewport_height : Double,
@@ -683,7 +683,7 @@ extern "js" fn diagram_viewport_test_set_invalid_geometry_raw(
 
 ///|
 fn diagram_viewport_test_set_invalid_geometry(
-  lifetime : MarkdownCommentDiagramViewportLifetime,
+  lifetime : MarkdownDiagramViewportLifetime,
   index : Int,
   kind : String,
 ) -> Unit {
@@ -755,7 +755,7 @@ extern "js" fn diagram_viewport_test_retain_wrapper(
 ///|
 fn diagram_viewport_test_set_original_wrapper_style(
   harness : DiagramViewportTestHarness,
-  lifetime : MarkdownCommentDiagramViewportLifetime,
+  lifetime : MarkdownDiagramViewportLifetime,
   index : Int,
 ) -> Unit {
   // The saved styles were captured before mount. This helper only exists
@@ -785,7 +785,7 @@ extern "js" fn diagram_viewport_test_retained_wrapper_state(
 
 ///|
 fn diagram_viewport_event(
-  lifetime : MarkdownCommentDiagramViewportLifetime,
+  lifetime : MarkdownDiagramViewportLifetime,
   index : Int,
   node_name : String,
   event_type : String,
@@ -827,9 +827,7 @@ test "empty wrong-language and indirect SVG targets are exact no-ops" {
     with_diagram_viewport_test_harness(harness => {
       let target = diagram_viewport_test_target(harness, mode)
       let changes = Ref(0)
-      let viewports = MarkdownCommentDiagramViewports(target, () => {
-        changes.val += 1
-      })
+      let viewports = MarkdownDiagramViewports(target, () => changes.val += 1)
       defer viewports.dispose()
       assert_eq(diagram_viewport_test_controller_count(viewports.lifetime), 0)
       assert_eq(diagram_viewport_test_observer_count(harness), 0)
@@ -846,7 +844,7 @@ test "empty wrong-language and indirect SVG targets are exact no-ops" {
 
   with_diagram_viewport_test_harness(harness => {
     let mixed_target = diagram_viewport_test_target(harness, "mixed")
-    let mixed = MarkdownCommentDiagramViewports(mixed_target, () => ())
+    let mixed = MarkdownDiagramViewports(mixed_target, () => ())
     defer mixed.dispose()
     assert_eq(diagram_viewport_test_controller_count(mixed.lifetime), 1)
     assert_eq(diagram_viewport_test_observer_count(harness), 1)
@@ -861,7 +859,7 @@ test "refresh mounts asynchronous Mermaid SVGs and replaces stale controllers" {
   let harness = install_diagram_viewport_test_dom()
   defer harness.dispose()
   let target = diagram_viewport_test_target(harness, "mermaid-pending")
-  let viewports = MarkdownCommentDiagramViewports(target, () => ())
+  let viewports = MarkdownDiagramViewports(target, () => ())
   defer viewports.dispose()
   assert_eq(diagram_viewport_test_controller_count(viewports.lifetime), 0)
   assert_eq(diagram_viewport_test_observer_count(harness), 0)
@@ -904,7 +902,7 @@ test "mount is synchronous while positive geometry waits for the shared frame" {
   defer harness.dispose()
   let target = diagram_viewport_test_target(harness, "one")
   let changes = Ref(0)
-  let viewports = MarkdownCommentDiagramViewports(target, () => changes.val += 1)
+  let viewports = MarkdownDiagramViewports(target, () => changes.val += 1)
   defer viewports.dispose()
   assert_eq(diagram_viewport_test_controller_count(viewports.lifetime), 1)
   assert_eq(
@@ -1079,7 +1077,7 @@ test "initial tall SVG is capped to half the window and fitted with exact paddin
   defer harness.dispose()
   let target = diagram_viewport_test_target(harness, "tall")
   let changes = Ref(0)
-  let viewports = MarkdownCommentDiagramViewports(target, () => changes.val += 1)
+  let viewports = MarkdownDiagramViewports(target, () => changes.val += 1)
   defer viewports.dispose()
   diagram_viewport_test_flush_frame(harness)
 
@@ -1126,7 +1124,7 @@ test "zero geometry remains pending until a later observer sees positive sizes" 
   defer harness.dispose()
   let target = diagram_viewport_test_target(harness, "one")
   let changes = Ref(0)
-  let viewports = MarkdownCommentDiagramViewports(target, () => changes.val += 1)
+  let viewports = MarkdownDiagramViewports(target, () => changes.val += 1)
   defer viewports.dispose()
   diagram_viewport_test_set_geometry(viewports.lifetime, 0, 0.0, 0.0, 0.0, 0.0)
   diagram_viewport_test_flush_frame(harness)
@@ -1157,7 +1155,7 @@ test "true Fit uses 16px padding keeps height and installs fit-aware zoom floor"
   defer harness.dispose()
   let target = diagram_viewport_test_target(harness, "wide")
   let changes = Ref(0)
-  let viewports = MarkdownCommentDiagramViewports(target, () => changes.val += 1)
+  let viewports = MarkdownDiagramViewports(target, () => changes.val += 1)
   defer viewports.dispose()
   diagram_viewport_test_flush_frame(harness)
   assert_eq(
@@ -1199,7 +1197,7 @@ test "Fit handles tall and already-small SVGs and rejects zero or nonfinite geom
   let harness = install_diagram_viewport_test_dom()
   defer harness.dispose()
   let target = diagram_viewport_test_target(harness, "wide")
-  let viewports = MarkdownCommentDiagramViewports(target, () => ())
+  let viewports = MarkdownDiagramViewports(target, () => ())
   defer viewports.dispose()
   diagram_viewport_test_flush_frame(harness)
 
@@ -1280,7 +1278,7 @@ test "ordinary wheel passes through while Alt and Ctrl wheel preserve the event 
   let harness = install_diagram_viewport_test_dom()
   defer harness.dispose()
   let target = diagram_viewport_test_target(harness, "one")
-  let viewports = MarkdownCommentDiagramViewports(target, () => ())
+  let viewports = MarkdownDiagramViewports(target, () => ())
   defer viewports.dispose()
   diagram_viewport_test_flush_frame(harness)
   assert_eq(
@@ -1363,7 +1361,7 @@ test "pan toggle Alt drag and strict per-move threshold keep click semantics" {
   let harness = install_diagram_viewport_test_dom()
   defer harness.dispose()
   let target = diagram_viewport_test_target(harness, "one")
-  let viewports = MarkdownCommentDiagramViewports(target, () => ())
+  let viewports = MarkdownDiagramViewports(target, () => ())
   defer viewports.dispose()
   diagram_viewport_test_flush_frame(harness)
 
@@ -1576,7 +1574,7 @@ test "resize pointer and keyboard branches honor 100px and 10/50px steps" {
   defer harness.dispose()
   let target = diagram_viewport_test_target(harness, "one")
   let changes = Ref(0)
-  let viewports = MarkdownCommentDiagramViewports(target, () => changes.val += 1)
+  let viewports = MarkdownDiagramViewports(target, () => changes.val += 1)
   defer viewports.dispose()
   diagram_viewport_test_flush_frame(harness)
   assert_eq(changes.val, 1)
@@ -1728,7 +1726,7 @@ test "host resize recenters naturally then preserves the interacted SVG origin" 
   defer harness.dispose()
   let target = diagram_viewport_test_target(harness, "one")
   let changes = Ref(0)
-  let viewports = MarkdownCommentDiagramViewports(target, () => changes.val += 1)
+  let viewports = MarkdownDiagramViewports(target, () => changes.val += 1)
   defer viewports.dispose()
   diagram_viewport_test_flush_frame(harness)
   assert_eq(changes.val, 1)
@@ -1799,7 +1797,7 @@ test "two diagrams have independent transforms observers and controls" {
   let harness = install_diagram_viewport_test_dom()
   defer harness.dispose()
   let target = diagram_viewport_test_target(harness, "two")
-  let viewports = MarkdownCommentDiagramViewports(target, () => ())
+  let viewports = MarkdownDiagramViewports(target, () => ())
   defer viewports.dispose()
   assert_eq(diagram_viewport_test_controller_count(viewports.lifetime), 2)
   assert_eq(diagram_viewport_test_observer_count(harness), 2)
@@ -1822,8 +1820,8 @@ test "owner-document resize cursor lease admits only one live group" {
   defer harness.dispose()
   let first_target = diagram_viewport_test_target(harness, "one")
   let second_target = diagram_viewport_test_target(harness, "one")
-  let first = MarkdownCommentDiagramViewports(first_target, () => ())
-  let second = MarkdownCommentDiagramViewports(second_target, () => ())
+  let first = MarkdownDiagramViewports(first_target, () => ())
+  let second = MarkdownDiagramViewports(second_target, () => ())
   defer first.dispose()
   defer second.dispose()
   diagram_viewport_test_flush_frame(harness)
@@ -1887,7 +1885,7 @@ test "parent lifetime restores its wrapper without DOM expando ownership" {
   let harness = install_diagram_viewport_test_dom()
   defer harness.dispose()
   let target = diagram_viewport_test_target(harness, "one")
-  let viewports = MarkdownCommentDiagramViewports(target, () => ())
+  let viewports = MarkdownDiagramViewports(target, () => ())
   defer viewports.dispose()
   diagram_viewport_test_flush_frame(harness)
   diagram_viewport_test_set_original_wrapper_style(
@@ -1914,7 +1912,7 @@ test "observer setup failure rolls back the provisional mount" {
   let target = diagram_viewport_test_target(harness, "one")
   let changes = Ref(0)
   diagram_viewport_test_fail_next_observe(harness)
-  let viewports = MarkdownCommentDiagramViewports(target, () => changes.val += 1)
+  let viewports = MarkdownDiagramViewports(target, () => changes.val += 1)
   defer viewports.dispose()
   assert_eq(diagram_viewport_test_controller_count(viewports.lifetime), 0)
   assert_eq(changes.val, 0)
@@ -1939,7 +1937,7 @@ test "dispose cancels pending layout restores retained DOM and cursor and is ide
   defer harness.dispose()
   let target = diagram_viewport_test_target(harness, "one")
   let changes = Ref(0)
-  let viewports = MarkdownCommentDiagramViewports(target, () => changes.val += 1)
+  let viewports = MarkdownDiagramViewports(target, () => changes.val += 1)
   defer viewports.dispose()
   diagram_viewport_test_set_original_wrapper_style(
     harness,

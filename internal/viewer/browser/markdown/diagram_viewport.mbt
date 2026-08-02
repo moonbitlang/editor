@@ -70,7 +70,7 @@ priv struct DiagramBodyCursorLease {
 let diagram_body_cursor_coordinators : Array[DiagramBodyCursorCoordinator] = []
 
 ///|
-priv struct MarkdownCommentDiagramViewport {
+priv struct MarkdownDiagramViewport {
   wrapper : @rdom.Element
   content : @rdom.Element
   svg : @rdom.Element
@@ -117,28 +117,28 @@ priv struct MarkdownCommentDiagramViewport {
 }
 
 ///|
-priv struct MarkdownCommentDiagramViewportLifetime {
+priv struct MarkdownDiagramViewportLifetime {
   target : @rdom.Element
   on_size_changed : () -> Unit
   schedule_frame : (() -> Unit) -> () -> Unit
-  controllers : Array[MarkdownCommentDiagramViewport]
+  controllers : Array[MarkdownDiagramViewport]
   mut active : Bool
 }
 
 ///|
 priv enum DiagramViewportMountResult {
-  Mounted(MarkdownCommentDiagramViewport)
+  Mounted(MarkdownDiagramViewport)
   Skipped
   Failed
 }
 
 ///|
 /// Owns the interactive diagram viewports mounted in one rendered Markdown
-/// comment. Successful direct Diago and Mermaid SVG children are enhanced. The
-/// caller retains ownership of the Markdown target and disposes this handle
-/// before replacing or removing that target.
-struct MarkdownCommentDiagramViewports {
-  lifetime : MarkdownCommentDiagramViewportLifetime
+/// target. Successful direct Diago and Mermaid SVG children are enhanced. The
+/// caller retains ownership of the target and disposes this handle before
+/// replacing or removing that target.
+struct MarkdownDiagramViewports {
+  lifetime : MarkdownDiagramViewportLifetime
 }
 
 ///|
@@ -146,8 +146,8 @@ struct MarkdownCommentDiagramViewports {
 /// Diago or Mermaid SVG. Geometry is initialized at the next animation-frame
 /// boundary. Call `refresh` after an asynchronous renderer commits or replaces
 /// a direct SVG.
-/// `on_size_changed` invalidates the owning Markdown-comment ViewZone whenever
-/// this component writes a new inline viewport height.
+/// `on_size_changed` invalidates the owning presentation whenever this
+/// component writes a new inline viewport height.
 ///
 /// ```d2
 /// direction: right
@@ -157,7 +157,7 @@ struct MarkdownCommentDiagramViewports {
 /// wrapper: borrowed wrapper and SVG
 /// hooks: pointer, wheel, resize hooks
 /// cursor: body-cursor lease
-/// callback: ViewZone measurement callback
+/// callback: presentation measurement callback
 ///
 /// group -> controller: owns many
 /// controller -> wrapper: temporarily enhances
@@ -168,15 +168,15 @@ struct MarkdownCommentDiagramViewports {
 ///
 /// Disposal walks the owned controllers in reverse and restores every borrowed
 /// wrapper attribute and inline style before the caller replaces the target.
-pub fn MarkdownCommentDiagramViewports::MarkdownCommentDiagramViewports(
+pub fn MarkdownDiagramViewports::MarkdownDiagramViewports(
   target : @rdom.Element,
   on_size_changed : () -> Unit,
-) -> MarkdownCommentDiagramViewports {
+) -> MarkdownDiagramViewports {
   let schedule_frame = (callback : () -> Unit) => {
     let registration = @base_browser.schedule_at_next_animation_frame(callback)
     () => registration.dispose()
   }
-  let lifetime : MarkdownCommentDiagramViewportLifetime = {
+  let lifetime : MarkdownDiagramViewportLifetime = {
     target,
     on_size_changed,
     schedule_frame,
@@ -192,15 +192,15 @@ pub fn MarkdownCommentDiagramViewports::MarkdownCommentDiagramViewports(
 /// interactive viewport controllers. Existing current controllers retain
 /// their interaction state; stale controllers are disposed before replacement
 /// SVGs are mounted.
-pub fn MarkdownCommentDiagramViewports::refresh(
-  self : MarkdownCommentDiagramViewports,
+pub fn MarkdownDiagramViewports::refresh(
+  self : MarkdownDiagramViewports,
 ) -> Unit {
   self.lifetime.refresh()
 }
 
 ///|
-fn MarkdownCommentDiagramViewportLifetime::refresh(
-  self : MarkdownCommentDiagramViewportLifetime,
+fn MarkdownDiagramViewportLifetime::refresh(
+  self : MarkdownDiagramViewportLifetime,
 ) -> Unit {
   if !self.active {
     return
@@ -235,15 +235,15 @@ fn MarkdownCommentDiagramViewportLifetime::refresh(
 ///|
 /// Idempotently releases every viewport listener, observer, animation frame,
 /// owning-window drag, temporary cursor, and DOM reference.
-pub fn MarkdownCommentDiagramViewports::dispose(
-  self : MarkdownCommentDiagramViewports,
+pub fn MarkdownDiagramViewports::dispose(
+  self : MarkdownDiagramViewports,
 ) -> Unit {
   self.lifetime.dispose()
 }
 
 ///|
-fn MarkdownCommentDiagramViewportLifetime::dispose(
-  self : MarkdownCommentDiagramViewportLifetime,
+fn MarkdownDiagramViewportLifetime::dispose(
+  self : MarkdownDiagramViewportLifetime,
 ) -> Unit {
   if !self.active {
     return
@@ -349,7 +349,7 @@ fn mount_diagram_viewport_in_environment(
   resize_handle.set_attribute("role", "separator")
   resize_handle.set_attribute("aria-label", "Resize diagram")
   resize_handle.set_attribute("aria-orientation", "horizontal")
-  let controller : MarkdownCommentDiagramViewport = {
+  let controller : MarkdownDiagramViewport = {
     wrapper,
     content,
     svg,
@@ -466,8 +466,8 @@ fn create_diagram_button(
 }
 
 ///|
-fn MarkdownCommentDiagramViewport::install_listeners(
-  self : MarkdownCommentDiagramViewport,
+fn MarkdownDiagramViewport::install_listeners(
+  self : MarkdownDiagramViewport,
 ) -> Unit {
   let consume_control_pointer = (event : @rdom.Event) => {
     event.stop_propagation()
@@ -743,8 +743,8 @@ fn MarkdownCommentDiagramViewport::install_listeners(
 }
 
 ///|
-fn MarkdownCommentDiagramViewport::listen(
-  self : MarkdownCommentDiagramViewport,
+fn MarkdownDiagramViewport::listen(
+  self : MarkdownDiagramViewport,
   target : @rdom.EventTarget,
   event_type : String,
   listener : @rdom.Listener,
@@ -767,15 +767,15 @@ fn MarkdownCommentDiagramViewport::listen(
 }
 
 ///|
-fn MarkdownCommentDiagramViewport::viewport_rect(
-  self : MarkdownCommentDiagramViewport,
+fn MarkdownDiagramViewport::viewport_rect(
+  self : MarkdownDiagramViewport,
 ) -> @rdom.DOMRect {
   self.wrapper.get_bounding_client_rect()
 }
 
 ///|
-fn MarkdownCommentDiagramViewport::measure_svg(
-  self : MarkdownCommentDiagramViewport,
+fn MarkdownDiagramViewport::measure_svg(
+  self : MarkdownDiagramViewport,
 ) -> DiagramSize? {
   let saved_transform = save_element_style(self.content, "transform")
   @base_browser.set_style_property(self.content, "transform", "none")
@@ -789,8 +789,8 @@ fn MarkdownCommentDiagramViewport::measure_svg(
 }
 
 ///|
-fn MarkdownCommentDiagramViewport::apply_transform(
-  self : MarkdownCommentDiagramViewport,
+fn MarkdownDiagramViewport::apply_transform(
+  self : MarkdownDiagramViewport,
 ) -> Unit {
   @base_browser.set_style_property(
     self.content,
@@ -800,8 +800,8 @@ fn MarkdownCommentDiagramViewport::apply_transform(
 }
 
 ///|
-fn MarkdownCommentDiagramViewport::write_height(
-  self : MarkdownCommentDiagramViewport,
+fn MarkdownDiagramViewport::write_height(
+  self : MarkdownDiagramViewport,
   height : Double,
 ) -> Bool {
   if !is_positive_finite(height) {
@@ -819,8 +819,8 @@ fn MarkdownCommentDiagramViewport::write_height(
 }
 
 ///|
-fn MarkdownCommentDiagramViewport::set_cursor(
-  self : MarkdownCommentDiagramViewport,
+fn MarkdownDiagramViewport::set_cursor(
+  self : MarkdownDiagramViewport,
   alt_key : Bool,
   shift_key : Bool,
 ) -> Unit {
@@ -840,8 +840,8 @@ fn MarkdownCommentDiagramViewport::set_cursor(
 }
 
 ///|
-fn MarkdownCommentDiagramViewport::height_for_svg(
-  self : MarkdownCommentDiagramViewport,
+fn MarkdownDiagramViewport::height_for_svg(
+  self : MarkdownDiagramViewport,
   svg_size : DiagramSize,
 ) -> Double {
   match self.custom_height {
@@ -861,8 +861,8 @@ fn MarkdownCommentDiagramViewport::height_for_svg(
 }
 
 ///|
-fn MarkdownCommentDiagramViewport::fit_content_to_rect(
-  self : MarkdownCommentDiagramViewport,
+fn MarkdownDiagramViewport::fit_content_to_rect(
+  self : MarkdownDiagramViewport,
   svg_size : DiagramSize,
   rect : @rdom.DOMRect,
 ) -> Bool {
@@ -890,8 +890,8 @@ fn MarkdownCommentDiagramViewport::fit_content_to_rect(
 }
 
 ///|
-fn MarkdownCommentDiagramViewport::center_natural_content(
-  self : MarkdownCommentDiagramViewport,
+fn MarkdownDiagramViewport::center_natural_content(
+  self : MarkdownDiagramViewport,
 ) -> Bool {
   guard self.measure_svg() is Some(svg_size) else { return false }
   let before = self.viewport_rect()
@@ -930,8 +930,8 @@ fn MarkdownCommentDiagramViewport::center_natural_content(
 }
 
 ///|
-fn MarkdownCommentDiagramViewport::preserve_visible_origin(
-  self : MarkdownCommentDiagramViewport,
+fn MarkdownDiagramViewport::preserve_visible_origin(
+  self : MarkdownDiagramViewport,
 ) -> Bool {
   if !is_positive_finite(self.scale) {
     return false
@@ -968,9 +968,7 @@ fn MarkdownCommentDiagramViewport::preserve_visible_origin(
 }
 
 ///|
-fn MarkdownCommentDiagramViewport::layout(
-  self : MarkdownCommentDiagramViewport,
-) -> Bool {
+fn MarkdownDiagramViewport::layout(self : MarkdownDiagramViewport) -> Bool {
   if !self.active {
     return false
   }
@@ -985,8 +983,8 @@ fn MarkdownCommentDiagramViewport::layout(
 }
 
 ///|
-fn MarkdownCommentDiagramViewport::zoom_at_point(
-  self : MarkdownCommentDiagramViewport,
+fn MarkdownDiagramViewport::zoom_at_point(
+  self : MarkdownDiagramViewport,
   factor : Double,
   x : Double,
   y : Double,
@@ -1017,8 +1015,8 @@ fn MarkdownCommentDiagramViewport::zoom_at_point(
 }
 
 ///|
-fn MarkdownCommentDiagramViewport::zoom_at_center(
-  self : MarkdownCommentDiagramViewport,
+fn MarkdownDiagramViewport::zoom_at_center(
+  self : MarkdownDiagramViewport,
   factor : Double,
 ) -> Bool {
   if !self.initialized && !self.center_natural_content() {
@@ -1033,9 +1031,7 @@ fn MarkdownCommentDiagramViewport::zoom_at_center(
 }
 
 ///|
-fn MarkdownCommentDiagramViewport::fit(
-  self : MarkdownCommentDiagramViewport,
-) -> Bool {
+fn MarkdownDiagramViewport::fit(self : MarkdownDiagramViewport) -> Bool {
   if !self.initialized && !self.center_natural_content() {
     return false
   }
@@ -1054,8 +1050,8 @@ fn MarkdownCommentDiagramViewport::fit(
 }
 
 ///|
-fn MarkdownCommentDiagramViewport::resize_to_height(
-  self : MarkdownCommentDiagramViewport,
+fn MarkdownDiagramViewport::resize_to_height(
+  self : MarkdownDiagramViewport,
   height : Double,
 ) -> Bool {
   if !is_finite(height) {
@@ -1068,8 +1064,8 @@ fn MarkdownCommentDiagramViewport::resize_to_height(
 }
 
 ///|
-fn MarkdownCommentDiagramViewport::acquire_body_cursor(
-  self : MarkdownCommentDiagramViewport,
+fn MarkdownDiagramViewport::acquire_body_cursor(
+  self : MarkdownDiagramViewport,
 ) -> Bool {
   if self.body_cursor_lease is Some(_) {
     return false
@@ -1096,8 +1092,8 @@ fn MarkdownCommentDiagramViewport::acquire_body_cursor(
 }
 
 ///|
-fn MarkdownCommentDiagramViewport::restore_body_cursor(
-  self : MarkdownCommentDiagramViewport,
+fn MarkdownDiagramViewport::restore_body_cursor(
+  self : MarkdownDiagramViewport,
 ) -> Unit {
   match self.body_cursor_lease {
     Some(lease) => release_body_cursor_lease(lease)
@@ -1107,8 +1103,8 @@ fn MarkdownCommentDiagramViewport::restore_body_cursor(
 }
 
 ///|
-fn MarkdownCommentDiagramViewport::finish_pan(
-  self : MarkdownCommentDiagramViewport,
+fn MarkdownDiagramViewport::finish_pan(
+  self : MarkdownDiagramViewport,
   event : @rdom.MouseEvent,
 ) -> Unit {
   if !self.is_panning {
@@ -1121,8 +1117,8 @@ fn MarkdownCommentDiagramViewport::finish_pan(
 }
 
 ///|
-fn MarkdownCommentDiagramViewport::finish_resize(
-  self : MarkdownCommentDiagramViewport,
+fn MarkdownDiagramViewport::finish_resize(
+  self : MarkdownDiagramViewport,
 ) -> Unit {
   if !self.is_resizing {
     return
@@ -1133,9 +1129,7 @@ fn MarkdownCommentDiagramViewport::finish_resize(
 }
 
 ///|
-fn MarkdownCommentDiagramViewport::is_current(
-  self : MarkdownCommentDiagramViewport,
-) -> Bool {
+fn MarkdownDiagramViewport::is_current(self : MarkdownDiagramViewport) -> Bool {
   guard self.active && element_has_class(self.wrapper, diagram_viewport_class) else {
     return false
   }
@@ -1150,9 +1144,7 @@ fn MarkdownCommentDiagramViewport::is_current(
 }
 
 ///|
-fn MarkdownCommentDiagramViewport::dispose(
-  self : MarkdownCommentDiagramViewport,
-) -> Unit {
+fn MarkdownDiagramViewport::dispose(self : MarkdownDiagramViewport) -> Unit {
   if !self.active {
     return
   }

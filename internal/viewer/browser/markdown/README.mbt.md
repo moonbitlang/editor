@@ -19,9 +19,9 @@ flowchart LR
   B -.->|"opt-in, pinned CDN"| ME["Mermaid lifetime"]
 ```
 
-Only the root Markdown-comment contribution emits the exact lowercase `mermaid`
-marker and enables the Mermaid lifetime; hover and agent feedback remain
-ordinary tokenized-code consumers.
+The full Markdown document presentation and root Markdown-comment contribution
+emit the exact lowercase `mermaid` marker and enable the Mermaid lifetime;
+hover and agent feedback remain ordinary tokenized-code consumers.
 
 ```mbt nocheck
 // A renderer owns its target node and is disposed per target.
@@ -48,11 +48,19 @@ Scrollable diagram wrappers retain native wheel scrolling while they can
 consume the current delta. When neither axis can consume it, the event is
 allowed to reach the owning hover, widget, or editor scroller.
 
-`moonbit-viewer-markdown-diagram-viewport` is an event-time ownership marker:
-while a wrapper carries it, this generic listener never stops ordinary wheel
-input. The Markdown-comment viewport controller can therefore mount after the
-renderer listener and return ordinary wheel input to the editor while owning
-its modifier-zoom events. Removing the marker restores the native inner-scroll
+`MarkdownDiagramViewports` owns the optional interactive presentation for every
+successful direct Diago or Mermaid SVG in one rendered target. It mounts pan,
+zoom, fit, and resize controls, owns their listener/observer/frame lifetime,
+and restores borrowed DOM state on disposal. Both the full Markdown document
+and Markdown-comment consumers mount this shared controller and dispose it
+before replacing their renderer target. Its stylesheet is
+`internal/viewer/browser/markdown/diagram_viewport.css`.
+
+`moonbit-viewer-markdown-diagram-viewport` is also an event-time ownership
+marker: while a wrapper carries it, the generic listener never stops ordinary
+wheel input. The viewport controller can therefore mount after the renderer
+listener and return ordinary wheel input to the owning scroller while owning
+modifier-zoom events. Removing the marker restores the native inner-scroll
 handoff, so hover and agent-feedback diagrams keep their existing behavior.
 
 Mermaid rendering is an explicit browser-only opt-in. Pass
@@ -76,10 +84,11 @@ SVG replacement invokes the existing size callback. Loading, CSP, syntax,
 stale-result, target-reuse, and disposal failures retain the source fallback or
 last successful SVG.
 
-The whole-line Markdown-comment consumer also uses that size callback to
-refresh its diagram-viewport owner. Successful Mermaid SVGs therefore receive
-the same pan, zoom, fit, and resize controls as synchronous Diago SVGs; a theme
-rerender disposes the controller for the replaced SVG and mounts a fresh one.
+The full-document and whole-line Markdown-comment consumers also use that size
+callback to refresh their diagram-viewport owner. Successful Mermaid SVGs
+therefore receive the same pan, zoom, fit, and resize controls as synchronous
+Diago SVGs; a theme rerender disposes the controller for the replaced SVG and
+mounts a fresh one.
 
 Hosts using Mermaid must allow `https://cdn.jsdelivr.net` in the applicable
 module-script CSP directive, including Mermaid's relative ESM chunks, and allow

@@ -58,6 +58,7 @@ struct MarkdownDocumentView {
   mut theme : String
   mut projection_generation : Int
   mut rendered : @browser_markdown.RenderedMarkdown
+  mut diagram_viewports : @browser_markdown.MarkdownDiagramViewports
   mut semantic_dom : MarkdownSemanticDomLifetime
   listeners : Array[@base_common.Disposable]
   mut on_section_fold_toggle : (Int) -> Unit
@@ -122,7 +123,7 @@ pub fn MarkdownDocumentView::MarkdownDocumentView(
   root.append_child(toc_nav.as_node())
   root.append_child(viewport.as_node())
   root.append_child(overlay_mount.as_node())
-  let rendered = render_markdown_document(
+  let (rendered, diagram_viewports) = render_markdown_document_presentation(
     source, language_id, base_uri, resource_kind, theme, article, on_size_changed,
   )
   let view : MarkdownDocumentView = {
@@ -139,6 +140,7 @@ pub fn MarkdownDocumentView::MarkdownDocumentView(
     theme,
     projection_generation: 1,
     rendered,
+    diagram_viewports,
     semantic_dom: MarkdownSemanticDomLifetime::empty(),
     listeners: [],
     on_section_fold_toggle: _ => (),
@@ -209,6 +211,43 @@ pub fn MarkdownDocumentView::MarkdownDocumentView(
     }
   })
   view
+}
+
+///|
+/// Builds one replaceable article generation and its diagram-controller
+/// lifetime. Renderer callbacks include asynchronous Mermaid commits, so they
+/// reconcile replaced SVGs before reporting the size change. Controller-owned
+/// resize gestures report size directly and never rescan the article tree.
+fn render_markdown_document_presentation(
+  source : String,
+  language_id : String,
+  base_uri : @base_common.Uri,
+  resource_kind : @markdown_core.MarkdownResourceKind,
+  theme : String,
+  article : @rdom.Element,
+  on_size_changed : () -> Unit,
+) -> (
+  @browser_markdown.RenderedMarkdown,
+  @browser_markdown.MarkdownDiagramViewports,
+) {
+  let diagram_viewports_slot : Ref[@browser_markdown.MarkdownDiagramViewports?] = Ref(
+    None,
+  )
+  let on_rendered_size_changed = () => {
+    match diagram_viewports_slot.val {
+      Some(diagram_viewports) => diagram_viewports.refresh()
+      None => ()
+    }
+    on_size_changed()
+  }
+  let rendered = render_markdown_document(
+    source, language_id, base_uri, resource_kind, theme, article, on_rendered_size_changed,
+  )
+  let diagram_viewports = @browser_markdown.MarkdownDiagramViewports(
+    article, on_size_changed,
+  )
+  diagram_viewports_slot.val = Some(diagram_viewports)
+  (rendered, diagram_viewports)
 }
 
 ///|
@@ -486,11 +525,12 @@ pub fn MarkdownDocumentView::replace_source(
 ) -> Unit {
   guard !self.disposed else { return }
   self.semantic_dom.dispose()
+  self.diagram_viewports.dispose()
   self.rendered.dispose.dispose()
   self.source = source
   self.source_model_version = source_model_version
   self.projection_generation += 1
-  self.rendered = render_markdown_document(
+  let (rendered, diagram_viewports) = render_markdown_document_presentation(
     source,
     self.language_id,
     self.base_uri,
@@ -499,6 +539,8 @@ pub fn MarkdownDocumentView::replace_source(
     self.article,
     self.on_size_changed,
   )
+  self.rendered = rendered
+  self.diagram_viewports = diagram_viewports
   self.post_render()
   (self.on_size_changed)()
 }
@@ -1020,6 +1062,7 @@ pub fn MarkdownDocumentView::dispose(self : MarkdownDocumentView) -> Unit {
     listener.dispose()
   }
   self.semantic_dom.dispose()
+  self.diagram_viewports.dispose()
   self.rendered.dispose.dispose()
 }
 

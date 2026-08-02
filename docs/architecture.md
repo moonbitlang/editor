@@ -204,17 +204,21 @@ js-only. Concrete browser runtime packages live below the module-private
   semantic source boundaries; cross-line tokenization state is preserved, and
   decoded-text or row-cardinality mismatches fail closed. The package owns no
   model, provider, marker store, or request policy. It also owns semantic DOM
-  caret-to-source mapping and exact projected-range span construction; root and
-  the hover browser package own the higher-level feature contracts.
+  caret-to-source mapping, exact projected-range span construction, and one
+  shared diagram-viewport lifetime for its replaceable article; root and the
+  hover browser package own the higher-level feature contracts.
 - `internal/viewer/markdown` is the multi-target safe-cmark boundary. It owns
   plaintext fallback, a cmark-independent code-block value, conversion facts,
   the shared editor-token HTML override, and the private synchronous adapter
   that renders exact lowercase `diago` fences through `Milky2018/diago` while
   returning failures and every other code block to the existing fallback;
   `internal/viewer/browser/markdown` adds MoonBit-owned DOM retention,
-  URI/media policy, activation listeners, size notification, and per-target
-  disposal. Narrow JS bindings provide inert-template parsing, browser URL
-  resolution, realm registries, dynamic import, and Mermaid API calls.
+  URI/media policy, activation listeners, size notification, per-target
+  disposal, and the reusable pan/zoom/fit/resize diagram viewport controller.
+  Its emitted diagram-control stylesheet remains at
+  `internal/viewer/browser/markdown/diagram_viewport.css`. Narrow JS bindings
+  provide inert-template parsing, browser URL resolution, realm registries,
+  dynamic import, and Mermaid API calls.
   Its diagram-wheel listener rechecks wrapper classes for every event:
   `moonbit-viewer-markdown-diagram-viewport` declines the generic native-scroll
   handoff so ordinary wheel input reaches the editor, while unmarked hover and
@@ -222,13 +226,13 @@ js-only. Concrete browser runtime packages live below the module-private
   opt-in Mermaid lifetime lazily imports the pinned official CDN module. Its
   realm-wide MoonBit runtime caches the API, serializes global configuration
   with rendering, and rejects stale asynchronous DOM commits through
-  per-diagram epochs and target ownership. Successful Markdown-comment Mermaid
-  commits refresh the same pan/zoom/fit/resize viewport owner used by
-  synchronous D2/Diago output, including after theme replacement. Only the
-  root Markdown-comment contribution emits
-  the exact lowercase `mermaid` marker and enables this lifetime; hover and
-  agent feedback remain ordinary tokenized code consumers. Browser
-  contributions consume these packages instead of owning private
+  per-diagram epochs and target ownership. Successful full-document and
+  Markdown-comment Mermaid commits refresh the same pan/zoom/fit/resize
+  viewport owner used by synchronous D2/Diago output, including after theme
+  replacement. The full Markdown document and root Markdown-comment
+  contribution emit the exact lowercase `mermaid` marker and enable this
+  lifetime; hover and agent feedback remain ordinary tokenized code consumers.
+  Browser contributions consume these packages instead of owning private
   Markdown-to-`innerHTML` pipelines.
 - `internal/viewer/browser/config` measures fonts and browser geometry.
 - `internal/viewer/browser/controller` owns hit testing, mouse selection, drag
@@ -317,17 +321,10 @@ editor common/browser layers; editor common never depends on them.
 - `internal/viewer/contrib/markdown_comments` owns multi-target whole-line
   comment detection, provider/configuration resolution, and normalized block
   ranges. Its browser sibling owns the stable ViewZone DOM pair and coalesced
-  visible/offscreen size observer. It also owns one opaque diagram-viewport
-  group per rendered target: each successful direct Diago SVG is enhanced
-  independently with bounded pan/zoom/fit controls and a resize handle.
-  MoonBit structs own each group's controllers, geometry state, listeners,
-  observers, queued frame, and disposal. The parent rendered entry guarantees
-  exclusive wrapper ownership and disposes the group before renderer
-  replacement; no ownership state is written onto caller DOM. Resize gestures
-  share a module-private per-document cursor coordinator, while FFI remains
-  limited to missing browser bindings such as `ResizeObserver`, document/body
-  access, style preservation, and a non-passive wheel listener. Inline
-  viewport-height changes report only through a narrow callback. The root
+  visible/offscreen size observer. The root contribution owns one instance of
+  the shared Markdown diagram-viewport group per rendered target and disposes
+  it before renderer replacement. Inline viewport-height changes report only
+  through a narrow callback into the existing size observer. The root
   `viewer` contribution owns reconciliation, renderer and viewport lifetimes,
   exact model-source extraction, zone ids, and the one hidden-area source. Its
   emitted stylesheet remains at

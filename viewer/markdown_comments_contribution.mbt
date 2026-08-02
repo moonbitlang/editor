@@ -44,7 +44,7 @@ priv struct RenderedMarkdownComment {
   mut fold_lifetime : @base_common.Disposable?
   fold_expanded : Ref[Bool]
   source_lifetime : @base_common.Disposable
-  mut diagram_viewports : @markdown_comments_browser.MarkdownCommentDiagramViewports
+  mut diagram_viewports : @browser_markdown.MarkdownDiagramViewports
   size_observer : @markdown_comments_browser.MarkdownCommentSizeObserver
   mut measured_height : Double
   generation : Ref[Int]
@@ -384,11 +384,11 @@ fn render_markdown_comment_presentations(
   @browser_markdown.RenderedMarkdown,
   @browser_markdown.RenderedMarkdown?,
   @base_common.Disposable?,
-  @markdown_comments_browser.MarkdownCommentDiagramViewports,
+  @browser_markdown.MarkdownDiagramViewports,
 ) {
-  let diagram_viewports_slot : Ref[
-    @markdown_comments_browser.MarkdownCommentDiagramViewports?,
-  ] = Ref(None)
+  let diagram_viewports_slot : Ref[@browser_markdown.MarkdownDiagramViewports?] = Ref(
+    None,
+  )
   // Renderer notifications include asynchronous Mermaid commits, so reconcile
   // before measuring. Diagram viewport and fold interactions only change
   // geometry; keep their pointer-driven path on the already-coalesced size
@@ -428,7 +428,7 @@ fn render_markdown_comment_presentations(
       (None, None)
     }
   }
-  let diagram_viewports = @markdown_comments_browser.MarkdownCommentDiagramViewports(
+  let diagram_viewports = @browser_markdown.MarkdownDiagramViewports(
     rendered_markdown.element,
     on_interaction_size_changed,
   )

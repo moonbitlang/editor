@@ -144,6 +144,24 @@ fn markdown_document_source() -> String {
 }
 
 ///|
+fn markdown_document_diagram_source() -> String {
+  (
+    #|# Interactive Markdown diagrams
+    #|
+    #|```d2
+    #|direction: right
+    #|source -> shared: D2
+    #|shared -> viewport: controls
+    #|```
+    #|
+    #|```mermaid
+    #|flowchart LR
+    #|  Source --> SharedViewport --> Controls
+    #|```
+  )
+}
+
+///|
 fn markdown_document_same_uri_source() -> String {
   (
     #|# Same URI replacement model
@@ -337,6 +355,7 @@ fn run_markdown_document_test() -> Unit {
   secondary_viewer.handle_initialized()
   install_markdown_document_controls(
     () => markdown_model.get_value(),
+    () => viewer.set_value(markdown_document_diagram_source()),
     () => {
       viewer.set_value(markdown_document_replacement_source())
       set_markdown_document_diagnostic(
@@ -469,6 +488,7 @@ fn poll_markdown_document_ready(
 ///|
 extern "js" fn install_markdown_document_controls(
   get_model_value : () -> String,
+  show_diagrams : () -> Unit,
   replace_source : () -> Unit,
   update_theme : (String) -> Unit,
   show_code : () -> Unit,
@@ -485,6 +505,7 @@ extern "js" fn install_markdown_document_controls(
 ) -> Unit =
   #| (
   #|   getModelValue,
+  #|   showDiagrams,
   #|   replaceSource,
   #|   updateTheme,
   #|   showCode,
@@ -501,6 +522,7 @@ extern "js" fn install_markdown_document_controls(
   #| ) => {
   #|   globalThis.__markdownDocumentControls = {
   #|     getModelValue,
+  #|     showDiagrams,
   #|     replaceSource,
   #|     updateTheme,
   #|     showCode,
