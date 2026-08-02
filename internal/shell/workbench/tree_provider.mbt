@@ -58,7 +58,6 @@ fn workspace_file_tree() -> @file_tree.FileTree {
       let tree = @file_tree.FileTree(
         workspace_tree_provider,
         on_open=uri => dispatch_workbench_msg(SelectWorkspace(uri)),
-        rank=workspace_entry_rank,
         compare=workspace_entry_compare,
       )
       file_tree_cell.val = Some(tree)
@@ -84,14 +83,33 @@ fn workspace_entry_rank(stat : @workspace.WorkspaceStat) -> Int {
 }
 
 ///|
-/// Explorer ordering policy for otherwise equal entries. MoonBit's default
-/// `String` order is shortlex; filenames use UTF-16 code-unit lexicographic
-/// order instead.
+/// Complete explorer ordering policy: pinned overview files first, then
+/// directories before files, then UTF-16 code-unit lexicographic names.
+/// MoonBit's default `String` order is shortlex, so filenames use
+/// `lexical_compare` explicitly.
 fn workspace_entry_compare(
   left : @workspace.WorkspaceStat,
   right : @workspace.WorkspaceStat,
 ) -> Int {
-  left.name.lexical_compare(right.name)
+  match workspace_entry_rank(left).compare(workspace_entry_rank(right)) {
+    0 =>
+      match
+        workspace_entry_kind_rank(left.kind).compare(
+          workspace_entry_kind_rank(right.kind),
+        ) {
+        0 => left.name.lexical_compare(right.name)
+        by_kind => by_kind
+      }
+    by_rank => by_rank
+  }
+}
+
+///|
+fn workspace_entry_kind_rank(kind : @workspace.WorkspaceEntryKind) -> Int {
+  match kind {
+    Directory => 0
+    File => 1
+  }
 }
 
 ///|

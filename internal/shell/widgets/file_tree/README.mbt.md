@@ -20,18 +20,12 @@ flowchart LR
 tree.expand(directory_uri)      // triggers one resolve
 tree.on_select(uri => workbench.open_document(uri))
 
-// Level order is host policy: a negative rank leads its level, and the
-// comparator orders otherwise equal entries.
+// The host comparator owns the complete level order, including pins, entry
+// kinds, and names.
 @file_tree.FileTree(
   provider,
   on_open~,
-  rank=stat => match stat.name {
-    "README.md" => -3
-    "pkg.generated.mbti" => -2
-    "moon.pkg" => -1
-    _ => 0
-  },
-  compare=(left, right) => left.name.lexical_compare(right.name),
+  compare=workspace_entry_compare,
 )
 ```
 
@@ -40,12 +34,11 @@ tree.on_select(uri => workbench.open_document(uri))
 - Directories start collapsed. First expansion calls
   `WorkspaceTreeProvider.resolve` for exactly one level; successful children are
   cached and ordered directories-first. Collapse/re-expand reuses the cache.
-- Level order is the host's policy, passed as `rank~` and `compare~`: entries
-  render by ascending rank, then directories-before-files, then the comparator.
-  Exact ties keep the provider's order. The defaults rank and compare everything
-  alike; a negative rank pins a name above the directories (the workbench pins
-  `README*`, then `pkg.generated.mbti`, then `moon.pkg`) and a positive one sinks
-  it below the files. The workbench comparator orders names lexicographically.
+- Level order is the host's complete policy, passed as `compare~`. Exact ties
+  keep the provider's order. The default comparator groups directories before
+  files while preserving provider order within each group. The workbench
+  comparator additionally pins `README*`, then `pkg.generated.mbti`, then
+  `moon.pkg`, and orders otherwise equal entries lexicographically.
 - A failed resolve leaves an empty `resolve-failed` row; the next
   collapse/re-expand retries.
 - `set_active` selects a URI and resolves/expands its ancestor chain
@@ -54,7 +47,7 @@ tree.on_select(uri => workbench.open_document(uri))
 - Clicking a file reports its URI through `on_open`; the host owns reads and
   editor selection.
 
-Public API: `FileTree::FileTree(provider, on_open~, rank?, compare?)`, `view`,
+Public API: `FileTree::FileTree(provider, on_open~, compare?)`, `view`,
 `refresh`, and `set_active` (see `pkg.generated.mbti`). Stable test selectors include
 `workspace-item`, `workspace-folder`/`workspace-file`, `is-selected`,
 `data-workspace-id`, `data-workspace-kind`, and the ARIA expansion/selection
