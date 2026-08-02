@@ -15,25 +15,7 @@ import {
 }
 
 // Values
-pub let content_hover_widget_id : String
-
-pub fn hover_available_space_above(Double, Double) -> Double
-
-pub fn hover_available_space_below(Double, Double, Double, Double) -> Double
-
-pub fn hover_max_height(Double) -> Double
-
-pub fn hover_max_width(Double) -> Double
-
 pub fn hover_on_event(@hover.HoverController, EditorEvent, EditorContext, sticky_mouse_getting_closer? : Bool) -> (@hover.HoverEffect, @hover.HoverController)
-
-pub fn hover_prefer_above(Double, Double, Double, Bool) -> Bool
-
-pub let hover_prefer_above_default : Bool
-
-pub fn markdown_hover_clamped_origin(Double, Double, Double, Double, Double, Double, Double, Double, Double) -> (Double, Double)
-
-pub fn render_hover_rows(Array[@hover.HoverPart], String) -> HoverRowsRender
 
 // Errors
 
@@ -75,11 +57,8 @@ pub fn ContentHoverController::reset_model_state(Self) -> Unit
 
 pub struct ContentHoverWidget {
   wrapper : @dom.Element
-  hover : @dom.Element
   scrollable : @scrollbar.ScrollableElementDom
-  host : ContentHoverWidgetHost
   mut rendered_hover : RenderedContentHover?
-  mut position_preference : @view.ContentWidgetPositionPreference?
   // private fields
 }
 pub fn ContentHoverWidget::ContentHoverWidget(ContentHoverWidgetHost) -> Self
@@ -87,7 +66,6 @@ pub fn ContentHoverWidget::content_widget_handle(Self) -> @view.ContentWidgetHan
 pub fn ContentHoverWidget::dispose(Self) -> Unit
 pub fn ContentHoverWidget::go_to_bottom(Self) -> Unit
 pub fn ContentHoverWidget::go_to_top(Self) -> Unit
-pub fn ContentHoverWidget::handle_contents_changed(Self) -> Unit
 pub fn ContentHoverWidget::hide(Self) -> Unit
 pub fn ContentHoverWidget::is_visible(Self) -> Bool
 pub fn ContentHoverWidget::page_down(Self) -> Unit
@@ -126,10 +104,6 @@ pub(all) enum EditorEvent {
   EscapePressed
 }
 
-type HoverRowsRender
-pub fn HoverRowsRender::dispose(Self) -> Unit
-pub fn HoverRowsRender::mount_into(Self, @dom.Element) -> Bool
-
 type MarkdownDocumentHoverBridge
 pub fn MarkdownDocumentHoverBridge::MarkdownDocumentHoverBridge(@markdown_document.MarkdownDocumentView, @model.TextModel, @hover.ContentHoverComputer, @markers.MarkerDecorationsHandle, Int, () -> Bool, (async () -> Unit noraise) -> Unit) -> Self
 pub fn MarkdownDocumentHoverBridge::activate(Self) -> Unit
@@ -137,28 +111,6 @@ pub fn MarkdownDocumentHoverBridge::after_projection_replaced(Self) -> Unit
 pub fn MarkdownDocumentHoverBridge::before_projection_replaced(Self) -> Unit
 pub fn MarkdownDocumentHoverBridge::dispose(Self) -> Unit
 pub fn MarkdownDocumentHoverBridge::layout_changed(Self) -> Unit
-pub fn MarkdownDocumentHoverBridge::request_generation(Self) -> Int
-pub fn MarkdownDocumentHoverBridge::widget_visible(Self) -> Bool
-
-pub(all) struct MarkdownDocumentHoverMetadata {
-  model_identity : Int
-  uri : String
-  revision : String
-  source_position : @common.Position
-  source_offset : Int
-  block_index : Int
-  returned_range : @common.Range?
-}
-
-pub struct MarkdownDocumentHoverWidget {
-  wrapper : @dom.Element
-  // private fields
-}
-pub fn MarkdownDocumentHoverWidget::MarkdownDocumentHoverWidget(@dom.Element) -> Self
-pub fn MarkdownDocumentHoverWidget::dispose(Self) -> Unit
-pub fn MarkdownDocumentHoverWidget::hide(Self) -> Unit
-pub fn MarkdownDocumentHoverWidget::is_visible(Self) -> Bool
-pub fn MarkdownDocumentHoverWidget::show(Self, Array[@hover.HoverPart], String, MarkdownDocumentHoverMetadata, Double, @dom.Element, @dom.Element) -> Unit
 
 pub(all) struct RenderedContentHover {
   show_at_position : @common.Position

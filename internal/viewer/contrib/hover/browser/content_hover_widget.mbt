@@ -39,7 +39,7 @@ pub(all) struct RenderedContentHover {
 /// releases its previous render. This opaque browser-only value is shared by
 /// the code content widget and the DOM-anchored Markdown widget so Markdown
 /// rendering policy and retained listener disposal have one implementation.
-struct HoverRowsRender {
+priv struct HoverRowsRender {
   fragment : @rdom.DocumentFragment
   disposables : Array[@base_common.Disposable]
   mut transferred : Bool
@@ -63,7 +63,7 @@ fn dispose_hover_render_disposables(
 /// value remains alive afterwards solely to own row resources; callers never
 /// receive the fragment and therefore cannot mount the same retained rows
 /// twice.
-pub fn HoverRowsRender::mount_into(
+fn HoverRowsRender::mount_into(
   self : HoverRowsRender,
   target : @rdom.Element,
 ) -> Bool {
@@ -76,7 +76,7 @@ pub fn HoverRowsRender::mount_into(
 ///|
 /// Replacement, hide, and teardown may converge on the same retained value;
 /// make that convergence explicitly idempotent.
-pub fn HoverRowsRender::dispose(self : HoverRowsRender) -> Unit {
+fn HoverRowsRender::dispose(self : HoverRowsRender) -> Unit {
   if self.disposed {
     return
   }
@@ -129,17 +129,17 @@ pub(all) struct ContentHoverWidgetHost {
 /// `contentsDomNode` (`.monaco-hover-content`).
 pub struct ContentHoverWidget {
   wrapper : @rdom.Element
-  hover : @rdom.Element
+  priv hover : @rdom.Element
   scrollable : @scrollbar.ScrollableElementDom
-  host : ContentHoverWidgetHost
+  priv host : ContentHoverWidgetHost
   mut rendered_hover : RenderedContentHover?
-  mut position_preference : @view.ContentWidgetPositionPreference?
+  priv mut position_preference : @view.ContentWidgetPositionPreference?
   priv mut hover_rows : HoverRowsRender?
 }
 
 ///|
 /// Monaco `ContentHoverWidget.ID`.
-pub let content_hover_widget_id : String = "editor.contrib.resizableContentHoverWidget"
+let content_hover_widget_id : String = "editor.contrib.resizableContentHoverWidget"
 
 ///|
 /// Monaco `ContentHoverWidget.getPosition` (`contentHoverWidget.ts:324-334`).
@@ -307,7 +307,7 @@ fn ContentHoverWidget::set_rendered_hover(
 /// render every row and register its lifetime in a detached fragment before
 /// touching the currently displayed hover. Each row receives the source's
 /// `_registerListenersOnRenderedParts` `tabIndex = 0`.
-pub fn render_hover_rows(
+fn render_hover_rows(
   parts : Array[@hover.HoverPart],
   language_id : String,
 ) -> HoverRowsRender {
@@ -524,7 +524,7 @@ pub fn ContentHoverWidget::dispose(self : ContentHoverWidget) -> Unit {
 /// (`_resizableNode.layout`), re-derive the position preference from the
 /// measured box, then reposition and rescan the scrollbar
 /// (`_layoutContentWidget`).
-pub fn ContentHoverWidget::handle_contents_changed(
+fn ContentHoverWidget::handle_contents_changed(
   self : ContentHoverWidget,
 ) -> Unit {
   self.remove_constraints_render_normally()
@@ -582,14 +582,14 @@ fn ContentHoverWidget::update_max_dimensions(self : ContentHoverWidget) -> Unit 
 ///|
 /// Monaco `_updateMaxDimensions`' width arm:
 /// `Math.max(this._editor.getLayoutInfo().width * 0.66, 750)`.
-pub fn hover_max_width(editor_width : Double) -> Double {
+fn hover_max_width(editor_width : Double) -> Double {
   (editor_width * 0.66).max(750.0)
 }
 
 ///|
 /// Monaco `_updateMaxDimensions`' height arm:
 /// `Math.max(this._editor.getLayoutInfo().height / 4, 250)`.
-pub fn hover_max_height(editor_height : Double) -> Double {
+fn hover_max_height(editor_height : Double) -> Double {
   (editor_height / 4.0).max(250.0)
 }
 
@@ -761,14 +761,14 @@ let hover_bottom_height : Double = 24.0
 ///|
 /// `editor.hover.above`'s VS Code default: prefer rendering the hover above the
 /// anchor line when it fits there.
-pub let hover_prefer_above_default : Bool = true
+let hover_prefer_above_default : Bool = true
 
 ///|
 /// Monaco `ResizableContentWidget._availableVerticalSpaceAbove`
 /// (`resizableContentWidget.ts:64-72`): the page-space room above the anchor
 /// line, `editorBox.top + mouseBox.top - TOP_HEIGHT`. Page-based because the
 /// overflowing hover may extend past the editor box.
-pub fn hover_available_space_above(
+fn hover_available_space_above(
   editor_box_top : Double,
   mouse_box_top : Double,
 ) -> Double {
@@ -779,7 +779,7 @@ pub fn hover_available_space_above(
 /// Monaco `ResizableContentWidget._availableVerticalSpaceBelow`
 /// (`resizableContentWidget.ts:74-84`): the page-space room below the anchor
 /// line, `bodyBox.height - mouseBottom - BOTTOM_HEIGHT`.
-pub fn hover_available_space_below(
+fn hover_available_space_below(
   body_height : Double,
   editor_box_top : Double,
   mouse_box_top : Double,
@@ -837,7 +837,7 @@ fn ContentHoverWidget::find_position_preference(
 /// Monaco `ResizableContentWidget._findPositionPreference`'s fit math: choose
 /// ABOVE vs BELOW. Returns `true` for ABOVE. `prefer_above` mirrors
 /// `editor.hover.above`.
-pub fn hover_prefer_above(
+fn hover_prefer_above(
   widget_height : Double,
   space_above : Double,
   space_below : Double,
