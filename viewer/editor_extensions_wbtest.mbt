@@ -793,7 +793,10 @@ test "semantic Markdown uses the shared menu and ordinary command dispatcher" {
     fail("Shift+F10 did not lazily create the shared context menu")
   }
   assert_true(widget.is_visible())
-  let menu_root = widget.get_dom_node()
+  guard @rdom.document().get_body() is Some(body) &&
+    body.query_selector(".moonbit-context-menu") is Some(menu_root) else {
+    fail("expected the shared context menu in the document")
+  }
   assert_eq(menu_root.get_attribute("aria-hidden"), Some("false"))
   assert_true(menu_root.query_selector("[role=\"menu\"]") is Some(_))
   assert_true(
@@ -870,5 +873,8 @@ test "semantic Markdown uses the shared menu and ordinary command dispatcher" {
   assert_true(widget.is_visible())
   viewer.dispose()
   assert_false(widget.is_visible())
-  assert_eq(menu_root.get_attribute("aria-hidden"), Some("true"))
+  guard @rdom.document().get_body() is Some(body) else {
+    fail("expected the mounted test document body")
+  }
+  assert_true(body.query_selector(".moonbit-context-menu") is None)
 }

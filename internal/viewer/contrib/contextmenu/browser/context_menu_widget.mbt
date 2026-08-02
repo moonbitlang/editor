@@ -8,15 +8,6 @@
 // submenu timers, viewport placement, and disposal.
 
 ///|
-/// Concrete rows understood by the browser menu shell. Command ids remain
-/// opaque here; the root Viewer resolves and executes them.
-pub(all) enum ContextMenuEntry {
-  ContextMenuAction(id~ : String, label~ : String, keybinding_label~ : String?)
-  ContextMenuSeparator
-  ContextMenuSubmenu(label~ : String, entries~ : Array[ContextMenuEntry])
-}
-
-///|
 pub(all) struct ContextMenuWidgetCallbacks {
   on_action : (String) -> Unit
   on_hide : (Bool) -> Unit
@@ -106,9 +97,7 @@ pub fn ContextMenuWidget::is_visible(self : ContextMenuWidget) -> Bool {
 }
 
 ///|
-pub fn ContextMenuWidget::get_dom_node(
-  self : ContextMenuWidget,
-) -> @rdom.Element {
+fn ContextMenuWidget::get_dom_node(self : ContextMenuWidget) -> @rdom.Element {
   self.container
 }
 
