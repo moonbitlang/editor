@@ -27,7 +27,7 @@ pub(all) enum ChangeType {
 } derive(Eq, Debug)
 
 ///|
-pub impl Show for ChangeType with fn output(self, logger) {
+impl Show for ChangeType with fn output(self, logger) {
   logger.write_string(
     match self {
       Modify => "Modify"
@@ -80,7 +80,7 @@ pub fn QuickDiffService::quick_diff_handle(
 ///|
 /// Stores (or, with `None`, clears) the original content for `resource` and
 /// fires the change event.
-pub fn QuickDiffService::set_original_content(
+fn QuickDiffService::set_original_content_impl(
   self : QuickDiffService,
   resource : @base_common.Uri,
   content : String?,
@@ -94,7 +94,7 @@ pub fn QuickDiffService::set_original_content(
 }
 
 ///|
-pub fn QuickDiffService::get_original_content(
+fn QuickDiffService::get_original_content(
   self : QuickDiffService,
   resource : @base_common.Uri,
 ) -> String? {
@@ -102,7 +102,7 @@ pub fn QuickDiffService::get_original_content(
 }
 
 ///|
-pub fn QuickDiffService::on_did_change_original(
+fn QuickDiffService::on_did_change_original(
   self : QuickDiffService,
   handler : (@base_common.Uri) -> Unit,
 ) -> @base_common.Disposable {
