@@ -21,7 +21,7 @@ body {
 .editor-main {
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(180px, 240px) minmax(0, 1fr);
+  grid-template-columns: max-content minmax(0, 1fr);
 }
 
 .editor-main.is-explorer-hidden {

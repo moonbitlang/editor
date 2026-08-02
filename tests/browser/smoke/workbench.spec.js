@@ -63,6 +63,56 @@ test('toggles the explorer without giving up its editor space', async ({ page })
   await expect(explorer).toBeVisible();
 });
 
+test('keeps the explorer compact and lets its desktop width resize', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await expect(page.locator('.editor-shell')).toHaveAttribute(
+    'data-status',
+    'ready',
+  );
+
+  const explorer = page.locator('#workspace-explorer');
+  const viewerHost = page.locator('.viewer-host');
+  const title = explorer.locator('.workspace-title');
+  const rows = explorer.locator('.workspace-item');
+  await expect(explorer).toHaveCSS('resize', 'horizontal');
+  await expect(explorer).toHaveCSS('width', '280px');
+  await expect(title).toHaveCSS('height', '30px');
+  await expect(rows.first()).toHaveCSS('height', '20px');
+
+  const before = await page.locator('.editor-main').evaluate((main) => {
+    const sidebar = main.querySelector('#workspace-explorer')
+      .getBoundingClientRect();
+    const viewer = main.querySelector('.viewer-host').getBoundingClientRect();
+    return { sidebarWidth: sidebar.width, viewerLeft: viewer.left };
+  });
+  await explorer.evaluate((element) => {
+    element.style.width = '340px';
+  });
+  const after = await page.locator('.editor-main').evaluate((main) => {
+    const sidebar = main.querySelector('#workspace-explorer')
+      .getBoundingClientRect();
+    const viewer = main.querySelector('.viewer-host').getBoundingClientRect();
+    return {
+      sidebarRight: sidebar.right,
+      sidebarWidth: sidebar.width,
+      viewerLeft: viewer.left,
+    };
+  });
+  expect(after.sidebarWidth).toBe(340);
+  expect(after.viewerLeft - before.viewerLeft).toBeCloseTo(60, 1);
+  expect(after.viewerLeft).toBeCloseTo(after.sidebarRight, 1);
+
+  await explorer.evaluate((element) => {
+    element.style.width = '';
+  });
+  await page.setViewportSize({ width: 640, height: 700 });
+  await expect(explorer).toHaveCSS('width', '148px');
+  await expect(explorer).toHaveCSS('resize', 'none');
+  await expect(viewerHost).toBeVisible();
+});
+
 test('renders explorer rows with twisties and file icons', async ({ page }) => {
   await page.goto('/');
 
