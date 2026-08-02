@@ -119,7 +119,7 @@ fn line_parts_from_view_line_data(
     parts.push(
       LinePart(
         line.content.length(),
-        @tokens.LineTokens::default_token_metadata().get_class_name_from_metadata(),
+        @tokens.LineTokens::default_token_metadata().get_class_name(),
       ),
     )
   }

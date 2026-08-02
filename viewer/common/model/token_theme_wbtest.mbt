@@ -92,10 +92,7 @@ test "tag_to_metadata yields the expected mtk class per tag" {
   for case in cases {
     let (tag, expected) = case
     let metadata = tag_to_metadata(tag)
-    assert_eq(
-      @common_tokens.TokenMetadata(metadata).get_class_name_from_metadata(),
-      expected,
-    )
+    assert_eq(@common_tokens.TokenMetadata(metadata).get_class_name(), expected)
   }
 }
 
@@ -106,7 +103,7 @@ test "bold/italic font style augments the mtk class" {
     font_style=TEST_FONT_STYLE_ITALIC | TEST_FONT_STYLE_BOLD,
   )
   assert_eq(
-    @common_tokens.TokenMetadata(metadata).get_class_name_from_metadata(),
+    @common_tokens.TokenMetadata(metadata).get_class_name(),
     "mtk7 mtki mtkb",
   )
 }
