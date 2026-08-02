@@ -102,7 +102,7 @@ test "JSON tokens flow from lexer spans to rendered HTML" {
   )
 
   // Stage 4: the HTML renderer resolves token classes through the color map.
-  debug_inspect(
+  inspect(
     @languages.tokenize_line_to_html(
       source,
       view_tokens,
@@ -113,7 +113,7 @@ test "JSON tokens flow from lexer spans to rendered HTML" {
       true,
     ),
     content=(
-      #|"<div><span style=\"color: var(--vscode-token-punctuation);\">{</span><span style=\"color: var(--vscode-editor-foreground);\"> </span><span style=\"color: var(--vscode-token-variable);\">\"answer\"</span><span style=\"color: var(--vscode-token-punctuation);\">:</span><span style=\"color: var(--vscode-editor-foreground);\"> </span><span style=\"color: var(--vscode-token-number);\">42</span><span style=\"color: var(--vscode-editor-foreground);\"> </span><span style=\"color: var(--vscode-token-punctuation);\">}</span></div>"
+      #|<div><span style="color: var(--vscode-token-punctuation);">{</span><span style="color: var(--vscode-editor-foreground);"> </span><span style="color: var(--vscode-token-variable);">"answer"</span><span style="color: var(--vscode-token-punctuation);">:</span><span style="color: var(--vscode-editor-foreground);"> </span><span style="color: var(--vscode-token-number);">42</span><span style="color: var(--vscode-editor-foreground);"> </span><span style="color: var(--vscode-token-punctuation);">}</span></div>
     ),
   )
 }
