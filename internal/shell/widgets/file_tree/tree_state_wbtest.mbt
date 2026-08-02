@@ -17,18 +17,14 @@ fn file_stat(raw : String, name : String) -> @workspace.WorkspaceStat {
 let root_raw : String = "readonly-remote://workspace"
 
 ///|
-/// The widget default: no entry is pinned, so levels order
-/// directories-before-files in the provider's order.
-fn unranked(_stat : @workspace.WorkspaceStat) -> Int {
-  0
-}
-
-///|
-fn lexical_by_name(
+fn directories_then_lexical(
   left : @workspace.WorkspaceStat,
   right : @workspace.WorkspaceStat,
 ) -> Int {
-  left.name.lexical_compare(right.name)
+  match default_workspace_stat_compare(left, right) {
+    0 => left.name.lexical_compare(right.name)
+    by_kind => by_kind
+  }
 }
 
 ///|
@@ -62,7 +58,6 @@ fn resolved_root() -> TreeNode {
       ]),
     },
     expanded=true,
-    rank=unranked,
   )
 }
 
@@ -78,9 +73,9 @@ test "orders resolved children directories first" {
 }
 
 ///|
-/// A host policy that leads its level with `first.md` and sinks `last.txt`
-/// below the files; every other entry keeps the default rank.
-fn pin_first_and_last(stat : @workspace.WorkspaceStat) -> Int {
+/// A host comparator that leads its level with `first.md`, sinks `last.txt`
+/// below the files, and otherwise keeps the widget's directories-first default.
+fn pin_first_and_last_rank(stat : @workspace.WorkspaceStat) -> Int {
   match stat.name {
     "first.md" => -1
     "last.txt" => 1
@@ -89,7 +84,18 @@ fn pin_first_and_last(stat : @workspace.WorkspaceStat) -> Int {
 }
 
 ///|
-test "a host rank orders a level around the directories-first default" {
+fn pin_first_and_last_compare(
+  left : @workspace.WorkspaceStat,
+  right : @workspace.WorkspaceStat,
+) -> Int {
+  match pin_first_and_last_rank(left).compare(pin_first_and_last_rank(right)) {
+    0 => default_workspace_stat_compare(left, right)
+    by_rank => by_rank
+  }
+}
+
+///|
+test "a host comparator owns the complete level order" {
   let level = [
     file_stat(root_raw + "/moon.pkg", "moon.pkg"),
     dir_stat(root_raw + "/src", "src"),
@@ -104,23 +110,25 @@ test "a host rank orders a level around the directories-first default" {
     children: Some(level),
   }
 
-  // A negative rank leads the level, a positive one trails it, and the
-  // unranked middle keeps directories before files in the provider's order.
-  let ranked = TreeNode::from_stat(stat, expanded=true, rank=pin_first_and_last)
-  assert_eq(ranked.visible_rows().map(row => row.node.name), [
+  let ordered = TreeNode::from_stat(
+    stat,
+    expanded=true,
+    compare=pin_first_and_last_compare,
+  )
+  assert_eq(ordered.visible_rows().map(row => row.node.name), [
     "first.md", "src", "docs", "moon.pkg", "last.txt",
   ])
 
-  // Under the widget default every entry ranks alike, so the whole level
-  // falls back to directories-before-files.
-  let unpinned = TreeNode::from_stat(stat, expanded=true, rank=unranked)
-  assert_eq(unpinned.visible_rows().map(row => row.node.name), [
+  // The widget default keeps directories before files and provider order
+  // within each group.
+  let default_order = TreeNode::from_stat(stat, expanded=true)
+  assert_eq(default_order.visible_rows().map(row => row.node.name), [
     "src", "docs", "moon.pkg", "last.txt", "first.md",
   ])
 }
 
 ///|
-test "a host comparator orders equal-rank entries through Array::sort_by" {
+test "a host comparator orders entries through Array::sort_by" {
   let stat : @workspace.WorkspaceStat = {
     uri: uri(root_raw),
     name: "workspace",
@@ -135,8 +143,7 @@ test "a host comparator orders equal-rank entries through Array::sort_by" {
   let root = TreeNode::from_stat(
     stat,
     expanded=true,
-    rank=unranked,
-    compare=lexical_by_name,
+    compare=directories_then_lexical,
   )
   assert_eq(root.visible_rows().map(row => row.node.name), [
     "aa", "z", "aa.mbt", "z.mbt",
@@ -144,7 +151,7 @@ test "a host comparator orders equal-rank entries through Array::sort_by" {
 }
 
 ///|
-test "a host rank orders lazily resolved levels the same way" {
+test "a host comparator orders lazily resolved levels the same way" {
   let src_uri = uri(root_raw + "/src")
   let (expanded, _) = resolved_root().toggle(src_uri).unwrap()
   let resolved = expanded
@@ -159,7 +166,7 @@ test "a host rank orders lazily resolved levels the same way" {
           file_stat(root_raw + "/src/first.md", "first.md"),
         ]),
       },
-      rank=pin_first_and_last,
+      compare=pin_first_and_last_compare,
     )
     .unwrap()
   assert_eq(resolved.visible_rows().map(row => row.node.name), [
@@ -184,16 +191,12 @@ test "directories start collapsed and expansion resolves once" {
   assert_false(original.find(src_uri).unwrap().expanded)
   assert_true(expanded.find(src_uri).unwrap().expanded)
   let resolved = expanded
-    .with_resolved(
-      src_uri,
-      {
-        uri: src_uri,
-        name: "src",
-        kind: Directory,
-        children: Some([file_stat(root_raw + "/src/main.mbt", "main.mbt")]),
-      },
-      rank=unranked,
-    )
+    .with_resolved(src_uri, {
+      uri: src_uri,
+      name: "src",
+      kind: Directory,
+      children: Some([file_stat(root_raw + "/src/main.mbt", "main.mbt")]),
+    })
     .unwrap()
 
   // Collapse keeps the cache; the next expand is free.
@@ -250,16 +253,12 @@ test "reveal expands resolved ancestors and stops at unresolved levels" {
   assert_false(original.find(src_uri).unwrap().expanded)
   assert_true(src_expanded.find(src_uri).unwrap().expanded)
   let src_resolved = src_expanded
-    .with_resolved(
-      src_uri,
-      {
-        uri: src_uri,
-        name: "src",
-        kind: Directory,
-        children: Some([dir_stat(root_raw + "/src/lib", "lib")]),
-      },
-      rank=unranked,
-    )
+    .with_resolved(src_uri, {
+      uri: src_uri,
+      name: "src",
+      kind: Directory,
+      children: Some([dir_stat(root_raw + "/src/lib", "lib")]),
+    })
     .unwrap()
 
   // lib is now reachable but unresolved.
@@ -272,16 +271,12 @@ test "reveal expands resolved ancestors and stops at unresolved levels" {
   assert_false(src_resolved.find(lib_uri).unwrap().expanded)
   assert_true(lib_expanded.find(lib_uri).unwrap().expanded)
   let lib_resolved = lib_expanded
-    .with_resolved(
-      lib_uri,
-      {
-        uri: lib_uri,
-        name: "lib",
-        kind: Directory,
-        children: Some([file_stat(root_raw + "/src/lib/util.mbt", "util.mbt")]),
-      },
-      rank=unranked,
-    )
+    .with_resolved(lib_uri, {
+      uri: lib_uri,
+      name: "lib",
+      kind: Directory,
+      children: Some([file_stat(root_raw + "/src/lib/util.mbt", "util.mbt")]),
+    })
     .unwrap()
   let (revealed, step) = lib_resolved.reveal_step(target)
   match step {
@@ -365,7 +360,7 @@ async test "in-memory provider resolves one level per request" {
   }
   match provider.resolve(provider.root()) {
     WorkspaceResolved(stat) => {
-      let root = TreeNode::from_stat(stat, expanded=true, rank=unranked)
+      let root = TreeNode::from_stat(stat, expanded=true)
       let src_uri = uri(root_raw + "/src")
       let src = root.find(src_uri).unwrap()
       // The resolved level carries unresolved directory children.
@@ -375,7 +370,7 @@ async test "in-memory provider resolves one level per request" {
         ToggleResolve(resolve_uri) =>
           match provider.resolve(resolve_uri) {
             WorkspaceResolved(stat) =>
-              expanded.with_resolved(src_uri, stat, rank=unranked).unwrap()
+              expanded.with_resolved(src_uri, stat).unwrap()
             WorkspaceResolveError(error) => fail(error.message)
           }
         ToggleNone => fail("expected resolve effect")

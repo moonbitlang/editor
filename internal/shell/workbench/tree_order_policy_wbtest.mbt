@@ -1,11 +1,19 @@
 ///|
-fn entry_rank(name : String, kind : @workspace.WorkspaceEntryKind) -> Int {
-  workspace_entry_rank({
+fn entry_stat(
+  name : String,
+  kind : @workspace.WorkspaceEntryKind,
+) -> @workspace.WorkspaceStat {
+  {
     uri: try! @base_common.Uri::parse("readonly-remote://workspace/" + name),
     name,
     kind,
     children: None,
-  })
+  }
+}
+
+///|
+fn entry_rank(name : String, kind : @workspace.WorkspaceEntryKind) -> Int {
+  workspace_entry_rank(entry_stat(name, kind))
 }
 
 ///|
@@ -33,19 +41,18 @@ test "explorer order pins package overview files above the default" {
 }
 
 ///|
-test "explorer filename order is lexicographic rather than shortlex" {
-  let z : @workspace.WorkspaceStat = {
-    uri: try! @base_common.Uri::parse("readonly-remote://workspace/z"),
-    name: "z",
-    kind: File,
-    children: None,
-  }
-  let aa : @workspace.WorkspaceStat = {
-    uri: try! @base_common.Uri::parse("readonly-remote://workspace/aa"),
-    name: "aa",
-    kind: File,
-    children: None,
-  }
-  assert_true(workspace_entry_compare(aa, z) < 0)
-  assert_true(workspace_entry_compare(z, aa) > 0)
+test "one explorer comparator composes pins kind and lexical name" {
+  let entries = [
+    entry_stat("z", File),
+    entry_stat("viewer", Directory),
+    entry_stat("aa", File),
+    entry_stat("base", Directory),
+    entry_stat("moon.pkg", File),
+    entry_stat("pkg.generated.mbti", File),
+    entry_stat("README.md", File),
+  ]
+  entries.sort_by(workspace_entry_compare)
+  assert_eq(entries.map(entry => entry.name), [
+    "README.md", "pkg.generated.mbti", "moon.pkg", "base", "viewer", "aa", "z",
+  ])
 }
