@@ -282,6 +282,16 @@
   color: var(--vscode-descriptionForeground, var(--vscode-editor-foreground));
 }
 
+[data-theme="dark"]
+  .moonbit-viewer-markdown-comment-content
+  blockquote {
+  background: color-mix(
+    in srgb,
+    currentColor 7%,
+    var(--vscode-editor-background, #1e1e1e)
+  );
+}
+
 .moonbit-viewer-markdown-comment-content blockquote > :first-child {
   margin-top: 0;
 }

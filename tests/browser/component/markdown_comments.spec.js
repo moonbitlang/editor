@@ -443,6 +443,26 @@ function contrastRatio(left, right) {
   return (Math.max(first, second) + 0.05) / (Math.min(first, second) + 0.05);
 }
 
+async function calloutColors(locator) {
+  return locator.evaluate((element) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1;
+    canvas.height = 1;
+    const context = canvas.getContext('2d', { willReadFrequently: true });
+    const resolveColor = (value) => {
+      context.clearRect(0, 0, 1, 1);
+      context.fillStyle = value;
+      context.fillRect(0, 0, 1, 1);
+      return Array.from(context.getImageData(0, 0, 1, 1).data.slice(0, 3));
+    };
+    const style = getComputedStyle(element);
+    return {
+      background: resolveColor(style.backgroundColor),
+      border: resolveColor(style.borderLeftColor),
+    };
+  });
+}
+
 async function markdownPalette(page, theme) {
   await page
     .locator('.markdown-comments-shell')
@@ -1034,25 +1054,36 @@ test('uses the same subtle callout treatment in Markdown comments', async ({
         (shell, value) => shell.setAttribute('data-theme', value),
         theme,
       );
-      const colors = await quote.evaluate((element) => {
-        const canvas = document.createElement('canvas');
-        canvas.width = 1;
-        canvas.height = 1;
-        const context = canvas.getContext('2d', { willReadFrequently: true });
-        const resolveColor = (value) => {
-          context.clearRect(0, 0, 1, 1);
-          context.fillStyle = value;
-          context.fillRect(0, 0, 1, 1);
-          return Array.from(
-            context.getImageData(0, 0, 1, 1).data.slice(0, 3),
-          );
-        };
-        const style = getComputedStyle(element);
-        return {
-          background: resolveColor(style.backgroundColor),
-          border: resolveColor(style.borderLeftColor),
-        };
-      });
+      const colors = await calloutColors(quote);
+      expect(
+        contrastRatio(colors.border, colors.background),
+      ).toBeGreaterThanOrEqual(3);
+    }
+
+    await page.evaluate(() => {
+      for (const [theme, foreground] of [
+        ['dark', '#d4d4d4'],
+        ['light', '#1f2328'],
+      ]) {
+        const root = document.createElement('div');
+        root.dataset.theme = theme;
+        root.style.setProperty('--vscode-editor-foreground', foreground);
+        root.style.setProperty('--vscode-descriptionForeground', foreground);
+        const content = document.createElement('div');
+        content.className = 'moonbit-viewer-markdown-comment-content';
+        const quote = document.createElement('blockquote');
+        quote.dataset.fallbackCommentCallout = theme;
+        quote.textContent = `${theme} fallback comment callout`;
+        content.appendChild(quote);
+        root.appendChild(content);
+        document.body.appendChild(root);
+      }
+    });
+    for (const theme of ['dark', 'light']) {
+      const fallback = page.locator(
+        `[data-fallback-comment-callout="${theme}"]`,
+      );
+      const colors = await calloutColors(fallback);
       expect(
         contrastRatio(colors.border, colors.background),
       ).toBeGreaterThanOrEqual(3);
