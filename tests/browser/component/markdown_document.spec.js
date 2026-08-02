@@ -336,6 +336,7 @@ test('centers prose without narrowing wide Markdown content', async ({
       ':scope > [data-measure-probe="quote"]',
     ));
     const quoteContentWidth = quote.width -
+      Number.parseFloat(quoteStyle.borderLeftWidth) -
       Number.parseFloat(quoteStyle.paddingLeft) -
       Number.parseFloat(quoteStyle.paddingRight);
     const quoteParagraph = articleNode.querySelector(
@@ -391,8 +392,31 @@ test('centers prose without narrowing wide Markdown content', async ({
       rightInset: quote.right - paragraph.right,
     };
   });
-  expect(narrowQuote.leftInset).toBeCloseTo(40, 1);
+  expect(narrowQuote.leftInset).toBeCloseTo(43, 1);
   expect(narrowQuote.rightInset).toBeCloseTo(40, 1);
+});
+
+test('presents Markdown blockquotes as subtle callouts', async ({ page }) => {
+  await page.goto('/browser-tests/component.html?markdownDocument=1');
+  await page.waitForFunction(() =>
+    Boolean(globalThis.__markdownDocumentControls),
+  );
+
+  const quote = page.locator(`${article} > blockquote`);
+  await expect(quote).toHaveCSS('border-left-width', '3px');
+  await expect(quote).toHaveCSS('border-top-right-radius', '6px');
+  await expect(quote).toHaveCSS('padding-top', '12px');
+  expect(await quote.evaluate((element) =>
+    getComputedStyle(element).backgroundColor
+  )).not.toBe('rgba(0, 0, 0, 0)');
+  await expect(quote.locator(':scope > :first-child')).toHaveCSS(
+    'margin-top',
+    '0px',
+  );
+  await expect(quote.locator(':scope > :last-child')).toHaveCSS(
+    'margin-bottom',
+    '0px',
+  );
 });
 
 test('mounts zoom and drag controls for D2 and Mermaid in Markdown documents', async ({

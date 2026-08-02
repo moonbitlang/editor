@@ -49,7 +49,20 @@
   box-sizing: border-box;
   max-width: var(--markdown-prose-measure);
   margin-inline: auto;
+  padding-block: 12px;
   padding-inline: 40px;
+  border-left: 3px solid
+    color-mix(in srgb, var(--vscode-focusBorder, currentColor) 55%, transparent);
+  border-radius: 0 6px 6px 0;
+  background: color-mix(in srgb, currentColor 5%, transparent);
+}
+
+.moonbit-viewer-markdown-document-article > blockquote > :first-child {
+  margin-top: 0;
+}
+
+.moonbit-viewer-markdown-document-article > blockquote > :last-child {
+  margin-bottom: 0;
 }
 
 /* Keep the document hierarchy readable without letting headings dominate the

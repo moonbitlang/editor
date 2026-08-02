@@ -271,9 +271,20 @@
 }
 
 .moonbit-viewer-markdown-comment-content blockquote {
-  padding-left: 10px;
-  border-left: 3px solid var(--vscode-editorWidget-border, var(--vscode-widget-border));
+  padding: 6px 10px;
+  border-left: 3px solid
+    color-mix(in srgb, var(--vscode-focusBorder, currentColor) 55%, transparent);
+  border-radius: 0 4px 4px 0;
+  background: color-mix(in srgb, currentColor 5%, transparent);
   color: var(--vscode-descriptionForeground, var(--vscode-editor-foreground));
+}
+
+.moonbit-viewer-markdown-comment-content blockquote > :first-child {
+  margin-top: 0;
+}
+
+.moonbit-viewer-markdown-comment-content blockquote > :last-child {
+  margin-bottom: 0;
 }
 
 .moonbit-viewer-markdown-comment-content hr {

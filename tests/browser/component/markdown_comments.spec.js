@@ -1009,6 +1009,34 @@ test('keeps the Markdown surface distinct from source and fenced code in both th
   }
 });
 
+test('uses the same subtle callout treatment in Markdown comments', async ({
+  page,
+}, testInfo) => {
+  const reporter = await mountMarkdownComments(page, testInfo);
+  try {
+    const commentContent = page.locator(zone).first().locator(content);
+    await commentContent.evaluate((element) => {
+      const quote = document.createElement('blockquote');
+      quote.dataset.calloutProbe = 'true';
+      const paragraph = document.createElement('p');
+      paragraph.textContent = 'A docstring callout.';
+      quote.appendChild(paragraph);
+      element.appendChild(quote);
+    });
+    const quote = commentContent.locator('[data-callout-probe="true"]');
+    await expect(quote).toHaveCSS('border-left-width', '3px');
+    await expect(quote).toHaveCSS('border-top-right-radius', '4px');
+    await expect(quote).toHaveCSS('padding-top', '6px');
+    expect(await quote.evaluate((element) =>
+      getComputedStyle(element).backgroundColor
+    )).not.toBe('rgba(0, 0, 0, 0)');
+    await expect(quote.locator('p')).toHaveCSS('margin-top', '0px');
+    await expect(quote.locator('p')).toHaveCSS('margin-bottom', '0px');
+  } finally {
+    reporter.dispose();
+  }
+});
+
 test('pins Markdown to the visible viewport while long source keeps its horizontal scroll plane', async ({
   page,
 }, testInfo) => {
