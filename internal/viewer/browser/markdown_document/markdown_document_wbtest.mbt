@@ -173,6 +173,49 @@ test "semantic line wrapping preserves escaped delimiter text and every blank li
 }
 
 ///|
+test "exact MoonBit phrase markers gain divider presentation only in semantic fences" {
+  let block = projected_document_code_block(
+    (
+      #|```mbt check
+      #|///|
+      #|///| summary stays source
+      #|  ///|
+      #|test "divider" {}
+      #|```
+    ),
+  )
+  assert_true(markdown_semantic_line_is_phrase_divider(block.code_lines[0]))
+  assert_false(markdown_semantic_line_is_phrase_divider(block.code_lines[1]))
+  assert_false(markdown_semantic_line_is_phrase_divider(block.code_lines[2]))
+  let semantic = render_markdown_document_code_block(
+    block,
+    Some("moonbit"),
+    MoonBitMarkdown,
+  )
+  assert_true(
+    semantic.contains(
+      "data-markdown-code-line=\"0\" data-markdown-source-line=\"2\"",
+    ),
+  )
+  assert_true(
+    semantic.contains(
+      "data-markdown-phrase-divider=\"true\" role=\"separator\" aria-label=\"MoonBit item separator\"",
+    ),
+  )
+  // The source glyphs remain in the semantic row for post-render validation
+  // and exact source-coordinate mapping; presentation hides them in CSS.
+  assert_true(semantic.contains(">///|</span>"))
+  assert_eq(semantic.split("data-markdown-phrase-divider=\"true\"").length(), 2)
+
+  let ordinary = render_markdown_document_code_block(
+    block,
+    Some("moonbit"),
+    OrdinaryMarkdown,
+  )
+  assert_false(ordinary.contains("data-markdown-phrase-divider"))
+}
+
+///|
 test "semantic wrapping keeps astral UTF-16 text and fails closed on isolated surrogate cleanup" {
   let astral = projected_document_code_block(
     (
@@ -246,6 +289,15 @@ test "semantic wrapper fails closed when shared tokenizer line shape drifts" {
   let malformed =
     #|<div class="monaco-tokenized-source"><span class="mtk1">wrong</span></div>
   assert_eq(render_semantic_tokenized_code_lines(block, malformed), malformed)
+}
+
+///|
+test "semantic downgrade removes phrase-divider visual and accessibility state" {
+  assert_eq(markdown_semantic_line_downgrade_attributes(), [
+    "data-markdown-block-index", "data-markdown-code-line", "data-markdown-source-line",
+    "data-markdown-source-start", "data-markdown-source-end", "data-markdown-phrase-divider",
+    "role", "aria-label",
+  ])
 }
 
 ///|

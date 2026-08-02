@@ -89,6 +89,35 @@
   overflow-wrap: normal;
 }
 
+/* Semantic MoonBit fences retain their exact `///|` text and source geometry,
+ * but present the formatter-owned item marker as the same horizontal divider
+ * used by the ordinary MoonBit code presentation. */
+.moonbit-viewer-markdown-code-line[data-markdown-phrase-divider="true"] {
+  box-sizing: border-box;
+  width: 100%;
+  color: transparent !important;
+  text-shadow: none !important;
+}
+
+.moonbit-viewer-markdown-code-line[data-markdown-phrase-divider="true"] * {
+  color: transparent !important;
+  text-shadow: none !important;
+}
+
+.moonbit-viewer-markdown-code-line[data-markdown-phrase-divider="true"]::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: var(
+    --vscode-editorWidget-border,
+    var(--vscode-widget-border, rgba(128, 128, 128, 0.35))
+  );
+  pointer-events: none;
+}
+
 .moonbit-viewer-markdown-document-overlays {
   position: absolute;
   inset: 0;

@@ -46,6 +46,11 @@ Markdown indentation remains outside the semantic text boundary. Tokenization
 runs over the whole fence before it is split into rows, preserving cross-line
 tokenizer state. A cardinality or decoded-text mismatch fails closed by
 removing the semantic attributes and registry entry.
+An exact source-bearing, column-zero `///|` row is additionally presented as a
+full-width horizontal item divider. Its tokenized text remains in the DOM and
+its `MarkdownCodeLine` remains in the semantic registry, so the visual
+substitution does not change source validation, coordinates, or model content.
+Marker lines carrying text and indented `///|` comments remain ordinary code.
 
 The semantic DOM registry and its listeners are replacement-scoped: they are
 disposed before the article renderer, rebuilt after each successful render,

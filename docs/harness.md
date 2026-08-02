@@ -146,9 +146,10 @@ scenario
 `component.html?markdownDocument=1` and asserted by
 `tests/browser/component/markdown_document.spec.js`. It proves the closed
 Code/Markdown root selection without a shell branch, retained same-parse
-semantic rows for compiler-recognized `mbt check` fences, shared interactive
-D2 and Mermaid viewports with visible controls, zoom, drag-to-pan, and clean
-replacement teardown, and a real caret
+semantic rows for compiler-recognized `mbt check` fences, the exact-source
+`///|` row's horizontal-divider presentation, shared interactive D2 and Mermaid
+viewports with visible controls, zoom, drag-to-pan, and clean replacement
+teardown, and a real caret
 pointer translated back to the original model identity, URI, revision,
 1-based provider position, and 0-based wire offset. The suite merges language
 and marker hover rows, projects resolved diagnostic class/range/z-index and
