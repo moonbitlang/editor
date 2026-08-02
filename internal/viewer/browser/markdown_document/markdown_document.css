@@ -26,6 +26,8 @@
  * prose blocks use a centered reading measure below, while diagrams, code,
  * and tables retain the full inner width. */
 .moonbit-viewer-markdown-document-article {
+  --markdown-prose-measure: 640px;
+
   box-sizing: border-box;
   min-height: 100%;
   padding: 16px 24px 64px;
@@ -36,7 +38,7 @@
 
 .moonbit-viewer-markdown-document-article
   > :where(h1, h2, h3, h4, h5, h6, p, ul, ol, dl, hr, details) {
-  max-width: 72ch;
+  max-width: var(--markdown-prose-measure);
   margin-inline: auto;
 }
 
@@ -44,8 +46,10 @@
  * Nested code and diagrams still fill the quote rather than receiving a
  * second prose constraint. */
 .moonbit-viewer-markdown-document-article > blockquote {
-  max-width: calc(72ch - 5em);
+  box-sizing: border-box;
+  max-width: var(--markdown-prose-measure);
   margin-inline: auto;
+  padding-inline: 40px;
 }
 
 /* Keep the document hierarchy readable without letting headings dominate the

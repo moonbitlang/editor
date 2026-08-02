@@ -325,12 +325,19 @@ test('centers prose without narrowing wide Markdown content', async ({
       Number.parseFloat(articleStyle.paddingLeft) -
       Number.parseFloat(articleStyle.paddingRight);
     const paragraph = articleNode.querySelector(':scope > p').getBoundingClientRect();
+    const heading = articleNode.querySelector(':scope > h1').getBoundingClientRect();
     const code = articleNode.querySelector(
       ':scope > .moonbit-viewer-markdown-code-block',
     ).getBoundingClientRect();
     const quote = articleNode.querySelector(
       ':scope > [data-measure-probe="quote"]',
     ).getBoundingClientRect();
+    const quoteStyle = getComputedStyle(articleNode.querySelector(
+      ':scope > [data-measure-probe="quote"]',
+    ));
+    const quoteContentWidth = quote.width -
+      Number.parseFloat(quoteStyle.paddingLeft) -
+      Number.parseFloat(quoteStyle.paddingRight);
     const quoteParagraph = articleNode.querySelector(
       ':scope > [data-measure-probe="quote"] > p',
     ).getBoundingClientRect();
@@ -344,9 +351,12 @@ test('centers prose without narrowing wide Markdown content', async ({
       paragraphLeft: paragraph.left,
       paragraphWidth: paragraph.width,
       paragraphCenter: paragraph.left + paragraph.width / 2,
+      headingWidth: heading.width,
+      headingCenter: heading.left + heading.width / 2,
       codeLeft: code.left,
       codeWidth: code.width,
       quoteWidth: quote.width,
+      quoteContentWidth,
       quoteParagraphWidth: quoteParagraph.width,
       quoteCodeWidth: quoteCode.width,
     };
@@ -354,11 +364,35 @@ test('centers prose without narrowing wide Markdown content', async ({
 
   expect(geometry.paragraphWidth).toBeLessThan(geometry.contentWidth - 200);
   expect(geometry.paragraphCenter).toBeCloseTo(geometry.contentCenter, 1);
+  expect(geometry.headingWidth).toBeCloseTo(geometry.paragraphWidth, 1);
+  expect(geometry.headingCenter).toBeCloseTo(geometry.contentCenter, 1);
   expect(geometry.codeLeft).toBeCloseTo(geometry.contentLeft, 1);
   expect(geometry.codeWidth).toBeCloseTo(geometry.contentWidth, 1);
-  expect(geometry.quoteWidth).toBeLessThanOrEqual(geometry.paragraphWidth);
-  expect(geometry.quoteParagraphWidth).toBeCloseTo(geometry.quoteWidth, 1);
-  expect(geometry.quoteCodeWidth).toBeCloseTo(geometry.quoteWidth, 1);
+  expect(geometry.quoteWidth).toBeCloseTo(geometry.paragraphWidth, 1);
+  expect(geometry.quoteParagraphWidth).toBeCloseTo(
+    geometry.quoteContentWidth,
+    1,
+  );
+  expect(geometry.quoteCodeWidth).toBeCloseTo(geometry.quoteContentWidth, 1);
+
+  await page.evaluate(() =>
+    globalThis.__markdownDocumentControls.resizeHost(360),
+  );
+  await expect(page.locator(host)).toHaveCSS('width', '360px');
+  const narrowQuote = await page.locator(article).evaluate((articleNode) => {
+    const quote = articleNode.querySelector(
+      ':scope > [data-measure-probe="quote"]',
+    ).getBoundingClientRect();
+    const paragraph = articleNode.querySelector(
+      ':scope > [data-measure-probe="quote"] > p',
+    ).getBoundingClientRect();
+    return {
+      leftInset: paragraph.left - quote.left,
+      rightInset: quote.right - paragraph.right,
+    };
+  });
+  expect(narrowQuote.leftInset).toBeCloseTo(40, 1);
+  expect(narrowQuote.rightInset).toBeCloseTo(40, 1);
 });
 
 test('mounts zoom and drag controls for D2 and Mermaid in Markdown documents', async ({
