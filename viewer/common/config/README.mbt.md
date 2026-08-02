@@ -87,7 +87,8 @@ fn line_height_for(raw : Double, size : Double) -> Int {
 
 ///|
 test "zero means the platform golden ratio times the font size" {
-  let expected = (@config.golden_line_height_ratio * 14.0).round().to_int()
+  let ratio = if @base_common.is_macintosh { 1.5 } else { 1.35 }
+  let expected = (ratio * 14.0).round().to_int()
   debug_inspect(
     (line_height_for(0.0, 14.0) == expected, expected >= 8),
     content=(
@@ -110,7 +111,7 @@ test "below 8 is an em multiplier, 8 and above is a pixel value" {
       line_height_for(24.4, 20.0),
       // rounded, then floored at the minimum
       line_height_for(0.1, 20.0),
-      @config.minimum_line_height,
+      8,
     ),
     content=(
       #|(30, 40, 24, 24, 8, 8)
@@ -139,7 +140,7 @@ fn translated(weight : String) -> (String, String) {
     font_weight=weight,
     font_size=12.0,
     font_feature_settings=@config.editor_font_ligatures_off,
-    font_variation_settings=@config.font_variation_translate,
+    font_variation_settings="translate",
     line_height=0.0,
     letter_spacing=0.0,
     pixel_ratio=1.0,

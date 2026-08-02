@@ -18,12 +18,6 @@ pub let editor_font_ligatures_off : String
 
 pub let font_variation_off : String
 
-pub let font_variation_translate : String
-
-pub let golden_line_height_ratio : Double
-
-pub let minimum_line_height : Int
-
 // Errors
 
 // Types and methods

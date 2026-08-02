@@ -37,7 +37,7 @@ test "LineTokens raw UTF-16 token content preserves lone surrogate matrix" {
       metadata.to_uint(),
     ],
     text,
-    LanguageIdCodec(),
+    @services.language_id_codec,
   )
   let expected : ReadOnlyArray[Int] = [
     0xD800, 0xDBFF, 0xDC00, 0xDFFF, 0xFEFF, 0x41,
@@ -57,7 +57,7 @@ test "LineTokens raw UTF-16 slices preserve both halves of a valid pair" {
   let tokens = LineTokens(
     [2U, LineTokens::default_token_metadata().to_uint()],
     pair,
-    LanguageIdCodec(),
+    @services.language_id_codec,
   )
   let high = tokens.slice_and_inflate(0, 1, 0)
   assert_utf16_units(high.get_line_content(), [0xD800])
@@ -75,7 +75,7 @@ test "LineTokens withInserted accepts a valid-pair interior UTF-16 offset" {
   let tokens = LineTokens(
     [2U, LineTokens::default_token_metadata().to_uint()],
     pair,
-    LanguageIdCodec(),
+    @services.language_id_codec,
   )
   let inserted = tokens.with_inserted([
     InsertedToken(1, "X", LineTokens::default_token_metadata()),

@@ -18,7 +18,7 @@ pub(all) enum SelectionDirection {
 /// in the controller layer (`viewer/selection.mbt`), not on this type, matching
 /// Monaco's split (clipboard belongs to the editor controller, not the value
 /// type).
-pub struct Selection {
+struct Selection {
   selection_start : @base_common.Position
   position : @base_common.Position
 } derive(Eq, Debug)

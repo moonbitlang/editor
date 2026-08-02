@@ -2,13 +2,14 @@
 // `vscode/src/vs/editor/common/config/fontInfo.ts` at checked-in vscode submodule.
 
 ///|
-fn bare(line_height : Double, font_size : Double) -> @config.BareFontInfo {
-  @config.BareFontInfo::create(
+/// White-box font geometry coverage.
+fn bare(line_height : Double, font_size : Double) -> BareFontInfo {
+  BareFontInfo::create(
     font_family="Menlo",
     font_weight="normal",
     font_size~,
-    font_feature_settings=@config.editor_font_ligatures_off,
-    font_variation_settings=@config.font_variation_off,
+    font_feature_settings=editor_font_ligatures_off,
+    font_variation_settings=font_variation_off,
     line_height~,
     letter_spacing=0.0,
     pixel_ratio=1.0,
@@ -17,7 +18,7 @@ fn bare(line_height : Double, font_size : Double) -> @config.BareFontInfo {
 
 ///|
 fn bare_variant(
-  base : @config.BareFontInfo,
+  base : BareFontInfo,
   pixel_ratio? : Double = base.pixel_ratio,
   font_family? : String = base.font_family,
   font_weight? : String = base.font_weight,
@@ -26,8 +27,8 @@ fn bare_variant(
   font_variation_settings? : String = base.font_variation_settings,
   line_height? : Double = base.line_height.to_double(),
   letter_spacing? : Double = base.letter_spacing,
-) -> @config.BareFontInfo {
-  @config.BareFontInfo::create(
+) -> BareFontInfo {
+  BareFontInfo::create(
     font_family~,
     font_weight~,
     font_size~,
@@ -41,7 +42,7 @@ fn bare_variant(
 
 ///|
 test "lineHeight 0 derives the golden-ratio line height from the font size" {
-  let expected = (@config.golden_line_height_ratio * 12.0 + 0.5).to_int()
+  let expected = (golden_line_height_ratio * 12.0 + 0.5).to_int()
   assert_eq(bare(0.0, 12.0).line_height, expected)
 }
 
@@ -65,58 +66,58 @@ test "lineHeight in pixels is rounded and floored at the minimum" {
 
 ///|
 test "fontVariationSettings translate maps numeric weights to wght" {
-  let translated = @config.BareFontInfo::create(
+  let translated = BareFontInfo::create(
     font_family="Menlo",
     font_weight="500",
     font_size=12.0,
-    font_feature_settings=@config.editor_font_ligatures_off,
-    font_variation_settings=@config.font_variation_translate,
+    font_feature_settings=editor_font_ligatures_off,
+    font_variation_settings=font_variation_translate,
     line_height=0.0,
     letter_spacing=0.0,
     pixel_ratio=1.0,
   )
   assert_eq(translated.font_weight, "normal")
   assert_eq(translated.font_variation_settings, "'wght' 500")
-  let unicode_space = @config.BareFontInfo::create(
+  let unicode_space = BareFontInfo::create(
     font_family="Menlo",
     font_weight="\u{00a0}600tail",
     font_size=12.0,
-    font_feature_settings=@config.editor_font_ligatures_off,
-    font_variation_settings=@config.font_variation_translate,
+    font_feature_settings=editor_font_ligatures_off,
+    font_variation_settings=font_variation_translate,
     line_height=0.0,
     letter_spacing=0.0,
     pixel_ratio=1.0,
   )
   assert_eq(unicode_space.font_variation_settings, "'wght' 600")
-  let kept = @config.BareFontInfo::create(
+  let kept = BareFontInfo::create(
     font_family="Menlo",
     font_weight="bold",
     font_size=12.0,
-    font_feature_settings=@config.editor_font_ligatures_off,
-    font_variation_settings=@config.font_variation_translate,
+    font_feature_settings=editor_font_ligatures_off,
+    font_variation_settings=font_variation_translate,
     line_height=0.0,
     letter_spacing=0.0,
     pixel_ratio=1.0,
   )
   assert_eq(kept.font_weight, "bold")
-  assert_eq(kept.font_variation_settings, @config.font_variation_off)
-  let normal = @config.BareFontInfo::create(
+  assert_eq(kept.font_variation_settings, font_variation_off)
+  let normal = BareFontInfo::create(
     font_family="Menlo",
     font_weight="normal",
     font_size=12.0,
-    font_feature_settings=@config.editor_font_ligatures_off,
-    font_variation_settings=@config.font_variation_translate,
+    font_feature_settings=editor_font_ligatures_off,
+    font_variation_settings=font_variation_translate,
     line_height=0.0,
     letter_spacing=0.0,
     pixel_ratio=1.0,
   )
   assert_eq(normal.font_weight, "normal")
-  assert_eq(normal.font_variation_settings, @config.font_variation_off)
-  let untranslated = @config.BareFontInfo::create(
+  assert_eq(normal.font_variation_settings, font_variation_off)
+  let untranslated = BareFontInfo::create(
     font_family="Menlo",
     font_weight="500",
     font_size=12.0,
-    font_feature_settings=@config.editor_font_ligatures_off,
+    font_feature_settings=editor_font_ligatures_off,
     font_variation_settings="'wght' 450",
     line_height=0.0,
     letter_spacing=0.0,
@@ -128,47 +129,47 @@ test "fontVariationSettings translate maps numeric weights to wght" {
 
 ///|
 test "fontVariationSettings translate uses parseInt decimal-prefix semantics" {
-  let translated = @config.BareFontInfo::create(
+  let translated = BareFontInfo::create(
     font_family="Menlo",
     font_weight="  +0500suffix",
     font_size=12.0,
-    font_feature_settings=@config.editor_font_ligatures_off,
-    font_variation_settings=@config.font_variation_translate,
+    font_feature_settings=editor_font_ligatures_off,
+    font_variation_settings=font_variation_translate,
     line_height=0.0,
     letter_spacing=0.0,
     pixel_ratio=1.0,
   )
   assert_eq(translated.font_weight, "normal")
   assert_eq(translated.font_variation_settings, "'wght' 500")
-  let negative = @config.BareFontInfo::create(
+  let negative = BareFontInfo::create(
     font_family="Menlo",
     font_weight="-25rest",
     font_size=12.0,
-    font_feature_settings=@config.editor_font_ligatures_off,
-    font_variation_settings=@config.font_variation_translate,
+    font_feature_settings=editor_font_ligatures_off,
+    font_variation_settings=font_variation_translate,
     line_height=0.0,
     letter_spacing=0.0,
     pixel_ratio=1.0,
   )
   assert_eq(negative.font_variation_settings, "'wght' -25")
-  let invalid = @config.BareFontInfo::create(
+  let invalid = BareFontInfo::create(
     font_family="Menlo",
     font_weight="weight",
     font_size=12.0,
-    font_feature_settings=@config.editor_font_ligatures_off,
-    font_variation_settings=@config.font_variation_translate,
+    font_feature_settings=editor_font_ligatures_off,
+    font_variation_settings=font_variation_translate,
     line_height=0.0,
     letter_spacing=0.0,
     pixel_ratio=1.0,
   )
   assert_eq(invalid.font_variation_settings, "'wght' NaN")
   for boundary in ["1", "1000"] {
-    let info = @config.BareFontInfo::create(
+    let info = BareFontInfo::create(
       font_family="Menlo",
       font_weight=boundary,
       font_size=12.0,
-      font_feature_settings=@config.editor_font_ligatures_off,
-      font_variation_settings=@config.font_variation_translate,
+      font_feature_settings=editor_font_ligatures_off,
+      font_variation_settings=font_variation_translate,
       line_height=0.0,
       letter_spacing=0.0,
       pixel_ratio=1.0,
@@ -179,19 +180,19 @@ test "fontVariationSettings translate uses parseInt decimal-prefix semantics" {
 
 ///|
 test "massaged font family appends the platform fallback and quotes spaces" {
-  let custom = @config.BareFontInfo::create(
+  let custom = BareFontInfo::create(
     font_family="Fira Code",
     font_weight="normal",
     font_size=12.0,
-    font_feature_settings=@config.editor_font_ligatures_off,
-    font_variation_settings=@config.font_variation_off,
+    font_feature_settings=editor_font_ligatures_off,
+    font_variation_settings=font_variation_off,
     line_height=0.0,
     letter_spacing=0.0,
     pixel_ratio=1.0,
   )
   assert_eq(
     custom.get_massaged_font_family(),
-    "\"Fira Code\", \{@config.editor_font_defaults.font_family}",
+    "\"Fira Code\", \{editor_font_defaults.font_family}",
   )
   let default_family = bare(0.0, 12.0)
   // bare() uses "Menlo", not the full default stack, so the fallback appends.
@@ -200,26 +201,26 @@ test "massaged font family appends the platform fallback and quotes spaces" {
 
 ///|
 test "massaged font family preserves escaped punctuation and quotes plus" {
-  let fallback = @config.editor_font_defaults.font_family
+  let fallback = editor_font_defaults.font_family
   for family in ["A,B", "A\"B", "A'B"] {
-    let info = @config.BareFontInfo::create(
+    let info = BareFontInfo::create(
       font_family=family,
       font_weight="normal",
       font_size=12.0,
-      font_feature_settings=@config.editor_font_ligatures_off,
-      font_variation_settings=@config.font_variation_off,
+      font_feature_settings=editor_font_ligatures_off,
+      font_variation_settings=font_variation_off,
       line_height=0.0,
       letter_spacing=0.0,
       pixel_ratio=1.0,
     )
     assert_eq(info.get_massaged_font_family(), "\{family}, \{fallback}")
   }
-  let plus = @config.BareFontInfo::create(
+  let plus = BareFontInfo::create(
     font_family="Fira+Code",
     font_weight="normal",
     font_size=12.0,
-    font_feature_settings=@config.editor_font_ligatures_off,
-    font_variation_settings=@config.font_variation_off,
+    font_feature_settings=editor_font_ligatures_off,
+    font_variation_settings=font_variation_off,
     line_height=0.0,
     letter_spacing=0.0,
     pixel_ratio=1.0,
@@ -229,7 +230,7 @@ test "massaged font family preserves escaped punctuation and quotes plus" {
 
 ///|
 test "BareFontInfo getId joins all eight identity axes in fixed order" {
-  let base = @config.BareFontInfo::create(
+  let base = BareFontInfo::create(
     font_family="Fira",
     font_weight="500",
     font_size=13.5,
@@ -240,7 +241,7 @@ test "BareFontInfo getId joins all eight identity axes in fixed order" {
     pixel_ratio=2.0,
   )
   assert_eq(base.get_id(), "2-Fira-500-13.5-features-variations-18-1.25")
-  let variants : Array[@config.BareFontInfo] = [
+  let variants : Array[BareFontInfo] = [
     bare_variant(base, pixel_ratio=3.0),
     bare_variant(base, font_family="Other"),
     bare_variant(base, font_weight="600"),
@@ -257,19 +258,19 @@ test "BareFontInfo getId joins all eight identity axes in fixed order" {
 
 ///|
 test "FontInfo equals includes measured identity and omits three source axes" {
-  let base = @config.FontInfo::estimated(
-    @config.BareFontInfo::create(
+  let base = FontInfo::estimated(
+    BareFontInfo::create(
       font_family="Fira",
       font_weight="normal",
       font_size=12.0,
-      font_feature_settings=@config.editor_font_ligatures_off,
-      font_variation_settings=@config.font_variation_off,
+      font_feature_settings=editor_font_ligatures_off,
+      font_variation_settings=font_variation_off,
       line_height=18.0,
       letter_spacing=0.0,
       pixel_ratio=1.0,
     ),
   )
-  let included : Array[@config.FontInfo] = [
+  let included : Array[FontInfo] = [
     { ..base, font_family: "Other" },
     { ..base, font_weight: "bold" },
     { ..base, font_size: 13.0 },

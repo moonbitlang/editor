@@ -333,7 +333,7 @@ side effect of `set_value`.
 test "a forwarded content flush resets to the document start" {
   let controller = controller_for("alpha\nbeta\n")
   @cursor.move_to(controller, Position(2, 3))
-  let before = controller.get_model_selection().position
+  let before = controller.get_model_selection().get_position()
 
   // Stand in for the view model: forward the internal event to the controller.
   let flushes : Array[@model.InternalModelContentChangeEvent] = []
@@ -344,14 +344,14 @@ test "a forwarded content flush resets to the document start" {
   controller.model.set_value("completely different text\n")
 
   // Until the owner forwards it, the caret is untouched.
-  let unforwarded = controller.get_model_selection().position
+  let unforwarded = controller.get_model_selection().get_position()
   let change = flushes.map(event => controller.on_model_content_changed(event))
   subscription.dispose()
   debug_inspect(
     (
       before,
       unforwarded,
-      controller.get_model_selection().position,
+      controller.get_model_selection().get_position(),
       change.map(c => c.map(v => (v.reason, v.source, v.old_model_version_id))),
     ),
     content=(

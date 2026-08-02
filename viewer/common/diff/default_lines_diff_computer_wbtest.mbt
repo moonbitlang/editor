@@ -1,4 +1,4 @@
-// Behavior tests for the piediff-backed `DefaultLinesDiffComputer`.
+// White-box behavior tests for the piediff-backed `DefaultLinesDiffComputer`.
 //
 // The engine deviates from Monaco's by design (see the impl file header), so
 // unlike the `*_reference_test.mbt` suites these do NOT byte-compare against
@@ -11,7 +11,7 @@
 // plus exact hunks on fixtures where the minimal diff is unambiguous.
 
 ///|
-let default_options : @diff.LinesDiffComputerOptions = {
+let default_options : LinesDiffComputerOptions = {
   ignore_trim_whitespace: false,
   max_computation_time_ms: 0,
   compute_moves: false,
@@ -21,16 +21,16 @@ let default_options : @diff.LinesDiffComputerOptions = {
 fn compute(
   original : Array[String],
   modified : Array[String],
-  options? : @diff.LinesDiffComputerOptions = default_options,
-) -> @diff.LinesDiff {
-  @diff.get_default().compute_diff(original, modified, options)
+  options? : LinesDiffComputerOptions = default_options,
+) -> LinesDiff {
+  get_default().compute_diff(original, modified, options)
 }
 
 ///|
 /// Renders a result's hunks as one comparable string (Array's `Show` is
 /// deprecated toolchain-wide, so tests compare joined strings).
-fn hunks(result : @diff.LinesDiff) -> String {
-  result.changes.map(@diff.DetailedLineRangeMapping::to_string).join(", ")
+fn hunks(result : LinesDiff) -> String {
+  result.changes.map(DetailedLineRangeMapping::to_string).join(", ")
 }
 
 ///|
@@ -51,7 +51,7 @@ fn hunk(
 fn apply_changes(
   original : Array[String],
   modified : Array[String],
-  changes : Array[@diff.DetailedLineRangeMapping],
+  changes : Array[DetailedLineRangeMapping],
 ) -> Array[String] {
   let result : Array[String] = []
   let mut next_original_line = 1
@@ -79,7 +79,7 @@ fn apply_changes(
 fn assert_valid(
   original : Array[String],
   modified : Array[String],
-  result : @diff.LinesDiff,
+  result : LinesDiff,
 ) -> Unit raise {
   for i in 1..<result.changes.length() {
     let m1 = result.changes[i - 1]
@@ -182,7 +182,7 @@ test "empty original document maps to one whole-document change" {
     fail("expected inner changes on the first hunk")
   }
   assert_eq(
-    inner.map(@diff.RangeMapping::to_string).join(", "),
+    inner.map(RangeMapping::to_string).join(", "),
     "{[1,1 -> 1,1]->[1,1 -> 2,2]}",
   )
 }
