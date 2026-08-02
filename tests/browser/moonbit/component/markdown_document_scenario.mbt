@@ -121,6 +121,7 @@ fn markdown_document_source() -> String {
     #|- [ ] this checkbox stays readonly
     #|
     #|```mbt check
+    #|///|
     #|pub fn markdown_answer() -> Int {
     #|  42
     #|}
@@ -427,13 +428,17 @@ fn poll_markdown_document_ready(
   let semantic_lines = @support.query_count(
     ".markdown-document-host .moonbit-viewer-markdown-code-line",
   )
+  let phrase_dividers = @support.query_count(
+    ".markdown-document-host [data-markdown-phrase-divider=\"true\"]",
+  )
   let diagnostics = @support.query_count(
     ".markdown-document-host .moonbit-viewer-markdown-diagnostic.squiggly-warning",
   )
   if root_count == 1 &&
     code_blocks == 3 &&
     keyword_tokens > 0 &&
-    semantic_lines == 7 &&
+    semantic_lines == 8 &&
+    phrase_dividers == 1 &&
     diagnostics > 0 {
     ctx.assert_true(
       @support.query_count(".markdown-document-host > .monaco-editor") == 0,
@@ -464,6 +469,7 @@ fn poll_markdown_document_ready(
     ctx.metric_int("codeBlocks", code_blocks)
     ctx.metric_int("keywordTokens", keyword_tokens)
     ctx.metric_int("semanticLines", semantic_lines)
+    ctx.metric_int("phraseDividers", phrase_dividers)
     ctx.metric_int("diagnostics", diagnostics)
     ctx.metric_string(
       "sourceUri",
