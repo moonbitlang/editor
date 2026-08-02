@@ -128,9 +128,9 @@ pub struct LogService {
 /// Opaque logging capability passed across public service boundaries. It
 /// exposes only the warning and error operations consumed by Viewer runtime
 /// code and does not reveal the concrete sink or threshold policy.
-pub struct LogHandle {
-  priv warn_callback : (String, String, Array[(String, String)]) -> Unit
-  priv error_callback : (String, String, Array[(String, String)]) -> Unit
+struct LogHandle {
+  warn_callback : (String, String, Array[(String, String)]) -> Unit
+  error_callback : (String, String, Array[(String, String)]) -> Unit
 }
 
 ///|

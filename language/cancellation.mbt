@@ -5,8 +5,8 @@
 /// token before and after cancellation. Cancellation ownership belongs to
 /// `CancellationTokenSource`; `CancellationToken::new` and `cancel` remain as
 /// compatibility entry points for existing direct-token callers.
-pub struct CancellationToken {
-  priv state : CancellationTokenState
+struct CancellationToken {
+  state : CancellationTokenState
 }
 
 ///|
@@ -165,10 +165,10 @@ fn MutableCancellationToken::dispose(self : MutableCancellationToken) -> Unit {
 /// Owner for one lazily created cancellation token and its optional parent
 /// subscription. `dispose(cancel=false)` releases listeners without requesting
 /// cancellation; `dispose(cancel=true)` cancels first.
-pub struct CancellationTokenSource {
-  priv mut token_value : CancellationToken?
-  priv mut parent_listener : @base_common.Disposable?
-  priv schedule : (() -> Unit) -> @base_common.Disposable
+struct CancellationTokenSource {
+  mut token_value : CancellationToken?
+  mut parent_listener : @base_common.Disposable?
+  schedule : (() -> Unit) -> @base_common.Disposable
 }
 
 ///|

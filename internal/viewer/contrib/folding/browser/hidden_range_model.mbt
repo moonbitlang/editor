@@ -10,11 +10,11 @@
 
 ///|
 /// Monaco's `HiddenRangeModel` (`hiddenRangeModel.ts:16`).
-pub struct HiddenRangeModel {
-  priv folding_model : FoldingModel
-  priv mut hidden_ranges : Array[@base_common.Range]
-  priv mut folding_model_listener : @base_common.Disposable?
-  priv update_event_emitter : @base_common.Emitter[Array[@base_common.Range]]
+struct HiddenRangeModel {
+  folding_model : FoldingModel
+  mut hidden_ranges : Array[@base_common.Range]
+  mut folding_model_listener : @base_common.Disposable?
+  update_event_emitter : @base_common.Emitter[Array[@base_common.Range]]
 }
 
 ///|

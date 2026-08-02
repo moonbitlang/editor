@@ -19,9 +19,7 @@ import {
 // Errors
 
 // Types and methods
-pub struct DragScrolling {
-  // private fields
-}
+type DragScrolling
 pub fn DragScrolling::dispose(Self) -> Unit
 pub fn DragScrolling::set_dispatch(Self, (@browser.MouseTarget, Bool, NavigationCommandRevealType) -> Unit) -> Unit
 pub fn DragScrolling::start(Self, @browser.MouseTarget, @browser.EditorDomMouseEvent) -> Unit
@@ -92,9 +90,7 @@ pub(all) struct MouseDispatchData {
   on_injected_text : Bool
 }
 
-pub struct MouseDownState {
-  // private fields
-}
+type MouseDownState
 pub fn MouseDownState::MouseDownState() -> Self
 pub fn MouseDownState::alt_key(Self) -> Bool
 pub fn MouseDownState::count(Self) -> Int
@@ -106,9 +102,7 @@ pub fn MouseDownState::shift_key(Self) -> Bool
 pub fn MouseDownState::started_on_line_numbers(Self) -> Bool
 pub fn MouseDownState::try_set_count(Self, Int, @common.Position, now? : Double) -> Unit
 
-pub struct MouseHandler {
-  // private fields
-}
+type MouseHandler
 pub fn MouseHandler::MouseHandler(PointerHandlerHelper) -> Self
 pub fn MouseHandler::cancel_selection(Self) -> Unit
 pub fn MouseHandler::dispose(Self) -> Unit
@@ -117,9 +111,7 @@ pub fn MouseHandler::handle_editor_wheel(Self, @dom.Event, @dom.WheelEvent) -> B
 pub fn MouseHandler::hook_browser_desperate_reveal(Self) -> Unit
 pub fn MouseHandler::hook_scrollable_scrollbar_input(Self, @scrollbar.ScrollableElementDom, @scrollbar.ScrollableElementOwner) -> Unit
 
-pub struct MouseTargetFactory {
-  // private fields
-}
+type MouseTargetFactory
 pub fn MouseTargetFactory::MouseTargetFactory(PointerHandlerHelper) -> Self
 pub fn MouseTargetFactory::create_mouse_target(Self, PointerHandlerLastRenderData, @browser.EditorPagePosition, @browser.PageCoordinates, @browser.CoordinatesRelativeToEditor, @dom.Element?) -> @browser.MouseTarget
 pub fn MouseTargetFactory::get_mouse_column(Self, @browser.CoordinatesRelativeToEditor) -> Int

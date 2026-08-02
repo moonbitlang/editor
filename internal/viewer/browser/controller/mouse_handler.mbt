@@ -142,18 +142,18 @@ pub(all) struct PointerHandlerHelper {
 ///|
 /// `MouseHandler` (mouseHandler.ts:59-358). Also carries the viewer's
 /// retained scrollbar-drag slot (scrollbar_input.mbt).
-pub struct MouseHandler {
-  priv view_helper : PointerHandlerHelper
-  priv mouse_target_factory : MouseTargetFactory
-  priv mouse_down_operation : MouseDownOperation
-  priv scrollbar_drag_monitor : @base_browser.GlobalPointerMoveMonitor
-  priv mut touch_scroll_gesture : TouchScrollGesture?
-  priv mut last_mouse_leave_time : Double
-  priv mut mouse_leave_monitor : @base_common.Disposable?
-  priv listeners : Array[@base_common.Disposable]
+struct MouseHandler {
+  view_helper : PointerHandlerHelper
+  mouse_target_factory : MouseTargetFactory
+  mouse_down_operation : MouseDownOperation
+  scrollbar_drag_monitor : @base_browser.GlobalPointerMoveMonitor
+  mut touch_scroll_gesture : TouchScrollGesture?
+  mut last_mouse_leave_time : Double
+  mut mouse_leave_monitor : @base_common.Disposable?
+  listeners : Array[@base_common.Disposable]
   /// The active scrollbar-thumb drag (scrollbar_input.mbt).
-  priv mut drag : @scrollbar.ScrollbarDrag?
-  priv mut disposed : Bool
+  mut drag : @scrollbar.ScrollbarDrag?
+  mut disposed : Bool
 }
 
 ///|
@@ -840,18 +840,18 @@ fn MouseDownOperation::dispatch_mouse_target(
 
 ///|
 /// `MouseDownState` (mouseHandler.ts:658-749).
-pub struct MouseDownState {
-  priv mut alt_key_flag : Bool
-  priv mut ctrl_key_flag : Bool
-  priv mut meta_key_flag : Bool
-  priv mut shift_key_flag : Bool
-  priv mut left_button_flag : Bool
-  priv mut middle_button_flag : Bool
-  priv mut started_on_line_numbers_flag : Bool
-  priv mut last_mouse_down_position : @base_common.Position?
-  priv mut last_mouse_down_position_equal_count : Int
-  priv mut last_mouse_down_count : Int
-  priv mut last_set_mouse_down_count_time : Double
+struct MouseDownState {
+  mut alt_key_flag : Bool
+  mut ctrl_key_flag : Bool
+  mut meta_key_flag : Bool
+  mut shift_key_flag : Bool
+  mut left_button_flag : Bool
+  mut middle_button_flag : Bool
+  mut started_on_line_numbers_flag : Bool
+  mut last_mouse_down_position : @base_common.Position?
+  mut last_mouse_down_position_equal_count : Int
+  mut last_mouse_down_count : Int
+  mut last_set_mouse_down_count_time : Double
 }
 
 ///|

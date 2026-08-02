@@ -112,14 +112,14 @@ fn BitField::set(self : BitField, index : Int, new_state : Bool) -> Unit {
 /// of two parallel u32 arrays; once parents are computed the top byte of
 /// each packs half of the region's parent index. Collapse and
 /// user-defined/recovered source state live in bit fields.
-pub struct FoldingRegions {
-  priv start_indexes : FixedArray[UInt]
-  priv end_indexes : FixedArray[UInt]
-  priv collapse_states : BitField
-  priv user_defined_states : BitField
-  priv recovered_states : BitField
-  priv mut parents_computed : Bool
-  priv types : Array[String?]?
+struct FoldingRegions {
+  start_indexes : FixedArray[UInt]
+  end_indexes : FixedArray[UInt]
+  collapse_states : BitField
+  user_defined_states : BitField
+  recovered_states : BitField
+  mut parents_computed : Bool
+  types : Array[String?]?
 }
 
 ///|
@@ -581,9 +581,9 @@ pub fn FoldingRegions::sanitize_and_merge(
 ///|
 /// A region handle over the compact store — Monaco's `FoldingRegion`
 /// (`foldingRanges.ts:395`).
-pub struct FoldingRegion {
-  priv ranges : FoldingRegions
-  priv index : Int
+struct FoldingRegion {
+  ranges : FoldingRegions
+  index : Int
 }
 
 ///|

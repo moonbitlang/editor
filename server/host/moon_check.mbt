@@ -3,18 +3,18 @@
 /// publishes the parsed per-file diagnostics through `publish`. Runs are
 /// single-flight — document syncs arriving while a check is in flight
 /// collapse into one follow-up run.
-pub struct MoonCheckDiagnostics {
+struct MoonCheckDiagnostics {
   /// Shared with the host's workspace switching; each run captures one value.
-  priv root : Ref[String]
-  priv publish : (@base_common.Uri, String, Array[@language.Diagnostic]) -> Unit
-  priv collect_check : async () -> String?
-  priv running : Ref[Bool]
-  priv dirty : Ref[Bool]
-  priv sync_generation : Ref[Int]
+  root : Ref[String]
+  publish : (@base_common.Uri, String, Array[@language.Diagnostic]) -> Unit
+  collect_check : async () -> String?
+  running : Ref[Bool]
+  dirty : Ref[Bool]
+  sync_generation : Ref[Int]
   /// Exact synced model state per workspace URI.
-  priv documents : Map[String, SyncedDocumentStamp]
+  documents : Map[String, SyncedDocumentStamp]
   /// Last accepted set per workspace URI, including its producing state.
-  priv published : Ref[Map[String, PublishedDiagnosticSet]]
+  published : Ref[Map[String, PublishedDiagnosticSet]]
 }
 
 ///|

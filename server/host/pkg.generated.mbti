@@ -24,9 +24,7 @@ pub async fn run_native_editor_server(String, host? : String, port? : Int, asset
 // Errors
 
 // Types and methods
-pub struct MoonCheckDiagnostics {
-  // private fields
-}
+type MoonCheckDiagnostics
 pub fn MoonCheckDiagnostics::MoonCheckDiagnostics(@ref.Ref[String], (@common.Uri, String, Array[@language.Diagnostic]) -> Unit, moon_command? : String) -> Self
 pub fn MoonCheckDiagnostics::note_document(Self, @workspace.DocumentSnapshot) -> Unit
 pub fn MoonCheckDiagnostics::reset(Self) -> Unit
@@ -42,9 +40,7 @@ pub impl @language.DocumentSymbolProvider for MoonWorkspaceLanguageProvider
 pub impl @language.HoverProvider for MoonWorkspaceLanguageProvider
 pub impl @language.ReferencesProvider for MoonWorkspaceLanguageProvider
 
-pub struct NativeServerHost {
-  // private fields
-}
+type NativeServerHost
 pub fn NativeServerHost::NativeServerHost() -> Self
 pub fn NativeServerHost::with_poll_interval(Int) -> Self
 pub impl @server.ServerHost for NativeServerHost

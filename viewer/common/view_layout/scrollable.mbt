@@ -442,14 +442,14 @@ fn ease_out_cubic(value : Double) -> Double {
 ///|
 /// Complete Monaco `Scrollable` state machine (`scrollable.ts:225-395`). The
 /// scheduler and clock are injected so this package remains DOM/FFI-free.
-pub struct Scrollable {
-  priv mut smooth_scroll_duration : Double
-  priv schedule_at_next_animation_frame : (() -> Unit) -> @base_common.Disposable
-  priv now : () -> Double
-  priv mut state : ScrollState
-  priv mut smooth_scrolling : SmoothScrollingOperation?
-  priv mut operation_generation : Int
-  priv on_scroll_emitter : @base_common.Emitter[ScrollChange]
+struct Scrollable {
+  mut smooth_scroll_duration : Double
+  schedule_at_next_animation_frame : (() -> Unit) -> @base_common.Disposable
+  now : () -> Double
+  mut state : ScrollState
+  mut smooth_scrolling : SmoothScrollingOperation?
+  mut operation_generation : Int
+  on_scroll_emitter : @base_common.Emitter[ScrollChange]
 }
 
 ///|
@@ -771,10 +771,10 @@ pub(all) struct ContentSizeChange {
 
 ///|
 /// Complete Monaco `EditorScrollable` (`viewLayout.ts:73-154`).
-pub struct EditorScrollable {
-  priv scrollable : Scrollable
-  priv mut editor_dimensions : EditorScrollDimensions
-  priv content_size_emitter : @base_common.Emitter[ContentSizeChange]
+struct EditorScrollable {
+  scrollable : Scrollable
+  mut editor_dimensions : EditorScrollDimensions
+  content_size_emitter : @base_common.Emitter[ContentSizeChange]
 }
 
 ///|

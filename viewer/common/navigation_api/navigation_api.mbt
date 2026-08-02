@@ -20,8 +20,8 @@ pub(all) struct OpenLocationRequest {
 /// Minimal host-owned capability for opening a location. `true` means the host
 /// accepted and handled the request; `false` leaves the initiating Viewer
 /// unchanged so it can present non-destructive feedback.
-pub struct LocationOpenerHandle {
-  priv open_callback : async (OpenLocationRequest) -> Bool noraise
+struct LocationOpenerHandle {
+  open_callback : async (OpenLocationRequest) -> Bool noraise
 }
 
 ///|
@@ -45,10 +45,10 @@ pub async fn LocationOpenerHandle::open(
 /// Caller-owned lease for a resolved preview model. The host keeps `model`
 /// usable until `dispose` releases the lease. Disposing this reference never
 /// disposes the TextModel itself.
-pub struct TextModelReference {
-  priv model_value : @model.TextModel
-  priv release_callback : () -> Unit
-  priv mut disposed : Bool
+struct TextModelReference {
+  model_value : @model.TextModel
+  release_callback : () -> Unit
+  mut disposed : Bool
 }
 
 ///|
@@ -83,8 +83,8 @@ pub fn TextModelReference::dispose(self : TextModelReference) -> Unit {
 /// preview. The captured host decides whether the model comes from an existing
 /// cache, a workspace, a file, or a network service. `None` means that no
 /// preview is available.
-pub struct TextModelResolverHandle {
-  priv resolve_callback : async (@base_common.Uri, @language.CancellationToken) -> TextModelReference? noraise
+struct TextModelResolverHandle {
+  resolve_callback : async (@base_common.Uri, @language.CancellationToken) -> TextModelReference? noraise
 }
 
 ///|

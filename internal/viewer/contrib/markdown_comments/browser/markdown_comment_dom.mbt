@@ -386,9 +386,9 @@ pub fn MarkdownCommentDom::observe_size(
 ///|
 /// A disposable size-observation lifetime with an explicit invalidation seam
 /// for content replacement and image-load callbacks owned by the renderer.
-pub struct MarkdownCommentSizeObserver {
-  priv request_measure_ : () -> Unit
-  priv lifetime : @base_common.Disposable
+struct MarkdownCommentSizeObserver {
+  request_measure_ : () -> Unit
+  lifetime : @base_common.Disposable
 }
 
 ///|
@@ -446,8 +446,8 @@ pub fn MarkdownCommentDom::observe_viewport_width(
 }
 
 ///|
-pub struct MarkdownCommentViewportObserver {
-  priv lifetime : @base_common.Disposable
+struct MarkdownCommentViewportObserver {
+  lifetime : @base_common.Disposable
 }
 
 ///|

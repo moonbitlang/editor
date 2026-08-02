@@ -10,89 +10,89 @@
 /// All methods are plain calls (the host wraps them in its own effect
 /// system if it has one). The host must never render its own children
 /// into the element passed to `attach`.
-pub struct Viewer {
-  priv services : ViewerServices
+struct Viewer {
+  services : ViewerServices
   /// Private embedding role. A Peek preview borrows the same public services
   /// but cannot recursively create another Peek widget.
-  priv role : ViewerRole
+  role : ViewerRole
   /// Services created by an omitted constructor argument belong to this
   /// Viewer. An explicitly supplied bundle remains caller-owned and may be
   /// shared by other Viewers.
-  priv owns_services : Bool
-  priv mut disposed : Bool
+  owns_services : Bool
+  mut disposed : Bool
   /// Viewer-id registration in the lower JS-only testing registry. It is
   /// generation-safe and owns all workbench/browser-test observations and
   /// private controls for this Viewer.
-  priv mut testing_registration : @base_common.Disposable?
+  mut testing_registration : @base_common.Disposable?
   /// Viewer-lifetime subscriptions, distinct from ModelData's swap-scoped
   /// listeners and View's browser-resource store.
-  priv lifetime_disposables : Array[@base_common.Disposable]
+  lifetime_disposables : Array[@base_common.Disposable]
   /// Viewer-lifetime options, measured geometry, font facts, and derived
   /// layout identity behind one configuration transition owner.
-  priv configuration : EditorConfigurationState
-  priv did_change_model : @base_common.Emitter[@editor_api.ModelChangedEvent]
+  configuration : EditorConfigurationState
+  did_change_model : @base_common.Emitter[@editor_api.ModelChangedEvent]
   /// Monaco's `onDidChangeModelContent` (`cew:105`), re-fired from the
   /// installed model's public content event by the `attach_model`
   /// subscription.
-  priv did_change_model_content : @base_common.Emitter[
+  did_change_model_content : @base_common.Emitter[
     @model.ModelContentChangedEvent,
   ]
-  priv did_change_cursor_position : @base_common.Emitter[
+  did_change_cursor_position : @base_common.Emitter[
     @editor_api.CursorPositionChangedEvent,
   ]
-  priv did_change_cursor_selection : @base_common.Emitter[
+  did_change_cursor_selection : @base_common.Emitter[
     @editor_api.CursorSelectionChangedEvent,
   ]
   /// ViewModel cursor facts wait here until each item can be delivered as one
   /// adjacent position/selection pair. The drain gate prevents reentrant
   /// listeners from interleaving a later pair; content barriers hold Flush
   /// facts until the corresponding public model-content callback completes.
-  priv cursor_delivery : CursorEventDelivery
-  priv did_build_view_model : @base_common.Emitter[
+  cursor_delivery : CursorEventDelivery
+  did_build_view_model : @base_common.Emitter[
     @viewer_testing.ViewModelBuiltObservation,
   ]
-  priv did_scroll : @base_common.Emitter[@editor_api.ScrollEvent]
+  did_scroll : @base_common.Emitter[@editor_api.ScrollEvent]
   /// Public `onDidChangeViewZones`. The source emitter participates in a
   /// widget-wide delivery queue; that cross-event queue remains the explicit
   /// CEW-001 deferral, while this dedicated emitter preserves the event's own
   /// listener semantics.
-  priv did_change_view_zones : @base_common.Emitter[Unit]
+  did_change_view_zones : @base_common.Emitter[Unit]
   /// Public `onDidChangeHiddenAreas`, relayed from the current model's outgoing
   /// ViewModel dispatcher only after its complete mapping transaction.
-  priv did_change_hidden_areas : @base_common.Emitter[Unit]
-  priv did_dispose : @base_common.Emitter[Unit]
+  did_change_hidden_areas : @base_common.Emitter[Unit]
+  did_dispose : @base_common.Emitter[Unit]
   /// Public mouse events (`onMouseDown`/`onMouseUp`/`onMouseMove`/
   /// `onMouseLeave`/`onContextMenu`, see `mouse_events.mbt`), fired from the
   /// controller's notify seams; contributions subscribe like Monaco's editor
   /// controllers.
-  priv did_mouse_down : @base_common.Emitter[@editor_browser.EditorMouseEvent]
-  priv did_mouse_up : @base_common.Emitter[@editor_browser.EditorMouseEvent]
-  priv did_mouse_move : @base_common.Emitter[@editor_browser.EditorMouseEvent]
-  priv did_context_menu : @base_common.Emitter[@editor_browser.EditorMouseEvent]
-  priv did_mouse_leave : @base_common.Emitter[
+  did_mouse_down : @base_common.Emitter[@editor_browser.EditorMouseEvent]
+  did_mouse_up : @base_common.Emitter[@editor_browser.EditorMouseEvent]
+  did_mouse_move : @base_common.Emitter[@editor_browser.EditorMouseEvent]
+  did_context_menu : @base_common.Emitter[@editor_browser.EditorMouseEvent]
+  did_mouse_leave : @base_common.Emitter[
     @editor_browser.PartialEditorMouseEvent,
   ]
   /// The last fired scroll event's facts, the diff base for the next event's
   /// `*_changed` flags (Monaco's `ScrollEvent` carries per-axis change bits).
-  priv mut last_scroll_event : @editor_api.ScrollEvent?
+  mut last_scroll_event : @editor_api.ScrollEvent?
   /// Viewer-lifetime generation/current-model owner. Browser-only state lives
   /// under the current ModelData rather than beside it on the root Viewer.
-  priv model_slot : ViewerModelSlot
+  model_slot : ViewerModelSlot
   /// One-way browser attachment aggregate. It owns the caller host, the
   /// atomic no-model placeholder, render publication, and DOM focus state.
-  priv mut mount : ViewerMount
+  mut mount : ViewerMount
   /// Registered overlay widgets by id (Monaco's `_overlayWidgets`), re-added
   /// to every per-model view (`cew:1901-1905`).
-  priv overlay_widgets : Map[String, @editor_browser.OverlayWidget]
-  priv mut pending_rendered : PendingRendered?
-  priv mut scroll_dirty : Bool
+  overlay_widgets : Map[String, @editor_browser.OverlayWidget]
+  mut pending_rendered : PendingRendered?
+  mut scroll_dirty : Bool
   /// This editor's decoration `ownerId` (Monaco's per-widget editor id): the
   /// filter handed to `ViewModelDecorations` and the ownerId of the public
   /// `delta_decorations` API.
-  priv editor_id : Int
+  editor_id : Int
   /// The per-editor contribution owner around the registry's sole concrete
   /// instance map, including its two-phase disposal lifecycle.
-  priv contributions : EditorContributions
+  contributions : EditorContributions
 }
 
 ///|
@@ -129,9 +129,9 @@ priv struct HorizontalRevealRangeRequest {
 }
 
 ///|
-pub struct ViewerViewState {
-  priv scroll_top : Double
-  priv scroll_left : Double
+struct ViewerViewState {
+  scroll_top : Double
+  scroll_left : Double
 } derive(Debug)
 
 ///|

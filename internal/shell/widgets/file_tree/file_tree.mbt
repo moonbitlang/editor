@@ -6,9 +6,9 @@
 /// provider and caches it on the node, and `set_active` is `autoReveal`.
 /// Opening files is an intent reported through `on_open`; the widget
 /// never opens documents itself.
-pub struct FileTree {
-  priv emit : @rabbita.Emit[FileTreeMsg]
-  priv view_value : @rabbita.Val[@html.Html]
+struct FileTree {
+  emit : @rabbita.Emit[FileTreeMsg]
+  view_value : @rabbita.Val[@html.Html]
 }
 
 ///|

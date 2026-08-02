@@ -17,6 +17,11 @@
 - Use `fn Type::Type(...) -> Type` for the primary constructor; reserve names
   such as `empty` and `from_array` for alternate construction paths.
 - Constructors may validate, normalize, or derive hidden fields.
+- Use a bare `struct` for an opaque type that public functions expose, and a
+  `priv struct` when the type itself is package-private. Reserve `pub struct`
+  for contracts whose field visibility is intentionally public instead of
+  spelling an opaque representation as a public struct with every field
+  marked `priv`.
 
 ## Tests
 

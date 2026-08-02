@@ -29,8 +29,8 @@ pub(all) enum ViewConfigurationOption {
 /// Source-shaped configuration payload.  `changed_options` is a typed bitset
 /// represented as a deduplicated array because the readonly viewer has a
 /// deliberately small option surface.
-pub struct ViewConfigurationChangedEvent {
-  priv changed_options : Array[ViewConfigurationOption]
+struct ViewConfigurationChangedEvent {
+  changed_options : Array[ViewConfigurationOption]
 }
 
 ///|
@@ -71,8 +71,8 @@ fn view_configuration_options_contain(
 /// Consumed `ViewCursorStateChangedEvent` payload. Browser view parts only use
 /// the projected view-space selections; model-space selections and the cursor
 /// reason remain owned by the root Viewer's public event delivery.
-pub struct ViewCursorStateChangedEvent {
-  priv selections : Array[@core.Selection]
+struct ViewCursorStateChangedEvent {
+  selections : Array[@core.Selection]
 }
 
 ///|
@@ -83,8 +83,8 @@ pub fn ViewCursorStateChangedEvent::ViewCursorStateChangedEvent(
 }
 
 ///|
-pub struct ViewFocusChangedEvent {
-  priv is_focused : Bool
+struct ViewFocusChangedEvent {
+  is_focused : Bool
 }
 
 ///|
@@ -98,12 +98,12 @@ pub fn ViewFocusChangedEvent::ViewFocusChangedEvent(
 /// Consumed `ViewScrollChangedEvent` payload. ViewLines needs the new width;
 /// view parts use the four independent changed flags. The root Viewer owns the
 /// complete position/dimension values used by its public scroll event.
-pub struct ViewScrollChangedEvent {
-  priv scroll_width : Double
-  priv scroll_width_changed : Bool
-  priv scroll_left_changed : Bool
-  priv scroll_height_changed : Bool
-  priv scroll_top_changed : Bool
+struct ViewScrollChangedEvent {
+  scroll_width : Double
+  scroll_width_changed : Bool
+  scroll_left_changed : Bool
+  scroll_height_changed : Bool
+  scroll_top_changed : Bool
 }
 
 ///|
@@ -125,9 +125,9 @@ pub fn ViewScrollChangedEvent::ViewScrollChangedEvent(
 
 ///|
 /// Inclusive line range carried by `ViewTokensChangedEvent`.
-pub struct ViewTokenChangeRange {
-  priv from_line_number : Int
-  priv to_line_number : Int
+struct ViewTokenChangeRange {
+  from_line_number : Int
+  to_line_number : Int
 }
 
 ///|
@@ -139,8 +139,8 @@ pub fn ViewTokenChangeRange::ViewTokenChangeRange(
 }
 
 ///|
-pub struct ViewTokensChangedEvent {
-  priv ranges : Array[ViewTokenChangeRange]
+struct ViewTokensChangedEvent {
+  ranges : Array[ViewTokenChangeRange]
 }
 
 ///|

@@ -12,9 +12,7 @@ import {
 // Errors
 
 // Types and methods
-pub struct MarkdownCommentDiagramViewports {
-  // private fields
-}
+type MarkdownCommentDiagramViewports
 pub fn MarkdownCommentDiagramViewports::MarkdownCommentDiagramViewports(@dom.Element, () -> Unit) -> Self
 pub fn MarkdownCommentDiagramViewports::dispose(Self) -> Unit
 pub fn MarkdownCommentDiagramViewports::refresh(Self) -> Unit
@@ -41,15 +39,11 @@ pub fn MarkdownCommentDom::observe_viewport_width(Self, () -> Unit) -> MarkdownC
 pub fn MarkdownCommentDom::pin_to_content_viewport(Self) -> Unit
 pub fn MarkdownCommentDom::set_margin_fold_lane_width(Self, Int) -> Unit
 
-pub struct MarkdownCommentSizeObserver {
-  // private fields
-}
+type MarkdownCommentSizeObserver
 pub fn MarkdownCommentSizeObserver::dispose(Self) -> Unit
 pub fn MarkdownCommentSizeObserver::request_measure(Self) -> Unit
 
-pub struct MarkdownCommentViewportObserver {
-  // private fields
-}
+type MarkdownCommentViewportObserver
 pub fn MarkdownCommentViewportObserver::dispose(Self) -> Unit
 
 // Type aliases

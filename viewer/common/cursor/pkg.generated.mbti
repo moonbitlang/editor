@@ -24,9 +24,7 @@ pub struct Cursor {
 pub fn Cursor::Cursor() -> Self
 pub fn Cursor::set_model_state(Self, CursorContext, SingleCursorState) -> Unit
 
-pub struct CursorContext {
-  // private fields
-}
+type CursorContext
 pub fn CursorContext::CursorContext(view_to_model~ : (@common.Position) -> @common.Position, view_range_to_model~ : (@common.Range) -> @common.Range, model_to_view~ : (@common.Position) -> @common.Position) -> Self
 pub fn CursorContext::model_to_view(Self, @common.Position) -> @common.Position
 pub fn CursorContext::view_to_model(Self, @common.Position) -> @common.Position

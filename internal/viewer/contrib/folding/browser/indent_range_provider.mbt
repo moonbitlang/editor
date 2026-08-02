@@ -19,11 +19,11 @@ pub const ID_INDENT_PROVIDER : String = "indent"
 ///|
 /// The indentation range provider — Monaco's `IndentRangeProvider`
 /// (`indentRangeProvider.ts:18`).
-pub struct IndentRangeProvider {
-  priv editor_model : @model.TextModel
-  priv language_configuration_service : @languages.LanguageHandle
-  priv folding_ranges_limit : FoldingLimitReporter
-  priv tab_size : Int
+struct IndentRangeProvider {
+  editor_model : @model.TextModel
+  language_configuration_service : @languages.LanguageHandle
+  folding_ranges_limit : FoldingLimitReporter
+  tab_size : Int
 }
 
 ///|
@@ -79,12 +79,12 @@ pub fn IndentRangeProvider::compute(
 /// Collects candidate ranges bottom-up and enforces the region limit by
 /// dropping the deepest indents first — Monaco's `RangesCollector`
 /// (`indentRangeProvider.ts:38`, "public only for testing").
-pub struct RangesCollector {
-  priv start_indexes : Array[Int]
-  priv end_indexes : Array[Int]
-  priv indent_occurrences : Array[Int]
-  priv mut length : Int
-  priv folding_ranges_limit : FoldingLimitReporter
+struct RangesCollector {
+  start_indexes : Array[Int]
+  end_indexes : Array[Int]
+  indent_occurrences : Array[Int]
+  mut length : Int
+  folding_ranges_limit : FoldingLimitReporter
 }
 
 ///|

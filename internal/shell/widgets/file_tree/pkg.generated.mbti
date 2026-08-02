@@ -14,9 +14,7 @@ import {
 // Errors
 
 // Types and methods
-pub struct FileTree {
-  // private fields
-}
+type FileTree
 pub fn FileTree::FileTree(&@workspace.WorkspaceTreeProvider, on_open~ : (@common.Uri) -> Unit, rank? : (@workspace.WorkspaceStat) -> Int) -> Self
 pub fn FileTree::refresh(Self) -> @cmd.Cmd
 pub fn FileTree::set_active(Self, @common.Uri) -> @cmd.Cmd

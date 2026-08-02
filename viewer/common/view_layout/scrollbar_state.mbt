@@ -9,18 +9,18 @@ let minimum_slider_size = 20.0
 /// moves with `scroll_top`; for the horizontal bar substitute width and
 /// `scroll_left`. Pixel inputs round to whole CSS pixels like the
 /// reference.
-pub struct ScrollbarState {
-  priv arrow_size : Double
-  priv scrollbar_size : Double
-  priv opposite_scrollbar_size : Double
-  priv mut visible_size : Double
-  priv mut scroll_size : Double
-  priv mut scroll_position : Double
-  priv mut computed_available_size : Double
-  priv mut computed_is_needed : Bool
-  priv mut computed_slider_size : Double
-  priv mut computed_slider_ratio : Double
-  priv mut computed_slider_position : Double
+struct ScrollbarState {
+  arrow_size : Double
+  scrollbar_size : Double
+  opposite_scrollbar_size : Double
+  mut visible_size : Double
+  mut scroll_size : Double
+  mut scroll_position : Double
+  mut computed_available_size : Double
+  mut computed_is_needed : Bool
+  mut computed_slider_size : Double
+  mut computed_slider_ratio : Double
+  mut computed_slider_position : Double
 }
 
 ///|

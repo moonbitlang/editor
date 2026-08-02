@@ -7,20 +7,20 @@
 /// mirroring Monaco's `HoverParticipantRegistry`. `Viewer::request_hover`
 /// projects these services into a `@hover.HoverParticipantServices` when it
 /// builds a hover computer.
-pub struct ViewerServices {
-  priv languages : @languages.LanguageHandle
-  priv marker_decorations : @markers.MarkerDecorationsHandle
-  priv agent_feedback : @agent_feedback_api.AgentFeedbackHandle
-  priv location_opener : @navigation_api.LocationOpenerHandle?
-  priv text_model_resolver : @navigation_api.TextModelResolverHandle?
-  priv quick_diff : @quick_diff_api.QuickDiffHandle
-  priv log_service : @log.LogHandle
+struct ViewerServices {
+  languages : @languages.LanguageHandle
+  marker_decorations : @markers.MarkerDecorationsHandle
+  agent_feedback : @agent_feedback_api.AgentFeedbackHandle
+  location_opener : @navigation_api.LocationOpenerHandle?
+  text_model_resolver : @navigation_api.TextModelResolverHandle?
+  quick_diff : @quick_diff_api.QuickDiffHandle
+  log_service : @log.LogHandle
   /// Concrete defaults owned by this exact bundle. Caller-supplied handles
   /// never appear here and therefore can never be disposed by the bundle.
-  priv owned_marker_decorations : @markers.MarkerDecorationsService?
-  priv owned_markers : @markers.MarkerService?
-  priv owned_agent_feedback : @agent_feedback.AgentFeedbackService?
-  priv mut disposed : Bool
+  owned_marker_decorations : @markers.MarkerDecorationsService?
+  owned_markers : @markers.MarkerService?
+  owned_agent_feedback : @agent_feedback.AgentFeedbackService?
+  mut disposed : Bool
 }
 
 ///|

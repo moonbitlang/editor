@@ -22,8 +22,8 @@ pub(all) enum ServerHostResolveResult {
 
 ///|
 /// Disposable watch handle owned by the remote server.
-pub struct ServerWatch {
-  priv dispose : () -> Unit
+struct ServerWatch {
+  dispose : () -> Unit
 }
 
 ///|
@@ -45,18 +45,18 @@ pub(open) trait ServerHost {
 ///|
 /// Reference remote workspace server: protocol policy, document cache, watches,
 /// and language-provider routing without direct native effects.
-pub struct RemoteServer {
+struct RemoteServer {
   /// Shared by every session of this server so a host-level workspace switch
   /// redirects all connections at once.
-  priv workspace_root : Ref[String]
-  priv host : &ServerHost
-  priv hover_provider : &@language.HoverProvider
-  priv definition_provider : &@language.DefinitionProvider
-  priv references_provider : &@language.ReferencesProvider
-  priv document_symbol_provider : &@language.DocumentSymbolProvider
-  priv documents : Map[String, @workspace.DocumentSnapshot]
-  priv watches : Map[String, ServerWatch]
-  priv document_sync_listener : Ref[((@workspace.DocumentSnapshot) -> Unit)?]
+  workspace_root : Ref[String]
+  host : &ServerHost
+  hover_provider : &@language.HoverProvider
+  definition_provider : &@language.DefinitionProvider
+  references_provider : &@language.ReferencesProvider
+  document_symbol_provider : &@language.DocumentSymbolProvider
+  documents : Map[String, @workspace.DocumentSnapshot]
+  watches : Map[String, ServerWatch]
+  document_sync_listener : Ref[((@workspace.DocumentSnapshot) -> Unit)?]
 }
 
 ///|

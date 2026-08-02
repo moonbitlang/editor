@@ -49,11 +49,7 @@ pub(all) struct LanguageConfiguration {
   folding_rules : FoldingRules?
 }
 
-type LanguageFeatureRegistry[T]
-
-pub struct LanguageHandle {
-  // private fields
-}
+type LanguageHandle
 pub async fn LanguageHandle::definition_at(Self, @model.TextModel, Int, token? : @language.CancellationToken, run_tasks? : async (Array[async () -> Unit]) -> Unit) -> Array[@language.Location] noraise
 pub fn LanguageHandle::get_language_configuration(Self, String) -> LanguageConfiguration
 pub fn LanguageHandle::has_definition_provider(Self, @model.TextModel) -> Bool
@@ -61,9 +57,7 @@ pub async fn LanguageHandle::hover_at(Self, @model.TextModel, Int, token? : @lan
 pub fn LanguageHandle::markdown_comment_provider_render_result(Self, @model.TextModel) -> MarkdownCommentProviderResult?
 pub fn LanguageHandle::markdown_comment_provider_result(Self, @model.TextModel) -> Array[@language.MarkdownCommentBlock]?
 
-pub struct Languages {
-  // private fields
-}
+type Languages
 pub fn Languages::Languages() -> Self
 pub async fn Languages::definition_at(Self, @model.TextModel, Int, @log.LogService, token? : @language.CancellationToken, run_tasks? : async (Array[async () -> Unit]) -> Unit) -> Array[@language.Location] noraise
 pub async fn Languages::document_symbols(Self, @model.TextModel, @log.LogService) -> Array[@language.DocumentSymbol] noraise

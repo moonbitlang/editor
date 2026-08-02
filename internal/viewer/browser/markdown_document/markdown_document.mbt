@@ -44,28 +44,28 @@ fn MarkdownSemanticDomLifetime::dispose(
 /// One JS-only readonly Markdown surface. The source model stays owned by the
 /// root Viewer; this value owns only presentation DOM, the retained same-parse
 /// projection, and listeners whose lifetime is one model attachment.
-pub struct MarkdownDocumentView {
-  priv root : @rdom.Element
-  priv viewport : @rdom.Element
-  priv article : @rdom.Element
-  priv overlay_mount : @rdom.Element
-  priv resource_kind : @markdown_core.MarkdownResourceKind
-  priv language_id : String
-  priv base_uri : @base_common.Uri
-  priv on_size_changed : () -> Unit
-  priv mut source : String
-  priv mut source_model_version : Int
-  priv mut theme : String
-  priv mut projection_generation : Int
-  priv mut rendered : @browser_markdown.RenderedMarkdown
-  priv mut semantic_dom : MarkdownSemanticDomLifetime
-  priv listeners : Array[@base_common.Disposable]
-  priv mut on_section_fold_toggle : (Int) -> Unit
-  priv toc_nav : @rdom.Element
-  priv toc_list : @rdom.Element
-  priv toc_toggle : @rdom.Element
-  priv mut on_toc_navigate : (Int) -> Unit
-  priv mut disposed : Bool
+struct MarkdownDocumentView {
+  root : @rdom.Element
+  viewport : @rdom.Element
+  article : @rdom.Element
+  overlay_mount : @rdom.Element
+  resource_kind : @markdown_core.MarkdownResourceKind
+  language_id : String
+  base_uri : @base_common.Uri
+  on_size_changed : () -> Unit
+  mut source : String
+  mut source_model_version : Int
+  mut theme : String
+  mut projection_generation : Int
+  mut rendered : @browser_markdown.RenderedMarkdown
+  mut semantic_dom : MarkdownSemanticDomLifetime
+  listeners : Array[@base_common.Disposable]
+  mut on_section_fold_toggle : (Int) -> Unit
+  toc_nav : @rdom.Element
+  toc_list : @rdom.Element
+  toc_toggle : @rdom.Element
+  mut on_toc_navigate : (Int) -> Unit
+  mut disposed : Bool
 }
 
 ///|

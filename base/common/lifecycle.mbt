@@ -1,8 +1,8 @@
 ///|
 /// Idempotent lifecycle handle for subscriptions, watches, and teardown
 /// callbacks. Calling `dispose` more than once runs the callback at most once.
-pub struct Disposable {
-  priv dispose_handler : () -> Unit
+struct Disposable {
+  dispose_handler : () -> Unit
 }
 
 ///|
@@ -41,10 +41,10 @@ priv struct ListenerCell[T] {
 ///|
 /// Small typed event emitter for host-neutral subscription APIs. It stores
 /// listeners in registration order and returns a disposable per listener.
-pub struct Emitter[T] {
-  priv listeners : Array[ListenerCell[T]]
-  priv disposed : Ref[Bool]
-  priv next_id : Ref[Int]
+struct Emitter[T] {
+  listeners : Array[ListenerCell[T]]
+  disposed : Ref[Bool]
+  next_id : Ref[Int]
 }
 
 ///|
@@ -126,11 +126,11 @@ pub fn[T] Emitter::dispose(self : Emitter[T]) -> Unit {
 /// construction. The default runs the flush inline, degenerating to the
 /// synchronous `Emitter` semantics — the browser host passes the real
 /// microtask scheduler (`viewer/services.mbt`).
-pub struct MicrotaskEmitter[T] {
-  priv inner : Emitter[T]
-  priv mut queued_events : Array[T]
-  priv merge_fn : ((Array[T]) -> T)?
-  priv schedule : (() -> Unit) -> Unit
+struct MicrotaskEmitter[T] {
+  inner : Emitter[T]
+  mut queued_events : Array[T]
+  merge_fn : ((Array[T]) -> T)?
+  schedule : (() -> Unit) -> Unit
 }
 
 ///|

@@ -32,9 +32,7 @@ pub(all) struct ContentWidgetDimension {
   height : Double
 } derive(Eq, @debug.Debug)
 
-pub struct ContentWidgetHandle {
-  // private fields
-}
+type ContentWidgetHandle
 pub fn ContentWidgetHandle::ContentWidgetHandle(() -> String, () -> @dom.Element, () -> ContentWidgetPosition?, allow_editor_overflow? : Bool, use_display_none? : Bool, before_render? : () -> ContentWidgetDimension? raise, after_render? : (ContentWidgetPositionPreference?, ContentWidgetRenderedCoordinate?) -> Unit raise) -> Self
 
 pub(all) struct ContentWidgetPosition {
@@ -55,9 +53,7 @@ pub struct ContentWidgetRenderedCoordinate {
   left : Double
 } derive(Eq, @debug.Debug)
 
-pub struct ContentWidgets {
-  // private fields
-}
+type ContentWidgets
 pub fn ContentWidgets::ContentWidgets(@dom.Document, @dom.Element) -> Self
 pub fn ContentWidgets::add_widget(Self, ContentWidgetHandle) -> Unit
 pub fn ContentWidgets::dom_node(Self) -> @dom.Element
@@ -83,9 +79,7 @@ type CursorRenderData derive(Eq, @debug.Debug)
 
 type DecorationOverlayPiece derive(Eq, @debug.Debug)
 
-pub struct EditorScrollbar {
-  // private fields
-}
+type EditorScrollbar
 pub fn EditorScrollbar::content(Self) -> @dom.Element
 pub fn EditorScrollbar::scrollable(Self) -> @scrollbar.ScrollableElementDom
 
@@ -93,9 +87,7 @@ pub struct HorizontalPosition {
   left : Int
 } derive(Eq, @debug.Debug)
 
-pub struct OverlayWidgets {
-  // private fields
-}
+type OverlayWidgets
 pub fn OverlayWidgets::add_widget(Self, @browser.OverlayWidget) -> Unit
 pub fn OverlayWidgets::remove_widget(Self, String) -> Unit
 
@@ -146,9 +138,7 @@ pub fn View::render(Self, ViewContext, ViewRenderInput) -> Unit
 pub fn View::should_suppress_mouse_down_on_view_zone(Self, String) -> Bool
 pub fn View::visible_range_for_position(Self, Int, Int) -> HorizontalPosition?
 
-pub struct ViewConfigurationChangedEvent {
-  // private fields
-}
+type ViewConfigurationChangedEvent
 pub fn ViewConfigurationChangedEvent::from_changed_options(Array[ViewConfigurationOption]) -> Self
 
 pub(all) enum ViewConfigurationOption {
@@ -188,14 +178,10 @@ pub struct ViewCursorRenderData {
   height : Int
 }
 
-pub struct ViewCursorStateChangedEvent {
-  // private fields
-}
+type ViewCursorStateChangedEvent
 pub fn ViewCursorStateChangedEvent::ViewCursorStateChangedEvent(Array[@core.Selection]) -> Self
 
-pub struct ViewCursors {
-  // private fields
-}
+type ViewCursors
 pub fn ViewCursors::get_last_render_data(Self) -> Array[ViewCursorRenderData]
 
 pub(all) enum ViewEvent {
@@ -210,14 +196,10 @@ pub(all) enum ViewEvent {
   ViewZonesChanged
 }
 
-pub struct ViewEventCollector {
-  // private fields
-}
+type ViewEventCollector
 pub fn ViewEventCollector::emit(Self, ViewEvent) -> Unit
 
-pub struct ViewFocusChangedEvent {
-  // private fields
-}
+type ViewFocusChangedEvent
 pub fn ViewFocusChangedEvent::ViewFocusChangedEvent(Bool) -> Self
 
 pub struct ViewLineOptions {
@@ -235,9 +217,7 @@ pub struct ViewLineOptions {
 } derive(Eq, @debug.Debug)
 pub fn ViewLineOptions::ViewLineOptions(line_height? : Int, space_width? : Double, middot_width? : Double, wsmiddot_width? : Double, use_monospace_optimizations? : Bool, can_use_halfwidth_rightwards_arrow? : Bool, stop_rendering_line_after? : Int, render_whitespace? : @editor_api.RenderWhitespace, render_control_characters? : Bool, font_ligatures? : Bool, vertical_scrollbar_size? : Double) -> Self
 
-pub struct ViewLines {
-  // private fields
-}
+type ViewLines
 pub fn ViewLines::acquire_content_viewport_geometry(Self) -> @common.Disposable
 pub fn ViewLines::get_dom_node(Self) -> @dom.Element
 pub fn ViewLines::get_line_width(Self, Int) -> Double
@@ -272,24 +252,16 @@ pub(all) struct ViewRenderInput {
   show_deprecated : Bool
 }
 
-pub struct ViewScrollChangedEvent {
-  // private fields
-}
+type ViewScrollChangedEvent
 pub fn ViewScrollChangedEvent::ViewScrollChangedEvent(Double, Bool, Bool, Bool, Bool) -> Self
 
-pub struct ViewTokenChangeRange {
-  // private fields
-}
+type ViewTokenChangeRange
 pub fn ViewTokenChangeRange::ViewTokenChangeRange(Int, Int) -> Self
 
-pub struct ViewTokensChangedEvent {
-  // private fields
-}
+type ViewTokensChangedEvent
 pub fn ViewTokensChangedEvent::ViewTokensChangedEvent(Array[ViewTokenChangeRange]) -> Self
 
-pub struct ViewZones {
-  // private fields
-}
+type ViewZones
 pub fn ViewZones::did_render(Self) -> Unit
 pub fn ViewZones::refresh_hidden_area_source_visibility(Self) -> Bool
 pub fn ViewZones::should_render(Self) -> Bool

@@ -11,10 +11,10 @@
 /// structural `IDecorationProvider` (`foldingModel.ts:13`). This is a closed
 /// function record instead of a MoonBit trait object: the source boundary is
 /// three callbacks, not a runtime-subtyped object hierarchy.
-pub struct FoldingDecorationAccess {
-  priv get_decoration_option_ : (Bool, Bool, Bool, Bool) -> @model.ModelDecorationOptions
-  priv change_decorations_ : ((@model.ModelDecorationsChangeAccessor) -> Unit) -> Unit
-  priv remove_decorations_ : (Array[String]) -> Unit
+struct FoldingDecorationAccess {
+  get_decoration_option_ : (Bool, Bool, Bool, Bool) -> @model.ModelDecorationOptions
+  change_decorations_ : ((@model.ModelDecorationsChangeAccessor) -> Unit) -> Unit
+  remove_decorations_ : (Array[String]) -> Unit
 }
 
 ///|
@@ -71,12 +71,12 @@ pub struct FoldingModelChangeEvent {
 /// (`foldingModel.ts:32`): the current `FoldingRegions` plus one editor
 /// decoration per region. The decorations both render the fold UI (chevron,
 /// highlight, `⋯`) and anchor the regions across edits.
-pub struct FoldingModel {
-  priv text_model : @model.TextModel
-  priv decoration_access : FoldingDecorationAccess
-  priv mut regions : FoldingRegions
-  priv mut editor_decoration_ids : Array[String]
-  priv update_event_emitter : @base_common.Emitter[FoldingModelChangeEvent]
+struct FoldingModel {
+  text_model : @model.TextModel
+  decoration_access : FoldingDecorationAccess
+  mut regions : FoldingRegions
+  mut editor_decoration_ids : Array[String]
+  update_event_emitter : @base_common.Emitter[FoldingModelChangeEvent]
 }
 
 ///|

@@ -18,9 +18,7 @@ pub(all) struct LogEntry {
   details : Array[(String, String)]
 } derive(Eq, @debug.Debug)
 
-pub struct LogHandle {
-  // private fields
-}
+type LogHandle
 pub fn LogHandle::error(Self, String, String, details? : Array[(String, String)]) -> Unit
 pub fn LogHandle::warn(Self, String, String, details? : Array[(String, String)]) -> Unit
 

@@ -60,9 +60,7 @@ pub(all) struct EditorMouseEvent {
   target : MouseTarget
 }
 
-pub struct EditorMouseEventFactory {
-  // private fields
-}
+type EditorMouseEventFactory
 pub fn EditorMouseEventFactory::EditorMouseEventFactory(@dom.Element) -> Self
 pub fn EditorMouseEventFactory::on_context_menu(Self, @dom.Element, (EditorDomMouseEvent) -> Unit) -> @common.Disposable
 pub fn EditorMouseEventFactory::on_mouse_down(Self, @dom.Element, (EditorDomMouseEvent) -> Unit) -> @common.Disposable
@@ -78,9 +76,7 @@ pub struct EditorPagePosition {
   height : Double
 } derive(Eq, @debug.Debug)
 
-pub struct GlobalEditorPointerMoveMonitor {
-  // private fields
-}
+type GlobalEditorPointerMoveMonitor
 pub fn GlobalEditorPointerMoveMonitor::GlobalEditorPointerMoveMonitor(@dom.Element) -> Self
 pub fn GlobalEditorPointerMoveMonitor::dispose(Self) -> Unit
 pub fn GlobalEditorPointerMoveMonitor::start_monitoring(Self, @dom.Element, Int, Int, (EditorDomMouseEvent) -> Unit, (@dom.Event?) -> Unit) -> Unit
@@ -153,9 +149,7 @@ pub(all) enum OutsidePosition {
   Right
 } derive(Eq, @debug.Debug)
 
-pub struct OverlayWidget {
-  // private fields
-}
+type OverlayWidget
 pub fn OverlayWidget::get_dom_node(Self) -> @dom.Element
 pub fn OverlayWidget::get_id(Self) -> String
 pub fn OverlayWidget::unmanaged(String, @dom.Element) -> Self
@@ -189,9 +183,7 @@ pub(all) struct ViewZone {
 }
 pub fn ViewZone::ViewZone(Int, @dom.Element, after_column? : Int, after_column_affinity? : @model.PositionAffinity, show_in_hidden_areas? : Bool, ignore_hidden_area_source? : String, ordinal? : Int, suppress_mouse_down? : Bool, height_in_lines? : Double, height_in_px? : Double, min_width_in_px? : Double, margin_dom_node? : @dom.Element, on_dom_node_top? : (Double) -> Unit raise, on_computed_height? : (Double) -> Unit raise) -> Self
 
-pub struct ViewZoneChangeAccessor {
-  // private fields
-}
+type ViewZoneChangeAccessor
 pub fn ViewZoneChangeAccessor::add_zone(Self, ViewZone) -> String
 pub fn ViewZoneChangeAccessor::from_callbacks((ViewZone) -> String, (String) -> Unit, (String) -> Unit) -> Self
 pub fn ViewZoneChangeAccessor::layout_zone(Self, String) -> Unit

@@ -28,16 +28,16 @@ priv enum DragScrollingDirection {
 
 ///|
 /// `DragScrolling` (dragScrolling.ts:17-52).
-pub struct DragScrolling {
-  priv direction : DragScrollingDirection
-  priv view_helper : PointerHandlerHelper
-  priv mouse_target_factory : MouseTargetFactory
-  priv mut dispatch_mouse : (
+struct DragScrolling {
+  direction : DragScrollingDirection
+  view_helper : PointerHandlerHelper
+  mouse_target_factory : MouseTargetFactory
+  mut dispatch_mouse : (
     @editor_browser.MouseTarget,
     Bool,
     NavigationCommandRevealType,
   ) -> Unit
-  priv mut operation : DragScrollingOperation?
+  mut operation : DragScrollingOperation?
 }
 
 ///|

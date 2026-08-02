@@ -1,5 +1,5 @@
 ///|
-struct LanguageFeatureRegistry[T] {
+priv struct LanguageFeatureRegistry[T] {
   entries : Array[LanguageFeatureEntry[T]]
   mut clock : Int
 }
@@ -98,41 +98,35 @@ pub(all) struct MarkdownCommentProviderResult {
 /// Hosts normally use the process-wide `@languages.languages` value; tests and
 /// embedded viewers that need isolation can create a fresh registry and pass it
 /// through `ViewerServices(languages~)`.
-pub struct Languages {
-  priv hover_provider : LanguageFeatureRegistry[&@language.HoverProvider]
-  priv definition_provider : LanguageFeatureRegistry[
-    &@language.DefinitionProvider,
-  ]
-  priv document_symbol_provider : LanguageFeatureRegistry[
+struct Languages {
+  hover_provider : LanguageFeatureRegistry[&@language.HoverProvider]
+  definition_provider : LanguageFeatureRegistry[&@language.DefinitionProvider]
+  document_symbol_provider : LanguageFeatureRegistry[
     &@language.DocumentSymbolProvider,
   ]
-  priv markdown_comment_provider : LanguageFeatureRegistry[
+  markdown_comment_provider : LanguageFeatureRegistry[
     RegisteredMarkdownCommentProvider,
   ]
   /// Per-language comment/folding configuration — the viewer's stand-in for
   /// Monaco's `ILanguageConfigurationService` registrations.
-  priv language_configurations : Map[String, LanguageConfiguration]
+  language_configurations : Map[String, LanguageConfiguration]
 }
 
 ///|
 /// Opaque production-language capability used by Viewer contributions. The
 /// logging policy is prebound when the handle is derived, so consumers cannot
 /// recover either the mutable registry or its concrete LogService.
-pub struct LanguageHandle {
-  priv get_language_configuration_callback : (String) -> LanguageConfiguration
-  priv markdown_comment_provider_result_callback : (@model.TextModel) -> MarkdownCommentProviderResult?
-  priv hover_at_callback : async (
-    @model.TextModel,
-    Int,
-    @language.CancellationToken,
-  ) -> @language.Hover? noraise
-  priv definition_at_callback : async (
+struct LanguageHandle {
+  get_language_configuration_callback : (String) -> LanguageConfiguration
+  markdown_comment_provider_result_callback : (@model.TextModel) -> MarkdownCommentProviderResult?
+  hover_at_callback : async (@model.TextModel, Int, @language.CancellationToken) -> @language.Hover? noraise
+  definition_at_callback : async (
     @model.TextModel,
     Int,
     @language.CancellationToken,
     async (Array[async () -> Unit]) -> Unit,
   ) -> Array[@language.Location] noraise
-  priv has_definition_provider_callback : (@model.TextModel) -> Bool
+  has_definition_provider_callback : (@model.TextModel) -> Bool
 }
 
 ///|

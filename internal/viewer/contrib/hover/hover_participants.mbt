@@ -142,8 +142,8 @@ pub(all) struct HoverParticipantServices {
 
 ///|
 /// Hover participant that exposes diagnostics/markers at the anchor range.
-pub struct MarkerHoverParticipant {
-  priv marker_decorations : @markers.MarkerDecorationsHandle
+struct MarkerHoverParticipant {
+  marker_decorations : @markers.MarkerDecorationsHandle
 }
 
 ///|
@@ -224,8 +224,8 @@ pub fn MarkerHoverParticipant::hover_participant_handle(
 
 ///|
 /// Hover participant that queries registered markdown/plaintext hover providers.
-pub struct MarkdownHoverParticipant {
-  priv languages : @languages.LanguageHandle
+struct MarkdownHoverParticipant {
+  languages : @languages.LanguageHandle
 }
 
 ///|

@@ -29,9 +29,7 @@ pub(all) enum RemotePathResult {
   RemotePathError(@remote_protocol.ProtocolError)
 } derive(@debug.Debug)
 
-pub struct RemoteServer {
-  // private fields
-}
+type RemoteServer
 pub fn RemoteServer::close_document(Self, @remote_protocol.DocumentRequest) -> Unit
 pub fn RemoteServer::current_workspace_root(Self) -> String
 pub async fn RemoteServer::definition(Self, @remote_protocol.DocumentPositionRequest) -> @remote_protocol.ServerPacket
@@ -58,9 +56,7 @@ pub(all) enum ServerHostResolveResult {
   ServerHostResolveError(@workspace.FileSystemProviderErrorCode, String)
 } derive(@debug.Debug)
 
-pub struct ServerWatch {
-  // private fields
-}
+type ServerWatch
 pub fn ServerWatch::ServerWatch(() -> Unit) -> Self
 pub fn ServerWatch::dispose(Self) -> Unit
 

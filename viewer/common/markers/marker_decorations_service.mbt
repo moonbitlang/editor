@@ -32,16 +32,16 @@ priv struct ModelMarkerRegistration {
 /// Monaco's global `IModelService`, callers acquire identity-keyed leases. A
 /// secondary URI index preserves source-compatible URI queries while allowing
 /// distinct live models to share one URI.
-pub struct MarkerDecorationsService {
-  priv markers : MarkerServiceHandle
-  priv model_registrations : Map[Int, ModelMarkerRegistration]
-  priv model_ids_by_uri : Map[String, Array[Int]]
-  priv blocked_model_ids : Map[Int, Unit]
-  priv legacy_leases : Map[Int, @base_common.Disposable]
-  priv suppressed_ranges : Map[String, Array[@base_common.Range]]
-  priv did_change_marker_decorations : @base_common.Emitter[@model.TextModel]
-  priv mut subscription : @base_common.Disposable?
-  priv mut disposed : Bool
+struct MarkerDecorationsService {
+  markers : MarkerServiceHandle
+  model_registrations : Map[Int, ModelMarkerRegistration]
+  model_ids_by_uri : Map[String, Array[Int]]
+  blocked_model_ids : Map[Int, Unit]
+  legacy_leases : Map[Int, @base_common.Disposable]
+  suppressed_ranges : Map[String, Array[@base_common.Range]]
+  did_change_marker_decorations : @base_common.Emitter[@model.TextModel]
+  mut subscription : @base_common.Disposable?
+  mut disposed : Bool
 }
 
 ///|

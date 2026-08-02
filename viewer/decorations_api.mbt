@@ -84,9 +84,9 @@ pub fn Viewer::get_decorations_in_range(
 /// non-deprecated decoration entry point: an id-managing wrapper over
 /// `delta_decorations` bound to one viewer. `onDidChange` and `has` are not
 /// ported (no consumer; the model-decoration event seam stays internal).
-pub struct EditorDecorationsCollection {
-  priv viewer : Viewer
-  priv mut decoration_ids : Array[String]
+struct EditorDecorationsCollection {
+  viewer : Viewer
+  mut decoration_ids : Array[String]
 }
 
 ///|

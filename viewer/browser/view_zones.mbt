@@ -63,10 +63,10 @@ pub fn ViewZone::ViewZone(
 /// Transaction-scoped `IViewZoneChangeAccessor`. Its opaque callback carrier
 /// prevents public descriptor ownership from pulling browser/view runtime
 /// state into this dependency layer.
-pub struct ViewZoneChangeAccessor {
-  priv add : (ViewZone) -> String
-  priv remove : (String) -> Unit
-  priv layout : (String) -> Unit
+struct ViewZoneChangeAccessor {
+  add : (ViewZone) -> String
+  remove : (String) -> Unit
+  layout : (String) -> Unit
 }
 
 ///|

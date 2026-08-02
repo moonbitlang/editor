@@ -127,11 +127,11 @@ pub fn HoverOperationOptions::HoverOperationOptions(
 /// owner supplies the monotonic controller generation and cancellation token;
 /// the stamp snapshots stable model identity and the internal content
 /// version at construction.
-pub struct HoverRequestStamp {
-  priv model : @model.TextModel
-  priv model_version_id : Int
-  priv generation : Int
-  priv cancellation_token : @language.CancellationToken
+struct HoverRequestStamp {
+  model : @model.TextModel
+  model_version_id : Int
+  generation : Int
+  cancellation_token : @language.CancellationToken
 }
 
 ///|
@@ -328,12 +328,12 @@ pub fn HoverOperation::result(self : HoverOperation) -> HoverResult? {
 /// Pure latest-options half of Monaco's `Debouncer`. The browser controller
 /// owns the clearable timer handle; this value owns the deterministic schedule
 /// generation, selected delay, and latest options read by the callback.
-pub struct HoverDebouncer {
-  priv default_delay_ms : Int
-  priv generation : Int
-  priv scheduled : Bool
-  priv delay_ms : Int
-  priv options : HoverOperationOptions?
+struct HoverDebouncer {
+  default_delay_ms : Int
+  generation : Int
+  scheduled : Bool
+  delay_ms : Int
+  options : HoverOperationOptions?
 } derive(Eq, Debug)
 
 ///|

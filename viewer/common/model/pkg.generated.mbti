@@ -39,9 +39,7 @@ pub struct ActiveIndentGuideInfo {
   indent : Int
 } derive(Eq, @debug.Debug)
 
-pub struct AttachedViewImpl {
-  // private fields
-}
+type AttachedViewImpl
 pub fn AttachedViewImpl::set_visible_lines(Self, Array[VisibleLineRange], Bool) -> Unit
 
 type DecorationsTrees
@@ -361,19 +359,13 @@ pub fn TextSnapshot::offset_range_of(Self, @common.Range) -> @common.OffsetRange
 pub fn TextSnapshot::range_of(Self, @common.OffsetRange) -> @common.Range
 pub fn TextSnapshot::slice(Self, @common.OffsetRange) -> String
 
-pub struct TokenizationIdleDeadline {
-  // private fields
-}
+type TokenizationIdleDeadline
 pub fn TokenizationIdleDeadline::TokenizationIdleDeadline(() -> Double) -> Self
 
-pub struct TokenizationScheduler {
-  // private fields
-}
+type TokenizationScheduler
 pub fn TokenizationScheduler::TokenizationScheduler(idle~ : ((TokenizationIdleDeadline) -> Unit) -> @common.Disposable, zero_timeout~ : (() -> Unit) -> @common.Disposable, delay~ : (Int, () -> Unit) -> @common.Disposable, now~ : () -> Double) -> Self
 
-pub struct TokenizationTextModelPart {
-  // private fields
-}
+type TokenizationTextModelPart
 pub fn TokenizationTextModelPart::get_line_tokens(Self, Int) -> @tokens.LineTokens
 pub fn TokenizationTextModelPart::token_count(Self) -> Int
 

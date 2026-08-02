@@ -105,9 +105,7 @@ pub struct InjectedText {
 } derive(Eq, @debug.Debug)
 pub fn InjectedText::InjectedText(@common.Position, String, String, source_index? : Int) -> Self
 
-pub struct LineBreaksComputer {
-  // private fields
-}
+type LineBreaksComputer
 pub fn LineBreaksComputer::add_request(Self, Int, String, Array[InjectedText]) -> Unit
 pub fn LineBreaksComputer::finalize(Self) -> Array[ModelLineProjectionData?]
 
@@ -158,9 +156,7 @@ pub struct ModelTokensChangedOutgoingEvent {
 pub fn ModelTokensChangedOutgoingEvent::ModelTokensChangedOutgoingEvent(@model.ModelTokensChangedEvent) -> Self
 pub fn ModelTokensChangedOutgoingEvent::is_no_op(Self) -> Bool
 
-pub struct MonospaceLineBreaksComputerFactory {
-  // private fields
-}
+type MonospaceLineBreaksComputerFactory
 pub fn MonospaceLineBreaksComputerFactory::MonospaceLineBreaksComputerFactory(String, String) -> Self
 pub fn MonospaceLineBreaksComputerFactory::create() -> Self
 pub fn MonospaceLineBreaksComputerFactory::create_line_breaks_computer(Self, font_info~ : @config.FontInfo, tab_size~ : Int, wrapping_column~ : Int, wrapping_indent~ : @editor_api.WrappingIndent, word_break? : WordBreak) -> LineBreaksComputer
@@ -303,9 +299,7 @@ pub(all) struct ViewModelDecoration {
   options : @model.ModelDecorationOptions
 }
 
-pub struct ViewModelDecorations {
-  // private fields
-}
+type ViewModelDecorations
 pub fn ViewModelDecorations::get_decorations_viewport_data(Self, @common.Range) -> ViewDecorationsCollection
 pub fn ViewModelDecorations::on_model_decorations_changed(Self) -> Unit
 

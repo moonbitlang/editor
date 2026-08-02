@@ -2,8 +2,8 @@
 
 ///|
 /// Idle callback deadline. Callers must read `time_remaining` immediately.
-pub struct TokenizationIdleDeadline {
-  priv read_time_remaining : () -> Double
+struct TokenizationIdleDeadline {
+  read_time_remaining : () -> Double
 }
 
 ///|
@@ -24,11 +24,11 @@ fn TokenizationIdleDeadline::time_remaining(
 
 ///|
 /// FFI-free scheduling surface supplied by a browser host or deterministic test.
-pub struct TokenizationScheduler {
-  priv schedule_idle : ((TokenizationIdleDeadline) -> Unit) -> @base_common.Disposable
-  priv schedule_zero : (() -> Unit) -> @base_common.Disposable
-  priv schedule_delay : (Int, () -> Unit) -> @base_common.Disposable
-  priv read_now : () -> Double
+struct TokenizationScheduler {
+  schedule_idle : ((TokenizationIdleDeadline) -> Unit) -> @base_common.Disposable
+  schedule_zero : (() -> Unit) -> @base_common.Disposable
+  schedule_delay : (Int, () -> Unit) -> @base_common.Disposable
+  read_now : () -> Double
 }
 
 ///|

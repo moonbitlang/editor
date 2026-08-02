@@ -55,9 +55,9 @@ pub fn get_change_type(change : @diff.Change) -> ChangeType {
 /// text (e.g. the git `HEAD` version of the file) with
 /// `set_original_content`; the editor contribution recomputes gutter
 /// decorations from it.
-pub struct QuickDiffService {
-  priv originals : Map[String, String]
-  priv did_change_original : @base_common.Emitter[@base_common.Uri]
+struct QuickDiffService {
+  originals : Map[String, String]
+  did_change_original : @base_common.Emitter[@base_common.Uri]
 }
 
 ///|

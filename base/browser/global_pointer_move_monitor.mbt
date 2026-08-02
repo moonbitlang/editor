@@ -9,11 +9,11 @@
 //     ports no store type).
 
 ///|
-pub struct GlobalPointerMoveMonitor {
-  priv hooks : Array[@base_common.Disposable]
-  priv mut pointer_move_callback : ((@rdom.MouseEvent) -> Unit)?
-  priv mut on_stop_callback : ((@rdom.Event?) -> Unit)?
-  priv mut disposed : Bool
+struct GlobalPointerMoveMonitor {
+  hooks : Array[@base_common.Disposable]
+  mut pointer_move_callback : ((@rdom.MouseEvent) -> Unit)?
+  mut on_stop_callback : ((@rdom.Event?) -> Unit)?
+  mut disposed : Bool
 }
 
 ///|

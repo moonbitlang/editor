@@ -81,9 +81,7 @@ pub(all) struct FoldingController {
 pub fn FoldingController::FoldingController() -> Self
 pub fn FoldingController::clear_local(Self) -> Unit
 
-pub struct FoldingDecorationAccess {
-  // private fields
-}
+type FoldingDecorationAccess
 
 pub struct FoldingDecorationProvider {
   mut show_folding_controls : @editor_api.ShowFoldingControls
@@ -99,9 +97,7 @@ pub(all) struct FoldingLimitReporter {
   update : (Int, Int?) -> Unit
 }
 
-pub struct FoldingModel {
-  // private fields
-}
+type FoldingModel
 pub fn FoldingModel::FoldingModel(@model.TextModel, FoldingDecorationAccess) -> Self
 pub fn FoldingModel::dispose(Self) -> Unit
 pub fn FoldingModel::get_all_regions_at_line(Self, Int, filter? : (FoldingRegion, Int) -> Bool) -> Array[FoldingRegion]
@@ -125,9 +121,7 @@ pub(all) struct FoldingMouseDownInfo {
   icon_clicked : Bool
 }
 
-pub struct FoldingRegion {
-  // private fields
-}
+type FoldingRegion
 pub fn FoldingRegion::contained_by(Self, LineRange) -> Bool
 pub fn FoldingRegion::contains_line(Self, Int) -> Bool
 pub fn FoldingRegion::end_line_number(Self) -> Int
@@ -137,9 +131,7 @@ pub fn FoldingRegion::parent_index(Self) -> Int
 pub fn FoldingRegion::region_index(Self) -> Int
 pub fn FoldingRegion::start_line_number(Self) -> Int
 
-pub struct FoldingRegions {
-  // private fields
-}
+type FoldingRegions
 pub fn FoldingRegions::FoldingRegions(FixedArray[UInt], FixedArray[UInt], types? : Array[String?]) -> Self
 pub fn FoldingRegions::contains(Self, Int, Int) -> Bool
 pub fn FoldingRegions::find_range(Self, Int) -> Int
@@ -160,9 +152,7 @@ pub fn FoldingRegions::to_fold_range(Self, Int) -> FoldRange
 pub fn FoldingRegions::to_region(Self, Int) -> FoldingRegion
 pub impl Show for FoldingRegions
 
-pub struct HiddenRangeModel {
-  // private fields
-}
+type HiddenRangeModel
 pub fn HiddenRangeModel::HiddenRangeModel(FoldingModel) -> Self
 pub fn HiddenRangeModel::adjust_selections(Self, Array[@core.Selection]) -> Bool
 pub fn HiddenRangeModel::dispose(Self) -> Unit
@@ -171,9 +161,7 @@ pub fn HiddenRangeModel::hidden_ranges(Self) -> Array[@common.Range]
 pub fn HiddenRangeModel::is_hidden(Self, Int) -> Bool
 pub fn HiddenRangeModel::on_did_change(Self, (Array[@common.Range]) -> Unit) -> @common.Disposable
 
-pub struct IndentRangeProvider {
-  // private fields
-}
+type IndentRangeProvider
 pub fn IndentRangeProvider::IndentRangeProvider(@model.TextModel, @languages.LanguageHandle, FoldingLimitReporter, tab_size? : Int) -> Self
 pub fn IndentRangeProvider::compute(Self) -> FoldingRegions
 pub fn IndentRangeProvider::dispose(Self) -> Unit
@@ -184,9 +172,7 @@ pub(all) struct LineRange {
   end_line_number : Int
 } derive(Eq, @debug.Debug)
 
-pub struct RangesCollector {
-  // private fields
-}
+type RangesCollector
 pub fn RangesCollector::RangesCollector(FoldingLimitReporter) -> Self
 pub fn RangesCollector::insert_first(Self, Int, Int, Int) -> Unit
 pub fn RangesCollector::to_indent_ranges(Self, @model.TextModel, tab_size? : Int) -> FoldingRegions

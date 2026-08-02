@@ -317,27 +317,27 @@ priv struct MarkdownDocumentHoverRequestStamp {
 }
 
 ///|
-pub struct MarkdownDocumentHoverBridge {
-  priv view : @markdown_document.MarkdownDocumentView
-  priv model : @model.TextModel
-  priv computer : @hover.ContentHoverComputer
-  priv marker_decorations : @markers.MarkerDecorationsHandle
-  priv attach_generation : Int
-  priv is_attach_current : () -> Bool
-  priv launch_async_task : (async () -> Unit noraise) -> Unit
-  priv widget : MarkdownDocumentHoverWidget
-  priv listeners : Array[@base_common.Disposable]
-  priv diagnostic_elements : Array[@rdom.Element]
-  priv hover_range_elements : Array[@rdom.Element]
-  priv mut request_generation : Int
-  priv mut current_source_offset : Int?
-  priv mut current_block_index : Int?
-  priv mut request_start_timer : @base_common.Disposable?
-  priv mut loading_timer : @base_common.Disposable?
-  priv mut request_source : @language.CancellationTokenSource?
-  priv mut request_pending : Bool
-  priv mut active : Bool
-  priv mut disposed : Bool
+struct MarkdownDocumentHoverBridge {
+  view : @markdown_document.MarkdownDocumentView
+  model : @model.TextModel
+  computer : @hover.ContentHoverComputer
+  marker_decorations : @markers.MarkerDecorationsHandle
+  attach_generation : Int
+  is_attach_current : () -> Bool
+  launch_async_task : (async () -> Unit noraise) -> Unit
+  widget : MarkdownDocumentHoverWidget
+  listeners : Array[@base_common.Disposable]
+  diagnostic_elements : Array[@rdom.Element]
+  hover_range_elements : Array[@rdom.Element]
+  mut request_generation : Int
+  mut current_source_offset : Int?
+  mut current_block_index : Int?
+  mut request_start_timer : @base_common.Disposable?
+  mut loading_timer : @base_common.Disposable?
+  mut request_source : @language.CancellationTokenSource?
+  mut request_pending : Bool
+  mut active : Bool
+  mut disposed : Bool
 }
 
 ///|
