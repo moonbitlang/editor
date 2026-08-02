@@ -14,10 +14,10 @@
 /// A section is foldable exactly when it has a body: a heading immediately
 /// followed by a same-or-higher-level heading collapses to nothing, so it
 /// carries no control.
-pub(all) struct MarkdownSection {
+pub struct MarkdownSection {
   heading_anchor_index : Int
-  level : Int
-  body_anchor_indexes : Array[Int]
+  priv level : Int
+  priv body_anchor_indexes : Array[Int]
   source_range : @common.OffsetRange
   body_source_range : @common.OffsetRange?
 } derive(Eq, Debug)
@@ -278,13 +278,13 @@ pub fn markdown_section_keys(
 /// exactly one level below its parent. A document whose top heading is `###`,
 /// or which jumps `#` to `###`, therefore indents sensibly instead of leaving a
 /// gap. `source_offset` is the heading's start, which is what a reveal takes.
-pub(all) struct MarkdownTocEntry {
-  level : Int
+pub struct MarkdownTocEntry {
+  priv level : Int
   depth : Int
   text : String
   source_offset : Int
-  section_index : Int
-  is_foldable : Bool
+  priv section_index : Int
+  priv is_foldable : Bool
 } derive(Eq, Debug)
 
 ///|
