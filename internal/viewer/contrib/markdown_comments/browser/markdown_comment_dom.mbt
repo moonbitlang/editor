@@ -11,17 +11,17 @@
 /// code-folding chevrons. The whole margin plane is `aria-hidden` (Monaco
 /// parity), so that chevron stays mouse-only while `toggle` carries keyboard
 /// and screen-reader access from inside the exposed content zone.
-pub(all) struct MarkdownCommentDom {
+pub struct MarkdownCommentDom {
   outer : @rdom.Element
-  content : @rdom.Element
+  priv content : @rdom.Element
   full : @rdom.Element
   preview : @rdom.Element
   source : @rdom.Element
-  source_toggle : @rdom.Element
-  toggle : @rdom.Element
-  toggle_icon : @rdom.Element
+  priv source_toggle : @rdom.Element
+  priv toggle : @rdom.Element
+  priv toggle_icon : @rdom.Element
   margin : @rdom.Element
-  margin_toggle : @rdom.Element
+  priv margin_toggle : @rdom.Element
 }
 
 ///|
