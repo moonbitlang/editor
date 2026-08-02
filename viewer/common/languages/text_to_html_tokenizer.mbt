@@ -108,13 +108,8 @@ pub fn tokenize_line_to_html(
     if token_end_index <= start_offset {
       continue
     }
-    result.write_string("<span style=\"")
-    result.write_string(
-      view_line_tokens.get_inline_style(token_index, color_map),
-    )
-    result.write_string("\">")
-    result.write_string(part.to_string())
-    result.write_string("</span>")
+    result <+
+      $|<span style="\{view_line_tokens.get_inline_style(token_index, color_map)}">\{part.to_string()}</span>
     if token_end_index > end_offset ||
       char_index >= end_offset ||
       start_offset >= end_offset {
@@ -150,13 +145,8 @@ pub fn tokenize_to_string(
     for j in 0..<view_line_tokens.get_count() {
       let type_ = view_line_tokens.get_class_name(j)
       let end_index = view_line_tokens.get_end_offset(j)
-      result.write_string("<span class=\"")
-      result.write_string(type_)
-      result.write_string("\">")
-      result.write_string(
-        @base_common.escape(line[start_offset:end_index].to_owned()),
-      )
-      result.write_string("</span>")
+      result <+
+        $|<span class="\{type_}">\{@base_common.escape(line[start_offset:end_index].to_owned())}</span>
       start_offset = end_index
     }
   }

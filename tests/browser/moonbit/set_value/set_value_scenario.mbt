@@ -14,13 +14,10 @@
 /// scrolled flush).
 fn set_value_document(marker : String, last_line? : String) -> String {
   let lines = StringBuilder()
-  lines.write_string(marker)
-  lines.write_string("\nfold_start")
-  lines.write_string("\n  fold_inner")
-  lines.write_string("\nfold_end")
+  lines <+ "\{marker}\nfold_start\n  fold_inner\nfold_end"
   for index in 5..<40 {
     lines.write_char('\n')
-    lines.write_string("line_\{index}_of_doc")
+    lines <+ "line_\{index}_of_doc"
   }
   lines.write_char('\n')
   match last_line {

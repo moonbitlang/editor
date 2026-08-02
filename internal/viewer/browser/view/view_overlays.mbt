@@ -155,9 +155,8 @@ fn ViewOverlayLine::render_line(
     return false
   }
   self.rendered_content = Some(content)
-  builder.write_string(
-    "<div style=\"top:\{delta_top.to_string()}px;height:\{line_height.to_string()}px;line-height:\{line_height.to_string()}px;\">\{content}</div>",
-  )
+  builder <+
+    $|<div style="top:\{delta_top}px;height:\{line_height}px;line-height:\{line_height}px;">\{content}</div>
   true
 }
 

@@ -187,11 +187,7 @@ fn sample_summary(samples : Array[Double]) -> (Double, Double, Double) {
 fn large_source_text(count : Int) -> String {
   let builder = StringBuilder()
   for index in 0..<count {
-    builder.write_string("///|\n")
-    builder.write_string("pub fn perf_value_")
-    builder.write_string(index.to_string())
-    builder.write_string("() -> Int {\n  ")
-    builder.write_string(index.to_string())
+    builder <+ "///|\npub fn perf_value_\{index}() -> Int {\n  \{index}"
     builder.write_string(
       (
         #|

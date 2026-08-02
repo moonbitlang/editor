@@ -121,14 +121,12 @@ fn write_squiggly_rule(
   severity : String,
   svg_data : String,
 ) -> Unit {
-  sb.write_string(
-    ".moonbit-viewer .squiggly-\{severity} { background: url(\"data:image/svg+xml,\{svg_data}\") repeat-x bottom left; }",
-  )
+  sb <+
+    $|.moonbit-viewer .squiggly-\{severity} { background: url("data:image/svg+xml,\{svg_data}") repeat-x bottom left; }
 }
 
 ///|
 fn write_dotdotdot_rule(sb : StringBuilder, svg_data : String) -> Unit {
-  sb.write_string(
-    ".moonbit-viewer .squiggly-hint { background: url(\"data:image/svg+xml,\{svg_data}\") no-repeat bottom left; }",
-  )
+  sb <+
+    $|.moonbit-viewer .squiggly-hint { background: url("data:image/svg+xml,\{svg_data}") no-repeat bottom left; }
 }

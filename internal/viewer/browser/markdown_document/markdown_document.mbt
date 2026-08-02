@@ -353,11 +353,8 @@ fn render_semantic_tokenized_code_lines(
     } else {
       ""
     }
-    result.write_string(
-      "<span class=\"moonbit-viewer-markdown-code-line\" data-markdown-block-index=\"\{code_block.block_index}\" data-markdown-code-line=\"\{line_index}\" data-markdown-source-line=\"\{code_line.source_line_number}\" data-markdown-source-start=\"\{code_line.source_range.start}\" data-markdown-source-end=\"\{code_line.source_range.end_exclusive}\"\{phrase_divider_attributes}>",
-    )
-    result.write_string(rendered_lines[line_index])
-    result.write_string("</span>")
+    result <+
+      $|<span class="moonbit-viewer-markdown-code-line" data-markdown-block-index="\{code_block.block_index}" data-markdown-code-line="\{line_index}" data-markdown-source-line="\{code_line.source_line_number}" data-markdown-source-start="\{code_line.source_range.start}" data-markdown-source-end="\{code_line.source_range.end_exclusive}"\{phrase_divider_attributes}>\{rendered_lines[line_index]}</span>
   }
   result.write_string(suffix)
   result.to_string()

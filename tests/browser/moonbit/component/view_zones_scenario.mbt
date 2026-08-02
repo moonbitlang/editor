@@ -45,7 +45,7 @@ fn view_zones_source_with_line_count(line_count : Int) -> String {
     if line > 1 {
       text.write_char('\n')
     }
-    text.write_string("view_zone_line_\{line}")
+    text <+ "view_zone_line_\{line}"
   }
   text.to_string()
 }
