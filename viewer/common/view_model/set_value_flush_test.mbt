@@ -94,7 +94,16 @@ test "flush resets the cursor to the origin (cursor.ts ContentFlush branch)" {
     ),
   )
   let view_model = @view_model.ViewModel(model)
-  view_model.cursor.move_to(Position(3, 4), false) |> ignore
+  view_model.set_cursor_state(
+    Some(
+      @cursor.CursorState::from_model_selection(
+        Selection(Position(3, 4), Position(3, 4)),
+      ),
+    ),
+    "test",
+    Explicit,
+  )
+  |> ignore
   assert_true(
     view_model.cursor.get_view_selection().get_position() == Position(3, 4),
   )

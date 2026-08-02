@@ -4,7 +4,7 @@
 /// single-cursor reduction of Monaco's `CursorsController` plus
 /// `CursorCollection`: every accepted transition commits a paired model/view
 /// state and returns one fact for the ViewModel's outgoing dispatcher.
-pub struct CursorsController {
+struct CursorsController {
   model : @model.TextModel
   mut known_model_version_id : Int
   mut context : CursorContext
@@ -194,7 +194,7 @@ pub fn CursorsController::set_cursor_state(
 
 ///|
 /// Applies one model-side state through the common nullable transition entry.
-pub fn CursorsController::set_model_cursor_state(
+fn CursorsController::set_model_cursor_state(
   self : CursorsController,
   model_state : SingleCursorState,
   source? : String = "keyboard",
@@ -210,7 +210,7 @@ pub fn CursorsController::set_model_cursor_state(
 ///|
 /// Applies one already-normalized view-side state through the common nullable
 /// transition entry.
-pub fn CursorsController::set_view_cursor_state(
+fn CursorsController::set_view_cursor_state(
   self : CursorsController,
   view_state : SingleCursorState,
   source? : String = "keyboard",
@@ -227,7 +227,7 @@ pub fn CursorsController::set_view_cursor_state(
 /// Move-to entry used by pointer-style commands. The optional source/reason
 /// defaults retain the old direct test seam; live ViewModel callers pass them
 /// explicitly.
-pub fn CursorsController::move_to(
+fn CursorsController::move_to(
   self : CursorsController,
   view_position : @base_common.Position,
   in_selection_mode : Bool,

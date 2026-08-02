@@ -7,14 +7,14 @@
 /// Model validation and internal-version snapshots belong to
 /// `CursorsController`; this lower owner only derives the missing coordinate
 /// side. Editable marker-tracked ranges remain outside the readonly contract.
-pub struct Cursor {
+priv struct Cursor {
   mut model_state : SingleCursorState
   mut view_state : SingleCursorState
 }
 
 ///|
 /// A fresh cursor collapsed at the document origin.
-pub fn Cursor::Cursor() -> Cursor {
+fn Cursor::Cursor() -> Cursor {
   let origin = @base_common.Position::Position(1, 1)
   {
     model_state: SingleCursorState::collapsed(origin),
@@ -94,7 +94,7 @@ fn Cursor::set_view_state(
 /// "we only have the model state => compute the view state" branch of
 /// Monaco's `_setState`; used to re-project an existing selection after the
 /// view model reflows (wrapping and injected text).
-pub fn Cursor::set_model_state(
+fn Cursor::set_model_state(
   self : Cursor,
   context : CursorContext,
   model_state : SingleCursorState,
