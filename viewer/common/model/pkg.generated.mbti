@@ -28,12 +28,11 @@ type DidChangeContentEmitter
 
 type DidChangeDecorationsEmitter
 
-pub(all) struct InjectedTextOptions {
-  content : String
-  inline_class_name : String?
-  attached_index : Int
-} derive(Eq, @debug.Debug)
+type InjectedTextOptions derive(Eq, @debug.Debug)
 pub fn InjectedTextOptions::InjectedTextOptions(String, inline_class_name? : String, attached_index? : Int) -> Self
+pub fn InjectedTextOptions::attached_index(Self) -> Int
+pub fn InjectedTextOptions::content(Self) -> String
+pub fn InjectedTextOptions::inline_class_name(Self) -> String?
 
 pub struct InternalModelContentChangeEvent {
   raw_content_changed_event : ModelRawContentChangedEvent
@@ -189,7 +188,6 @@ pub fn TextModel::TextModel(@common.Uri, String, String, Int, String, String) ->
 pub fn[T] TextModel::change_decorations(Self, (ModelDecorationsChangeAccessor) -> T, owner_id? : Int) -> T
 pub fn TextModel::delta_decorations(Self, Array[String], Array[ModelDeltaDecoration], owner_id? : Int) -> Array[String]
 pub fn TextModel::dispose(Self) -> Unit
-pub fn TextModel::get_attached_editor_count(Self) -> Int
 pub fn TextModel::get_decoration_range(Self, String) -> @common.Range?
 pub fn TextModel::get_decorations_in_range(Self, @common.Range, owner_id? : Int, filter_out_validation? : Bool, filter_font_decorations? : Bool, only_margin_decorations? : Bool) -> Array[ModelDecoration]
 pub fn TextModel::get_full_model_range(Self) -> @common.Range
@@ -205,7 +203,6 @@ pub fn TextModel::get_line_min_column(Self, Int) -> Int
 pub fn TextModel::get_lines_content(Self) -> Array[String]
 pub fn TextModel::get_offset_at(Self, @common.Position) -> Int
 pub fn TextModel::get_position_at(Self, Int) -> @common.Position
-pub fn TextModel::get_range_at(Self, Int, Int) -> @common.Range
 pub fn TextModel::get_value(Self) -> String
 pub fn TextModel::get_value_in_range(Self, @common.Range) -> String
 pub fn TextModel::get_version_id(Self) -> Int
@@ -230,7 +227,6 @@ pub impl @debug.Debug for TextModel
 type TextSnapshot derive(@debug.Debug)
 pub fn TextSnapshot::TextSnapshot(String) -> Self
 pub fn TextSnapshot::equals(Self, Self) -> Bool
-pub fn TextSnapshot::get_length(Self) -> Int
 pub fn TextSnapshot::get_line_content(Self, Int) -> String
 pub fn TextSnapshot::get_line_first_non_whitespace_column(Self, Int) -> Int
 pub fn TextSnapshot::get_line_max_column(Self, Int) -> Int

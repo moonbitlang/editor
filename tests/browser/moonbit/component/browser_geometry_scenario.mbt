@@ -66,6 +66,48 @@ extern "js" fn browser_geometry_create_owner_iframe() -> @rdom.Document =
   #| }
 
 ///|
+/// Installs the JS side of the optional private probe before any Viewer is
+/// constructed. The owning MoonBit packages offer private callbacks only when
+/// this explicit browser-test host is present.
+extern "js" fn install_browser_geometry_private_probe() -> Unit =
+  #| () => {
+  #|   globalThis.__viewerPrivateTestProbe = {
+  #|     contentWidgets: null,
+  #|     setHiddenLines: null,
+  #|     acceptContentWidgets(run) {
+  #|       this.contentWidgets = run;
+  #|     },
+  #|     acceptSetHiddenLines(setHiddenLines) {
+  #|       this.setHiddenLines = setHiddenLines;
+  #|     },
+  #|   };
+  #| }
+
+///|
+extern "js" fn run_browser_geometry_content_widgets_diagnostic(
+  document : @rdom.Document,
+  root : @rdom.Element,
+) -> String =
+  #| (document, root) => {
+  #|   const run = globalThis.__viewerPrivateTestProbe?.contentWidgets;
+  #|   if (!run) throw new Error('private ContentWidgets diagnostic was not offered');
+  #|   return run(document, root);
+  #| }
+
+///|
+extern "js" fn browser_geometry_set_hidden_lines(
+  viewer_id : String,
+  hidden : Bool,
+) -> Unit =
+  #| (viewerId, hidden) => {
+  #|   const setHiddenLines = globalThis.__viewerPrivateTestProbe?.setHiddenLines;
+  #|   if (!setHiddenLines) throw new Error('private hidden-lines diagnostic was not offered');
+  #|   if (!setHiddenLines(viewerId, 3, 3, 'browser-geometry', hidden)) {
+  #|     throw new Error(`viewer ${viewerId} is not registered`);
+  #|   }
+  #| }
+
+///|
 fn browser_geometry_source(hidden_widest : Bool) -> String {
   let hidden_tail = if hidden_widest { "W".repeat(72) } else { "W".repeat(8) }
   [
@@ -179,7 +221,7 @@ fn BrowserGeometryFixture::set_injected_text(
       options: ModelDecorationOptions(
         "",
         show_if_collapsed=true,
-        after=InjectedTextOptions(
+        after=@model.InjectedTextOptions(
           content,
           inline_class_name="geometry-injected",
         ),
@@ -293,6 +335,7 @@ fn run_browser_geometry_test() -> Unit {
       ctx.finish()
       return
     }
+    install_browser_geometry_private_probe()
     let mono = BrowserGeometryFixture::new(
       "monospace", "Geometry Mono", mono_host,
     )
@@ -308,17 +351,6 @@ fn run_browser_geometry_test() -> Unit {
       ctx.finish()
       return
     }
-    let iframe = BrowserGeometryFixture::new(
-      "iframe", "Geometry Mono", iframe_host,
-    )
-    let iframe_overlay = iframe_document.create_element("div")
-    iframe_overlay.set_attribute(
-      "data-browser-geometry-owner-widget", "overlay",
-    )
-    iframe_overlay.set_attribute("style", "width:80px;height:30px")
-    iframe.viewer.add_overlay_widget(
-      @viewer.overlay_widget("browser-geometry-owner-overlay", iframe_overlay),
-    )
     let fixture = name => browser_geometry_fixture_for(name, mono, proportional)
     install_browser_geometry_controls(
       (name, line, column) => fixture(name).state_json(line, column),
@@ -336,7 +368,14 @@ fn run_browser_geometry_test() -> Unit {
       (name, wide) => fixture(name).set_injected_text(wide),
       (name, enabled) => fixture(name).set_hidden_widest(enabled),
       name => fixture(name).viewer.fold_top_level(),
-      (line, column) => iframe.state_json(line, column),
+      (name, hidden) => {
+        browser_geometry_set_hidden_lines(fixture(name).viewer.get_id(), hidden)
+      },
+      () => {
+        run_browser_geometry_content_widgets_diagnostic(
+          iframe_document, iframe_host,
+        )
+      },
     )
     poll_browser_geometry_ready(ctx, 120)
   })
@@ -395,10 +434,11 @@ extern "js" fn install_browser_geometry_controls(
   set_injected : (String, Bool) -> Unit,
   set_hidden_widest : (String, Bool) -> Unit,
   fold_top_level : (String) -> Unit,
-  iframe_state_json : (Int, Int) -> String,
+  set_anchor_hidden : (String, Bool) -> Unit,
+  iframe_geometry : () -> String,
 ) -> Unit =
   #| (stateJson, setWrap, setScroll, setPosition, focus, setInjected,
-  #|  setHiddenWidest, foldTopLevel, iframeStateJson) => {
+  #|  setHiddenWidest, foldTopLevel, setAnchorHidden, iframeGeometry) => {
   #|   globalThis.__browserGeometryControls = Object.freeze({
   #|     state(name, line = 3, column = 6) {
   #|       return JSON.parse(stateJson(name, line, column));
@@ -410,8 +450,9 @@ extern "js" fn install_browser_geometry_controls(
   #|     set_injected: setInjected,
   #|     set_hidden_widest: setHiddenWidest,
   #|     fold_top_level: foldTopLevel,
-  #|     iframe_state(line = 3, column = 6) {
-  #|       return JSON.parse(iframeStateJson(line, column));
+  #|     set_anchor_hidden: setAnchorHidden,
+  #|     iframe_geometry() {
+  #|       return JSON.parse(iframeGeometry());
   #|     },
   #|     font_status() {
   #|       return {

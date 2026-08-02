@@ -93,7 +93,7 @@ pub fn TextModel::TextModel(
   revision : String,
   text : String,
 ) -> TextModel {
-  new_text_model(
+  let model = new_text_model(
     uri,
     display_name,
     language_id,
@@ -103,6 +103,8 @@ pub fn TextModel::TextModel(
     None,
     None,
   )
+  offer_text_model_browser_diagnostic(model => model.get_attached_editor_count())
+  model
 }
 
 ///|
@@ -246,7 +248,7 @@ fn TextModel::is_too_large_for_tokenization(self : TextModel) -> Bool {
 
 ///|
 /// Number of currently attached Viewer instances.
-pub fn TextModel::get_attached_editor_count(self : TextModel) -> Int {
+fn TextModel::get_attached_editor_count(self : TextModel) -> Int {
   self.tokenization_state.attached_count.val
 }
 

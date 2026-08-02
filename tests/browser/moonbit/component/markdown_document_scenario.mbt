@@ -105,7 +105,10 @@ impl @language.HoverProvider for MarkdownDocumentHoverProvider with fn provide_h
   } else {
     let offset = model.get_offset_at(position)
     model.snapshot.range_of(
-      OffsetRange(offset, Int::min(offset + 1, model.snapshot.get_length())),
+      OffsetRange(
+        offset,
+        Int::min(offset + 1, model.snapshot.get_value().length()),
+      ),
     )
   }
   Some({ range, contents: [PlainText(outcome)] })

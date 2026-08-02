@@ -59,6 +59,7 @@ pub fn register_viewer(
     did_resolve_hover: Emitter(),
     did_observe_scroll_frame: Emitter(),
   }
+  offer_browser_hidden_lines_diagnostic(set_hidden_lines_for_browser_diagnostic)
   @base_common.Disposable::from(() => {
     unregister_if_current(viewer_id, registration_id)
   })
@@ -104,6 +105,33 @@ fn set_hidden_areas(
     None => false
   }
 }
+
+///|
+/// Primitive-only browser bridge for exercising the private hidden-area path
+/// without publishing `set_hidden_areas` as MoonBit API. Viewer lookup stays
+/// in the generation-aware registry, so disposed and reused ids remain safe.
+fn set_hidden_lines_for_browser_diagnostic(
+  viewer_id : String,
+  start_line : Int,
+  end_line : Int,
+  source : String,
+  hidden : Bool,
+) -> Bool {
+  let ranges = if hidden {
+    [@base_common.Range(start_line, 1, end_line, 1)]
+  } else {
+    []
+  }
+  set_hidden_areas(viewer_id, ranges, source~)
+}
+
+///|
+/// Product hosts do not install the optional probe, leaving the private
+/// control absent from their JavaScript surface as well as MoonBit's API.
+extern "js" fn offer_browser_hidden_lines_diagnostic(
+  set_hidden_lines : (String, Int, Int, String, Bool) -> Bool,
+) -> Unit =
+  #| (setHiddenLines) => globalThis.__viewerPrivateTestProbe?.acceptSetHiddenLines?.(setHiddenLines)
 
 ///|
 /// Subscribes to view-model-build observations for one registered viewer.

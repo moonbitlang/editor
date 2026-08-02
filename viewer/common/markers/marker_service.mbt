@@ -335,7 +335,7 @@ fn MarkerService::remove(
 /// `changeOne` (`markerService.ts:179`): empty data removes the (owner,resource)
 /// entry; otherwise sanitizes and stores. Fires the change event in both cases
 /// when something happened.
-pub fn MarkerService::change_one(
+fn MarkerService::change_one_impl(
   self : MarkerService,
   owner : String,
   resource : @base_common.Uri,

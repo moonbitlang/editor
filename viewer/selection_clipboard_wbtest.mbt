@@ -62,7 +62,7 @@ test "selection clipboard uses normalized offsets and text for every EOL form" {
     let selection = selection_from_offsets(snapshot, normalized.length(), 0)
     let range = selection_normalized_range(selection, snapshot)
     assert_eq(snapshot.get_value(), normalized)
-    assert_eq(snapshot.get_length(), normalized.length())
+    assert_eq(snapshot.get_value().length(), normalized.length())
     assert_eq(range.start, 0)
     assert_eq(range.end_exclusive, normalized.length())
     assert_eq(selection_plain_text_to_copy(selection, snapshot), normalized)
@@ -72,7 +72,11 @@ test "selection clipboard uses normalized offsets and text for every EOL form" {
 ///|
 test "selection rich copy escapes source text" {
   let snapshot = @model.TextSnapshot("a < b && c")
-  let selection = selection_from_offsets(snapshot, 0, snapshot.get_length())
+  let selection = selection_from_offsets(
+    snapshot,
+    0,
+    snapshot.get_value().length(),
+  )
   assert_eq(
     selection_rich_text_to_copy(selection, snapshot),
     "<pre class=\"readonly-editor-copy\">a &lt; b &amp;&amp; c</pre>",
@@ -82,6 +86,10 @@ test "selection rich copy escapes source text" {
 ///|
 test "selection copy uses model text not injected text" {
   let snapshot = @model.TextSnapshot("let x = 1")
-  let selection = selection_from_offsets(snapshot, 0, snapshot.get_length())
+  let selection = selection_from_offsets(
+    snapshot,
+    0,
+    snapshot.get_value().length(),
+  )
   assert_eq(selection_plain_text_to_copy(selection, snapshot), "let x = 1")
 }

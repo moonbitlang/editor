@@ -209,7 +209,7 @@ fn ContentWidgets::ContentWidgets(
   overflowing_content_widgets_dom_node.set_attribute(
     "data-view-part", "overflowingContentWidgets",
   )
-  {
+  let result : ContentWidgets = {
     dom_node,
     overflowing_content_widgets_dom_node,
     view_dom_node,
@@ -220,6 +220,10 @@ fn ContentWidgets::ContentWidgets(
     },
     should_render: true,
   }
+  offer_browser_content_widgets_diagnostic(
+    run_browser_content_widgets_diagnostic,
+  )
+  result
 }
 
 ///|

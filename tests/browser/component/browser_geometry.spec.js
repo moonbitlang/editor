@@ -174,7 +174,7 @@ test('embedded mono and proportional fonts give fixed tabs fullwidth and combini
   }
 });
 
-test('the public overlay widget uses its Viewer iframe owner document', async ({
+test('content widgets use their real iframe owner window for overflow modes and 15/22px boundaries', async ({
   page,
 }, testInfo) => {
   const reporter = await mountGeometry(page, testInfo);
@@ -202,26 +202,85 @@ test('the public overlay widget uses its Viewer iframe owner document', async ({
     expect(environment.ownerScrollX).not.toBe(environment.globalScrollX);
     expect(environment.ownerScrollY).not.toBe(environment.globalScrollY);
 
+    const matrix = await page.evaluate(() =>
+      globalThis.__browserGeometryControls.iframe_geometry(),
+    );
+    expect(matrix.normalExact).toMatchObject({
+      position: 'exact',
+      top: 50,
+      left: 20,
+      rectLeft: 29,
+      rectTop: 83,
+    });
+
+    // Each input begins one pixel outside the horizontal page limit. The
+    // owner scroll subtraction and source clamp leave exactly 15 CSS px.
+    expect(matrix.leftClamp).toMatchObject({
+      position: 'below',
+      left: 6,
+      rectLeft: 15,
+    });
+    expect(matrix.rightClamp).toMatchObject({
+      position: 'below',
+      left: 396,
+      rectRight: environment.ownerWidth - 15,
+    });
+
+    // Equality at 22px fits. One pixel outside flips to the other ordered
+    // preference, proving both the top and bottom fit predicates.
+    expect(matrix.topEqual).toMatchObject({
+      position: 'above',
+      top: -11,
+      rectTop: 22,
+    });
+    expect(matrix.topOutside).toMatchObject({
+      position: 'below',
+      top: 38,
+    });
+    expect(matrix.bottomEqual).toMatchObject({
+      position: 'below',
+      top: 275,
+      rectBottom: environment.ownerHeight - 22,
+    });
+    expect(matrix.bottomOutside).toMatchObject({
+      position: 'above',
+      top: 226,
+    });
+
     const ownerFrame = page.frameLocator('#browser-geometry-owner-frame');
-    const widget = ownerFrame.locator(
-      '[data-browser-geometry-owner-widget="overlay"]',
+    const normal = ownerFrame.locator(
+      '[data-geometry-owner-widget="normal"]',
     );
-    await expect(widget).toHaveAttribute(
-      'data-overlay-widget-id',
-      'browser-geometry-owner-overlay',
+    const overflow = ownerFrame.locator(
+      '[data-geometry-owner-widget="overflow"]',
     );
+    await expect(normal).toHaveAttribute('data-geometry-owner-overflow', 'false');
+    await expect(overflow).toHaveAttribute('data-geometry-owner-overflow', 'true');
     expect(
-      await widget.evaluate((node) => ({
+      await normal.evaluate((node) => ({
         ownerIsCurrentWindow: node.ownerDocument.defaultView === window,
         ownerIsTopWindow: node.ownerDocument.defaultView === window.top,
         parentClass: node.parentElement.className,
-        rect: node.getBoundingClientRect().toJSON(),
+        maxWidth: node.style.maxWidth,
       })),
-    ).toMatchObject({
+    ).toEqual({
       ownerIsCurrentWindow: true,
       ownerIsTopWindow: false,
-      parentClass: 'overlayWidgets',
-      rect: { width: 80, height: 30 },
+      parentClass: 'contentWidgets',
+      maxWidth: '430px',
+    });
+    expect(
+      await overflow.evaluate((node) => ({
+        ownerIsCurrentWindow: node.ownerDocument.defaultView === window,
+        ownerIsTopWindow: node.ownerDocument.defaultView === window.top,
+        parentClass: node.parentElement.className,
+        maxWidth: node.style.maxWidth,
+      })),
+    ).toEqual({
+      ownerIsCurrentWindow: true,
+      ownerIsTopWindow: false,
+      parentClass: 'overflowingContentWidgets',
+      maxWidth: `${environment.ownerWidth}px`,
     });
   } finally {
     reporter.dispose();
@@ -281,6 +340,44 @@ test('DOM ranges public caret positions and content-widget anchors agree within 
       });
       const widgetRect = await widget.boundingBox();
       expectNear(widgetRect.x, injection.rect.left);
+
+      if (font === 'monospace') {
+        // A hidden anchor has no DOM range. If focus is inside the widget, the
+        // source parks it at -1000px instead of applying visibility:hidden;
+        // clearing the hidden area restores the same mounted widget.
+        const link = widget.locator('a');
+        await link.focus();
+        await expect
+          .poll(() => link.evaluate((node) => document.activeElement === node))
+          .toBe(true);
+        await control(page, 'set_anchor_hidden', font, true);
+        await expect(
+          page.locator(`${hostSelector(font)} .view-line`, { hasText: 'anchor' }),
+        ).toHaveCount(0);
+        await expect(widget).not.toHaveAttribute(
+          'monaco-visible-content-widget',
+          'true',
+        );
+        expect(await widget.evaluate((node) => node.style.top)).toBe('-1000px');
+        expect(await widget.evaluate((node) => node.style.visibility)).not.toBe(
+          'hidden',
+        );
+        expect(await link.evaluate((node) => document.activeElement === node)).toBe(
+          true,
+        );
+
+        await control(page, 'set_anchor_hidden', font, false);
+        await expect(
+          page.locator(`${hostSelector(font)} .view-line`, { hasText: 'anchor' }),
+        ).toBeVisible();
+        await expect(widget).toHaveAttribute(
+          'monaco-visible-content-widget',
+          'true',
+        );
+        expect(await link.evaluate((node) => document.activeElement === node)).toBe(
+          true,
+        );
+      }
 
       await page.mouse.move(1000, 500);
 

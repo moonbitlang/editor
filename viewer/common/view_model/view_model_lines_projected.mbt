@@ -807,7 +807,7 @@ fn line_injected_text_from_decorations(
   for decoration in model.get_injected_text_decorations() {
     match decoration.options.before {
       Some(before) =>
-        if before.content.length() > 0 {
+        if before.content().length() > 0 {
           entries.push(
             (
               decoration.range.start_line_number,
@@ -821,7 +821,7 @@ fn line_injected_text_from_decorations(
     }
     match decoration.options.after {
       Some(after) =>
-        if after.content.length() > 0 {
+        if after.content().length() > 0 {
           entries.push(
             (
               decoration.range.end_line_number,
@@ -853,9 +853,9 @@ fn line_injected_text_from_decorations(
     buckets[line].push(
       InjectedText(
         Position(line, column0),
-        options.content,
-        options.inline_class_name.unwrap_or(""),
-        source_index=options.attached_index,
+        options.content(),
+        options.inline_class_name().unwrap_or(""),
+        source_index=options.attached_index(),
       ),
     )
   }
@@ -882,7 +882,7 @@ fn injected_text_for_model_line(
   for decoration in model.get_injected_text_decorations() {
     match decoration.options.before {
       Some(before) =>
-        if before.content.length() > 0 &&
+        if before.content().length() > 0 &&
           (decoration.range.start_line_number - 1).clamp(
             min=0,
             max=snapshot.line_count() - 1,
@@ -894,7 +894,7 @@ fn injected_text_for_model_line(
     }
     match decoration.options.after {
       Some(after) =>
-        if after.content.length() > 0 &&
+        if after.content().length() > 0 &&
           (decoration.range.end_line_number - 1).clamp(
             min=0,
             max=snapshot.line_count() - 1,
@@ -922,9 +922,9 @@ fn injected_text_for_model_line(
     out.push(
       InjectedText(
         Position(target_line0, column0),
-        options.content,
-        options.inline_class_name.unwrap_or(""),
-        source_index=options.attached_index,
+        options.content(),
+        options.inline_class_name().unwrap_or(""),
+        source_index=options.attached_index(),
       ),
     )
   }

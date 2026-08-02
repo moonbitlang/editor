@@ -201,7 +201,7 @@ impl @language.HoverProvider for DeferredAsyncFeatureProvider with fn provide_ho
     let offset = model.get_offset_at(position)
     let end_offset = Int::min(offset + 1, model.snapshot.get_value().length())
     Some({
-      range: model.get_range_at(offset, end_offset),
+      range: model.snapshot.range_of(OffsetRange(offset, end_offset)),
       contents: [PlainText(outcome)],
     })
   }

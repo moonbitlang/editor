@@ -120,7 +120,6 @@ pub fn SourceError::to_string(Self) -> String
 
 type SourcePath derive(Eq, @debug.Debug)
 pub fn SourcePath::display_name(Self) -> String
-pub fn SourcePath::file_uri(Self) -> @common.Uri
 pub fn SourcePath::normalize_root_relative_path(String) -> SourcePathResult
 pub fn SourcePath::to_string(Self) -> String
 

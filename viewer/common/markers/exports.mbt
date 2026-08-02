@@ -3,6 +3,50 @@
 // usable while keeping the analyzer exception explicit in `exports.mbt`.
 
 ///|
+/// Builds lower-level marker-shaped input for hosts that already own this
+/// representation.
+pub fn MarkerData::MarkerData(
+  severity~ : MarkerSeverity,
+  message~ : String,
+  start_line_number~ : Int,
+  start_column~ : Int,
+  end_line_number~ : Int,
+  end_column~ : Int,
+  code? : String,
+  source? : String,
+  model_version_id? : Int,
+  related_information? : Array[RelatedInformation],
+  tags? : Array[MarkerTag],
+  origin? : String,
+) -> MarkerData {
+  new_marker_data(
+    severity~,
+    message~,
+    start_line_number~,
+    start_column~,
+    end_line_number~,
+    end_column~,
+    code?,
+    source?,
+    model_version_id?,
+    related_information?,
+    tags?,
+    origin?,
+  )
+}
+
+///|
+/// Replaces one owner's lower-level markers for one resource.
+pub fn MarkerService::change_one(
+  self : MarkerService,
+  owner : String,
+  resource : @base_common.Uri,
+  marker_data : Array[MarkerData],
+) -> Unit {
+  self.change_one_impl(owner, resource, marker_data)
+}
+
+///|
 /// Related-information location, `IRelatedInformation` (`markers.ts:42`).
 pub(all) struct RelatedInformation {
   resource : @base_common.Uri

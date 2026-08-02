@@ -512,7 +512,7 @@ pub fn TextModel::on_did_change_decorations(
 ///|
 /// `getRangeAt` (`textModel.ts:1886-1889` region): offsets → line/column
 /// range via the snapshot.
-pub fn TextModel::get_range_at(
+fn TextModel::get_range_at(
   self : TextModel,
   start : Int,
   end : Int,

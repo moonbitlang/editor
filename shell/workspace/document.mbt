@@ -125,20 +125,20 @@ pub fn DocumentSnapshot::from_content(
 
 ///|
 /// Snapshot length in the repo's JavaScript-compatible UTF-16 indexing model.
-pub fn DocumentSnapshot::length(self : DocumentSnapshot) -> Int {
+fn DocumentSnapshot::length_impl(self : DocumentSnapshot) -> Int {
   self.text.length()
 }
 
 ///|
 /// Number of logical lines, including the final empty line after a trailing
 /// newline.
-pub fn DocumentSnapshot::line_count(self : DocumentSnapshot) -> Int {
+fn DocumentSnapshot::line_count_impl(self : DocumentSnapshot) -> Int {
   self.line_starts.length()
 }
 
 ///|
 /// Start offset for `line`, clamped into the snapshot's line range.
-pub fn DocumentSnapshot::line_start_offset(
+fn DocumentSnapshot::line_start_offset_impl(
   self : DocumentSnapshot,
   line : Int,
 ) -> Int {
@@ -149,7 +149,7 @@ pub fn DocumentSnapshot::line_start_offset(
 ///|
 /// End offset for `line`, clamped into the snapshot's line range and excluding
 /// the line break. CRLF lines exclude both the `\r` and `\n`.
-pub fn DocumentSnapshot::line_end_offset(
+fn DocumentSnapshot::line_end_offset_impl(
   self : DocumentSnapshot,
   line : Int,
 ) -> Int {
@@ -179,7 +179,7 @@ pub fn DocumentSnapshot::line_text(
 
 ///|
 /// Returns a clamped half-open slice of the snapshot text.
-pub fn DocumentSnapshot::slice(
+fn DocumentSnapshot::slice_impl(
   self : DocumentSnapshot,
   range : @base_common.OffsetRange,
 ) -> String {
@@ -191,7 +191,7 @@ pub fn DocumentSnapshot::slice(
 ///|
 /// Zero-based line containing `offset`, with out-of-range offsets clamped to
 /// the snapshot.
-pub fn DocumentSnapshot::line_at_offset(
+fn DocumentSnapshot::line_at_offset_impl(
   self : DocumentSnapshot,
   offset : Int,
 ) -> Int {
@@ -206,7 +206,7 @@ pub fn DocumentSnapshot::line_at_offset(
 ///|
 /// Converts an offset to a one-based line/column `Position` (Monaco's
 /// convention; the offset↔position boundary adds +1 on both axes).
-pub fn DocumentSnapshot::position_at_offset(
+fn DocumentSnapshot::position_at_offset_impl(
   self : DocumentSnapshot,
   offset : Int,
 ) -> @base_common.Position {
@@ -218,7 +218,7 @@ pub fn DocumentSnapshot::position_at_offset(
 ///|
 /// Converts a one-based line/column `Position` to a clamped document offset,
 /// undoing the +1 this boundary added in `position_at_offset`.
-pub fn DocumentSnapshot::offset_at_position(
+fn DocumentSnapshot::offset_at_position_impl(
   self : DocumentSnapshot,
   position : @base_common.Position,
 ) -> Int {

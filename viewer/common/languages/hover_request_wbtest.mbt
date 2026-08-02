@@ -35,7 +35,7 @@ impl @language.HoverProvider for RecordingHoverProvider with fn provide_hover(
   self.observed_tokens.push(token)
   let offset = model.get_offset_at(position)
   Some({
-    range: model.get_range_at(offset, offset + 1),
+    range: model.snapshot.range_of(OffsetRange(offset, offset + 1)),
     contents: if self.empty {
       []
     } else {
@@ -70,7 +70,7 @@ impl @language.HoverProvider for ControlledHoverProvider with fn provide_hover(
   }
   let offset = model.get_offset_at(position)
   Some({
-    range: model.get_range_at(offset, offset + 1),
+    range: model.snapshot.range_of(OffsetRange(offset, offset + 1)),
     contents: [PlainText("late")],
   })
 }

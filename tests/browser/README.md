@@ -29,12 +29,12 @@ for performance investigation and perf-harness changes.
   tiny self-owned monospace and proportional TTF data URLs, awaits
   `document.fonts.ready`, and runs at deviceScaleFactor 1. Its Playwright suite
   compares public Viewer dimensions/positions with DOM Ranges and rendered
-  line/widget boxes within the plan's 1 CSS px tolerance. The same scenario
-  mounts a public Viewer and overlay widget in a same-origin iframe whose
-  scroll and viewport deliberately differ from the top window, covering
-  public owner-document mounting. Exact overflowing content-widget page
-  layout and its 15px/22px boundaries are covered by
-  `internal/viewer/browser/view/content_widgets_wbtest.mbt`.
+  line/widget boxes within the plan's 1 CSS px tolerance. A test-hosted JS
+  probe receives package-private callbacks without adding MoonBit API, then
+  exercises the real ContentWidgets renderer in a same-origin iframe whose
+  scroll and viewport deliberately differ from the top window. Assertions
+  cover owner-document mounting, overflowing page layout and its 15px/22px
+  boundaries, plus focused-widget parking while its anchor is hidden.
 - `component.html?markdownDocument=1` mounts two public Viewers over shared
   services and an ordinary `.mbt.md` model. The suite uses real
   Range-derived `page.mouse` positions over semantic nested fence text; it
@@ -46,6 +46,9 @@ for performance investigation and perf-harness changes.
   wire offsets, returned ranges, diagnostic projection, unsafe pointer zones,
   independent Viewer owners, and stale completion rejection across
   pointer/content/theme/model/disposal boundaries.
+- Markdown-comment model-switch assertions obtain exact attachment counts from
+  an explicitly installed private browser diagnostic; no model lifecycle
+  helper is added to the public MoonBit interface.
 - `smoke/viewer.spec.js` opens `README.md` and `src/literate.mbt.md` from the
   deterministic workspace fixture through the sidebar and native protocol.
   The host supplies unchanged URI-backed models; the Viewer alone selects

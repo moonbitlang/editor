@@ -137,23 +137,13 @@ pub struct ModelDecorationOptions {
 /// `cursorStops` is unported — the readonly viewer treats
 /// every injection as `InjectedTextCursorStops.Both` (the default), see
 /// `normalize_projected_column_around_injections`.
-pub(all) struct InjectedTextOptions {
+struct InjectedTextOptions {
   content : String
   inline_class_name : String?
   /// `attachedData` reduced to a producer-defined index (`-1` = none), carried
   /// through the projection into hit-testing lookup.
   attached_index : Int
 } derive(Debug, Eq)
-
-///|
-/// Builds injected-text options.
-pub fn InjectedTextOptions::InjectedTextOptions(
-  content : String,
-  inline_class_name? : String,
-  attached_index? : Int = -1,
-) -> InjectedTextOptions {
-  { content, inline_class_name, attached_index }
-}
 
 ///|
 /// A (range, options) pair handed to `TextModel::delta_decorations` —

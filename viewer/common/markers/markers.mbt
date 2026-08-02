@@ -147,7 +147,7 @@ struct MarkerData {
 ///|
 /// Builds marker input from the required fields, leaving the optional metadata
 /// (`code`, `source`, `tags`, …) defaulted to absent.
-pub fn MarkerData::MarkerData(
+fn new_marker_data(
   severity~ : MarkerSeverity,
   message~ : String,
   start_line_number~ : Int,

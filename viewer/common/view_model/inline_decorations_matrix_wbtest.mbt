@@ -351,9 +351,9 @@ test "matrix projected injections keep option-offset pairs aligned" {
   let offsets = injection_offsets_for_projected_line(projected)
   assert_eq(options.length(), 2)
   assert_eq(offsets.length(), options.length())
-  assert_eq(options[0].content, "X")
+  assert_eq(options[0].content(), "X")
   assert_eq(offsets[0], 1)
-  assert_eq(options[1].content, "YY")
+  assert_eq(options[1].content(), "YY")
   assert_eq(offsets[1], 3)
 }
 

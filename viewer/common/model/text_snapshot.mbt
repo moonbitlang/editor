@@ -25,7 +25,7 @@ pub fn TextSnapshot::TextSnapshot(text : String) -> TextSnapshot {
 ///|
 /// Snapshot length in the repo's JavaScript-compatible UTF-16 indexing model.
 /// Mirrors `IReadonlyTextBuffer.getLength`.
-pub fn TextSnapshot::get_length(self : TextSnapshot) -> Int {
+fn TextSnapshot::get_length(self : TextSnapshot) -> Int {
   self.text.length()
 }
 

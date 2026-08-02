@@ -16,7 +16,7 @@ fn view_model_for(doc : @model.TextSnapshot) -> @view_model.ViewModel {
   // The retained stabilized-range demand advances through an invalid frontier
   // only when the requested end lies beyond it. Give one-line render fixtures
   // an inert trailing line so line 1 follows the same production path.
-  let document_text = doc.slice(OffsetRange(0, doc.get_length()))
+  let document_text = doc.get_value()
   let model_text = if doc.line_count() == 1 {
     "\{document_text}\n"
   } else {

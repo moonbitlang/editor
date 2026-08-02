@@ -163,22 +163,18 @@ test "Code detach observes final model transition before root removal" {
   }
   let root = view.root
   assert_true(@base_browser.element_contains(host, root))
-  assert_eq(model.get_attached_editor_count(), 1)
   let final_detachment_observed = Ref(false)
   let detachment_saw_root_still_mounted = Ref(false)
   let subscription = viewer.on_did_detach_model_for_diagnostics(() => {
-    if model.get_attached_editor_count() == 0 {
-      final_detachment_observed.val = true
-      detachment_saw_root_still_mounted.val = @base_browser.element_contains(
-        host, root,
-      )
-    }
+    final_detachment_observed.val = true
+    detachment_saw_root_still_mounted.val = @base_browser.element_contains(
+      host, root,
+    )
   })
   viewer.set_model(None)
   subscription.dispose()
   assert_true(final_detachment_observed.val)
   assert_true(detachment_saw_root_still_mounted.val)
-  assert_eq(model.get_attached_editor_count(), 0)
   assert_false(@base_browser.element_contains(host, root))
 }
 
