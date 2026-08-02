@@ -2,10 +2,6 @@
 package "moonbitlang/editor/internal/shell/workbench"
 
 // Values
-pub fn emit_event(String, String) -> Unit
-
-pub fn mount_app() -> Unit
-
 pub fn start_app() -> Unit
 
 // Errors

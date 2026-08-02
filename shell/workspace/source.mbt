@@ -1,7 +1,7 @@
 ///|
 /// Root-relative source path accepted from UI or protocol input after
 /// normalization rejects absolute paths, parent traversal, and NUL bytes.
-pub struct SourcePath {
+struct SourcePath {
   value : String
 } derive(Eq, Debug)
 
@@ -81,7 +81,7 @@ pub fn SourcePath::display_name(self : SourcePath) -> String {
 /// Converts a normalized source path to the local file URI convention used by
 /// simple embedders: `file:///local/<path>` (the old string concatenation
 /// made `local` a URI authority, i.e. a UNC-shaped fsPath).
-pub fn SourcePath::file_uri(self : SourcePath) -> @base_common.Uri {
+fn SourcePath::file_uri(self : SourcePath) -> @base_common.Uri {
   @base_common.Uri::file("/local/\{self.value}")
 }
 

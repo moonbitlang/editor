@@ -32,7 +32,7 @@ priv struct PublishedDiagnosticSet {
 
 ///|
 /// Creates a diagnostics runner over a shared workspace root.
-pub fn MoonCheckDiagnostics::MoonCheckDiagnostics(
+fn new_native_moon_check_diagnostics(
   root : Ref[String],
   publish : (@base_common.Uri, String, Array[@language.Diagnostic]) -> Unit,
   moon_command? : String = "moon",
@@ -75,7 +75,7 @@ fn new_moon_check_diagnostics(
 /// this when the served workspace root changes: the generation bump makes any
 /// in-flight `moon check` run discard its results, and no stale-root
 /// diagnostics can replay onto same-named files of the new workspace.
-pub fn MoonCheckDiagnostics::reset(self : MoonCheckDiagnostics) -> Unit {
+fn MoonCheckDiagnostics::reset_impl(self : MoonCheckDiagnostics) -> Unit {
   self.sync_generation.val += 1
   self.documents.clear()
   self.published.val = {}
@@ -84,7 +84,7 @@ pub fn MoonCheckDiagnostics::reset(self : MoonCheckDiagnostics) -> Unit {
 ///|
 /// Records the exact synced state. A freshly opened document replays only a
 /// diagnostic set produced for the same revision and normalized text.
-pub fn MoonCheckDiagnostics::note_document(
+fn MoonCheckDiagnostics::note_document_impl(
   self : MoonCheckDiagnostics,
   document : @workspace.DocumentSnapshot,
 ) -> Unit {
@@ -108,7 +108,7 @@ pub fn MoonCheckDiagnostics::note_document(
 ///|
 /// Schedules a `moon check` run on `spawn_task`; a run already in flight
 /// absorbs this request and re-runs once after it finishes.
-pub fn MoonCheckDiagnostics::schedule(
+fn MoonCheckDiagnostics::schedule_impl(
   self : MoonCheckDiagnostics,
   spawn_task : (async () -> Unit) -> Unit,
 ) -> Unit {
@@ -264,7 +264,7 @@ fn native_disk_matches_document(
 /// `root` and non-diagnostic lines are dropped. `loc` is 1-based
 /// `line:col-line:col` with an exclusive end column, matching the viewer's
 /// range convention directly.
-pub fn parse_moon_check_diagnostics(
+fn parse_moon_check_diagnostics_impl(
   root : String,
   raw : String,
 ) -> Map[String, Array[@language.Diagnostic]] {

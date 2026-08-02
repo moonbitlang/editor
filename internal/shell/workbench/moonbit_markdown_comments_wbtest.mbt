@@ -195,18 +195,21 @@ test "workbench installs the provider only for MoonBit models" {
     moonbit.dispose()
     plaintext.dispose()
   }
-  guard handle.markdown_comment_provider_result(moonbit) is Some(blocks) else {
+  guard handle.markdown_comment_provider_render_result(moonbit) is Some(result) else {
     fail("expected the workbench MoonBit provider")
   }
-  assert_eq(blocks, [
-    {
-      line_range: LineRange(1, 3),
-      markdown: (
-        #|---
-        #|
-        #|Registered docs
-      ),
-    },
-  ])
-  assert_true(handle.markdown_comment_provider_result(plaintext) is None)
+  assert_true(result.foldable)
+  assert_eq(result.blocks.length(), 1)
+  let block = result.blocks[0]
+  assert_eq(block.line_range.start_line_number, 1)
+  assert_eq(block.line_range.end_line_number_exclusive, 3)
+  assert_eq(
+    block.markdown,
+    (
+      #|---
+      #|
+      #|Registered docs
+    ),
+  )
+  assert_true(handle.markdown_comment_provider_render_result(plaintext) is None)
 }

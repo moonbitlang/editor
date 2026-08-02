@@ -147,8 +147,8 @@ collapses the full rendered Markdown without changing source coordinates or
 code-folding state. Generic or third-party providers remain expanded unless
 their own registration opts in, regardless of Markdown content.
 
-The only exported functions are `start_app`, `mount_app`, and the harness-facing
-`emit_event`; see `pkg.generated.mbti`.
+The only exported function is `start_app`; `mount_app` and the harness-facing
+`emit_event` are package-private. See `pkg.generated.mbti`.
 
 ## Boundary and validation
 

@@ -1,7 +1,7 @@
 ///|
 /// Current client/server protocol version. Both sides reject packets carrying a
 /// different version.
-pub fn protocol_version() -> Int {
+fn protocol_version_impl() -> Int {
   6
 }
 
@@ -248,7 +248,7 @@ pub fn ProtocolErrorCode::from_string(code : String) -> ProtocolErrorCode {
 
 ///|
 /// Accepts only the exact current protocol version.
-pub fn negotiate_protocol_version(version : Int) -> ProtocolNegotiation {
+fn negotiate_protocol_version_impl(version : Int) -> ProtocolNegotiation {
   if version == protocol_version() {
     ProtocolAccepted(version)
   } else {

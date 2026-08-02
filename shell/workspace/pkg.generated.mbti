@@ -25,12 +25,7 @@ pub(all) enum DocumentChange {
   DocumentChangeFailed(uri~ : @common.Uri, error~ : DocumentError)
 } derive(@debug.Debug)
 
-pub struct DocumentContent {
-  text : String
-  display_name : String
-  language_id : String
-  revision : String
-} derive(@debug.Debug)
+type DocumentContent derive(@debug.Debug)
 pub fn DocumentContent::DocumentContent(String, display_name? : String, language_id? : String, revision? : String) -> Self
 
 pub struct DocumentError {
@@ -57,7 +52,7 @@ pub struct DocumentSnapshot {
   language_id : String
   revision : String
   text : String
-  line_starts : Array[Int]
+  // private fields
 } derive(@debug.Debug)
 pub fn DocumentSnapshot::DocumentSnapshot(@common.Uri, String, String, String, String) -> Self
 pub fn DocumentSnapshot::from_content(@common.Uri, DocumentContent) -> Self
@@ -123,11 +118,8 @@ pub(all) enum SourceError {
 } derive(Eq, @debug.Debug)
 pub fn SourceError::to_string(Self) -> String
 
-pub struct SourcePath {
-  value : String
-} derive(Eq, @debug.Debug)
+type SourcePath derive(Eq, @debug.Debug)
 pub fn SourcePath::display_name(Self) -> String
-pub fn SourcePath::file_uri(Self) -> @common.Uri
 pub fn SourcePath::normalize_root_relative_path(String) -> SourcePathResult
 pub fn SourcePath::to_string(Self) -> String
 

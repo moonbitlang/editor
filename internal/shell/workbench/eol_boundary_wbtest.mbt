@@ -48,8 +48,8 @@ test "workbench keeps documents raw and exposes normalized model text" {
     assert_eq(document.length(), raw.length())
     let model = document_to_text_model(document)
     assert_eq(model.get_value(), normalized)
-    assert_eq(model.get_value_length(), normalized.length())
-    assert_eq(model.snapshot.text, normalized)
+    assert_eq(model.get_value().length(), normalized.length())
+    assert_eq(model.snapshot.get_value(), normalized)
     let parsed = try! @json.parse(text_model_harness_json(model))
     guard parsed is { "text": String(harness_text), .. } else {
       fail("expected harness text field")
