@@ -119,7 +119,7 @@ pub fn compare(a : String, b : String) -> Int {
 
 ///|
 /// Mirrors `strings.compareSubstring` (strings.ts:353).
-pub fn compare_substring(
+fn compare_substring_impl(
   a : String,
   b : String,
   a_start? : Int = 0,
@@ -257,13 +257,13 @@ pub fn split_lines(text : String) -> Array[String] {
 
 ///|
 /// Mirrors `strings.isLowerAsciiLetter` (strings.ts:428).
-pub fn is_lower_ascii_letter(code : Int) -> Bool {
+fn is_lower_ascii_letter(code : Int) -> Bool {
   code is ('a'..='z')
 }
 
 ///|
 /// Mirrors `strings.isUpperAsciiLetter` (strings.ts:432).
-pub fn is_upper_ascii_letter(code : Int) -> Bool {
+fn is_upper_ascii_letter(code : Int) -> Bool {
   code is ('A'..='Z')
 }
 
@@ -281,7 +281,7 @@ fn is_upper_ascii_letter_code_unit(code : UInt16) -> Bool {
 /// Mirrors `strings.compareSubstringIgnoreCase` (strings.ts:377): per-char
 /// ASCII case-fold compare, falling back to lower-cased `compareSubstring`
 /// when a non-ASCII unit is hit.
-pub fn compare_substring_ignore_case(
+fn compare_substring_ignore_case_impl(
   a : String,
   b : String,
   a_start? : Int = 0,
@@ -304,7 +304,7 @@ pub fn compare_substring_ignore_case(
     }
     if raw_code_a >= code_ascii_limit || raw_code_b >= code_ascii_limit {
       // not ASCII letters -> fallback to lower-casing strings
-      return compare_substring(
+      return compare_substring_impl(
         to_lower_js(a),
         to_lower_js(b),
         a_start=a_index,
@@ -345,17 +345,17 @@ pub fn compare_substring_ignore_case(
 ///|
 /// Mirrors `strings.equalsIgnoreCase` (strings.ts:436): length gate +
 /// per-char case-fold compare.
-pub fn equals_ignore_case(a : String, b : String) -> Bool {
-  a.length() == b.length() && compare_substring_ignore_case(a, b) == 0
+fn equals_ignore_case_impl(a : String, b : String) -> Bool {
+  a.length() == b.length() && compare_substring_ignore_case_impl(a, b) == 0
 }
 
 ///|
 /// Mirrors `strings.startsWithIgnoreCase` (strings.ts:444): length gate +
 /// prefix case-fold compare.
-pub fn starts_with_ignore_case(str : String, candidate : String) -> Bool {
+fn starts_with_ignore_case_impl(str : String, candidate : String) -> Bool {
   let len = candidate.length()
   len <= str.length() &&
-  compare_substring_ignore_case(str, candidate, a_start=0, a_end=len) == 0
+  compare_substring_ignore_case_impl(str, candidate, a_start=0, a_end=len) == 0
 }
 
 ///|

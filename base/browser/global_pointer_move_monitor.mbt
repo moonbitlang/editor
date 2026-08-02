@@ -59,7 +59,7 @@ pub fn GlobalPointerMoveMonitor::stop_monitoring(
 }
 
 ///|
-pub fn GlobalPointerMoveMonitor::is_monitoring(
+fn GlobalPointerMoveMonitor::is_monitoring(
   self : GlobalPointerMoveMonitor,
 ) -> Bool {
   self.pointer_move_callback is Some(_)

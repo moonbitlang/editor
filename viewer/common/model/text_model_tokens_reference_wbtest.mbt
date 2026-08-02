@@ -8,7 +8,7 @@
 
 ///|
 fn or_strings(ranges : Array[@base_common.OffsetRange]) -> Array[String] {
-  ranges.map(fn(r) { r.to_string() })
+  ranges.map(fn(r) { "[\{r.start}, \{r.end_exclusive})" })
 }
 
 ///|

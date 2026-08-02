@@ -90,23 +90,10 @@ pub(all) struct MouseDispatchData {
   on_injected_text : Bool
 }
 
-type MouseDownState
-pub fn MouseDownState::MouseDownState() -> Self
-pub fn MouseDownState::alt_key(Self) -> Bool
-pub fn MouseDownState::count(Self) -> Int
-pub fn MouseDownState::ctrl_key(Self) -> Bool
-pub fn MouseDownState::left_button(Self) -> Bool
-pub fn MouseDownState::meta_key(Self) -> Bool
-pub fn MouseDownState::middle_button(Self) -> Bool
-pub fn MouseDownState::shift_key(Self) -> Bool
-pub fn MouseDownState::started_on_line_numbers(Self) -> Bool
-pub fn MouseDownState::try_set_count(Self, Int, @common.Position, now? : Double) -> Unit
-
 type MouseHandler
 pub fn MouseHandler::MouseHandler(PointerHandlerHelper) -> Self
 pub fn MouseHandler::cancel_selection(Self) -> Unit
 pub fn MouseHandler::dispose(Self) -> Unit
-pub fn MouseHandler::get_target_at_client_point(Self, Double, Double) -> @browser.MouseTarget?
 pub fn MouseHandler::handle_editor_wheel(Self, @dom.Event, @dom.WheelEvent) -> Bool
 pub fn MouseHandler::hook_browser_desperate_reveal(Self) -> Unit
 pub fn MouseHandler::hook_scrollable_scrollbar_input(Self, @scrollbar.ScrollableElementDom, @scrollbar.ScrollableElementOwner) -> Unit

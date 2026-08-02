@@ -24,7 +24,7 @@ fn replace_path_separators(os_path : String, sep : String) -> String {
 /// slashes to forward slashes. This should only be done for OS paths from
 /// Windows (or user provided paths potentially from Windows) — using it on a
 /// Linux or MacOS path might change it.
-pub fn to_slashes(os_path : String) -> String {
+fn to_slashes(os_path : String) -> String {
   replace_path_separators(os_path, Posix::sep())
 }
 
@@ -32,7 +32,7 @@ pub fn to_slashes(os_path : String) -> String {
 /// `toPosixPath` (extpath.ts:32): takes a Windows OS path (backward or
 /// forward slashes) and turns it into a posix path — forward slashes, made
 /// absolute when it starts with a drive letter (`^[a-zA-Z]:(\/|$)`).
-pub fn to_posix_path(os_path : String) -> String {
+fn to_posix_path(os_path : String) -> String {
   let mut os_path = os_path
   if !os_path.contains("/") {
     os_path = to_slashes(os_path)
@@ -51,7 +51,7 @@ pub fn to_posix_path(os_path : String) -> String {
 /// `getRoot` (extpath.ts:47): computes the _root_ of a path, like
 /// `getRoot('c:\files') === 'c:\'`, `getRoot('files:///files/path') ===
 /// 'files:///'`, or `getRoot('\\server\shares\path') === '\\server\shares\'`.
-pub fn get_root(path : String, sep? : String) -> String {
+fn get_root(path : String, sep? : String) -> String {
   let sep = match sep {
     Some(value) => value
     None => Posix::sep()
@@ -124,7 +124,7 @@ pub fn get_root(path : String, sep? : String) -> String {
 /// by `ExtUri::is_equal_or_parent`. (Monaco's `resources.isEqualOrParent`
 /// URI-level bound export lives on `ext_uri` here — one flat package cannot
 /// hold both top-level names.)
-pub fn is_equal_or_parent(
+fn is_equal_or_parent(
   base : String,
   parent_candidate : String,
   ignore_case : Bool,
@@ -176,7 +176,7 @@ pub fn is_equal_or_parent(
 
 ///|
 /// `isWindowsDriveLetter` (extpath.ts:275).
-pub fn is_windows_drive_letter(char0 : Int) -> Bool {
+fn is_windows_drive_letter(char0 : Int) -> Bool {
   (char0 >= 'A'.to_int() && char0 <= 'Z'.to_int()) ||
   (char0 >= 'a'.to_int() && char0 <= 'z'.to_int())
 }

@@ -5,7 +5,7 @@
 
 ///|
 test "contains" {
-  let r = @common.LineRange(2, 3)
+  let r = LineRange(2, 3)
   assert_eq(r.contains(1), false)
   assert_eq(r.contains(2), true)
   assert_eq(r.contains(3), false)
@@ -14,7 +14,7 @@ test "contains" {
 
 ///|
 test "addRange" {
-  let set = @common.LineRangeSet()
+  let set = LineRangeSet()
   set.add_range(LineRange(2, 3))
   set.add_range(LineRange(3, 4))
   set.add_range(LineRange(10, 20))
@@ -25,12 +25,12 @@ test "addRange" {
 
 ///|
 test "getUnion" {
-  let set1 = @common.LineRangeSet(normalized_ranges=[
+  let set1 = LineRangeSet(normalized_ranges=[
     LineRange(2, 3),
     LineRange(5, 7),
     LineRange(10, 20),
   ])
-  let set2 = @common.LineRangeSet(normalized_ranges=[
+  let set2 = LineRangeSet(normalized_ranges=[
     LineRange(3, 4),
     LineRange(6, 8),
     LineRange(9, 11),
@@ -41,7 +41,7 @@ test "getUnion" {
 
 ///|
 test "intersects" {
-  let set1 = @common.LineRangeSet(normalized_ranges=[
+  let set1 = LineRangeSet(normalized_ranges=[
     LineRange(2, 3),
     LineRange(5, 7),
     LineRange(10, 20),
@@ -55,7 +55,7 @@ test "intersects" {
 test "joinMany" {
   assert_eq(LineRange::join_many([]).length(), 0)
 
-  let first = [@common.LineRange(2, 3), LineRange(5, 7)]
+  let first = [LineRange(2, 3), LineRange(5, 7)]
   let single = LineRange::join_many([first])
   assert_eq(single.length(), 2)
   assert_true(single[0] == LineRange(2, 3))

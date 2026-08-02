@@ -21,7 +21,7 @@ pub fn Disposable::from(dispose : () -> Unit) -> Disposable {
 
 ///|
 /// Convenience constructor matching Monaco's `toDisposable` helper name.
-pub fn to_disposable(dispose : () -> Unit) -> Disposable {
+fn to_disposable(dispose : () -> Unit) -> Disposable {
   Disposable::from(dispose)
 }
 

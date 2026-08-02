@@ -6,7 +6,7 @@
 ///|
 test "works" {
   // CharCode.a = 97, CharCode.b = 98, CharCode.z = 122
-  let classifier = @common.CharacterClassifier(0)
+  let classifier = CharacterClassifier(0)
   assert_eq(classifier.get(-1), 0)
   assert_eq(classifier.get(0), 0)
   assert_eq(classifier.get(97), 0)

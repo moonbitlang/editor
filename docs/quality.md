@@ -31,6 +31,15 @@ render-timing, or perf-harness behavior.
   every target and `moon fmt --check` verifies formatting.
 - Review `moon.pkg` changes against `docs/architecture.md`, and review public API
   changes through `pkg.generated.mbti`.
+- Every public declaration should have a non-test production consumer. Tests do
+  not justify public visibility. A deliberate external or staged contract with
+  no repository consumer belongs in the owning package's `exports.mbt`, where
+  `moon ide analyze` records the exception explicitly.
+- Implementation structs and enums default to abstract package types: use a
+  plain `struct X` or `enum X` plus the required public operations. Expose a
+  concrete layout only when production consumers must construct, mutate, or
+  pattern-match it. Retain `derive(Debug)` on debugging-facing types even when
+  no production call site invokes the generated implementation.
 - Do not add architecture lint for a one-time design decision. Automate a
   boundary only after the same concrete failure recurs, and keep the check
   generic rather than naming current methods or implementation types.

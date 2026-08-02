@@ -47,7 +47,10 @@ fn assert_transition_coordinates(model : TextModel) -> Unit raise {
     assert_eq(model.get_offset_at(position), offset)
   }
   let full = model.get_full_model_range()
-  assert_eq(model.get_offset_at(full.get_end_position()), length)
+  assert_eq(
+    model.get_offset_at(Position(full.end_line_number, full.end_column)),
+    length,
+  )
 }
 
 ///|
@@ -80,7 +83,9 @@ test "set_value 4x4 EOL transitions cover normalized-equal and changed lanes" {
         let old_full_range = model.get_full_model_range()
         let old_length = model.get_value_length()
         assert_eq(
-          model.get_offset_at(old_full_range.get_end_position()),
+          model.get_offset_at(
+            Position(old_full_range.end_line_number, old_full_range.end_column),
+          ),
           old_length,
         )
         let old_version = model.get_version_id()

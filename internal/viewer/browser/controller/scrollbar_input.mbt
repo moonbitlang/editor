@@ -122,8 +122,8 @@ pub fn MouseHandler::handle_editor_wheel(
     shift_key=wheel.get_shift_key(),
   )
   let future = view_layout.future_position()
-  let desired = if standard_event.delta_y != 0.0 ||
-    standard_event.delta_x != 0.0 {
+  let desired = if standard_event.delta_y() != 0.0 ||
+    standard_event.delta_x() != 0.0 {
     view_layout.validate_scroll_position({
       scroll_left: if delta_left != 0.0 {
         Some(future.scroll_left + delta_left)
@@ -231,7 +231,10 @@ fn MouseHandler::handle_scrollable_drag_mouse(
     return
   }
   let orthogonal_coord = scrollbar_drag_orthogonal_coord(mouse, drag.vertical)
-  if scrollbar_drag_should_reset(drag.start_orthogonal_coord, orthogonal_coord) {
+  if (self.scrollbar_drag_should_reset)(
+      drag.start_orthogonal_coord,
+      orthogonal_coord,
+    ) {
     self.apply_scrollable_position(
       scrollable,
       drag.owner,
@@ -251,6 +254,17 @@ fn MouseHandler::handle_scrollable_drag_mouse(
 }
 
 ///|
+/// Package-private gesture seam for deterministic platform-branch coverage.
+/// Each test owns its handler, so replacing the predicate cannot affect other
+/// viewers or product execution.
+fn MouseHandler::set_scrollbar_drag_should_reset_for_test(
+  self : MouseHandler,
+  predicate : (Double, Double) -> Bool,
+) -> Unit {
+  self.scrollbar_drag_should_reset = predicate
+}
+
+///|
 fn scrollbar_drag_orthogonal_coord(
   mouse : @rdom.MouseEvent,
   vertical : Bool,
@@ -266,8 +280,9 @@ fn scrollbar_drag_orthogonal_coord(
 fn scrollbar_drag_should_reset(
   initial_orthogonal_coord : Double,
   current_orthogonal_coord : Double,
+  is_windows? : Bool = @base_common.platform_is_win32(),
 ) -> Bool {
-  @base_common.platform_is_win32() &&
+  is_windows &&
   (current_orthogonal_coord - initial_orthogonal_coord).abs() > 140.0
 }
 
