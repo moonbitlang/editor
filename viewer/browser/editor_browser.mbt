@@ -28,27 +28,6 @@
 //     distinct `EditorDomMouseEvent` name.
 
 ///|
-/// `MouseTargetType` (editorBrowser.ts:358-415). All 14 variants exist for
-/// contract parity; `Textarea`, `GutterGlyphMargin` (glyph margin width is 0)
-/// and `OverviewRuler` are never produced by this viewer.
-pub(all) enum MouseTargetType {
-  Unknown
-  Textarea
-  GutterGlyphMargin
-  GutterLineNumbers
-  GutterLineDecorations
-  GutterViewZone
-  ContentText
-  ContentEmpty
-  ContentViewZone
-  ContentWidget
-  OverviewRuler
-  Scrollbar
-  OverlayWidget
-  OutsideEditor
-} derive(Eq, Debug)
-
-///|
 /// `IMouseTargetMarginData` (editorBrowser.ts:442-449). `offset_x` is
 /// editor-left-relative (`Math.abs(request.relativePos.x)`), not lane-relative.
 pub(all) struct MouseTargetMarginData {
