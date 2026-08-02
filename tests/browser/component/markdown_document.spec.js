@@ -310,8 +310,17 @@ test('mounts zoom and drag controls for D2 and Mermaid in Markdown documents', a
     await expect(d2.getByRole('button')).toHaveCount(4);
     await expect(mermaid.getByRole('button')).toHaveCount(4);
 
+    await expect(d2).toHaveCSS('z-index', '0');
+    await expect(d2.locator(diagramControls)).toHaveCSS(
+      'pointer-events',
+      'none',
+    );
     await d2.hover();
     await expect(d2.locator(diagramControls)).toHaveCSS('opacity', '1');
+    await expect(d2.locator(diagramControls)).toHaveCSS(
+      'pointer-events',
+      'auto',
+    );
 
     const beforeZoom = await diagramTransform(d2);
     await d2.getByRole('button', { name: 'Zoom in' }).click();
