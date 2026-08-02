@@ -304,6 +304,19 @@ test('centers prose without narrowing wide Markdown content', async ({
   );
   await expect(page.locator(host)).toHaveCSS('width', '1000px');
 
+  await page.locator(article).evaluate((articleNode) => {
+    const quote = document.createElement('blockquote');
+    quote.dataset.measureProbe = 'quote';
+    const paragraph = document.createElement('p');
+    paragraph.textContent = 'Quoted prose remains inside the readable measure.';
+    const code = document.createElement('div');
+    code.className = 'moonbit-viewer-markdown-code-block';
+    code.dataset.measureProbe = 'quote-code';
+    code.textContent = 'wide quoted code';
+    quote.append(paragraph, code);
+    articleNode.appendChild(quote);
+  });
+
   const geometry = await page.locator(article).evaluate((articleNode) => {
     const articleRect = articleNode.getBoundingClientRect();
     const articleStyle = getComputedStyle(articleNode);
@@ -315,6 +328,15 @@ test('centers prose without narrowing wide Markdown content', async ({
     const code = articleNode.querySelector(
       ':scope > .moonbit-viewer-markdown-code-block',
     ).getBoundingClientRect();
+    const quote = articleNode.querySelector(
+      ':scope > [data-measure-probe="quote"]',
+    ).getBoundingClientRect();
+    const quoteParagraph = articleNode.querySelector(
+      ':scope > [data-measure-probe="quote"] > p',
+    ).getBoundingClientRect();
+    const quoteCode = articleNode.querySelector(
+      ':scope > [data-measure-probe="quote"] > [data-measure-probe="quote-code"]',
+    ).getBoundingClientRect();
     return {
       contentLeft,
       contentWidth,
@@ -324,6 +346,9 @@ test('centers prose without narrowing wide Markdown content', async ({
       paragraphCenter: paragraph.left + paragraph.width / 2,
       codeLeft: code.left,
       codeWidth: code.width,
+      quoteWidth: quote.width,
+      quoteParagraphWidth: quoteParagraph.width,
+      quoteCodeWidth: quoteCode.width,
     };
   });
 
@@ -331,6 +356,9 @@ test('centers prose without narrowing wide Markdown content', async ({
   expect(geometry.paragraphCenter).toBeCloseTo(geometry.contentCenter, 1);
   expect(geometry.codeLeft).toBeCloseTo(geometry.contentLeft, 1);
   expect(geometry.codeWidth).toBeCloseTo(geometry.contentWidth, 1);
+  expect(geometry.quoteWidth).toBeLessThanOrEqual(geometry.paragraphWidth);
+  expect(geometry.quoteParagraphWidth).toBeCloseTo(geometry.quoteWidth, 1);
+  expect(geometry.quoteCodeWidth).toBeCloseTo(geometry.quoteWidth, 1);
 });
 
 test('mounts zoom and drag controls for D2 and Mermaid in Markdown documents', async ({

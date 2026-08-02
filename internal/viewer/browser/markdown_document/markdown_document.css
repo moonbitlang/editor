@@ -40,6 +40,14 @@
   margin-inline: auto;
 }
 
+/* Preserve the browser's familiar quote inset inside the same outer measure.
+ * Nested code and diagrams still fill the quote rather than receiving a
+ * second prose constraint. */
+.moonbit-viewer-markdown-document-article > blockquote {
+  max-width: calc(72ch - 5em);
+  margin-inline: auto;
+}
+
 /* Keep the document hierarchy readable without letting headings dominate the
  * workbench. These sizes are intentionally independent of browser defaults so
  * the same Markdown has a stable visual scale in every embedder. */
