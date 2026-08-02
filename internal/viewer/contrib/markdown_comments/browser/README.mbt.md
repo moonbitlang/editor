@@ -38,7 +38,7 @@ newly mounted block starts rendered and, when foldable, collapsed.
 flowchart TB
   N["normalized comment blocks"] --> Z["stable ViewZone DOM pair"]
   Z --> OB["coalesced visible/offscreen size observer"]
-  Z --> VP["diagram-viewport group (per target)"]
+  Z --> VP["shared Markdown diagram-viewport group"]
   VP --> C["pan / zoom / fit + resize handle"]
   OB -->|"request_measure"| H["Viewer::apply_markdown_comment_height"]
   H --> ZH["the one live ViewZone height writer"]
@@ -80,17 +80,18 @@ Disposal disconnects observation, cancels queued frame work, and makes late
 notifications inert. The root contribution remains responsible for the shared
 viewport observer, geometry lease, generation, and zone-id freshness.
 
-`MarkdownCommentDiagramViewports` owns every successfully rendered direct
-Diago or Mermaid SVG viewport inside one Markdown-comment target. It mounts the
-transformable content, four controls, resize handle, listeners, animation
-frame, and per-wrapper `ResizeObserver`, while leaving the target and original
-wrapper caller-owned. Initial height is bounded to the smaller of the SVG's
-natural height, half the owning window, and 480px. A diagram that reaches that
-cap starts with the same 16px-padded Fit transform used by the toolbar action;
-uninteracted layout tracks window and wrapper changes, while a caller-selected
-resize height remains authoritative. Failed Mermaid renders retain their
-noninteractive source fallback. MoonBit structs retain the group/controller
-lifetime and all pan/zoom/fit/resize state. The root entry's
+The shared `MarkdownDiagramViewports` lifetime owns every successfully
+rendered direct Diago or Mermaid SVG viewport inside one Markdown-comment
+target. It mounts the transformable content, four controls, resize handle,
+listeners, animation frame, and per-wrapper `ResizeObserver`, while leaving
+the target and original wrapper caller-owned. Initial height is bounded to the
+smaller of the SVG's natural height, half the owning window, and 480px. A
+diagram that reaches that cap starts with the same 16px-padded Fit transform
+used by the toolbar action; uninteracted layout tracks window and wrapper
+changes, while a caller-selected resize height remains authoritative. Failed
+Mermaid renders retain their noninteractive source fallback. MoonBit structs
+retain the group/controller lifetime and all pan/zoom/fit/resize state. The
+root entry's
 disposal-before-replacement contract gives the group exclusive wrapper
 ownership, so the implementation does not place private ownership tokens on
 DOM nodes. A module-private per-document coordinator grants at most one
@@ -103,9 +104,11 @@ another ViewZone height writer. The root entry disposes the diagram owner
 before the shared Markdown renderer and size observer whenever the body is
 replaced or its ViewZone is removed.
 
-The emitted stylesheet remains at
-`viewer/contrib/markdown_comments/browser/markdown_comments.css`. Run the
-focused JS suite with:
+Comment-specific styles remain at
+`viewer/contrib/markdown_comments/browser/markdown_comments.css`; shared
+diagram controls are styled by
+`internal/viewer/browser/markdown/diagram_viewport.css`. Run the focused JS
+suite with:
 
 ```sh
 moon test internal/viewer/contrib/markdown_comments/browser --target js

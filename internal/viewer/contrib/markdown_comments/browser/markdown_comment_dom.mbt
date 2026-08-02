@@ -459,7 +459,7 @@ pub fn MarkdownCommentViewportObserver::dispose(
 
 ///|
 fn markdown_comment_content_viewport(element : @rdom.Element) -> @rdom.Element? {
-  if element_has_class(element, "editor-scrollable") {
+  if markdown_comment_element_has_class(element, "editor-scrollable") {
     return Some(element)
   }
   match element.get_parent_node().to_option() {
@@ -470,6 +470,19 @@ fn markdown_comment_content_viewport(element : @rdom.Element) -> @rdom.Element? 
       }
     None => None
   }
+}
+
+///|
+fn markdown_comment_element_has_class(
+  element : @rdom.Element,
+  class_name : String,
+) -> Bool {
+  for token in element.get_attribute("class").unwrap_or("").split(" ") {
+    if token == class_name {
+      return true
+    }
+  }
+  false
 }
 
 ///|

@@ -16,6 +16,42 @@ const secondaryArticle =
   `${secondaryRoot} .moonbit-viewer-markdown-document-article`;
 const secondaryHover =
   `${secondaryRoot} .moonbit-viewer-markdown-hover-widget`;
+const diagramViewport = '.moonbit-viewer-markdown-diagram-viewport';
+const diagramContent = '.moonbit-viewer-markdown-diagram-content';
+const diagramControls = '.moonbit-viewer-markdown-diagram-controls';
+const mermaidCdnUrl =
+  'https://cdn.jsdelivr.net/npm/mermaid@11.16.0/dist/mermaid.esm.min.mjs';
+
+const fakeMarkdownDocumentMermaidModule = `
+  let currentTheme = '';
+
+  export function initialize(options) {
+    currentTheme = options.theme;
+  }
+
+  export async function render(id, source) {
+    return {
+      svg:
+        '<svg xmlns="http://www.w3.org/2000/svg" width="480" height="180" ' +
+        'viewBox="0 0 480 180" data-mermaid-id="' + id + '" ' +
+        'data-mermaid-theme="' + currentTheme + '">' +
+        '<rect width="480" height="180" fill="#1f2937"/>' +
+        '<text x="16" y="36" fill="#f8fafc">' + source + '</text></svg>',
+      bindFunctions(root) {
+        root.setAttribute('data-fake-mermaid-bound', id);
+      },
+    };
+  }
+
+  export default { initialize, render };
+`;
+
+async function diagramTransform(locator) {
+  return locator.locator(diagramContent).evaluate((content) => {
+    const matrix = new DOMMatrix(getComputedStyle(content).transform);
+    return { scale: matrix.a, x: matrix.e, y: matrix.f };
+  });
+}
 
 async function moveToSourceText(page, articleSelector, text, utf16Delta = 0) {
   const articleLocator = page.locator(articleSelector);
@@ -223,6 +259,114 @@ async function expectHoverCallCancelled(page, callId) {
     })
     .toBe(true);
 }
+
+test('mounts zoom and drag controls for D2 and Mermaid in Markdown documents', async ({
+  page,
+}, testInfo) => {
+  await page.route(mermaidCdnUrl, (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'text/javascript',
+      headers: {
+        'access-control-allow-origin': '*',
+        'cache-control': 'no-store',
+      },
+      body: fakeMarkdownDocumentMermaidModule,
+    }),
+  );
+  const reporter = await installMoonBitReporter(page);
+  try {
+    await page.goto('/browser-tests/component.html?markdownDocument=1');
+    await page.waitForFunction(() =>
+      Boolean(globalThis.__markdownDocumentControls),
+    );
+    const report = await reporter.waitForReport(testInfo, {
+      suite: 'markdown_document',
+    });
+    expectMoonBitReportPassed(report, { suite: 'markdown_document' });
+
+    await page.evaluate(() =>
+      globalThis.__markdownDocumentControls.showDiagrams(),
+    );
+
+    const viewports = page.locator(`${article} ${diagramViewport}`);
+    await expect(viewports).toHaveCount(2);
+    const d2 = page.locator(
+      `${article} [data-diagram-language="diago"]${diagramViewport}`,
+    );
+    const mermaid = page.locator(
+      `${article} [data-diagram-language="mermaid"]${diagramViewport}`,
+    );
+    await expect(d2).toHaveCount(1);
+    await expect(mermaid).toHaveCount(1);
+    await expect(d2).toHaveAttribute(
+      'aria-label',
+      'Interactive Diago diagram',
+    );
+    await expect(mermaid).toHaveAttribute(
+      'aria-label',
+      'Interactive Mermaid diagram',
+    );
+    await expect(d2.getByRole('button')).toHaveCount(4);
+    await expect(mermaid.getByRole('button')).toHaveCount(4);
+
+    await d2.hover();
+    await expect(d2.locator(diagramControls)).toHaveCSS('opacity', '1');
+
+    const beforeZoom = await diagramTransform(d2);
+    await d2.getByRole('button', { name: 'Zoom in' }).click();
+    await expect
+      .poll(async () => (await diagramTransform(d2)).scale)
+      .toBeGreaterThan(beforeZoom.scale);
+
+    const panToggle = d2.getByRole('button', { name: 'Toggle pan mode' });
+    await panToggle.click();
+    await expect(panToggle).toHaveAttribute('aria-pressed', 'true');
+    const beforePan = await diagramTransform(d2);
+    const box = await d2.boundingBox();
+    expect(box).not.toBeNull();
+    await page.mouse.move(box.x + box.width * 0.35, box.y + box.height * 0.5);
+    await page.mouse.down();
+    await page.mouse.move(
+      box.x + box.width * 0.35 + 50,
+      box.y + box.height * 0.5 + 30,
+      { steps: 4 },
+    );
+    await page.mouse.up();
+    await expect
+      .poll(async () => {
+        const afterPan = await diagramTransform(d2);
+        return Math.abs(afterPan.x - beforePan.x) +
+          Math.abs(afterPan.y - beforePan.y);
+      })
+      .toBeGreaterThan(10);
+
+    await page.evaluate(() => {
+      globalThis.__markdownDocumentRetainedDiagrams = Array.from(
+        document.querySelectorAll(
+          '.markdown-document-host .moonbit-viewer-markdown-diagram-viewport',
+        ),
+      );
+      globalThis.__markdownDocumentControls.replaceSource();
+    });
+    await expect(page.locator(article)).toContainText('replacement_answer');
+    expect(
+      await page.evaluate(() =>
+        globalThis.__markdownDocumentRetainedDiagrams.map((diagram) => ({
+          connected: diagram.isConnected,
+          enhanced: diagram.classList.contains(
+            'moonbit-viewer-markdown-diagram-viewport',
+          ),
+        })),
+      ),
+    ).toEqual([
+      { connected: false, enhanced: false },
+      { connected: false, enhanced: false },
+    ]);
+  } finally {
+    reporter.dispose();
+  }
+});
 
 test('renders and refreshes the editor-owned readonly Markdown presentation', async ({
   page,

@@ -15,6 +15,13 @@ pub fn render_markdown(String, options? : MarkdownRenderOptions, target? : @dom.
 // Errors
 
 // Types and methods
+pub struct MarkdownDiagramViewports {
+  // private fields
+}
+pub fn MarkdownDiagramViewports::MarkdownDiagramViewports(@dom.Element, () -> Unit) -> Self
+pub fn MarkdownDiagramViewports::dispose(Self) -> Unit
+pub fn MarkdownDiagramViewports::refresh(Self) -> Unit
+
 pub(all) struct MarkdownRenderOptions {
   language_id : String?
   base_uri : @common.Uri?
