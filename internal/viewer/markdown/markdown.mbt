@@ -2,20 +2,43 @@
 /// A cmark-independent fenced or indented code block passed to a synchronous
 /// renderer override. `language_id` is the first fenced-info token exactly as
 /// parsed by cmark; an unlabelled or indented block has no language id.
-pub(all) struct MarkdownCodeBlock {
+pub struct MarkdownCodeBlock {
   block_index : Int
-  code : String
+  priv code : String
   language_id : String?
-  full_info_string : String?
-  info_remainder : String?
+  priv full_info_string : String?
+  priv info_remainder : String?
   block_source_range : @common.OffsetRange
   code_lines : Array[MarkdownCodeLine]
 } derive(Eq, Debug)
 
 ///|
+/// Builds a code-block projection value without exposing mutable record fields
+/// across package boundaries.
+pub fn MarkdownCodeBlock::MarkdownCodeBlock(
+  block_index : Int,
+  code : String,
+  language_id : String?,
+  full_info_string : String?,
+  info_remainder : String?,
+  block_source_range : @common.OffsetRange,
+  code_lines : Array[MarkdownCodeLine],
+) -> MarkdownCodeBlock {
+  {
+    block_index,
+    code,
+    language_id,
+    full_info_string,
+    info_remainder,
+    block_source_range,
+    code_lines,
+  }
+}
+
+///|
 /// Safe HTML and the render fact browser consumers need for layout/class
 /// decisions.
-pub(all) struct MarkdownRenderFact {
+pub struct MarkdownRenderFact {
   html : String
   has_code_block : Bool
   projection : MarkdownDocumentProjection

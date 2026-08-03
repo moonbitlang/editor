@@ -133,9 +133,10 @@ test "only an exact mbt check fence in a MoonBit Markdown resource is semantic" 
 
 A code block retains its source range and per-line boundaries, which is what
 lets a DOM caret inside the rendered fence map back to an offset in the original
-document.
+document. The package-internal example also inspects parser-only fields that are
+not exported.
 
-```mbt check
+```mbt nocheck
 ///|
 test "a code block keeps its source range and per-line projection" {
   let rendered = @markdown.render_markdown(
@@ -213,7 +214,7 @@ The heading level is retained during the same parse that produced the HTML and
 the source projection (`MarkdownBlockAnchor::heading_level`), so section
 structure can never describe a different parse than the document.
 
-```mbt check
+```mbt nocheck
 ///|
 test "a deeper heading nests, a same-level heading ends the section" {
   let projection = @markdown.render_markdown(
@@ -353,7 +354,7 @@ deeper heading sits exactly one level below its parent. A document whose top
 heading is `###`, or which jumps `#` straight to `###`, therefore indents
 sensibly instead of leaving a gap.
 
-```mbt check
+```mbt nocheck
 ///|
 test "the outline indents by structural depth, not literal level" {
   let projection = @markdown.render_markdown(
@@ -387,13 +388,13 @@ test "the outline indents by structural depth, not literal level" {
 }
 ```
 
-Each row carries `source_offset` — the heading's start, which is what
-`MarkdownDocumentView::reveal_source_offset` takes — plus `section_index` into
-`markdown_sections` and the same `is_foldable` answer the fold control uses.
-Headings inside a blockquote or list item are content, not outline structure, so
-they do not appear.
+Each row publicly exposes `source_offset` — the heading's start, which is what
+`MarkdownDocumentView::reveal_source_offset` takes. Internally it also retains
+`section_index` into `markdown_sections` and the same `is_foldable` answer the
+fold control uses. Headings inside a blockquote or list item are content, not
+outline structure, so they do not appear.
 
-```mbt check
+```mbt nocheck
 ///|
 test "outline rows are revealable and exclude container headings" {
   let projection = @markdown.render_markdown(

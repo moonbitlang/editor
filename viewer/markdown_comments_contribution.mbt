@@ -218,15 +218,15 @@ fn render_markdown_comment_original_source(
   source : String,
   language_id : String,
 ) -> String {
-  let code_block : @markdown_core.MarkdownCodeBlock = {
-    block_index: 0,
-    code: source,
-    language_id: Some(language_id),
-    full_info_string: None,
-    info_remainder: None,
-    block_source_range: @base_common.OffsetRange::of_length(source.length()),
-    code_lines: [],
-  }
+  let code_block = @markdown_core.MarkdownCodeBlock(
+    0,
+    source,
+    Some(language_id),
+    None,
+    None,
+    @base_common.OffsetRange::of_length(source.length()),
+    [],
+  )
   @markdown_core.render_tokenized_code_block(code_block, Some(language_id))
 }
 

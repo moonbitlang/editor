@@ -1,17 +1,17 @@
 ///|
 /// One rendered code line and its exact relationship to the original Markdown
 /// snapshot. Ranges and mapped offsets are zero-based UTF-16 coordinates.
-pub(all) struct MarkdownCodeLine {
+pub struct MarkdownCodeLine {
   displayed_text : String
   source_line_number : Int
   source_range : @common.OffsetRange
-  displayed_boundary_to_source_offset : Array[Int?]
+  priv displayed_boundary_to_source_offset : Array[Int?]
 } derive(Eq, Debug)
 
 ///|
 /// One line-local displayed range produced by projecting an original source
 /// range into a Markdown code block.
-pub(all) struct MarkdownProjectedCodeRange {
+pub struct MarkdownProjectedCodeRange {
   line_index : Int
   displayed_range : @common.OffsetRange
 } derive(Eq, Debug)
@@ -21,25 +21,25 @@ pub(all) struct MarkdownProjectedCodeRange {
 /// anchors may overlap; the stable index distinguishes equal-looking blocks.
 /// A rendered ordinal assumes each code override follows the current
 /// package-owned contract of producing exactly one root element.
-pub(all) struct MarkdownBlockAnchor {
+pub struct MarkdownBlockAnchor {
   index : Int
   source_range : @common.OffsetRange
   rendered_element_index : Int?
   /// The ATX or setext heading level for a heading anchor, otherwise `None`.
   /// Retained during the one parse that produces the HTML and this projection,
   /// so section structure cannot describe a different parse than the document.
-  heading_level : Int?
+  priv heading_level : Int?
   /// The heading's rendered plain text, taken from the parsed inline tree in
   /// that same pass. This is the identity fold-state reconciliation compares,
   /// so `# *Title*` and `# Title` are the same heading and a multi-line setext
   /// heading keeps all of its words. Reading it back out of the source string
   /// instead would re-derive markup rules the parser already applied.
-  heading_text : String?
+  priv heading_text : String?
 } derive(Eq, Debug)
 
 ///|
 /// DOM-free source projection for one parsed Markdown document.
-pub(all) struct MarkdownDocumentProjection {
+pub struct MarkdownDocumentProjection {
   block_anchors : Array[MarkdownBlockAnchor]
   code_blocks : Array[MarkdownCodeBlock]
 } derive(Eq, Debug)
@@ -61,7 +61,7 @@ pub fn MarkdownCodeLine::source_offset_at_displayed_boundary(
 ///|
 /// Returns the displayed UTF-16 boundary corresponding to an original source
 /// offset, including the boundary after the final source code unit.
-pub fn MarkdownCodeLine::displayed_boundary_at_source_offset(
+fn MarkdownCodeLine::displayed_boundary_at_source_offset(
   self : MarkdownCodeLine,
   source_offset : Int,
 ) -> Int? {
@@ -77,7 +77,7 @@ pub fn MarkdownCodeLine::displayed_boundary_at_source_offset(
 /// Projects the portion of an original source range owned by this code line.
 /// Non-empty ranges must overlap at least one source code unit; empty ranges
 /// may map to an empty displayed range at an exact semantic boundary.
-pub fn MarkdownCodeLine::project_source_range(
+fn MarkdownCodeLine::project_source_range(
   self : MarkdownCodeLine,
   source_range : @common.OffsetRange,
 ) -> @common.OffsetRange? {
