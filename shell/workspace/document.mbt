@@ -10,14 +10,6 @@ pub struct DocumentSnapshot {
 } derive(Debug)
 
 ///|
-/// Document-level failure with optional URI context.
-pub struct DocumentError {
-  code : FileSystemProviderErrorCode
-  message : String
-  uri : @base_common.Uri?
-} derive(Debug)
-
-///|
 /// Provider read result without exceptions.
 pub(all) enum DocumentReadResult {
   DocumentLoaded(DocumentSnapshot)
@@ -56,19 +48,10 @@ pub fn DocumentError::DocumentError(
 
 ///|
 /// Converts a lower-level filesystem provider failure into a document error.
-pub fn DocumentError::from_file_system_error(
+fn DocumentError::from_file_system_error(
   error : FileSystemProviderError,
 ) -> DocumentError {
   { code: error.code, message: error.message, uri: error.uri }
-}
-
-///|
-/// Converts a document error back to the lower-level error shape when protocol
-/// adapters need the existing provider-code JSON format.
-pub fn DocumentError::to_file_system_error(
-  self : DocumentError,
-) -> FileSystemProviderError {
-  { code: self.code, message: self.message, uri: self.uri }
 }
 
 ///|
@@ -105,22 +88,6 @@ pub fn DocumentSnapshot::DocumentSnapshot(
     text,
     line_starts: build_line_starts(text),
   }
-}
-
-///|
-/// Derives a snapshot from provider content, filling display name, language id,
-/// and revision when they are absent.
-pub fn DocumentSnapshot::from_content(
-  uri : @base_common.Uri,
-  content : DocumentContent,
-) -> DocumentSnapshot {
-  DocumentSnapshot(
-    uri,
-    content.display_name,
-    content.language_id,
-    content.revision,
-    content.text,
-  )
 }
 
 ///|
@@ -164,17 +131,6 @@ fn DocumentSnapshot::line_end_offset_impl(
   } else {
     raw_end
   }
-}
-
-///|
-/// Text of one logical line without its line break.
-pub fn DocumentSnapshot::line_text(
-  self : DocumentSnapshot,
-  line : Int,
-) -> String {
-  let start = self.line_start_offset(line)
-  let end = self.line_end_offset(line)
-  self.text[start:end].to_owned()
 }
 
 ///|
@@ -241,17 +197,6 @@ pub impl ToJson for DocumentSnapshot with fn to_json(self) {
 }
 
 ///|
-/// JSON shape for document read results.
-pub impl ToJson for DocumentReadResult with fn to_json(self) {
-  match self {
-    DocumentLoaded(document) => { "ok": true, "document": document.to_json() }
-    DocumentNotFound(uri) =>
-      { "ok": false, "notFound": true, "uri": uri.to_string().to_json() }
-    DocumentReadFailed(error) => { "ok": false, "error": error.to_json() }
-  }
-}
-
-///|
 /// JSON shape for document errors.
 pub impl ToJson for DocumentError with fn to_json(self) {
   let fields : Map[String, Json] = {
@@ -269,7 +214,7 @@ pub impl ToJson for DocumentError with fn to_json(self) {
 ///|
 /// HTTP-like status used by the reference server when serializing document
 /// failures.
-pub fn DocumentError::status(self : DocumentError) -> Int {
+fn DocumentError::status(self : DocumentError) -> Int {
   self.to_file_system_error().status()
 }
 
