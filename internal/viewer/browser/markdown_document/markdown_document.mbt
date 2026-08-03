@@ -3,11 +3,11 @@
 /// projection. The stable block/line indices are presentation identities;
 /// `code_line` retains the exact UTF-16 boundary map back into the original
 /// model snapshot.
-pub(all) struct MarkdownSemanticCodeLineDom {
+pub struct MarkdownSemanticCodeLineDom {
   block_index : Int
   block_source_range : @base_common.OffsetRange
   line_index : Int
-  code_line : @markdown_core.MarkdownCodeLine
+  priv code_line : @markdown_core.MarkdownCodeLine
   element : @rdom.Element
 }
 
@@ -617,9 +617,7 @@ pub fn MarkdownDocumentView::viewport(
 }
 
 ///|
-pub fn MarkdownDocumentView::article(
-  self : MarkdownDocumentView,
-) -> @rdom.Element {
+fn MarkdownDocumentView::article(self : MarkdownDocumentView) -> @rdom.Element {
   self.article
 }
 
@@ -716,7 +714,7 @@ pub fn MarkdownDocumentView::set_hidden_root_elements(
 ///|
 /// The root-element ordinals currently hidden, in document order. Read back for
 /// tests and for the root Viewer's reconciliation.
-pub fn MarkdownDocumentView::hidden_root_elements(
+fn MarkdownDocumentView::hidden_root_elements(
   self : MarkdownDocumentView,
 ) -> Array[Int] {
   let result = []
@@ -914,7 +912,7 @@ pub fn MarkdownDocumentView::listen_semantic_dom(
 }
 
 ///|
-pub fn MarkdownDocumentView::resource_kind(
+fn MarkdownDocumentView::resource_kind(
   self : MarkdownDocumentView,
 ) -> @markdown_core.MarkdownResourceKind {
   self.resource_kind
@@ -1175,7 +1173,7 @@ pub fn MarkdownDocumentView::set_toc_entries(
 
 ///|
 /// Test/read-back seam: whether the bar is rendered and expanded.
-pub fn MarkdownDocumentView::toc_bar_state(
+fn MarkdownDocumentView::toc_bar_state(
   self : MarkdownDocumentView,
 ) -> (Bool, Bool) {
   (

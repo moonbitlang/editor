@@ -49,6 +49,42 @@ fn markdown_folding_offset_of(source : String, needle : String) -> Int raise {
 }
 
 ///|
+fn markdown_folding_article(
+  markdown : @markdown_document.MarkdownDocumentView,
+) -> @rdom.Element raise {
+  guard markdown
+    .root()
+    .query_selector(".moonbit-viewer-markdown-document-article")
+    is Some(article) else {
+    fail("Markdown article is missing from the public root DOM")
+  }
+  article
+}
+
+///|
+fn markdown_folding_hidden_count(
+  markdown : @markdown_document.MarkdownDocumentView,
+) -> Int raise {
+  markdown_folding_article(markdown)
+  .query_selector_all("[data-markdown-section-hidden=\"true\"]")
+  .length()
+}
+
+///|
+fn markdown_folding_toc_state(
+  markdown : @markdown_document.MarkdownDocumentView,
+) -> (Bool, Bool) raise {
+  guard markdown.root().query_selector(".moonbit-viewer-markdown-toc")
+    is Some(toc) else {
+    fail("Markdown TOC is missing from the public root DOM")
+  }
+  (
+    toc.get_attribute("data-toc-visible") == Some("true"),
+    toc.get_attribute("data-toc-expanded") == Some("true"),
+  )
+}
+
+///|
 test "auto-fold seeds depth-3 bulk, toggles by offset, and keeps the parse" {
   install_mounted_test_browser()
   defer restore_mounted_test_browser()
@@ -76,16 +112,17 @@ test "auto-fold seeds depth-3 bulk, toggles by offset, and keeps the parse" {
   // thresholds.
   let deep_offset = markdown_folding_offset_of(source, "### Deep")
   assert_eq(viewer.collapsed_markdown_sections(), [deep_offset])
-  let hidden_while_seeded = markdown.hidden_root_elements()
-  assert_eq(hidden_while_seeded.length(), 6)
+  let hidden_while_seeded = markdown_folding_hidden_count(markdown)
+  assert_eq(hidden_while_seeded, 6)
 
   // Every foldable heading carries one control; the collapsed one says so in
   // both the CSS-facing and the accessibility-facing state.
-  let toggles = markdown
-    .article()
-    .query_selector_all(".moonbit-viewer-markdown-fold-toggle")
+  let article = markdown_folding_article(markdown)
+  let toggles = article.query_selector_all(
+    ".moonbit-viewer-markdown-fold-toggle",
+  )
   assert_eq(toggles.length(), 4)
-  guard markdown.article().query_selector("[data-collapsed=\"true\"]")
+  guard article.query_selector("[data-collapsed=\"true\"]")
     is Some(collapsed_toggle) else {
     fail("expected the seeded section's toggle to display collapsed")
   }
@@ -95,10 +132,10 @@ test "auto-fold seeds depth-3 bulk, toggles by offset, and keeps the parse" {
   // none of it re-parses the document.
   assert_true(viewer.toggle_markdown_section_at(deep_offset))
   assert_eq(viewer.collapsed_markdown_sections(), [])
-  assert_eq(markdown.hidden_root_elements(), [])
+  assert_eq(markdown_folding_hidden_count(markdown), 0)
   assert_true(viewer.toggle_markdown_section_at(deep_offset))
   assert_eq(viewer.collapsed_markdown_sections(), [deep_offset])
-  assert_eq(markdown.hidden_root_elements(), hidden_while_seeded)
+  assert_eq(markdown_folding_hidden_count(markdown), hidden_while_seeded)
   assert_eq(markdown.projection_generation(), generation_before)
 
   // A fence inside a collapsed section keeps its semantic rows registered:
@@ -168,9 +205,12 @@ test "reconciliation preserves untouched folds and expands rewritten bodies" {
   assert_eq(viewer.collapsed_markdown_sections(), [
     markdown_folding_offset_of(edited_deep, "### Deep"),
   ])
-  assert_true(markdown.hidden_root_elements().length() > 0)
+  assert_true(markdown_folding_hidden_count(markdown) > 0)
   assert_true(
-    markdown.article().query_selector("[data-collapsed=\"true\"]") is Some(_),
+    markdown_folding_article(markdown).query_selector(
+      "[data-collapsed=\"true\"]",
+    )
+    is Some(_),
   )
 }
 
@@ -198,7 +238,7 @@ test "the toc bar lists sections, gates on three, and navigation expands" {
 
   // Four sections -> the bar renders (collapsed), one row per section, with
   // structural depth carried for indentation.
-  assert_eq(markdown.toc_bar_state(), (true, false))
+  assert_eq(markdown_folding_toc_state(markdown), (true, false))
   let rows = markdown
     .root()
     .query_selector_all(".moonbit-viewer-markdown-toc-row")
@@ -239,6 +279,6 @@ test "the toc bar lists sections, gates on three, and navigation expands" {
   guard viewer.current_markdown_document() is Some(small_markdown) else {
     fail("expected Markdown for the small document")
   }
-  assert_eq(small_markdown.toc_bar_state(), (false, false))
+  assert_eq(markdown_folding_toc_state(small_markdown), (false, false))
   small.dispose()
 }
