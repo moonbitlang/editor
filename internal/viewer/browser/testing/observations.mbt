@@ -42,7 +42,7 @@ pub(all) enum ScrollFramePhase {
 /// Viewer-scoped scroll/render telemetry. The registry constructs this record
 /// only while a listener is installed, so ordinary product execution does not
 /// allocate trace observations.
-pub(all) struct ScrollFrameObservation {
+priv struct ScrollFrameObservation {
   viewer_id : String
   phase : ScrollFramePhase
   scroll_top : Double

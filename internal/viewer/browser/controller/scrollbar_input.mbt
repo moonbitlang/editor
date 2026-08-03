@@ -32,13 +32,13 @@ pub fn MouseHandler::hook_scrollable_scrollbar_input(
   scrollable : @scrollbar.ScrollableElementDom,
   owner : @scrollbar.ScrollableElementOwner,
 ) -> Unit {
-  self.add_dom_listener(scrollable.wrapper, "mouseover", _ => {
+  self.add_dom_listener(scrollable.wrapper(), "mouseover", _ => {
     scrollable.mouse_entered()
   })
-  self.add_dom_listener(scrollable.wrapper, "mousemove", _ => {
+  self.add_dom_listener(scrollable.wrapper(), "mousemove", _ => {
     scrollable.mouse_entered()
   })
-  self.add_dom_listener(scrollable.wrapper, "mouseleave", _ => {
+  self.add_dom_listener(scrollable.wrapper(), "mouseleave", _ => {
     scrollable.mouse_left()
   })
   let vertical_slider = scrollable.slider(true)
@@ -360,16 +360,16 @@ pub fn MouseHandler::hook_browser_desperate_reveal(self : MouseHandler) -> Unit 
       look_at_scroll_left=false,
     )
   })
-  self.add_dom_listener(editor_scrollable.content, "scroll", _ => {
+  self.add_dom_listener(editor_scrollable.content(), "scroll", _ => {
     self.handle_browser_desperate_reveal(
-      editor_scrollable.content,
+      editor_scrollable.content(),
       look_at_scroll_top=true,
       look_at_scroll_left=false,
     )
   })
-  self.add_dom_listener(editor_scrollable.wrapper, "scroll", _ => {
+  self.add_dom_listener(editor_scrollable.wrapper(), "scroll", _ => {
     self.handle_browser_desperate_reveal(
-      editor_scrollable.wrapper,
+      editor_scrollable.wrapper(),
       look_at_scroll_top=true,
       look_at_scroll_left=false,
     )

@@ -13,7 +13,7 @@ let visible_content_width_css_variable : String = "--moonbit-viewer-visible-cont
 /// Live configuration values read by `ViewLines.onConfigurationChanged` in the
 /// same order as Monaco's retained caches. `view_line_options` is the exact
 /// equality-gated subset owned by each retained `ViewLine`.
-pub struct ViewLinesConfiguration {
+struct ViewLinesConfiguration {
   line_height : Int
   typical_halfwidth_character_width : Double
   is_viewport_wrapping : Bool
@@ -614,10 +614,9 @@ fn viewport_window(
 }
 
 ///|
-/// `pub`: also called directly by `render_whitespace_options_test.mbt`'s
-/// (root `viewer` package) integration test proving `ViewerOptions` flow into
-/// the per-line render input, the same wiring `flush_render` performs.
-pub fn render_line_input_for_viewport(
+/// Package-local seam shared by the retained-line renderer and white-box
+/// coverage of the normalized per-line render input.
+fn render_line_input_for_viewport(
   viewport : @view_layout.ViewportData,
   index : Int,
   options : ViewLineOptions,

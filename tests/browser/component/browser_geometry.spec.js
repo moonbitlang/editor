@@ -378,6 +378,7 @@ test('DOM ranges public caret positions and content-widget anchors agree within 
           true,
         );
       }
+
       await page.mouse.move(1000, 500);
 
       const beforeState = await state(page, font, 3, 6);

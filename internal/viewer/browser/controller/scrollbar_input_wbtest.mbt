@@ -255,13 +255,13 @@ fn prepare_scrollbar_input_test_scrollable(
   scroll_top : Double,
 ) -> Unit {
   scrollbar_input_test_set_geometry(
-    scrollable.content,
+    scrollable.content(),
     100.0,
     100.0,
     1000.0,
     1000.0,
   )
-  scrollable.content.set_scroll_top(scroll_top)
+  scrollable.content().set_scroll_top(scroll_top)
   scrollable.update_from_model(
     { width: 100.0, scroll_width: 1000.0, height: 100.0, scroll_height: 1000.0 },
     { scroll_left: 0.0, scroll_top },
@@ -332,7 +332,7 @@ test "AbstractScrollbar gesture owns listeners, drag state, and reset branches" 
   // Mutating live geometry after pointerdown must not change the cloned
   // state's delta mapping.
   scrollbar_input_test_set_geometry(
-    hover_scrollable.content,
+    hover_scrollable.content(),
     100.0,
     250.0,
     1000.0,
@@ -347,7 +347,7 @@ test "AbstractScrollbar gesture owns listeners, drag state, and reset branches" 
     1,
   )
   assert_eq(
-    hover_scrollable.content.get_scroll_top(),
+    hover_scrollable.content().get_scroll_top(),
     expected_from_pointerdown,
   )
   scrollbar_input_test_dispatch_mouse(slider, "pointerup", 0, 0, 3, 10, 30)
@@ -386,9 +386,9 @@ test "AbstractScrollbar gesture owns listeners, drag state, and reset branches" 
     )
     |> ignore
     if orthogonal_distance > 140 {
-      assert_eq(hover_scrollable.content.get_scroll_top(), 200.0)
+      assert_eq(hover_scrollable.content().get_scroll_top(), 200.0)
     } else {
-      assert_true(hover_scrollable.content.get_scroll_top() > 200.0)
+      assert_true(hover_scrollable.content().get_scroll_top() > 200.0)
     }
     scrollbar_input_test_dispatch_mouse(
       slider,

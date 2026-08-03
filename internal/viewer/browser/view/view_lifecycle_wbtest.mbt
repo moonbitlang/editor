@@ -160,19 +160,28 @@ test "View disposes ViewParts before its lifetime store exactly once" {
     { scroll_left: 0.0, scroll_top: 0.0 },
   )
   scrollable.reveal_for_scroll()
-  assert_true(scrollable.hide_timeout is Some(_))
+  assert_eq(
+    scrollable.track(true).get_attribute("class"),
+    Some("visible scrollbar vertical"),
+  )
+  scrollable.set_slider_active(vertical=true, true)
+  let vertical_slider = scrollable.slider(true)
+  assert_eq(vertical_slider.get_attribute("class"), Some("slider active"))
 
   let base_dispose_count = Ref(0)
   let scrollbar_was_already_disposed = Ref(false)
   view.add_disposable(
     @base_common.Disposable::from(() => {
       base_dispose_count.val += 1
-      scrollbar_was_already_disposed.val = scrollable.disposed
+      scrollbar_was_already_disposed.val = vertical_slider.get_attribute(
+          "class",
+        ) ==
+        Some("slider")
     }),
   )
   view.dispose()
   assert_true(view.disposed)
-  assert_true(scrollable.disposed)
+  assert_eq(vertical_slider.get_attribute("class"), Some("slider"))
   assert_true(scrollbar_was_already_disposed.val)
   assert_eq(base_dispose_count.val, 1)
   assert_eq(view_lifecycle_test_clear_count(), 1)

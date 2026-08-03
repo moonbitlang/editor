@@ -191,7 +191,7 @@ pub fn ContentHoverWidget::ContentHoverWidget(
   hover.set_attribute("role", "tooltip")
   hover.set_attribute("tabindex", "0")
   let scrollable = @scrollbar.ScrollableElementDom("monaco-hover-content")
-  hover.append_child(scrollable.wrapper.as_node())
+  hover.append_child(scrollable.wrapper().as_node())
   wrapper.append_child(hover.as_node())
   let widget : ContentHoverWidget = {
     wrapper,
@@ -251,7 +251,9 @@ pub fn ContentHoverWidget::ContentHoverWidget(
       None => event.stop_propagation()
     }
   })
-  scrollable.content.add_event_listener("wheel", event => {
+  scrollable
+  .content()
+  .add_event_listener("wheel", event => {
     match event.to_wheel_event() {
       Some(wheel) => {
         event.prevent_default()
@@ -261,9 +263,9 @@ pub fn ContentHoverWidget::ContentHoverWidget(
       None => event.stop_propagation()
     }
   })
-  scrollable.content.add_event_listener("scroll", _ => {
-    scrollable.update_from_native_content()
-  })
+  scrollable
+  .content()
+  .add_event_listener("scroll", _ => scrollable.update_from_native_content())
   (host.hook_scrollable_scrollbar_input)(scrollable, HoverScrollableElement)
   wrapper.add_event_listener("keydown", event => {
     match event.to_keyboard_event() {
@@ -455,7 +457,7 @@ fn ContentHoverWidget::render_rendered_hover(
     rendered_hover.language_id,
   )
   self.set_rendered_hover(Some(rendered_hover), Some(hover_rows))
-  hover_rows.mount_into(self.scrollable.content) |> ignore
+  hover_rows.mount_into(self.scrollable.content()) |> ignore
   self.handle_contents_changed()
   // Simply force a synchronous render on the editor
   // such that the widget does not really render with left = '0px'
@@ -526,7 +528,7 @@ pub fn ContentHoverWidget::handle_contents_changed(
   self : ContentHoverWidget,
 ) -> Unit {
   self.remove_constraints_render_normally()
-  let contents_dom_node = self.scrollable.content
+  let contents_dom_node = self.scrollable.content()
   let mut height = contents_dom_node.get_bounding_client_rect().get_height()
   let mut width = contents_dom_node.get_bounding_client_rect().get_width() + 2.0
   self.resizable_layout(height, width)
@@ -601,8 +603,8 @@ fn ContentHoverWidget::set_hover_widget_dimensions(
   height : String,
 ) -> Unit {
   apply_dimensions(self.hover, width, height)
-  apply_dimensions(self.scrollable.wrapper, width, height)
-  apply_dimensions(self.scrollable.content, width, height)
+  apply_dimensions(self.scrollable.wrapper(), width, height)
+  apply_dimensions(self.scrollable.content(), width, height)
   self.layout_content_widget()
 }
 
@@ -625,8 +627,8 @@ fn ContentHoverWidget::set_hover_widget_max_dimensions(
   width : String,
   height : String,
 ) -> Unit {
-  apply_max_dimensions(self.scrollable.content, width, height)
-  apply_max_dimensions(self.scrollable.wrapper, width, height)
+  apply_max_dimensions(self.scrollable.content(), width, height)
+  apply_max_dimensions(self.scrollable.wrapper(), width, height)
   apply_max_dimensions(self.hover, width, height)
   @base_browser.set_style_property(self.hover, "--vscode-hover-maxWidth", width)
   self.layout_content_widget()
@@ -743,7 +745,7 @@ pub fn ContentHoverWidget::go_to_top(self : ContentHoverWidget) -> Unit {
 pub fn ContentHoverWidget::go_to_bottom(self : ContentHoverWidget) -> Unit {
   self.scrollable.native_scroll_to(
     vertical=true,
-    self.scrollable.content.get_scroll_height(),
+    self.scrollable.content().get_scroll_height(),
   )
 }
 

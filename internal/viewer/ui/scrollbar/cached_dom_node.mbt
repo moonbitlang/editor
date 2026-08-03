@@ -4,16 +4,8 @@
 // contain writes used by editor view layers.
 
 ///|
-/// A CSS length accepted by Monaco's `numberAsPixels`: numeric values gain a
-/// `px` suffix while already-formed CSS strings pass through unchanged.
-pub(all) enum CssLength {
-  Pixels(Double)
-  Raw(String)
-} derive(Eq, Debug)
-
-///|
 /// `numberAsPixels` (`fastDomNode.ts:314-316`).
-pub fn number_as_pixels(value : CssLength) -> String {
+fn number_as_pixels(value : CssLength) -> String {
   match value {
     Pixels(value) => "\{value.to_string()}px"
     Raw(value) => value
