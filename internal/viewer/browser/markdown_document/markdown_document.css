@@ -30,6 +30,7 @@
  * padding doubles as the fold-toggle gutter, so it stays as wide as one. */
 .moonbit-viewer-markdown-document-article {
   --markdown-prose-measure: 640px;
+  --markdown-figure-measure: 960px;
 
   box-sizing: border-box;
   min-height: 100%;
@@ -60,6 +61,21 @@
   > :where(h1, h2, h3, h4, h5, h6, p, ul, ol, dl, hr, details) {
   max-width: var(--markdown-prose-measure);
   margin-inline: 0 auto;
+}
+
+/* Figures run wider than the reading measure but not to the window's edge: a
+ * diagram stretched across a maximized workbench stops being scannable beside
+ * the prose it belongs to, and the document loses its right edge entirely.
+ * `:is()` keeps this above the viewport's own `max-width: 100%`. */
+.moonbit-viewer-markdown-document-article
+  > :is(
+    pre,
+    table,
+    img,
+    .moonbit-viewer-markdown-code-block,
+    .moonbit-viewer-markdown-diagram
+  ) {
+  max-width: var(--markdown-figure-measure);
 }
 
 /* Use one predictable vertical cadence instead of the browser's element-by-
@@ -106,17 +122,18 @@
   margin-bottom: 0;
 }
 
-/* Preserve the browser's familiar quote inset inside the same outer measure.
- * Nested code and diagrams still fill the quote rather than receiving a
- * second prose constraint. */
+/* Keep the quote inset inside the same outer measure, but well short of the
+ * browser's default: a callout that gives up 80px of a 640px measure reads as
+ * a second, narrower column rather than as emphasis. Nested code and diagrams
+ * still fill the quote rather than receiving a second prose constraint. */
 .moonbit-viewer-markdown-document-article blockquote {
   box-sizing: border-box;
   padding: 12px;
   border-left: 3px solid var(--vscode-focusBorder, currentColor);
-  border-radius: 0 6px 6px 0;
+  border-radius: 6px;
   background: color-mix(
     in srgb,
-    currentColor 7%,
+    currentColor 6%,
     var(--vscode-editor-background, #ffffff)
   );
 }
@@ -126,7 +143,7 @@
   blockquote {
   background: color-mix(
     in srgb,
-    currentColor 7%,
+    currentColor 6%,
     var(--vscode-editor-background, #1e1e1e)
   );
 }
@@ -134,7 +151,7 @@
 .moonbit-viewer-markdown-document-article > blockquote {
   max-width: var(--markdown-prose-measure);
   margin-inline: 0 auto;
-  padding-inline: 40px;
+  padding-inline: 20px;
 }
 
 .moonbit-viewer-markdown-document-article blockquote blockquote {

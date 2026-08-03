@@ -516,6 +516,35 @@ test('aligns prose to the content edge without narrowing wide Markdown content',
   );
   expect(geometry.quoteCodeWidth).toBeCloseTo(geometry.quoteContentWidth, 1);
 
+  // Past the figure measure the wide blocks stop growing, so a maximized
+  // workbench keeps one right edge instead of stretching code and diagrams
+  // across the window while prose stays at the reading measure.
+  await page.evaluate(() =>
+    globalThis.__markdownDocumentControls.resizeHost(1400),
+  );
+  await expect(page.locator(host)).toHaveCSS('width', '1400px');
+  const wide = await page.locator(article).evaluate((articleNode) => {
+    const articleRect = articleNode.getBoundingClientRect();
+    const articleStyle = getComputedStyle(articleNode);
+    const contentLeft = articleRect.left +
+      Number.parseFloat(articleStyle.paddingLeft);
+    const contentWidth = articleRect.width -
+      Number.parseFloat(articleStyle.paddingLeft) -
+      Number.parseFloat(articleStyle.paddingRight);
+    const code = articleNode.querySelector(
+      ':scope > .moonbit-viewer-markdown-code-block',
+    ).getBoundingClientRect();
+    return {
+      contentLeft,
+      contentWidth,
+      codeLeft: code.left,
+      codeWidth: code.width,
+    };
+  });
+  expect(wide.contentWidth).toBeGreaterThan(960);
+  expect(wide.codeWidth).toBeCloseTo(960, 1);
+  expect(wide.codeLeft).toBeCloseTo(wide.contentLeft, 1);
+
   await page.evaluate(() =>
     globalThis.__markdownDocumentControls.resizeHost(360),
   );
@@ -532,8 +561,8 @@ test('aligns prose to the content edge without narrowing wide Markdown content',
       rightInset: quote.right - paragraph.right,
     };
   });
-  expect(narrowQuote.leftInset).toBeCloseTo(43, 1);
-  expect(narrowQuote.rightInset).toBeCloseTo(40, 1);
+  expect(narrowQuote.leftInset).toBeCloseTo(23, 1);
+  expect(narrowQuote.rightInset).toBeCloseTo(20, 1);
 });
 
 test('presents Markdown blockquotes as subtle callouts', async ({ page }) => {
