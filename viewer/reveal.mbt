@@ -9,81 +9,6 @@
 /// and also becomes immediate when smooth scrolling is disabled.
 
 ///|
-/// Reveals a 1-based model line, aligning its top into view (`Simple`).
-pub fn Viewer::reveal_line(self : Viewer, line_number : Int) -> Unit {
-  self.reveal_line_with(line_number, Simple)
-}
-
-///|
-/// Reveals a 1-based model line, centering it (`Center`).
-pub fn Viewer::reveal_line_in_center(self : Viewer, line_number : Int) -> Unit {
-  self.reveal_line_with(line_number, Center)
-}
-
-///|
-/// Reveals a 1-based model line near the top of the viewport (`NearTop`).
-pub fn Viewer::reveal_line_near_top(self : Viewer, line_number : Int) -> Unit {
-  self.reveal_line_with(line_number, NearTop)
-}
-
-///|
-/// Reveals a 1-based model line centered only if it is currently outside the
-/// viewport (`CenterIfOutsideViewport`).
-pub fn Viewer::reveal_line_in_center_if_outside_viewport(
-  self : Viewer,
-  line_number : Int,
-) -> Unit {
-  self.reveal_line_with(line_number, CenterIfOutsideViewport)
-}
-
-///|
-/// Reveals a model line span `[start, end]` (1-based), aligning its top
-/// (`Simple`). Like Monaco's `revealLines`, this is a line-only reveal:
-/// horizontal scroll is not adjusted.
-pub fn Viewer::reveal_lines(
-  self : Viewer,
-  start_line_number : Int,
-  end_line_number : Int,
-) -> Unit {
-  self.reveal_lines_with(start_line_number, end_line_number, Simple)
-}
-
-///|
-/// Reveals a model line span `[start, end]` (1-based), centering it (`Center`).
-pub fn Viewer::reveal_lines_in_center(
-  self : Viewer,
-  start_line_number : Int,
-  end_line_number : Int,
-) -> Unit {
-  self.reveal_lines_with(start_line_number, end_line_number, Center)
-}
-
-///|
-/// Reveals a model line span `[start, end]` (1-based) near the top (`NearTop`).
-pub fn Viewer::reveal_lines_near_top(
-  self : Viewer,
-  start_line_number : Int,
-  end_line_number : Int,
-) -> Unit {
-  self.reveal_lines_with(start_line_number, end_line_number, NearTop)
-}
-
-///|
-/// Reveals a model line span `[start, end]` (1-based) centered only if it is
-/// currently outside the viewport (`CenterIfOutsideViewport`).
-pub fn Viewer::reveal_lines_in_center_if_outside_viewport(
-  self : Viewer,
-  start_line_number : Int,
-  end_line_number : Int,
-) -> Unit {
-  self.reveal_lines_with(
-    start_line_number,
-    end_line_number,
-    CenterIfOutsideViewport,
-  )
-}
-
-///|
 /// Reveals a 1-based model position, aligning its top (`Simple`) and revealing
 /// it horizontally.
 pub fn Viewer::reveal_position(
@@ -94,24 +19,6 @@ pub fn Viewer::reveal_position(
 }
 
 ///|
-/// Reveals a 1-based model position centered (`Center`), horizontally too.
-pub fn Viewer::reveal_position_in_center(
-  self : Viewer,
-  position : @base_common.Position,
-) -> Unit {
-  self.reveal_position_with(position, Center)
-}
-
-///|
-/// Reveals a 1-based model position near the top (`NearTop`), horizontally too.
-pub fn Viewer::reveal_position_near_top(
-  self : Viewer,
-  position : @base_common.Position,
-) -> Unit {
-  self.reveal_position_with(position, NearTop)
-}
-
-///|
 /// Reveals a 1-based model position centered only if it is currently outside
 /// the viewport (`CenterIfOutsideViewport`), horizontally too.
 pub fn Viewer::reveal_position_in_center_if_outside_viewport(
@@ -119,65 +26,6 @@ pub fn Viewer::reveal_position_in_center_if_outside_viewport(
   position : @base_common.Position,
 ) -> Unit {
   self.reveal_position_with(position, CenterIfOutsideViewport)
-}
-
-///|
-/// Reveals a model `Range`, aligning its top (`Simple`) and revealing it
-/// horizontally.
-pub fn Viewer::reveal_range(self : Viewer, range : @base_common.Range) -> Unit {
-  self.send_reveal_range(range, Simple, reveal_horizontal=true)
-}
-
-///|
-/// Reveals a model `Range` centered (`Center`), horizontally too.
-pub fn Viewer::reveal_range_in_center(
-  self : Viewer,
-  range : @base_common.Range,
-) -> Unit {
-  self.send_reveal_range(range, Center, reveal_horizontal=true)
-}
-
-///|
-/// Reveals a model `Range` centered only if it is currently outside the
-/// viewport (`CenterIfOutsideViewport`), horizontally too.
-pub fn Viewer::reveal_range_in_center_if_outside_viewport(
-  self : Viewer,
-  range : @base_common.Range,
-) -> Unit {
-  self.send_reveal_range(range, CenterIfOutsideViewport, reveal_horizontal=true)
-}
-
-///|
-/// Reveals a model `Range` near the top (`NearTop`), horizontally too.
-pub fn Viewer::reveal_range_near_top(
-  self : Viewer,
-  range : @base_common.Range,
-) -> Unit {
-  self.send_reveal_range(range, NearTop, reveal_horizontal=true)
-}
-
-///|
-/// Reveals a model `Range` near the top only if it is currently outside the
-/// viewport (`NearTopIfOutsideViewport`), horizontally too.
-pub fn Viewer::reveal_range_near_top_if_outside_viewport(
-  self : Viewer,
-  range : @base_common.Range,
-) -> Unit {
-  self.send_reveal_range(
-    range,
-    NearTopIfOutsideViewport,
-    reveal_horizontal=true,
-  )
-}
-
-///|
-/// Reveals a model `Range` at the very top of the viewport (`Top`),
-/// horizontally too.
-pub fn Viewer::reveal_range_at_top(
-  self : Viewer,
-  range : @base_common.Range,
-) -> Unit {
-  self.send_reveal_range(range, Top, reveal_horizontal=true)
 }
 
 ///|
