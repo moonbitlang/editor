@@ -13,13 +13,6 @@
 // service is DOM-free, so this package stays multi-target.
 
 ///|
-/// Internal payload for a new item entering the accepted state.
-priv struct AgentFeedbackAddedEvent {
-  feedback : @agent_feedback_api.AgentFeedback
-  has_existing_feedback_for_file : Bool
-} derive(Debug)
-
-///|
 /// Internal payload for a reply appended to an existing thread.
 priv struct AgentFeedbackReplyAddedEvent {
   feedback : @agent_feedback_api.AgentFeedback
@@ -34,7 +27,9 @@ struct AgentFeedbackService {
     @agent_feedback_api.AgentFeedbackChangeEvent,
   ]
   did_change_navigation : @base_common.Emitter[@base_common.Uri]
-  did_add_feedback : @base_common.Emitter[AgentFeedbackAddedEvent]
+  did_add_feedback : @base_common.Emitter[
+    @agent_feedback_api.AgentFeedbackAddedEvent,
+  ]
   did_add_reply : @base_common.Emitter[AgentFeedbackReplyAddedEvent]
   did_submit_feedback : @base_common.Emitter[
     @agent_feedback_api.AgentFeedbackSubmittedEvent,
@@ -137,7 +132,7 @@ fn AgentFeedbackService::on_did_change_navigation(
 /// `onDidAddFeedback`: a new item entered the store in the `Accepted` state.
 fn AgentFeedbackService::on_did_add_feedback(
   self : AgentFeedbackService,
-  listener : (AgentFeedbackAddedEvent) -> Unit,
+  listener : (@agent_feedback_api.AgentFeedbackAddedEvent) -> Unit,
 ) -> @base_common.Disposable {
   self.did_add_feedback.event(listener)
 }
