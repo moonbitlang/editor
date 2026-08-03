@@ -23,15 +23,16 @@ Absent and empty are different answers: absent means "not tracked", empty means
 ///|
 test "baselines are per URI, and clearing restores the absent state" {
   let service = @common.QuickDiffService()
+  let handle = service.quick_diff_handle()
   let uri = @base_common.Uri::parse("file:///a.mbt")
   let other = @base_common.Uri::parse("file:///b.mbt")
-  let before = service.get_original_content(uri)
+  let before = handle.get_original_content(uri)
   service.set_original_content(uri, Some("let x = 1\n"))
-  let tracked = service.get_original_content(uri)
-  let untouched = service.get_original_content(other)
+  let tracked = handle.get_original_content(uri)
+  let untouched = handle.get_original_content(other)
   service.set_original_content(uri, None)
   debug_inspect(
-    (before, tracked, untouched, service.get_original_content(uri)),
+    (before, tracked, untouched, handle.get_original_content(uri)),
     content=(
       #|(None, Some("let x = 1\n"), None, None)
     ),
@@ -46,9 +47,10 @@ contribution knows to recompute one file's gutter rather than all of them.
 ///|
 test "a baseline change notifies with the affected URI" {
   let service = @common.QuickDiffService()
+  let handle = service.quick_diff_handle()
   let uri = @base_common.Uri::parse("file:///a.mbt")
   let seen = []
-  let subscription = service.on_did_change_original(changed => {
+  let subscription = handle.on_did_change_original(changed => {
     seen.push(changed.to_string())
   })
   service.set_original_content(uri, Some("one\n"))
