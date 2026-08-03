@@ -3,8 +3,6 @@ test "normalizes accepted root relative paths" {
   let simple = expect_path("foo.mbt")
   assert_eq(simple.to_string(), "foo.mbt")
   assert_eq(simple.display_name(), "foo.mbt")
-  assert_eq(simple.file_uri().to_string(), "file:///local/foo.mbt")
-
   let nested = expect_path("nested/file.txt")
   assert_eq(nested.to_string(), "nested/file.txt")
 

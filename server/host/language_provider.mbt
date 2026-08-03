@@ -5,7 +5,7 @@
 /// check` push path (`MoonCheckDiagnostics`) instead of a pull provider.
 /// Remaining semantic features without a machine-readable `moon` query return
 /// empty results.
-pub(all) struct MoonWorkspaceLanguageProvider {
+struct MoonWorkspaceLanguageProvider {
   /// Shared with the host's workspace switching, so every request runs
   /// against the currently served root.
   root : Ref[String]
@@ -14,7 +14,7 @@ pub(all) struct MoonWorkspaceLanguageProvider {
 
 ///|
 /// Creates a moon-command language provider over a shared workspace root.
-pub fn MoonWorkspaceLanguageProvider::MoonWorkspaceLanguageProvider(
+fn new_moon_workspace_language_provider(
   root : Ref[String],
   moon_command? : String = "moon",
 ) -> MoonWorkspaceLanguageProvider {
@@ -28,35 +28,6 @@ fn MoonWorkspaceLanguageProvider::current_root(
   self : MoonWorkspaceLanguageProvider,
 ) -> String {
   normalize_host_path(self.root.val)
-}
-
-///|
-/// Runs `moon ide hover` at the requested position. The ordinary command
-/// checks current disk content before answering; exact pre/post disk snapshots
-/// additionally prevent a raced result from being assigned the model revision.
-pub impl @language.HoverProvider for MoonWorkspaceLanguageProvider with fn provide_hover(
-  self,
-  model,
-  position,
-  _token,
-) {
-  // The runner receives the root captured by `provide_hover_with_runner` so
-  // the command cwd and the pre/post disk snapshots always agree, even when a
-  // workspace switch lands mid-request.
-  self.provide_hover_with_runner(model, position, (root, args) => {
-    let output = Some(
-      @process.collect_stdout(self.moon_command, args, cwd=root),
-    ) catch {
-      _ => None
-    }
-    match output {
-      Some((exit_code, data)) =>
-        Some((exit_code, data.text())) catch {
-          _ => None
-        }
-      None => None
-    }
-  })
 }
 
 ///|
@@ -116,76 +87,11 @@ async fn MoonWorkspaceLanguageProvider::provide_hover_with_runner(
 }
 
 ///|
-/// Runs `moon ide peek-def --loc <path:line:column> --json`. Unlike hover this
-/// intentionally does not pass `--no-check`: definition lookup uses the CLI's
-/// normal check/update behavior. Results are kept in CLI order; malformed or
-/// out-of-workspace locations are dropped.
-pub impl @language.DefinitionProvider for MoonWorkspaceLanguageProvider with fn provide_definition(
-  self,
-  model,
-  position,
-  token,
-) {
-  if token.is_cancellation_requested() {
-    return []
-  }
-  match @server.resolve_remote_document_uri(model.uri) {
-    ParsedRemotePath(path) => {
-      let root = self.current_root()
-      let loc = "\{path.to_string()}:\{position.line_number}:\{position.column}"
-      let output = Some(
-        @process.collect_stdout(
-          self.moon_command,
-          ["ide", "peek-def", "--loc", loc, "--json"],
-          cwd=root,
-        ),
-      ) catch {
-        _ => None
-      }
-      if token.is_cancellation_requested() {
-        return []
-      }
-      match output {
-        Some((0, data)) =>
-          parse_moon_definition_output(root, data.text()) catch {
-            _ => []
-          }
-        _ => []
-      }
-    }
-    RemotePathError(_) => []
-  }
-}
-
-///|
-/// `moon` has no machine-readable references query; the feature is
-/// unavailable.
-pub impl @language.ReferencesProvider for MoonWorkspaceLanguageProvider with fn provide_references(
-  _self,
-  _model,
-  _position,
-  _token,
-) {
-  []
-}
-
-///|
-/// `moon` has no machine-readable document-symbol query; the feature is
-/// unavailable.
-pub impl @language.DocumentSymbolProvider for MoonWorkspaceLanguageProvider with fn provide_document_symbols(
-  _self,
-  _model,
-  _token,
-) {
-  []
-}
-
-///|
 /// Parses `moon ide hover --output-json` output: a 1-based
 /// `line:col-line:col` range plus markdown content strings. A malformed or
 /// empty payload yields no hover; a missing or malformed range degrades to a
 /// one-column range at the requested position.
-pub fn parse_moon_hover_output(
+fn parse_moon_hover_output_impl(
   raw : String,
   position : @base_common.Position,
 ) -> @language.Hover? {
@@ -221,7 +127,7 @@ pub fn parse_moon_hover_output(
 /// Parses the ordered JSON array emitted by `moon ide peek-def --json`.
 /// Absolute paths must be contained by `root`; safe root-relative paths are
 /// also accepted. Invalid entries are ignored independently.
-pub fn parse_moon_definition_output(
+fn parse_moon_definition_output_impl(
   root : String,
   raw : String,
 ) -> Array[@language.Location] {

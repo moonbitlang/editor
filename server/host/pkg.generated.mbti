@@ -30,10 +30,7 @@ pub fn MoonCheckDiagnostics::note_document(Self, @workspace.DocumentSnapshot) ->
 pub fn MoonCheckDiagnostics::reset(Self) -> Unit
 pub fn MoonCheckDiagnostics::schedule(Self, (async () -> Unit) -> Unit) -> Unit
 
-pub(all) struct MoonWorkspaceLanguageProvider {
-  root : @ref.Ref[String]
-  moon_command : String
-}
+type MoonWorkspaceLanguageProvider
 pub fn MoonWorkspaceLanguageProvider::MoonWorkspaceLanguageProvider(@ref.Ref[String], moon_command? : String) -> Self
 pub impl @language.DefinitionProvider for MoonWorkspaceLanguageProvider
 pub impl @language.DocumentSymbolProvider for MoonWorkspaceLanguageProvider

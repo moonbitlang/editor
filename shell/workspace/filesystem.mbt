@@ -22,7 +22,7 @@ pub struct FileSystemProviderError {
 
 ///|
 /// Raw file text plus metadata needed to construct a `DocumentSnapshot`.
-pub struct DocumentContent {
+struct DocumentContent {
   text : String
   display_name : String
   language_id : String
@@ -114,7 +114,7 @@ pub fn FileWatch::dispose(self : FileWatch) -> Unit {
 ///|
 /// Reads and converts a file-provider result into an immutable
 /// `DocumentSnapshot`, failing closed when the URI scheme does not match.
-pub async fn read_document(
+async fn read_document_impl(
   provider : &FileSystemProvider,
   uri : @base_common.Uri,
 ) -> DocumentReadResult {
@@ -140,7 +140,7 @@ pub async fn read_document(
 
 ///|
 /// Starts a default file watch only when the provider owns the URI scheme.
-pub fn watch_file(
+fn watch_file_impl(
   provider : &FileSystemProvider,
   uri : @base_common.Uri,
   listener : (Array[FileChange]) -> Unit,
@@ -242,7 +242,7 @@ pub fn FileChangeType::to_string(self : FileChangeType) -> String {
 }
 
 ///|
-pub fn revision_from_text(text : String) -> String {
+fn revision_from_text_impl(text : String) -> String {
   let hash = for unit in text.code_units(); hash = 2166136261L {
     continue (hash ^ unit.to_int64()) * 16777619L
   } nobreak {

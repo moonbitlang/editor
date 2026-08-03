@@ -6,67 +6,16 @@ struct NativeServerHost {
 
 ///|
 /// Creates the native host with the default file-watch polling interval.
-pub fn NativeServerHost::NativeServerHost() -> NativeServerHost {
+fn new_native_server_host() -> NativeServerHost {
   { poll_interval_ms: 500 }
 }
 
 ///|
 /// Creates the native host with a clamped polling interval.
-pub fn NativeServerHost::with_poll_interval(
+fn native_server_host_with_poll_interval(
   poll_interval_ms : Int,
 ) -> NativeServerHost {
   { poll_interval_ms: poll_interval_ms.max(10) }
-}
-
-///|
-/// Returns the default native filesystem host as a server host trait object.
-pub fn native_server_host() -> &@server.ServerHost {
-  NativeServerHost()
-}
-
-///|
-/// Reads one validated text file under the workspace root.
-pub impl @server.ServerHost for NativeServerHost with fn read_text_file(
-  self,
-  root,
-  path,
-) {
-  ignore(self)
-  read_native_text_file(root, path)
-}
-
-///|
-/// Reads one validated directory level under the workspace root.
-pub impl @server.ServerHost for NativeServerHost with fn read_directory(
-  self,
-  root,
-  relative,
-) {
-  ignore(self)
-  read_native_directory(root, relative)
-}
-
-///|
-/// Watches one validated text file by polling and reporting changed/deleted
-/// events.
-pub impl @server.ServerHost for NativeServerHost with fn watch_text_file(
-  self,
-  root,
-  path,
-  listener,
-  spawn_watch,
-) {
-  let disposed = Ref(false)
-  spawn_watch(async fn() {
-    poll_native_file_watch(
-      root,
-      path,
-      self.poll_interval_ms,
-      disposed,
-      listener,
-    )
-  })
-  ServerWatch(() => disposed.val = true)
 }
 
 ///|

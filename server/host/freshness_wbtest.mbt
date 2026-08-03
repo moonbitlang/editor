@@ -188,8 +188,12 @@ async test "native document reads reuse one coherent text and revision snapshot"
     }
     match read_native_text_file(root, path) {
       ServerHostReadOk(content) => {
-        assert_eq(content.text, snapshot.text)
-        assert_eq(content.revision, snapshot.signature)
+        let document = @workspace.DocumentSnapshot::from_content(
+          @base_common.Uri::file(root + "/main.mbt"),
+          content,
+        )
+        assert_eq(document.text, snapshot.text)
+        assert_eq(document.revision, snapshot.signature)
       }
       ServerHostReadError(_code, message) => fail(message)
     }
