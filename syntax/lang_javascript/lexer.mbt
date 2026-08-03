@@ -12,7 +12,7 @@
 /// Quoted strings never span lines; regex literals are not detected
 /// (the `/` ambiguity needs token-history heuristics) and lex as
 /// operators.
-pub struct JavascriptTokenizer {}
+struct JavascriptTokenizer {}
 
 ///|
 /// Creates the JavaScript tokenizer.
