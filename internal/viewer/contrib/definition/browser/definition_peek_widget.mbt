@@ -124,8 +124,8 @@ pub fn DefinitionPeekWidget::get_dom_node(
 }
 
 ///|
-/// Result-list node, exposed for root-level layout and browser tests.
-pub fn DefinitionPeekWidget::get_list_node(
+/// Result-list node used by the package's browser tests.
+fn DefinitionPeekWidget::get_list_node(
   self : DefinitionPeekWidget,
 ) -> @rdom.Element {
   self.list
@@ -149,7 +149,7 @@ pub fn DefinitionPeekWidget::focus(self : DefinitionPeekWidget) -> Unit {
 
 ///|
 /// Replaces the result UI with a non-destructive loading state.
-pub fn DefinitionPeekWidget::show_loading(self : DefinitionPeekWidget) -> Unit {
+fn DefinitionPeekWidget::show_loading(self : DefinitionPeekWidget) -> Unit {
   if self.disposed {
     return
   }
@@ -169,7 +169,7 @@ pub fn DefinitionPeekWidget::show_loading(self : DefinitionPeekWidget) -> Unit {
 
 ///|
 /// Replaces the result UI with an unavailable state supplied by the root.
-pub fn DefinitionPeekWidget::show_unavailable(
+fn DefinitionPeekWidget::show_unavailable(
   self : DefinitionPeekWidget,
   message : String,
 ) -> Unit {
@@ -371,7 +371,7 @@ pub fn DefinitionPeekWidget::set_selected_index(
 
 ///|
 /// Current selected result, or `None` while loading/unavailable.
-pub fn DefinitionPeekWidget::get_selected_index(
+fn DefinitionPeekWidget::get_selected_index(
   self : DefinitionPeekWidget,
 ) -> Int? {
   if self.selected_index >= 0 && self.selected_index < self.locations.length() {
