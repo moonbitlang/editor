@@ -2,7 +2,7 @@
 /// Browser metadata recorded on every accepted Markdown hover. All positions
 /// and ranges belong to the original TextModel; the projected code block never
 /// becomes a model or provider identity.
-pub(all) struct MarkdownDocumentHoverMetadata {
+priv struct MarkdownDocumentHoverMetadata {
   model_identity : Int
   uri : String
   revision : String
@@ -17,18 +17,18 @@ pub(all) struct MarkdownDocumentHoverMetadata {
 /// Monaco-shaped classes deliberately reuse the shared hover row styling and
 /// diagnostic copy interaction, while placement is relative to the Markdown
 /// viewport rather than a code View content-widget coordinate.
-pub struct MarkdownDocumentHoverWidget {
+priv struct MarkdownDocumentHoverWidget {
   wrapper : @rdom.Element
-  priv hover : @rdom.Element
-  priv contents : @rdom.Element
-  priv listeners : Array[@base_common.Disposable]
-  priv mut rows : HoverRowsRender?
-  priv mut visible : Bool
-  priv mut disposed : Bool
+  hover : @rdom.Element
+  contents : @rdom.Element
+  listeners : Array[@base_common.Disposable]
+  mut rows : HoverRowsRender?
+  mut visible : Bool
+  mut disposed : Bool
 }
 
 ///|
-pub fn MarkdownDocumentHoverWidget::MarkdownDocumentHoverWidget(
+fn MarkdownDocumentHoverWidget::MarkdownDocumentHoverWidget(
   overlay_mount : @rdom.Element,
 ) -> MarkdownDocumentHoverWidget {
   let document = @rdom.document()
@@ -88,7 +88,7 @@ fn MarkdownDocumentHoverWidget::listen(
 }
 
 ///|
-pub fn MarkdownDocumentHoverWidget::is_visible(
+fn MarkdownDocumentHoverWidget::is_visible(
   self : MarkdownDocumentHoverWidget,
 ) -> Bool {
   self.visible
@@ -145,7 +145,7 @@ fn MarkdownDocumentHoverWidget::write_metadata(
 let markdown_hover_wrapper_border_size : Double = 2.0
 
 ///|
-pub fn markdown_hover_clamped_origin(
+fn markdown_hover_clamped_origin(
   pointer_x : Double,
   line_top : Double,
   line_bottom : Double,
@@ -170,7 +170,7 @@ pub fn markdown_hover_clamped_origin(
 }
 
 ///|
-pub fn MarkdownDocumentHoverWidget::show(
+fn MarkdownDocumentHoverWidget::show(
   self : MarkdownDocumentHoverWidget,
   parts : Array[@hover.HoverPart],
   language_id : String,
@@ -251,7 +251,7 @@ pub fn MarkdownDocumentHoverWidget::show(
 }
 
 ///|
-pub fn MarkdownDocumentHoverWidget::hide(
+fn MarkdownDocumentHoverWidget::hide(
   self : MarkdownDocumentHoverWidget,
 ) -> Unit {
   if !self.visible && self.rows is None {
@@ -275,7 +275,7 @@ pub fn MarkdownDocumentHoverWidget::hide(
 extern "js" fn clear_markdown_hover_contents(contents : @rdom.Element) -> Unit = "(contents) => { contents.textContent = ''; }"
 
 ///|
-pub fn MarkdownDocumentHoverWidget::dispose(
+fn MarkdownDocumentHoverWidget::dispose(
   self : MarkdownDocumentHoverWidget,
 ) -> Unit {
   if self.disposed {
@@ -1207,14 +1207,14 @@ fn MarkdownDocumentHoverBridge::refresh_hover_range(
 }
 
 ///|
-pub fn MarkdownDocumentHoverBridge::request_generation(
+fn MarkdownDocumentHoverBridge::request_generation(
   self : MarkdownDocumentHoverBridge,
 ) -> Int {
   self.request_generation
 }
 
 ///|
-pub fn MarkdownDocumentHoverBridge::widget_visible(
+fn MarkdownDocumentHoverBridge::widget_visible(
   self : MarkdownDocumentHoverBridge,
 ) -> Bool {
   self.widget.is_visible()
