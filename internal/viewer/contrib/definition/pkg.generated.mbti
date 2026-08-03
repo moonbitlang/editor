@@ -34,17 +34,12 @@ pub(all) struct DefinitionRequestStamp {
   target : DefinitionTargetFingerprint
 } derive(Eq, @debug.Debug)
 
-pub(all) struct DefinitionTargetFingerprint {
-  model_identity : Int
-  model_generation : Int
-  model_version_id : Int
-  position : @common.Position
-  word_range : @common.Range
-  word : String
-} derive(Eq, @debug.Debug)
+type DefinitionTargetFingerprint derive(Eq, @debug.Debug)
 pub fn DefinitionTargetFingerprint::from_model(@model.TextModel, Int, @common.Position, @model.WordAtPosition) -> Self
 pub fn DefinitionTargetFingerprint::is_current(Self, @model.TextModel, Int) -> Bool
+pub fn DefinitionTargetFingerprint::position(Self) -> @common.Position
 pub fn DefinitionTargetFingerprint::same_word(Self, Self) -> Bool
+pub fn DefinitionTargetFingerprint::word_range(Self) -> @common.Range
 
 // Type aliases
 
