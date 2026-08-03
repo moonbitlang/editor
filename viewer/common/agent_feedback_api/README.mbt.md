@@ -210,10 +210,11 @@ test "optional kind and state arrive at the host as None" {
 
 ## Event values
 
-`AgentFeedbackChangeEvent`, `AgentFeedbackAddedEvent`,
-`AgentFeedbackReplyAddedEvent`, and `AgentFeedbackSubmittedEvent` are the
-payloads a host publishes. They carry counts alongside the items so a consumer
-can render a summary without walking the array.
+`AgentFeedbackChangeEvent` is the active generic handle payload.
+`AgentFeedbackSubmittedEvent` is the planned agent-loop payload retained in
+`exports.mbt`; it carries counts alongside the items so a future host can
+render a summary without walking the array. Granular add/reply notifications
+remain private to the concrete service.
 
 ```mbt check
 ///|

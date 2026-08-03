@@ -111,14 +111,9 @@ test "AgentFeedbackHandle forwards its exact callback floor" {
 }
 
 ///|
-test "agent-feedback DTO events are public value contracts" {
+test "planned submitted-feedback DTO remains a public value contract" {
   let resource = try! @base_common.Uri::parse("memory://session/a.mbt")
   let feedback = feedback_fixture(resource)
-  let added : AgentFeedbackAddedEvent = {
-    feedback,
-    has_existing_feedback_for_file: true,
-  }
-  let reply : AgentFeedbackReplyAddedEvent = { feedback, reply_count: 2 }
   let submitted : AgentFeedbackSubmittedEvent = {
     resource,
     items: [feedback],
@@ -126,7 +121,6 @@ test "agent-feedback DTO events are public value contracts" {
     agent_review_count: 0,
     reply_count: 2,
   }
-  assert_true(added.has_existing_feedback_for_file)
-  assert_eq(reply.reply_count, 2)
   assert_eq(submitted.items[0].id, feedback.id)
+  assert_eq(submitted.reply_count, 2)
 }

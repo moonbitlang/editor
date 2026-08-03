@@ -13,19 +13,29 @@
 // service is DOM-free, so this package stays multi-target.
 
 ///|
+/// Internal payload for a new item entering the accepted state.
+priv struct AgentFeedbackAddedEvent {
+  feedback : @agent_feedback_api.AgentFeedback
+  has_existing_feedback_for_file : Bool
+} derive(Debug)
+
+///|
+/// Internal payload for a reply appended to an existing thread.
+priv struct AgentFeedbackReplyAddedEvent {
+  feedback : @agent_feedback_api.AgentFeedback
+  reply_count : Int
+} derive(Debug)
+
+///|
 /// The agent-feedback store shared by the host app and the viewer's feedback
 /// contributions, handed in through `ViewerServices`.
-pub struct AgentFeedbackService {
+struct AgentFeedbackService {
   did_change_feedback : @base_common.Emitter[
     @agent_feedback_api.AgentFeedbackChangeEvent,
   ]
   did_change_navigation : @base_common.Emitter[@base_common.Uri]
-  did_add_feedback : @base_common.Emitter[
-    @agent_feedback_api.AgentFeedbackAddedEvent,
-  ]
-  did_add_reply : @base_common.Emitter[
-    @agent_feedback_api.AgentFeedbackReplyAddedEvent,
-  ]
+  did_add_feedback : @base_common.Emitter[AgentFeedbackAddedEvent]
+  did_add_reply : @base_common.Emitter[AgentFeedbackReplyAddedEvent]
   did_submit_feedback : @base_common.Emitter[
     @agent_feedback_api.AgentFeedbackSubmittedEvent,
   ]
@@ -106,7 +116,7 @@ pub fn AgentFeedbackService::agent_feedback_handle(
 ///|
 /// `onDidChangeFeedback` (`agentFeedbackService.ts`): fired after every store
 /// mutation with the resource's full item list.
-pub fn AgentFeedbackService::on_did_change_feedback(
+fn AgentFeedbackService::on_did_change_feedback(
   self : AgentFeedbackService,
   listener : (@agent_feedback_api.AgentFeedbackChangeEvent) -> Unit,
 ) -> @base_common.Disposable {
@@ -116,7 +126,7 @@ pub fn AgentFeedbackService::on_did_change_feedback(
 ///|
 /// `onDidChangeNavigation`: the navigation anchor moved (also fired after
 /// every store mutation, matching upstream's `_handleBackendChange`).
-pub fn AgentFeedbackService::on_did_change_navigation(
+fn AgentFeedbackService::on_did_change_navigation(
   self : AgentFeedbackService,
   listener : (@base_common.Uri) -> Unit,
 ) -> @base_common.Disposable {
@@ -125,30 +135,20 @@ pub fn AgentFeedbackService::on_did_change_navigation(
 
 ///|
 /// `onDidAddFeedback`: a new item entered the store in the `Accepted` state.
-pub fn AgentFeedbackService::on_did_add_feedback(
+fn AgentFeedbackService::on_did_add_feedback(
   self : AgentFeedbackService,
-  listener : (@agent_feedback_api.AgentFeedbackAddedEvent) -> Unit,
+  listener : (AgentFeedbackAddedEvent) -> Unit,
 ) -> @base_common.Disposable {
   self.did_add_feedback.event(listener)
 }
 
 ///|
 /// `onDidAddReply`: a reply was appended to an existing item.
-pub fn AgentFeedbackService::on_did_add_reply(
+fn AgentFeedbackService::on_did_add_reply(
   self : AgentFeedbackService,
-  listener : (@agent_feedback_api.AgentFeedbackReplyAddedEvent) -> Unit,
+  listener : (AgentFeedbackReplyAddedEvent) -> Unit,
 ) -> @base_common.Disposable {
   self.did_add_reply.event(listener)
-}
-
-///|
-/// `onDidSubmitFeedback`: accepted items were marked submitted; the host
-/// forwards `event.items` to the agent.
-pub fn AgentFeedbackService::on_did_submit_feedback(
-  self : AgentFeedbackService,
-  listener : (@agent_feedback_api.AgentFeedbackSubmittedEvent) -> Unit,
-) -> @base_common.Disposable {
-  self.did_submit_feedback.event(listener)
 }
 
 // --- store internals -----------------------------------------------------------
@@ -228,7 +228,7 @@ pub fn AgentFeedbackService::set_feedback_enabled(
 
 ///|
 /// Whether the feedback affordances are active for a resource.
-pub fn AgentFeedbackService::is_feedback_enabled(
+fn AgentFeedbackService::is_feedback_enabled(
   self : AgentFeedbackService,
   resource : @base_common.Uri,
 ) -> Bool {
@@ -252,7 +252,7 @@ pub fn AgentFeedbackService::set_feedback_items(
 /// All stored items for a resource, including resolved ones (the editor view
 /// filters those out — `get_session_editor_comments`). The array is live service
 /// state; mutations go through the service methods so events fire.
-pub fn AgentFeedbackService::get_feedback(
+fn AgentFeedbackService::get_feedback(
   self : AgentFeedbackService,
   resource : @base_common.Uri,
 ) -> Array[@agent_feedback_api.AgentFeedback] {
@@ -264,7 +264,7 @@ pub fn AgentFeedbackService::get_feedback(
 
 ///|
 /// `clearFeedback`: drops all items and the navigation anchor for a resource.
-pub fn AgentFeedbackService::clear_feedback(
+fn AgentFeedbackService::clear_feedback(
   self : AgentFeedbackService,
   resource : @base_common.Uri,
 ) -> Unit {
@@ -281,7 +281,7 @@ pub fn AgentFeedbackService::clear_feedback(
 /// `kind`/`state` default like upstream (user-authored, immediately
 /// accepted); a system caller passes `state=Created` so the item waits for
 /// user acceptance. Only an `Accepted` birth fires `on_did_add_feedback`.
-pub fn AgentFeedbackService::add_feedback(
+fn AgentFeedbackService::add_feedback(
   self : AgentFeedbackService,
   resource : @base_common.Uri,
   range : @base_common.Range,
@@ -315,7 +315,7 @@ pub fn AgentFeedbackService::add_feedback(
 ///|
 /// `acceptFeedback`: transitions a `Created` item to `Accepted` so it becomes
 /// submittable. Items in any other state are left untouched.
-pub fn AgentFeedbackService::accept_feedback(
+fn AgentFeedbackService::accept_feedback(
   self : AgentFeedbackService,
   resource : @base_common.Uri,
   feedback_id : String,
@@ -331,7 +331,7 @@ pub fn AgentFeedbackService::accept_feedback(
 /// `removeFeedback`: deletes an item; a navigation anchor pointing at it is
 /// cleared (upstream checks the raw id; the viewer also checks the prefixed
 /// `SessionEditorComment` id the widget anchors with).
-pub fn AgentFeedbackService::remove_feedback(
+fn AgentFeedbackService::remove_feedback(
   self : AgentFeedbackService,
   resource : @base_common.Uri,
   feedback_id : String,
@@ -360,7 +360,7 @@ pub fn AgentFeedbackService::remove_feedback(
 
 ///|
 /// `updateFeedback`: replaces an item's text.
-pub fn AgentFeedbackService::update_feedback(
+fn AgentFeedbackService::update_feedback(
   self : AgentFeedbackService,
   resource : @base_common.Uri,
   feedback_id : String,
@@ -373,30 +373,8 @@ pub fn AgentFeedbackService::update_feedback(
 }
 
 ///|
-/// `setFeedbackResolved`: resolving hides the item from the editor UI;
-/// un-resolving returns it to `Submitted`.
-pub fn AgentFeedbackService::set_feedback_resolved(
-  self : AgentFeedbackService,
-  resource : @base_common.Uri,
-  feedback_id : String,
-  resolved : Bool,
-) -> Unit {
-  guard self.feedback_by_id(resource, feedback_id) is Some(existing) else {
-    return
-  }
-  let next_state : @agent_feedback_api.AgentFeedbackState = if resolved {
-    Resolved
-  } else {
-    Submitted
-  }
-  if existing.state != next_state {
-    self.replace_item(resource, { ..existing, state: next_state })
-  }
-}
-
-///|
 /// `addReply`: appends a message to an item's thread.
-pub fn AgentFeedbackService::add_reply(
+fn AgentFeedbackService::add_reply(
   self : AgentFeedbackService,
   resource : @base_common.Uri,
   feedback_id : String,
@@ -419,7 +397,7 @@ pub fn AgentFeedbackService::add_reply(
 /// No-op when nothing is accepted. Upstream resolves items directly for
 /// providers without an agent loop; the viewer's host makes that call via
 /// `set_feedback_resolved` instead.
-pub fn AgentFeedbackService::mark_feedback_submitted(
+fn AgentFeedbackService::mark_feedback_submitted(
   self : AgentFeedbackService,
   resource : @base_common.Uri,
 ) -> Unit {
@@ -473,7 +451,7 @@ fn AgentFeedbackService::feedback_by_id(
 /// `setNavigationAnchor`: pins prev/next navigation on an item (by the id the
 /// caller navigates over — the editor widgets use `SessionEditorComment.id`) or
 /// clears it with `None`. Fires the navigation event either way.
-pub fn AgentFeedbackService::set_navigation_anchor(
+fn AgentFeedbackService::set_navigation_anchor(
   self : AgentFeedbackService,
   resource : @base_common.Uri,
   item_id : String?,
@@ -491,7 +469,7 @@ pub fn AgentFeedbackService::set_navigation_anchor(
 /// generic over `INavigableSessionComment`; the viewer navigates plain ids):
 /// steps the anchor forward/backward with wrap-around, re-anchors on the
 /// result, and returns it. An empty list clears the anchor.
-pub fn AgentFeedbackService::get_next_navigable_item(
+fn AgentFeedbackService::get_next_navigable_item(
   self : AgentFeedbackService,
   resource : @base_common.Uri,
   item_ids : Array[String],
@@ -522,7 +500,7 @@ pub fn AgentFeedbackService::get_next_navigable_item(
 
 ///|
 /// `getNavigationBearing`: where the anchor sits in the supplied id order.
-pub fn AgentFeedbackService::get_navigation_bearing(
+fn AgentFeedbackService::get_navigation_bearing(
   self : AgentFeedbackService,
   resource : @base_common.Uri,
   item_ids : Array[String],
