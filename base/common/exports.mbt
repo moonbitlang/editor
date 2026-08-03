@@ -47,6 +47,13 @@ pub fn Position::compare(a : Position, b : Position) -> Int {
 }
 
 ///|
+/// The end boundary as a position, for callers that forward a range into
+/// selection and reveal APIs.
+pub fn Range::get_end_position(self : Range) -> Position {
+  Position(self.end_line_number, self.end_column)
+}
+
+///|
 /// Indicates whether this half-open line range contains the line number.
 pub fn LineRange::contains(self : LineRange, line_number : Int) -> Bool {
   self.start_line_number <= line_number &&
