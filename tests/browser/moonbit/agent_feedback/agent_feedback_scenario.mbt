@@ -30,14 +30,17 @@ fn run_agent_feedback_test() -> Unit {
       // The page owns the concrete store for the lifetime of this interactive
       // fixture. Viewer receives only its narrowed callback capability.
       let feedback = @feedback_contrib.AgentFeedbackService()
-      let services = @viewer.ViewerServices(
-        agent_feedback=feedback.agent_feedback_handle(),
-      )
+      let feedback_handle = feedback.agent_feedback_handle()
+      let services = @viewer.ViewerServices(agent_feedback=feedback_handle)
       let added = Ref(0)
       let replies = Ref(0)
       let submitted = Ref(0)
       let items = Ref(0)
       let last_text : Ref[String] = Ref("")
+      let previous_items : Ref[
+        Array[(String, @agent_feedback_api.AgentFeedbackState, Int)],
+      ] = Ref([])
+      let track_interactions = Ref(false)
       let write_log = () => {
         event_log.set_attribute("data-added", added.val.to_string())
         event_log.set_attribute("data-replies", replies.val.to_string())
@@ -45,28 +48,32 @@ fn run_agent_feedback_test() -> Unit {
         event_log.set_attribute("data-items", items.val.to_string())
         event_log.set_attribute("data-last-text", last_text.val)
       }
-      feedback.on_did_add_feedback(event => {
-        added.val = added.val + 1
-        last_text.val = event.feedback.text
-        write_log()
-      })
-      |> ignore
-      feedback.on_did_add_reply(_ => {
-        replies.val = replies.val + 1
-        write_log()
-      })
-      |> ignore
-      feedback.on_did_submit_feedback(event => {
-        submitted.val = submitted.val + event.items.length()
-        write_log()
-      })
-      |> ignore
-      feedback.on_did_change_feedback(event => {
+      feedback_handle.on_did_change_feedback(event => {
+        if track_interactions.val {
+          for item in event.feedback_items {
+            match
+              previous_items.val.search_by(snapshot => snapshot.0 == item.id) {
+              Some(index) => {
+                let (_, previous_state, previous_reply_count) = previous_items.val[index]
+                if item.replies.length() > previous_reply_count {
+                  replies.val += item.replies.length() - previous_reply_count
+                }
+                if previous_state == Accepted && item.state == Submitted {
+                  submitted.val += 1
+                }
+              }
+              None => if item.state == Accepted { added.val += 1 }
+            }
+          }
+        }
         items.val = event.feedback_items.length()
         last_text.val = match event.feedback_items.last() {
           Some(item) => item.text
           None => last_text.val
         }
+        previous_items.val = event.feedback_items.map(item => {
+          (item.id, item.state, item.replies.length())
+        })
         write_log()
       })
       |> ignore
@@ -79,6 +86,7 @@ fn run_agent_feedback_test() -> Unit {
         seed_item("seed-2", uri, 5, "Second seeded note"),
         seed_item("seed-far", uri, 30, "Far seeded note"),
       ])
+      track_interactions.val = true
       let viewer = @viewer.Viewer::create(
         host,
         services~,

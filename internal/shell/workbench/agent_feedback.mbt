@@ -22,7 +22,7 @@ let restored_feedback_count : Ref[Int] = Ref(0)
 /// Subscribes the workbench to the feedback service's change event and
 /// writes the mutated resource's item set back to localStorage.
 fn install_feedback_persistence(services : WorkbenchServices) -> Unit {
-  services.agent_feedback.on_did_change_feedback(event => {
+  services.agent_feedback_handle.on_did_change_feedback(event => {
     persist_feedback_items(services, event.resource)
   })
   |> ignore
@@ -43,7 +43,7 @@ fn persist_feedback_items(
   resource : @base_common.Uri,
 ) -> Unit {
   let items : Array[Json] = []
-  for item in services.agent_feedback.get_feedback(resource) {
+  for item in services.agent_feedback_handle.get_feedback(resource) {
     items.push(feedback_item_to_json(item))
   }
   storage_set_item(
@@ -87,7 +87,7 @@ fn restore_feedback_items(
   services : WorkbenchServices,
   resource : @base_common.Uri,
 ) -> Unit {
-  guard services.agent_feedback.get_feedback(resource).is_empty() else {
+  guard services.agent_feedback_handle.get_feedback(resource).is_empty() else {
     return
   }
   let raw = storage_get_item(feedback_storage_key(resource))
