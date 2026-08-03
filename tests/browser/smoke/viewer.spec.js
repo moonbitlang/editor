@@ -94,6 +94,16 @@ test('starts from native-served static assets', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('.editor-shell')).toBeVisible();
 
+  const styleResponse = await page.request.get(
+    new URL('/style.css', page.url()).href,
+  );
+  expect(styleResponse.ok()).toBeTruthy();
+  const style = await styleResponse.text();
+  expect(style).toContain(
+    'src: url("./codicon.ttf") format("truetype")',
+  );
+  expect(style).not.toContain('url("/codicon.ttf")');
+
   expect(requestedPaths).toContain('/style.css');
   expect(requestedPaths).toContain('/editor.mjs');
   expect(requestedPaths.some((path) => path.endsWith('/src/bootstrap.js'))).toBeFalsy();
