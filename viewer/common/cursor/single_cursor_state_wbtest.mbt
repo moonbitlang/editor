@@ -1,4 +1,5 @@
 ///|
+/// White-box cursor-state coverage.
 fn pos(line : Int, column : Int) -> @base_common.Position {
   Position(line, column)
 }
@@ -34,7 +35,7 @@ test "out of selection mode collapses the whole state" {
 ///|
 test "dragging backward across a word anchor keeps the far edge" {
   // A word anchor spanning columns [4, 8); the active end starts at 8.
-  let word = @cursor.SingleCursorState(pos(0, 4), pos(0, 8), Word, pos(0, 8))
+  let word = SingleCursorState(pos(0, 4), pos(0, 8), Word, pos(0, 8))
   // Drag the active end before the anchor's start: the anchor flips to the end.
   let backward = word.moved(true, pos(0, 2))
   assert_true(backward.selection().start() == pos(0, 2))
@@ -45,7 +46,7 @@ test "dragging backward across a word anchor keeps the far edge" {
 
 ///|
 test "selection movement preserves anchor residue and replaces active residue" {
-  let state = @cursor.SingleCursorState(
+  let state = SingleCursorState(
     pos(1, 3),
     pos(1, 3),
     Simple,

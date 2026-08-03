@@ -8,7 +8,7 @@ pub struct CursorState {
 
 ///|
 /// Retains a complete model/view pair.
-pub fn CursorState::CursorState(
+fn CursorState::CursorState(
   model_state : SingleCursorState,
   view_state : SingleCursorState,
 ) -> CursorState {
@@ -17,13 +17,13 @@ pub fn CursorState::CursorState(
 
 ///|
 /// Model-only `PartialCursorState`: the view property is exactly absent.
-pub struct PartialModelCursorState {
+priv struct PartialModelCursorState {
   model_state : SingleCursorState
   view_state : SingleCursorState?
 } derive(Eq, Debug)
 
 ///|
-pub fn PartialModelCursorState::PartialModelCursorState(
+fn PartialModelCursorState::PartialModelCursorState(
   model_state : SingleCursorState,
 ) -> PartialModelCursorState {
   { model_state, view_state: None }
@@ -31,13 +31,13 @@ pub fn PartialModelCursorState::PartialModelCursorState(
 
 ///|
 /// View-only `PartialCursorState`: the model property is exactly absent.
-pub struct PartialViewCursorState {
+priv struct PartialViewCursorState {
   model_state : SingleCursorState?
   view_state : SingleCursorState
 } derive(Eq, Debug)
 
 ///|
-pub fn PartialViewCursorState::PartialViewCursorState(
+fn PartialViewCursorState::PartialViewCursorState(
   view_state : SingleCursorState,
 ) -> PartialViewCursorState {
   { model_state: None, view_state }
@@ -48,7 +48,7 @@ pub fn PartialViewCursorState::PartialViewCursorState(
 /// exactly one side; `FullCursorState` represents the retained complete-state
 /// member used by snapshots/reprojection tests.
 #warnings("-unused_constructor")
-pub enum PartialCursorState {
+enum PartialCursorState {
   FullCursorState(CursorState)
   ModelCursorState(PartialModelCursorState)
   ViewCursorState(PartialViewCursorState)
@@ -92,7 +92,7 @@ pub fn CursorState::from_model_selections(
 }
 
 ///|
-pub fn PartialCursorState::model_state(
+fn PartialCursorState::model_state(
   self : PartialCursorState,
 ) -> SingleCursorState? {
   match self {
@@ -103,7 +103,7 @@ pub fn PartialCursorState::model_state(
 }
 
 ///|
-pub fn PartialCursorState::view_state(
+fn PartialCursorState::view_state(
   self : PartialCursorState,
 ) -> SingleCursorState? {
   match self {

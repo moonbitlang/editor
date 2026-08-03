@@ -51,7 +51,7 @@ pub fn SingleCursorState::SingleCursorState(
 
 ///|
 /// A collapsed cursor at `position` (anchor and active coincide, `Simple`).
-pub fn SingleCursorState::collapsed(
+fn SingleCursorState::collapsed(
   position : @base_common.Position,
 ) -> SingleCursorState {
   SingleCursorState(position, position, Simple, position)
