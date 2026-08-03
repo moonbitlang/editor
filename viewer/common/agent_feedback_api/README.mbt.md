@@ -211,10 +211,14 @@ test "optional kind and state arrive at the host as None" {
 ## Event values
 
 `AgentFeedbackChangeEvent` is the active generic handle payload.
-`AgentFeedbackSubmittedEvent` is the planned agent-loop payload retained in
-`exports.mbt`; it carries counts alongside the items so a future host can
-render a summary without walking the array. Granular add/reply notifications
-remain private to the concrete service.
+`exports.mbt` holds the two host-facing payloads, whose public visibility is
+owed to consumers outside this repository rather than to any in-repo call
+site. `AgentFeedbackSubmittedEvent` is the planned agent-loop payload; it
+carries counts alongside the items so a future host can render a summary
+without walking the array. `AgentFeedbackAddedEvent` is the accepted-item
+payload a host publishes from its own feedback store's emitter, without
+consuming the viewer's service. The reply notification has no such consumer
+and remains private to the concrete service.
 
 ```mbt check
 ///|
