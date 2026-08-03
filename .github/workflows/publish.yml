@@ -1,10 +1,24 @@
 name: publish-package
 
+# The workspace holds two independently versioned modules, so a dispatch
+# selects which ones to release. `moonbitlang/editor-server` imports
+# `moonbitlang/editor`, which is why the server job runs second and waits for
+# the registry to serve the version its manifest asks for.
 on:
   workflow_dispatch:
+    inputs:
+      publish_editor:
+        description: Publish moonbitlang/editor (the root module)
+        type: boolean
+        default: true
+      publish_editor_server:
+        description: Publish moonbitlang/editor-server
+        type: boolean
+        default: true
 
 jobs:
   publish-editor:
+    if: inputs.publish_editor
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -32,6 +46,91 @@ jobs:
           moon test
 
       - name: publish
+        env:
+          SECRET: ${{ secrets.MOONCAKES_MOONBITLANG_TOKEN }}
+        shell: bash
+        run: |
+          if [ -z "$SECRET" ]; then
+            echo "Error: MOONCAKES_MOONBITLANG_TOKEN secret is not set."
+            echo "Please contact an admin to grant access to this secret."
+            exit 1
+          fi
+          echo "$SECRET" > ~/.moon/credentials.json
+          moon publish
+          rm ~/.moon/credentials.json
+
+  publish-editor-server:
+    needs: publish-editor
+    # The editor job being skipped is a normal dispatch: the two modules
+    # version independently, so the server often ships alone. A failed editor
+    # job is different — the dependency this module imports is not on the
+    # registry, so there is nothing to publish against.
+    if: >-
+      always() && inputs.publish_editor_server
+      && (needs.publish-editor.result == 'success' || needs.publish-editor.result == 'skipped')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      MOON_WORK: off
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          submodules: true
+
+      - name: install-ubuntu
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+
+      - name: moon version
+        run: moon version --all
+
+      # With MOON_WORK off this module resolves moonbitlang/editor from the
+      # registry rather than from the sibling directory, so the version the
+      # manifest imports has to be indexed before the check below runs. A
+      # publish in the preceding job is not instantly visible; poll for it.
+      - name: wait for the editor dependency
+        if: needs.publish-editor.result == 'success'
+        shell: bash
+        run: |
+          version="$(grep -o 'moonbitlang/editor@[^"]*' server/moon.mod | cut -d@ -f2)"
+          if [ -z "$version" ]; then
+            echo "Error: could not read the moonbitlang/editor version from server/moon.mod."
+            exit 1
+          fi
+          python3 - "$version" <<'PY'
+          import json, sys, time, urllib.request
+
+          want = sys.argv[1]
+          url = "https://mooncakes.io/api/v0/modules/moonbitlang/editor"
+          for attempt in range(30):
+              try:
+                  with urllib.request.urlopen(url, timeout=30) as response:
+                      versions = json.load(response).get("versions", [])
+                  if any(v.get("version") == want and not v.get("yanked") for v in versions):
+                      print(f"moonbitlang/editor@{want} is live")
+                      sys.exit(0)
+                  print(f"attempt {attempt + 1}: {want} not indexed yet")
+              except Exception as error:
+                  print(f"attempt {attempt + 1}: poll failed: {error}")
+              time.sleep(10)
+          print(f"Error: timed out waiting for moonbitlang/editor@{want} to be indexed.")
+          sys.exit(1)
+          PY
+
+      - name: post install
+        run: moon update
+
+      - name: prepublish check
+        working-directory: server
+        run: |
+          moon check
+          moon test
+
+      - name: publish
+        working-directory: server
         env:
           SECRET: ${{ secrets.MOONCAKES_MOONBITLANG_TOKEN }}
         shell: bash
