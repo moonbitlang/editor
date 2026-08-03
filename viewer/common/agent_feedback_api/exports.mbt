@@ -1,6 +1,19 @@
-// Intentionally staged agent-loop payload. The generic handle is sufficient
-// for the bundled viewer and workbench; an agent host will consume this value
-// through AgentFeedbackService::on_did_submit_feedback.
+// Host-facing agent-feedback payloads. Neither has a production consumer in
+// this repository, so both live here rather than beside the generic handle
+// events: the visibility is owed to hosts outside the repository, and a
+// future API-narrowing pass reading only in-repo call sites would otherwise
+// read them as dead surface and remove them.
+
+///|
+/// Fired when a brand-new feedback item enters the accepted state. A host that
+/// runs its own feedback store publishes this from its own emitter, so it
+/// needs the payload without consuming the viewer's service — which is why
+/// this is a shared contract while the reply notification stays private to
+/// the concrete service. `moonbitlang/openseek` consumes it.
+pub(all) struct AgentFeedbackAddedEvent {
+  feedback : AgentFeedback
+  has_existing_feedback_for_file : Bool
+} derive(Debug)
 
 ///|
 /// Accepted feedback submitted for one resource, including host-forwardable
