@@ -430,7 +430,7 @@ test('uses a deliberate vertical rhythm for Markdown sections and blocks', async
   await expect(finalHeading).toHaveCSS('margin-bottom', '0px');
 });
 
-test('centers prose without narrowing wide Markdown content', async ({
+test('aligns prose to the content edge without narrowing wide Markdown content', async ({
   page,
 }) => {
   await page.goto('/browser-tests/component.html?markdownDocument=1');
@@ -486,14 +486,13 @@ test('centers prose without narrowing wide Markdown content', async ({
     return {
       contentLeft,
       contentWidth,
-      contentCenter: contentLeft + contentWidth / 2,
       paragraphLeft: paragraph.left,
       paragraphWidth: paragraph.width,
-      paragraphCenter: paragraph.left + paragraph.width / 2,
+      headingLeft: heading.left,
       headingWidth: heading.width,
-      headingCenter: heading.left + heading.width / 2,
       codeLeft: code.left,
       codeWidth: code.width,
+      quoteLeft: quote.left,
       quoteWidth: quote.width,
       quoteContentWidth,
       quoteParagraphWidth: quoteParagraph.width,
@@ -501,12 +500,15 @@ test('centers prose without narrowing wide Markdown content', async ({
     };
   });
 
+  // The reading measure caps the line length; it never indents prose away from
+  // the left edge the full-width code and diagram blocks start at.
   expect(geometry.paragraphWidth).toBeLessThan(geometry.contentWidth - 200);
-  expect(geometry.paragraphCenter).toBeCloseTo(geometry.contentCenter, 1);
+  expect(geometry.paragraphLeft).toBeCloseTo(geometry.contentLeft, 1);
   expect(geometry.headingWidth).toBeCloseTo(geometry.paragraphWidth, 1);
-  expect(geometry.headingCenter).toBeCloseTo(geometry.contentCenter, 1);
+  expect(geometry.headingLeft).toBeCloseTo(geometry.contentLeft, 1);
   expect(geometry.codeLeft).toBeCloseTo(geometry.contentLeft, 1);
   expect(geometry.codeWidth).toBeCloseTo(geometry.contentWidth, 1);
+  expect(geometry.quoteLeft).toBeCloseTo(geometry.contentLeft, 1);
   expect(geometry.quoteWidth).toBeCloseTo(geometry.paragraphWidth, 1);
   expect(geometry.quoteParagraphWidth).toBeCloseTo(
     geometry.quoteContentWidth,
