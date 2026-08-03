@@ -382,7 +382,7 @@ back to a default colour.
 ```mbt check
 ///|
 test "a tokenized line renders to inline-styled spans" {
-  let codec = @services.LanguageIdCodec()
+  let codec = @services.language_id_codec
   let keyword = 3U << @tokens.METADATA_FOREGROUND_OFFSET
   let plain = 1U << @tokens.METADATA_FOREGROUND_OFFSET
   let line = @tokens.LineTokens([3U, keyword, 5U, plain], "let x", codec)

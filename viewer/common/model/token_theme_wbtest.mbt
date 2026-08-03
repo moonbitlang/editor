@@ -118,7 +118,7 @@ test "default color map resolves mtk classes to the workbench token vars" {
   // Inline style for a keyword token resolves through the map.
   let keyword = tag_to_metadata(Keyword)
   assert_eq(
-    @common_tokens.LineTokens([1U, keyword], "x", LanguageIdCodec())
+    @common_tokens.LineTokens([1U, keyword], "x", @services.language_id_codec)
     .inflate()
     .get_inline_style(0, color_map),
     "color: var(--vscode-token-keyword);",

@@ -8,13 +8,13 @@
 
 ///|
 /// Monaco `GOLDEN_LINE_HEIGHT_RATIO`: determined from empirical observations.
-pub let golden_line_height_ratio : Double = golden_line_height_ratio_for_platform(
+let golden_line_height_ratio : Double = golden_line_height_ratio_for_platform(
   current_font_platform(),
 )
 
 ///|
 /// Monaco `MINIMUM_LINE_HEIGHT`.
-pub let minimum_line_height = 8
+let minimum_line_height = 8
 
 ///|
 /// Monaco `EditorFontLigatures.OFF` (`editorOptions.ts`): the
@@ -28,19 +28,7 @@ pub let font_variation_off = "normal"
 
 ///|
 /// Monaco `FONT_VARIATION_TRANSLATE`.
-pub let font_variation_translate = "translate"
-
-///|
-/// Monaco `DEFAULT_WINDOWS_FONT_FAMILY`.
-pub let default_windows_font_family = "Consolas, 'Courier New', monospace"
-
-///|
-/// Monaco `DEFAULT_MAC_FONT_FAMILY`.
-pub let default_mac_font_family = "Menlo, Monaco, 'Courier New', monospace"
-
-///|
-/// Monaco `DEFAULT_LINUX_FONT_FAMILY` (also used by other web platforms).
-pub let default_linux_font_family = "'Droid Sans Mono', monospace"
+let font_variation_translate = "translate"
 
 ///|
 priv enum FontPlatform {

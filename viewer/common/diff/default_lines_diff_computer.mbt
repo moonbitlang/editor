@@ -32,11 +32,11 @@
 ///|
 /// `DefaultLinesDiffComputer` (`defaultLinesDiffComputer.ts:26`), engine
 /// swapped for piediff (see the file header).
-pub struct DefaultLinesDiffComputer {} derive(Eq, Debug)
+struct DefaultLinesDiffComputer {} derive(Eq, Debug)
 
 ///|
 #warnings("-unnecessary_annotation")
-pub fn DefaultLinesDiffComputer::DefaultLinesDiffComputer() -> DefaultLinesDiffComputer {
+fn DefaultLinesDiffComputer::DefaultLinesDiffComputer() -> DefaultLinesDiffComputer {
   // The qualifier is required because a bare `{}` is parsed as a `Map`.
   DefaultLinesDiffComputer::{  }
 }

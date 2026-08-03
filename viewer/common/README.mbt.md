@@ -3,8 +3,13 @@
 A small compatibility facade over the focused common-layer packages.
 
 The real content of the common tier lives in the sibling packages
-(`model`, `view_model`, `view_layout`, `tokens`, …). What remains here is one
-production file, `line_html.mbt`, holding the DOM-free view-line renderer.
+(`model`, `view_model`, `view_layout`, `tokens`, …). What remains here is a
+small DOM-free compatibility surface. `render_line_class` and `escape_html`
+live in `line_html.mbt`. `render_line_html` is intentionally retained in
+`exports.mbt` as the documented adapter from `ViewLineData` plus per-line
+decorations to one line's HTML; current repository renderers do not call this
+wrapper directly, so its placement records the staged external contract
+explicitly.
 
 ```mermaid
 flowchart LR
@@ -25,6 +30,11 @@ presentation.
 - `render_line_class`
 - `render_line_html`, which adapts `view_model.ViewLineData` and
   `view_layout.LineDecoration[]` to the DOM-free Monaco-shaped view-line renderer
+
+Keeping `render_line_html` in `exports.mbt` lets embedders that already hold
+projected line data obtain the canonical DOM-free markup without depending on
+the browser view's line-node lifecycle. Its compile-checked examples below
+define that compatibility contract.
 
 `escape_html` covers exactly the characters that would otherwise change the
 parse of the emitted markup. It forwards to `base/common`'s escaper of the same

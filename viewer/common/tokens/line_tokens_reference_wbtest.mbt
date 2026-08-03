@@ -19,7 +19,7 @@ fn create_line_tokens(text : String, tokens : Array[(Int, Int)]) -> LineTokens {
     bin_tokens[i << 1] = end_index.reinterpret_as_uint()
     bin_tokens[(i << 1) + 1] = (tokens[i].1 << METADATA_FOREGROUND_OFFSET).reinterpret_as_uint()
   }
-  LineTokens(bin_tokens, text, LanguageIdCodec())
+  LineTokens(bin_tokens, text, @services.language_id_codec)
 }
 
 ///|

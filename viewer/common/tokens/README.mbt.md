@@ -156,7 +156,7 @@ length. Some tokenizers emit start offsets instead, so
 ```mbt check
 ///|
 test "line tokens expose their consumer-facing full view" {
-  let codec = @services.LanguageIdCodec()
+  let codec = @services.language_id_codec
   let keyword = 3U << @tokens.METADATA_FOREGROUND_OFFSET
   let plain = 1U << @tokens.METADATA_FOREGROUND_OFFSET
   let line = @tokens.LineTokens(
@@ -199,7 +199,7 @@ line's synthetic indent.
 ```mbt check
 ///|
 test "a sliced view exposes segment-local offsets" {
-  let codec = @services.LanguageIdCodec()
+  let codec = @services.language_id_codec
   let line = @tokens.LineTokens([5U, 1U, 6U, 0U, 11U, 2U], "hello world", codec)
   let view = line.slice_and_inflate(6, 11, 2)
   debug_inspect(
@@ -217,7 +217,7 @@ changing model source.
 ```mbt check
 ///|
 test "injected text splices a new token" {
-  let codec = @services.LanguageIdCodec()
+  let codec = @services.language_id_codec
   let line = @tokens.LineTokens([5U, 1U], "value", codec)
   let with_hint = line.with_inserted([
     InsertedToken(5, " : Int", TokenMetadata(3U)),
@@ -248,7 +248,7 @@ returns one default token and never invokes a lexer.
 ```mbt check
 ///|
 test "contiguous batches apply and report changed lines" {
-  let codec = @services.LanguageIdCodec()
+  let codec = @services.language_id_codec
   let builder = @tokens.ContiguousMultilineTokensBuilder()
   builder.add(1, [4U, 1U])
   builder.add(2, [4U, 2U])
@@ -276,7 +276,7 @@ top-level-language token.
 ```mbt check
 ///|
 test "flush restores passive fallback reads" {
-  let codec = @services.LanguageIdCodec()
+  let codec = @services.language_id_codec
   let builder = @tokens.ContiguousMultilineTokensBuilder()
   builder.add(1, [4U, 1U])
   let store = @tokens.ContiguousTokensStore(codec)
@@ -297,7 +297,7 @@ string semantics.
 ```mbt check
 ///|
 test "a slice may split a surrogate pair" {
-  let codec = @services.LanguageIdCodec()
+  let codec = @services.language_id_codec
   let line = @tokens.LineTokens([2U, 1U, 3U, 2U], "😀x", codec)
   let split = line.slice_and_inflate(1, 3, 0)
   debug_inspect(

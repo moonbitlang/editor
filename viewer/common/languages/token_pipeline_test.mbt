@@ -39,9 +39,7 @@ test "JSON tokens flow from lexer spans to rendered HTML" {
   )
 
   let line_tokens = @model.line_tokens_from_lexer_tokens(
-    source,
-    lexer_tokens,
-    LanguageIdCodec(),
+    source, lexer_tokens, @services.language_id_codec,
   )
   // Stage 2: the model encoder fills gaps and assigns renderer class metadata.
   debug_inspect(

@@ -11,8 +11,6 @@ pub fn changes_to_decorations(Array[@diff.Change]) -> Array[@model.ModelDeltaDec
 
 pub fn compute_changes(Array[String], Array[String], ignore_trim_whitespace? : Bool, max_computation_time_ms? : Int) -> Array[@diff.Change]
 
-pub fn to_line_changes(Array[@diff.DetailedLineRangeMapping]) -> Array[@diff.Change]
-
 // Errors
 
 // Types and methods
