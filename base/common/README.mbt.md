@@ -212,31 +212,9 @@ test "a missing scheme is a UriError, not a silent default" {
 }
 ```
 
-`uri_to_fs_path` is platform-sensitive, so tests pin the platform with the
-`set_is_windows_for_testing` seam rather than depending on the host OS.
-
-```mbt check
-///|
-test "file URIs render per-platform filesystem paths" {
-  @common.set_is_windows_for_testing(value=true)
-  let windows = @common.uri_to_fs_path(
-    @common.Uri::parse("file:///c:/dir/file.mbt"),
-    false,
-  )
-  @common.set_is_windows_for_testing(value=false)
-  let posix = @common.uri_to_fs_path(
-    @common.Uri::parse("file:///dir/file.mbt"),
-    false,
-  )
-  @common.set_is_windows_for_testing()
-  debug_inspect(
-    (windows, posix),
-    content=(
-      #|("c:\\dir\\file.mbt", "/dir/file.mbt")
-    ),
-  )
-}
-```
+`uri_to_fs_path` is platform-sensitive. Package white-box conformance tests
+pin the internal platform detector for Windows and POSIX cases; callers see
+the current host platform and no test override enters the public interface.
 
 `ExtUri`, `resources.mbt`, and `uri_to_fs_path` provide resource comparison,
 joining, normalization, and filesystem conversion. The three prebuilt policies

@@ -27,42 +27,6 @@ pub fn Position::Position(line_number : Int, column : Int) -> Position {
 }
 
 ///|
-/// A new position derived from this one. `None` for either axis keeps this
-/// position's value, mirroring Monaco's `with(newLineNumber, newColumn)`
-/// defaults. (`with_` because `with` clashes with MoonBit's struct-update and
-/// trait-impl syntax.)
-pub fn Position::with_(
-  self : Position,
-  line_number? : Int,
-  column? : Int,
-) -> Position {
-  let new_line_number = line_number.unwrap_or(self.line_number)
-  let new_column = column.unwrap_or(self.column)
-  if new_line_number == self.line_number && new_column == self.column {
-    self
-  } else {
-    Position(new_line_number, new_column)
-  }
-}
-
-///|
-/// Derive a new position by shifting it, clamping both axes to at least 1.
-/// Mirrors Monaco's `delta(deltaLineNumber, deltaColumn)`.
-pub fn Position::delta(
-  self : Position,
-  delta_line_number? : Int = 0,
-  delta_column? : Int = 0,
-) -> Position {
-  self.with_(
-    line_number=(self.line_number + delta_line_number).clamp(
-      min=1,
-      max=2147483647,
-    ),
-    column=(self.column + delta_column).clamp(min=1, max=2147483647),
-  )
-}
-
-///|
 /// Whether this position equals `other`. Mirrors Monaco's `Position.equals`.
 pub fn Position::equals(self : Position, other : Position) -> Bool {
   self.line_number == other.line_number && self.column == other.column
@@ -95,25 +59,15 @@ pub fn Position::is_before_or_equal(self : Position, other : Position) -> Bool {
 }
 
 ///|
-/// Compares two positions for sorting (line, then column). Mirrors Monaco's
-/// static `Position.compare`.
-pub fn Position::compare(a : Position, b : Position) -> Int {
-  if a.line_number == b.line_number {
-    return a.column - b.column
-  }
-  a.line_number - b.line_number
-}
-
-///|
 /// A copy of this position. Mirrors Monaco's `Position.clone` (a value copy
 /// here, since `Position` is a value type).
-pub fn Position::clone(self : Position) -> Position {
+fn Position::clone(self : Position) -> Position {
   Position(self.line_number, self.column)
 }
 
 ///|
 /// Human-readable `(line,column)` form. Mirrors Monaco's `Position.toString`.
-pub fn Position::to_string(self : Position) -> String {
+fn Position::to_string(self : Position) -> String {
   "(\{self.line_number},\{self.column})"
 }
 
@@ -148,10 +102,7 @@ pub fn OffsetRange::of_length(length : Int) -> OffsetRange {
 
 ///|
 /// `[start, start + length)`. Mirrors Monaco's `OffsetRange.ofStartAndLength`.
-pub fn OffsetRange::of_start_and_length(
-  start : Int,
-  length : Int,
-) -> OffsetRange {
+fn OffsetRange::of_start_and_length(start : Int, length : Int) -> OffsetRange {
   OffsetRange(start, start + length)
 }
 
@@ -164,10 +115,7 @@ pub fn OffsetRange::empty_at(offset : Int) -> OffsetRange {
 ///|
 /// `[start, end_exclusive)`, or `None` when `start > end_exclusive`. Mirrors
 /// Monaco's static `OffsetRange.tryCreate`.
-pub fn OffsetRange::try_create(
-  start : Int,
-  end_exclusive : Int,
-) -> OffsetRange? {
+fn OffsetRange::try_create(start : Int, end_exclusive : Int) -> OffsetRange? {
   if start > end_exclusive {
     None
   } else {
@@ -189,22 +137,19 @@ pub fn OffsetRange::length(self : OffsetRange) -> Int {
 
 ///|
 /// Shifts both endpoints by `offset`. Mirrors Monaco's `delta`.
-pub fn OffsetRange::delta(self : OffsetRange, offset : Int) -> OffsetRange {
+fn OffsetRange::delta(self : OffsetRange, offset : Int) -> OffsetRange {
   OffsetRange(self.start + offset, self.end_exclusive + offset)
 }
 
 ///|
 /// Shifts the start by `offset`. Mirrors Monaco's `deltaStart`.
-pub fn OffsetRange::delta_start(
-  self : OffsetRange,
-  offset : Int,
-) -> OffsetRange {
+fn OffsetRange::delta_start(self : OffsetRange, offset : Int) -> OffsetRange {
   OffsetRange(self.start + offset, self.end_exclusive)
 }
 
 ///|
 /// Shifts the end by `offset`. Mirrors Monaco's `deltaEnd`.
-pub fn OffsetRange::delta_end(self : OffsetRange, offset : Int) -> OffsetRange {
+fn OffsetRange::delta_end(self : OffsetRange, offset : Int) -> OffsetRange {
   OffsetRange(self.start, self.end_exclusive + offset)
 }
 
@@ -216,10 +161,7 @@ pub fn OffsetRange::equals(self : OffsetRange, other : OffsetRange) -> Bool {
 
 ///|
 /// Whether `other` is fully contained in this range. Mirrors `containsRange`.
-pub fn OffsetRange::contains_range(
-  self : OffsetRange,
-  other : OffsetRange,
-) -> Bool {
+fn OffsetRange::contains_range(self : OffsetRange, other : OffsetRange) -> Bool {
   self.start <= other.start && other.end_exclusive <= self.end_exclusive
 }
 
@@ -232,10 +174,7 @@ pub fn OffsetRange::contains(self : OffsetRange, offset : Int) -> Bool {
 
 ///|
 /// The smallest range containing both ranges. Mirrors Monaco's `join`.
-pub fn OffsetRange::join(
-  self : OffsetRange,
-  other : OffsetRange,
-) -> OffsetRange {
+fn OffsetRange::join(self : OffsetRange, other : OffsetRange) -> OffsetRange {
   OffsetRange(
     self.start.min(other.start),
     self.end_exclusive.max(other.end_exclusive),
@@ -245,7 +184,7 @@ pub fn OffsetRange::join(
 ///|
 /// The intersection of the two ranges, or `None` if they do not even touch.
 /// Mirrors Monaco's `intersect` (an empty range if they touch but not overlap).
-pub fn OffsetRange::intersect(
+fn OffsetRange::intersect(
   self : OffsetRange,
   other : OffsetRange,
 ) -> OffsetRange? {
@@ -261,7 +200,7 @@ pub fn OffsetRange::intersect(
 ///|
 /// The number of overlapping offsets (0 if disjoint). Mirrors Monaco's
 /// `intersectionLength`.
-pub fn OffsetRange::intersection_length(
+fn OffsetRange::intersection_length(
   self : OffsetRange,
   other : OffsetRange,
 ) -> Int {
@@ -273,7 +212,7 @@ pub fn OffsetRange::intersection_length(
 ///|
 /// Whether the two ranges overlap. Mirrors Monaco's `intersects` (always false
 /// when either range is empty).
-pub fn OffsetRange::intersects(self : OffsetRange, other : OffsetRange) -> Bool {
+fn OffsetRange::intersects(self : OffsetRange, other : OffsetRange) -> Bool {
   let start = self.start.max(other.start)
   let end = self.end_exclusive.min(other.end_exclusive)
   start < end
@@ -281,7 +220,7 @@ pub fn OffsetRange::intersects(self : OffsetRange, other : OffsetRange) -> Bool 
 
 ///|
 /// Whether the two ranges overlap or touch. Mirrors `intersectsOrTouches`.
-pub fn OffsetRange::intersects_or_touches(
+fn OffsetRange::intersects_or_touches(
   self : OffsetRange,
   other : OffsetRange,
 ) -> Bool {
@@ -292,19 +231,19 @@ pub fn OffsetRange::intersects_or_touches(
 
 ///|
 /// Whether this range ends at or before `other` starts. Mirrors `isBefore`.
-pub fn OffsetRange::is_before(self : OffsetRange, other : OffsetRange) -> Bool {
+fn OffsetRange::is_before(self : OffsetRange, other : OffsetRange) -> Bool {
   self.end_exclusive <= other.start
 }
 
 ///|
 /// Whether this range starts at or after `other` ends. Mirrors `isAfter`.
-pub fn OffsetRange::is_after(self : OffsetRange, other : OffsetRange) -> Bool {
+fn OffsetRange::is_after(self : OffsetRange, other : OffsetRange) -> Bool {
   self.start >= other.end_exclusive
 }
 
 ///|
 /// `[start, end_exclusive)`. Mirrors Monaco's `toString`.
-pub fn OffsetRange::to_string(self : OffsetRange) -> String {
+fn OffsetRange::to_string(self : OffsetRange) -> String {
   "[\{self.start}, \{self.end_exclusive})"
 }
 

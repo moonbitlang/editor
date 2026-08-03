@@ -4,13 +4,9 @@
 
 ///|
 /// `Schemas.file` (network.ts:44).
-pub let schemas_file : String = "file"
+let schemas_file : String = "file"
 
 ///|
 /// `Schemas.inMemory` (network.ts:18) — models that exist in memory only and
 /// have no correspondence on a server or such.
 pub let schemas_in_memory : String = "inmemory"
-
-///|
-/// `Schemas.untitled` (network.ts:48).
-pub let schemas_untitled : String = "untitled"

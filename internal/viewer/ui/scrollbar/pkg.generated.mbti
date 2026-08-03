@@ -99,11 +99,10 @@ pub(all) struct ScrollbarDrag {
   initial_state : @view_layout.ScrollbarState
 }
 
-pub struct StandardWheelEvent {
-  delta_x : Double
-  delta_y : Double
-}
+type StandardWheelEvent
 pub fn StandardWheelEvent::StandardWheelEvent(@dom.WheelEvent) -> Self
+pub fn StandardWheelEvent::delta_x(Self) -> Double
+pub fn StandardWheelEvent::delta_y(Self) -> Double
 
 // Type aliases
 
