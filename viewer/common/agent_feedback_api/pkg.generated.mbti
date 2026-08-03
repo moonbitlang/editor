@@ -21,6 +21,11 @@ pub(all) struct AgentFeedback {
   state : AgentFeedbackState
 } derive(@debug.Debug)
 
+pub(all) struct AgentFeedbackAddedEvent {
+  feedback : AgentFeedback
+  has_existing_feedback_for_file : Bool
+} derive(@debug.Debug)
+
 pub(all) struct AgentFeedbackChangeEvent {
   resource : @common.Uri
   feedback_items : Array[AgentFeedback]
