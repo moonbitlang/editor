@@ -30,7 +30,6 @@ pub(all) enum RemotePathResult {
 } derive(@debug.Debug)
 
 type RemoteServer
-pub fn RemoteServer::close_document(Self, @remote_protocol.DocumentRequest) -> Unit
 pub fn RemoteServer::current_workspace_root(Self) -> String
 pub async fn RemoteServer::definition(Self, @remote_protocol.DocumentPositionRequest) -> @remote_protocol.ServerPacket
 pub fn RemoteServer::dispose_watches(Self) -> Unit
