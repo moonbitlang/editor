@@ -1,7 +1,28 @@
 // Mounted whole-line Markdown-comment fixture. The scenario constructs the
 // public Viewer directly; Playwright observes the resulting projection, DOM,
 // input ownership, and model lifecycle through deterministic public-API
-// controls rather than reaching into contribution internals.
+// controls rather than reaching into contribution internals. Attachment-count
+// evidence uses an explicitly installed private browser diagnostic.
+
+///|
+extern "js" fn install_markdown_comments_private_probe() -> Unit =
+  #| () => {
+  #|   const probe = globalThis.__viewerPrivateTestProbe ?? {};
+  #|   probe.acceptTextModelAttachedCount = function(getAttachedCount) {
+  #|     this.textModelAttachedCount = getAttachedCount;
+  #|   };
+  #|   globalThis.__viewerPrivateTestProbe = probe;
+  #| }
+
+///|
+extern "js" fn markdown_comments_attached_editor_count(
+  model : @model.TextModel,
+) -> Int =
+  #| (model) => {
+  #|   const getAttachedCount = globalThis.__viewerPrivateTestProbe?.textModelAttachedCount;
+  #|   if (!getAttachedCount) throw new Error('private TextModel attachment diagnostic was not offered');
+  #|   return getAttachedCount(model);
+  #| }
 
 ///|
 fn markdown_comments_initial_source() -> String {
@@ -253,11 +274,11 @@ fn markdown_comments_state_json(
     "selection": selection,
     "primaryValue": primary.get_value().to_json(),
     "primaryVersion": primary.get_version_id().to_json(),
-    "primaryAttachedEditors": primary.get_attached_editor_count().to_json(),
+    "primaryAttachedEditors": markdown_comments_attached_editor_count(primary).to_json(),
     "replacementValue": replacement.get_value().to_json(),
-    "replacementAttachedEditors": replacement
-    .get_attached_editor_count()
-    .to_json(),
+    "replacementAttachedEditors": markdown_comments_attached_editor_count(
+      replacement,
+    ).to_json(),
     "softWrap": viewer.get_options().soft_wrap().to_json(),
     "scrollLeft": viewer.get_scroll_left().to_json(),
     "scrollWidth": viewer.get_scroll_width().to_json(),
@@ -286,6 +307,7 @@ fn run_markdown_comments_test() -> Unit {
   shell.append_child(host.as_node())
   app.append_child(shell.as_node())
 
+  install_markdown_comments_private_probe()
   let primary = @model.TextModel(
     try! @base_common.Uri::from(
       scheme="inmemory",

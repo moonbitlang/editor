@@ -40,7 +40,8 @@ test "set_value re-fires onDidChangeModelContent with the flush payload" {
     viewer.set_value("two\nthree")
     assert_eq(events.length(), 1)
     assert_eq(events[0].is_flush, true)
-    assert_eq(events[0].changes[0].text, "two\nthree")
+    assert_eq(events[0].changes.length(), 1)
+    assert_eq(viewer.get_value(), "two\nthree")
   })
 }
 
@@ -98,7 +99,7 @@ test "set_value resets the cursor to the origin" {
       #|three
     ),
     viewer => {
-      viewer.test_cursor().move_to(Position(3, 2), false) |> ignore
+      viewer.set_position(Position(3, 2))
       assert_true(viewer.get_position().unwrap() == Position(3, 2))
       viewer.set_value("a\nb")
       assert_true(viewer.get_position().unwrap() == Position(1, 1))
@@ -114,11 +115,11 @@ test "quick diff re-renders its gutter decorations after a flush (Track E)" {
   backings.quick_diff.set_original_content(model.uri, Some("alpha\nbravo"))
   viewer.set_model(Some(model))
   // identical content: no dirty-diff decorations yet
-  assert_eq(model.get_all_decorations().length(), 0)
+  assert_eq(quick_diff_gutter_decorations(viewer).length(), 0)
   viewer.set_value("alpha\nCHANGED")
   // the contribution's content-change subscription re-ran the decorator
   // against the new snapshot
-  assert_eq(model.get_all_decorations().length(), 1)
+  assert_eq(quick_diff_gutter_decorations(viewer).length(), 1)
   viewer.dispose()
   backings.dispose()
 }
@@ -141,11 +142,12 @@ test "marker decorations re-seed after a flush (Track E)" {
     ),
   ])
   viewer.set_model(Some(model))
-  assert_eq(model.get_all_decorations().length(), 1)
+  let marker_handle = backings.marker_decorations.marker_decorations_handle()
+  assert_eq(marker_handle.get_live_markers_for_model(model).length(), 1)
   viewer.set_value("alpha\nCHANGED")
   // The service's one per-identity content watch re-seeded the decoration;
   // Viewer content delivery does not acquire another lease.
-  assert_eq(model.get_all_decorations().length(), 1)
+  assert_eq(marker_handle.get_live_markers_for_model(model).length(), 1)
   viewer.dispose()
   backings.dispose()
 }

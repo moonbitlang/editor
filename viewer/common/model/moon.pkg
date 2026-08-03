@@ -4,3 +4,15 @@ import {
   "moonbitlang/editor/viewer/common/services",
   "moonbitlang/editor/viewer/common/tokens" @common_tokens,
 }
+
+options(
+  targets: {
+    "text_model_browser_diagnostic_js.mbt": [ "js" ],
+    "text_model_browser_diagnostic_fallback.mbt": [
+      "native",
+      "llvm",
+      "wasm",
+      "wasm-gc",
+    ],
+  },
+)

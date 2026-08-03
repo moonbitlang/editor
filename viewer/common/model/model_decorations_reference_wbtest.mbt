@@ -1,4 +1,4 @@
-///| Faithful conformance port of vscode's `modelDecorations.test.ts` (pinned
+///| White-box conformance port of vscode's `modelDecorations.test.ts` (pinned
 /// `vscode/` checked-in submodule):
 /// `vscode/src/vs/editor/test/common/model/modelDecorations.test.ts`.
 ///
@@ -32,12 +32,12 @@
 
 ///|
 /// Monaco `{ description: 'test', className }` options literal.
-fn dec_options(class_name : String) -> @model.ModelDecorationOptions {
+fn dec_options(class_name : String) -> ModelDecorationOptions {
   ModelDecorationOptions(class_name, description="test")
 }
 
 ///|
-fn create_text_model(text : String) -> @model.TextModel {
+fn create_text_model(text : String) -> TextModel {
   TextModel(
     try! @base_common.Uri::from(
       scheme="inmemory",
@@ -54,7 +54,7 @@ fn create_text_model(text : String) -> @model.TextModel {
 
 ///|
 /// The suite's shared five-line model text.
-fn create_this_model() -> @model.TextModel {
+fn create_this_model() -> TextModel {
   let text = "My First Line\r\n\t\tMy Second Line\n    Third Line\n\r\n1"
   create_text_model(text)
 }
@@ -62,7 +62,7 @@ fn create_this_model() -> @model.TextModel {
 ///|
 /// `addDecoration`.
 fn add_decoration(
-  model : @model.TextModel,
+  model : TextModel,
   start_line_number : Int,
   start_column : Int,
   end_line_number : Int,
@@ -80,7 +80,7 @@ fn add_decoration(
 ///|
 /// `modelHasDecorations`: (range, className) rows sorted by range starts.
 fn model_has_decorations(
-  model : @model.TextModel,
+  model : TextModel,
   decorations : Array[(Int, Int, Int, Int, String)],
 ) -> Unit raise {
   let model_decorations = model
@@ -106,7 +106,7 @@ fn model_has_decorations(
 
 ///|
 fn model_has_decoration(
-  model : @model.TextModel,
+  model : TextModel,
   start_line_number : Int,
   start_column : Int,
   end_line_number : Int,
@@ -119,14 +119,14 @@ fn model_has_decoration(
 }
 
 ///|
-fn model_has_no_decorations(model : @model.TextModel) -> Unit raise {
+fn model_has_no_decorations(model : TextModel) -> Unit raise {
   assert_eq(model.get_all_decorations().length(), 0)
 }
 
 ///|
 /// `lineHasDecorations`: (startColumn, endColumn, className) rows.
 fn line_has_decorations(
-  model : @model.TextModel,
+  model : TextModel,
   line_number : Int,
   decorations : Array[(Int, Int, String)],
 ) -> Unit raise {
@@ -139,16 +139,13 @@ fn line_has_decorations(
 }
 
 ///|
-fn line_has_no_decorations(
-  model : @model.TextModel,
-  line_number : Int,
-) -> Unit raise {
+fn line_has_no_decorations(model : TextModel, line_number : Int) -> Unit raise {
   line_has_decorations(model, line_number, [])
 }
 
 ///|
 fn line_has_decoration(
-  model : @model.TextModel,
+  model : TextModel,
   line_number : Int,
   start : Int,
   end : Int,
@@ -350,13 +347,13 @@ fn decoration(
 ///|
 fn to_model_delta_decoration(
   dec : LightWeightDecoration,
-) -> @model.ModelDeltaDecoration {
+) -> ModelDeltaDecoration {
   { range: dec.range, options: dec_options(dec.id) }
 }
 
 ///|
 fn read_model_decorations(
-  model : @model.TextModel,
+  model : TextModel,
   ids : Array[String],
 ) -> Array[(String, @base_common.Range)] {
   ids.map(id => {
@@ -368,7 +365,7 @@ fn read_model_decorations(
 }
 
 ///|
-fn assert_range_opt_eq(
+fn assert_reference_range_opt_eq(
   actual : @base_common.Range?,
   expected : @base_common.Range?,
 ) -> Unit raise {
@@ -442,11 +439,11 @@ test "result respects input" {
     to_model_delta_decoration(decoration("a", 1, 1, 1, 12)),
     to_model_delta_decoration(decoration("b", 2, 1, 2, 13)),
   ])
-  assert_range_opt_eq(
+  assert_reference_range_opt_eq(
     model.get_decoration_range(ids[0]),
     Some(Range(1, 1, 1, 12)),
   )
-  assert_range_opt_eq(
+  assert_reference_range_opt_eq(
     model.get_decoration_range(ids[1]),
     Some(Range(2, 1, 2, 13)),
   )
@@ -555,11 +552,11 @@ test "model doesn't get confused with individual tracked ranges" {
     to_model_delta_decoration(decoration("a", 1, 1, 1, 12)),
     to_model_delta_decoration(decoration("b", 2, 1, 2, 13)),
   ])
-  assert_range_opt_eq(
+  assert_reference_range_opt_eq(
     model.get_decoration_range(ids[0]),
     Some(Range(1, 1, 1, 12)),
   )
-  assert_range_opt_eq(
+  assert_reference_range_opt_eq(
     model.get_decoration_range(ids[1]),
     Some(Range(2, 1, 2, 13)),
   )
@@ -567,11 +564,11 @@ test "model doesn't get confused with individual tracked ranges" {
     to_model_delta_decoration(decoration("a", 1, 1, 1, 12)),
     to_model_delta_decoration(decoration("b", 2, 1, 2, 13)),
   ])
-  assert_range_opt_eq(
+  assert_reference_range_opt_eq(
     model.get_decoration_range(ids2[0]),
     Some(Range(1, 1, 1, 12)),
   )
-  assert_range_opt_eq(
+  assert_reference_range_opt_eq(
     model.get_decoration_range(ids2[1]),
     Some(Range(2, 1, 2, 13)),
   )

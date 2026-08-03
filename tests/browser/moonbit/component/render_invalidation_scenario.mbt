@@ -44,7 +44,7 @@ impl @language.HoverProvider for RenderInvalidationHoverProvider with fn provide
 ) {
   let offset = model.get_offset_at(position)
   for needle in ["anchor", "mapping-target"] {
-    if model.snapshot.text.find(needle) is Some(start) {
+    if model.snapshot.get_value().find(needle) is Some(start) {
       if offset >= start && offset < start + needle.length() {
         return Some({
           range: model.snapshot.range_of(

@@ -22,7 +22,7 @@
 
 ///|
 /// Active indent-guide span for a line. Mirrors Monaco's `IActiveIndentGuideInfo`.
-pub struct ActiveIndentGuideInfo {
+priv struct ActiveIndentGuideInfo {
   start_line_number : Int
   end_line_number : Int
   indent : Int
@@ -30,7 +30,7 @@ pub struct ActiveIndentGuideInfo {
 
 ///|
 /// `model.guides` — indent-guide queries over a text snapshot.
-pub struct GuidesTextModelPart {
+priv struct GuidesTextModelPart {
   text_model : TextSnapshot
   tab_size : Int
   indent_size : Int
@@ -38,7 +38,7 @@ pub struct GuidesTextModelPart {
 }
 
 ///|
-pub fn GuidesTextModelPart::GuidesTextModelPart(
+fn GuidesTextModelPart::GuidesTextModelPart(
   text_model : TextSnapshot,
   tab_size? : Int = 4,
   indent_size? : Int = 4,
@@ -87,7 +87,7 @@ fn GuidesTextModelPart::get_indent_level_for_whitespace_line(
 ///|
 /// Indent-guide level for each line in `[start_line_number, end_line_number]`
 /// (1-based, inclusive). Mirrors `getLinesIndentGuides`.
-pub fn GuidesTextModelPart::get_lines_indent_guides(
+fn GuidesTextModelPart::get_lines_indent_guides(
   self : GuidesTextModelPart,
   start_line_number : Int,
   end_line_number : Int,
@@ -155,7 +155,7 @@ pub fn GuidesTextModelPart::get_lines_indent_guides(
 ///|
 /// The active indent guide that contains `line_number`, bounded by
 /// `[min_line_number, max_line_number]`. Mirrors `getActiveIndentGuide`.
-pub fn GuidesTextModelPart::get_active_indent_guide(
+fn GuidesTextModelPart::get_active_indent_guide(
   self : GuidesTextModelPart,
   line_number : Int,
   min_line_number : Int,

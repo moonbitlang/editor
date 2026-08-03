@@ -14,7 +14,7 @@ impl @language.HoverProvider for BrowserGeometryHoverProvider with fn provide_ho
   _token,
 ) {
   let offset = model.get_offset_at(position)
-  match model.snapshot.text.find("anchor") {
+  match model.snapshot.get_value().find("anchor") {
     Some(start) =>
       if offset >= start && offset < start + "anchor".length() {
         Some({

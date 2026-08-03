@@ -7,7 +7,7 @@
 
 ///|
 /// Default word separators, `USUAL_WORD_SEPARATORS` (`wordHelper.ts:11`).
-pub let usual_word_separators : String = "`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"
+let usual_word_separators : String = "`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"
 
 ///|
 /// A word inside a model, `IWordAtPosition` (`wordHelper.ts:16`). Columns are
@@ -115,7 +115,7 @@ fn next_word_match(text : String, from : Int) -> (Int, Int)? {
 /// `getWordAtText` (`wordHelper.ts:96`), default definition: the word enclosing
 /// `column` in `text`. A position is enclosed when `start <= pos <= end`
 /// (`_findRegexMatchEnclosingPosition`: `matchIndex <= pos && lastIndex >= pos`).
-pub fn get_word_at_text(
+fn get_word_at_text(
   column : Int,
   text : String,
   text_offset : Int,
@@ -160,7 +160,7 @@ pub fn TextModel::get_word_at_position(
 /// at the position's column, or an empty word anchored there. Deviation: the
 /// position is surrogate-validated up front (Monaco truncates with the raw
 /// column, which can split a pair — MoonBit slicing raises on that).
-pub fn TextModel::get_word_until_position(
+fn TextModel::get_word_until_position(
   self : TextModel,
   position : @base_common.Position,
 ) -> WordAtPosition {

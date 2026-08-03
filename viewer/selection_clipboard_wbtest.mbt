@@ -8,10 +8,13 @@ fn selection_from_offsets(
   anchor_offset : Int,
   focus_offset : Int,
 ) -> @core.Selection {
-  Selection(
-    snapshot.get_position_at(anchor_offset),
-    snapshot.get_position_at(focus_offset),
-  )
+  let anchor = snapshot
+    .range_of(OffsetRange(anchor_offset, anchor_offset))
+    .get_start_position()
+  let focus = snapshot
+    .range_of(OffsetRange(focus_offset, focus_offset))
+    .get_start_position()
+  Selection(anchor, focus)
 }
 
 ///|
@@ -58,8 +61,8 @@ test "selection clipboard uses normalized offsets and text for every EOL form" {
     let snapshot = @model.TextSnapshot(raw)
     let selection = selection_from_offsets(snapshot, normalized.length(), 0)
     let range = selection_normalized_range(selection, snapshot)
-    assert_eq(snapshot.text, normalized)
-    assert_eq(snapshot.get_length(), normalized.length())
+    assert_eq(snapshot.get_value(), normalized)
+    assert_eq(snapshot.get_value().length(), normalized.length())
     assert_eq(range.start, 0)
     assert_eq(range.end_exclusive, normalized.length())
     assert_eq(selection_plain_text_to_copy(selection, snapshot), normalized)
@@ -69,7 +72,11 @@ test "selection clipboard uses normalized offsets and text for every EOL form" {
 ///|
 test "selection rich copy escapes source text" {
   let snapshot = @model.TextSnapshot("a < b && c")
-  let selection = selection_from_offsets(snapshot, 0, snapshot.get_length())
+  let selection = selection_from_offsets(
+    snapshot,
+    0,
+    snapshot.get_value().length(),
+  )
   assert_eq(
     selection_rich_text_to_copy(selection, snapshot),
     "<pre class=\"readonly-editor-copy\">a &lt; b &amp;&amp; c</pre>",
@@ -79,6 +86,10 @@ test "selection rich copy escapes source text" {
 ///|
 test "selection copy uses model text not injected text" {
   let snapshot = @model.TextSnapshot("let x = 1")
-  let selection = selection_from_offsets(snapshot, 0, snapshot.get_length())
+  let selection = selection_from_offsets(
+    snapshot,
+    0,
+    snapshot.get_value().length(),
+  )
   assert_eq(selection_plain_text_to_copy(selection, snapshot), "let x = 1")
 }

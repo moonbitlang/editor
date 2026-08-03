@@ -17,7 +17,7 @@ impl @language.HoverProvider for ComponentHoverProvider with fn provide_hover(
 ) {
   let needle = "keeps"
   let offset = model.get_offset_at(position)
-  match model.snapshot.text.find(needle) {
+  match model.snapshot.get_value().find(needle) {
     Some(start) =>
       if offset >= start && offset < start + needle.length() {
         Some({
@@ -42,7 +42,7 @@ fn set_component_diagnostics(
   model : @model.TextModel,
 ) -> Unit {
   let needle = "keeps"
-  if model.snapshot.text.find(needle) is Some(start) {
+  if model.snapshot.get_value().find(needle) is Some(start) {
     markers.set_diagnostics("lsp", model.uri, [
       {
         range: model.snapshot.range_of(
