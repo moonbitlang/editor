@@ -23,8 +23,11 @@
 }
 
 /* The article remains the full-width source and pointer surface. Individual
- * prose blocks use a centered reading measure below, while diagrams, code,
- * and tables retain the full inner width. */
+ * prose blocks are capped at a reading measure below, while diagrams, code,
+ * and tables retain the full inner width. The measure is flush to the inline
+ * start so prose shares one left edge with the full-width blocks; centering it
+ * would leave text floating in the middle of a wide document. The inline
+ * padding doubles as the fold-toggle gutter, so it stays as wide as one. */
 .moonbit-viewer-markdown-document-article {
   --markdown-prose-measure: 640px;
 
@@ -56,7 +59,7 @@
 .moonbit-viewer-markdown-document-article
   > :where(h1, h2, h3, h4, h5, h6, p, ul, ol, dl, hr, details) {
   max-width: var(--markdown-prose-measure);
-  margin-inline: auto;
+  margin-inline: 0 auto;
 }
 
 /* Use one predictable vertical cadence instead of the browser's element-by-
@@ -130,7 +133,7 @@
 
 .moonbit-viewer-markdown-document-article > blockquote {
   max-width: var(--markdown-prose-measure);
-  margin-inline: auto;
+  margin-inline: 0 auto;
   padding-inline: 40px;
 }
 
