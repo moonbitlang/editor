@@ -19,7 +19,6 @@ pub(all) enum ContextMenuEntry {
 type ContextMenuWidget
 pub fn ContextMenuWidget::ContextMenuWidget(ContextMenuWidgetCallbacks) -> Self
 pub fn ContextMenuWidget::dispose(Self) -> Unit
-pub fn ContextMenuWidget::get_dom_node(Self) -> @dom.Element
 pub fn ContextMenuWidget::hide(Self, was_cancelled? : Bool) -> Unit
 pub fn ContextMenuWidget::is_visible(Self) -> Bool
 pub fn ContextMenuWidget::show(Self, Array[ContextMenuEntry], Double, Double, String, theme_source? : @dom.Element, auto_select_first? : Bool) -> Bool
