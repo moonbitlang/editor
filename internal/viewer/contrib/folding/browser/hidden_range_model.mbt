@@ -49,7 +49,7 @@ pub fn HiddenRangeModel::on_did_change(
 
 ///|
 /// The `hiddenRanges` getter.
-pub fn HiddenRangeModel::hidden_ranges(
+fn HiddenRangeModel::hidden_ranges(
   self : HiddenRangeModel,
 ) -> Array[@base_common.Range] {
   self.hidden_ranges
@@ -168,7 +168,7 @@ pub fn HiddenRangeModel::adjust_selections(
 
 ///|
 /// `dispose` (`hiddenRangeModel.ts:128`).
-pub fn HiddenRangeModel::dispose(self : HiddenRangeModel) -> Unit {
+fn HiddenRangeModel::dispose(self : HiddenRangeModel) -> Unit {
   if self.hidden_ranges.length() > 0 {
     self.hidden_ranges = []
     self.update_event_emitter.fire(self.hidden_ranges)

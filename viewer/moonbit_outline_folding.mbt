@@ -756,7 +756,7 @@ fn moonbit_outline_folding_regions(
     let range = regions.to_fold_range(index)
     while outline_index < outline_folds.length() &&
           outline_folds[outline_index].fold_end_line_number <
-          range.start_line_number {
+          range.start_line_number() {
       outline_index += 1
     }
     // Retain the provider range only when every host fold it overlaps
@@ -769,10 +769,10 @@ fn moonbit_outline_folding_regions(
     let mut scan_index = outline_index
     while scan_index < outline_folds.length() &&
           outline_folds[scan_index].protected_start_line_number <=
-          range.end_line_number {
+          range.end_line_number() {
       let outline_fold = outline_folds[scan_index]
-      if range.start_line_number > outline_fold.fold_start_line_number &&
-        range.end_line_number <= outline_fold.fold_end_line_number {
+      if range.start_line_number() > outline_fold.fold_start_line_number &&
+        range.end_line_number() <= outline_fold.fold_end_line_number {
         break
       }
       // Containment requires a strictly earlier start: a provider range
@@ -780,8 +780,8 @@ fn moonbit_outline_folding_regions(
       // line, and `sanitize_and_merge` matches prior state by start line.
       let contains_comment_run = outline_fold.range_type ==
         COMMENT_RUN_FOLDING_RANGE_TYPE &&
-        range.start_line_number < outline_fold.protected_start_line_number &&
-        range.end_line_number >= outline_fold.fold_end_line_number
+        range.start_line_number() < outline_fold.protected_start_line_number &&
+        range.end_line_number() >= outline_fold.fold_end_line_number
       if !contains_comment_run {
         retain = false
         break
@@ -819,10 +819,10 @@ fn moonbit_outline_folding_regions(
     } else {
       let outline_fold = foldable_outline_folds[outline_index]
       let retained = retained_ranges[retained_index]
-      outline_fold.fold_start_line_number < retained.start_line_number ||
+      outline_fold.fold_start_line_number < retained.start_line_number() ||
       (
-        outline_fold.fold_start_line_number == retained.start_line_number &&
-        outline_fold.fold_end_line_number >= retained.end_line_number
+        outline_fold.fold_start_line_number == retained.start_line_number() &&
+        outline_fold.fold_end_line_number >= retained.end_line_number()
       )
     }
     if take_outline {

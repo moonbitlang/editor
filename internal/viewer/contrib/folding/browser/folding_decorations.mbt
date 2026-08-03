@@ -193,9 +193,9 @@ let hidden_range_decoration : @model.ModelDecorationOptions = ModelDecorationOpt
 /// `changeDecorations`/`removeDecorations` delegate to the attached model
 /// with the editor's id; the port holds that (model, owner id) pair
 /// directly.
-pub struct FoldingDecorationProvider {
-  priv model : @model.TextModel
-  priv owner_id : Int
+struct FoldingDecorationProvider {
+  model : @model.TextModel
+  owner_id : Int
   mut show_folding_controls : @editor_api.ShowFoldingControls
   mut show_folding_highlights : Bool
 }
