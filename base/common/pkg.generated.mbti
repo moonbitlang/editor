@@ -181,6 +181,7 @@ pub fn Range::compare_ranges_using_starts(Self, Self) -> Int
 pub fn Range::contains_position(Self, Position) -> Bool
 pub fn Range::contains_range(Self, Self) -> Bool
 pub fn Range::from_positions(Position, Position) -> Self
+pub fn Range::get_end_position(Self) -> Position
 pub fn Range::get_start_position(Self) -> Position
 pub fn Range::intersect_ranges(Self, Self) -> Self?
 pub fn Range::is_empty(Self) -> Bool

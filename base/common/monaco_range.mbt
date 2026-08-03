@@ -247,12 +247,6 @@ fn Range::equals_range(self : Range, other : Range) -> Bool {
 }
 
 ///|
-/// The end position (after or equal to the start position).
-fn Range::get_end_position(self : Range) -> Position {
-  Position(self.end_line_number, self.end_column)
-}
-
-///|
 /// The start position (before or equal to the end position).
 pub fn Range::get_start_position(self : Range) -> Position {
   Position(self.start_line_number, self.start_column)
