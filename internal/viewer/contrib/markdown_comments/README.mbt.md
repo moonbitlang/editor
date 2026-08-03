@@ -14,14 +14,15 @@ flowchart LR
 
 ## Detection
 
-`detect_markdown_comments` scans a `TextModel`; the snapshot overload is the
-deterministic core used by tests and callers that already hold an immutable
-snapshot. Both consume the owning language's `CommentRule`.
+The package-private `detect_markdown_comments` helper scans a `TextModel`; its
+snapshot overload is the deterministic core used by the resolver and white-box
+tests. Both consume the owning language's `CommentRule`. The examples in this
+section are package-internal evidence, not exported API.
 
 Consecutive line comments are grouped into one block, and the comment delimiter
 is stripped from the emitted Markdown.
 
-```mbt check
+```mbt nocheck
 ///|
 let moonbit_comments : @languages.CommentRule = {
   line_comment: Some(LineCommentRule("//")),
@@ -46,7 +47,7 @@ test "consecutive whole-line comments become one block" {
     "// # Title\n// Some prose.\nlet x = 1\n// Another block\n",
   )
   debug_inspect(
-    @markdown_comments.detect_markdown_comments(model, moonbit_comments).map(block => {
+    detect_markdown_comments(model, moonbit_comments).map(block => {
       (block.line_range, block.markdown)
     }),
     content=(
@@ -68,12 +69,12 @@ test "consecutive whole-line comments become one block" {
 Only *whole-line* comments qualify. A trailing comment after code is not a
 Markdown block, because replacing it would destroy the code on that line.
 
-```mbt check
+```mbt nocheck
 ///|
 test "a trailing comment after code is not a block" {
   let model = commented("let x = 1 // not a doc comment\n")
   debug_inspect(
-    @markdown_comments.detect_markdown_comments(model, moonbit_comments).length(),
+    detect_markdown_comments(model, moonbit_comments).length(),
     content=(
       #|0
     ),
@@ -84,12 +85,12 @@ test "a trailing comment after code is not a block" {
 Line comments win when configured delimiters overlap, and only whole-line block
 comments are accepted.
 
-```mbt check
+```mbt nocheck
 ///|
 test "a whole-line block comment is accepted" {
   let model = commented("/* # Block heading */\nlet x = 1\n")
   debug_inspect(
-    @markdown_comments.detect_markdown_comments(model, moonbit_comments).map(block => {
+    detect_markdown_comments(model, moonbit_comments).map(block => {
       (block.line_range, block.markdown)
     }),
     content=(
@@ -106,19 +107,20 @@ test "a whole-line block comment is accepted" {
 
 ## Normalization
 
-`normalize_markdown_comment_blocks` is the shared provider/detector boundary.
-It validates 1-based half-open line ranges, orders blocks, rejects later
-overlaps, drops exact-empty bodies, and preserves the viewer's all-lines-visible
-fallback. Invalid and overlapping inputs are reported through `LogHandle`.
+The package-private `normalize_markdown_comment_blocks` helper is the shared
+provider/detector boundary. It validates 1-based half-open line ranges, orders
+blocks, rejects later overlaps, drops exact-empty bodies, and preserves the
+viewer's all-lines-visible fallback. Invalid and overlapping inputs are
+reported through `LogHandle`. These are package-internal white-box examples.
 
 Because both the provider path and the detection path pass through it, a
 provider cannot produce a block shape the detector could not.
 
-```mbt check
+```mbt nocheck
 ///|
 test "normalization orders blocks and rejects later overlaps" {
   let log = @log.LogService(logger=@log.NullLogger()).log_handle()
-  let normalized = @markdown_comments.normalize_markdown_comment_blocks(
+  let normalized = normalize_markdown_comment_blocks(
     [
       { line_range: LineRange(5, 7), markdown: "second" },
       { line_range: LineRange(1, 3), markdown: "first" },
@@ -145,12 +147,12 @@ test "normalization orders blocks and rejects later overlaps" {
 A range outside the document is invalid and is dropped rather than clamped, so
 a stale provider result cannot decorate lines that no longer exist.
 
-```mbt check
+```mbt nocheck
 ///|
 test "a range beyond the document is dropped, not clamped" {
   let log = @log.LogService(logger=@log.NullLogger()).log_handle()
   debug_inspect(
-    @markdown_comments.normalize_markdown_comment_blocks(
+    normalize_markdown_comment_blocks(
       [
         { line_range: LineRange(1, 2), markdown: "kept" },
         { line_range: LineRange(90, 95), markdown: "out of range" },
@@ -167,12 +169,12 @@ test "a range beyond the document is dropped, not clamped" {
 
 ## Resolution
 
-`resolve_markdown_comment_blocks` is the root-facing resolver. The first
-matching provider result is authoritative, including an empty result. Only an
-absent provider falls back to the model language's configured comment rules;
-both paths pass through the same normalizer.
+`resolve_markdown_comment_blocks_with_presentation` is the exported root-facing
+resolver. The first matching provider result is authoritative, including an
+empty result. Only an absent provider falls back to the model language's
+configured comment rules; both paths pass through the same private normalizer.
 
-```mbt check
+```mbt nocheck
 ///|
 test "with no provider, resolution falls back to the language rules" {
   let log = @log.LogService(logger=@log.NullLogger())
