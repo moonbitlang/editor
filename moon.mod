@@ -1,6 +1,6 @@
 name = "moonbitlang/editor"
 
-version = "0.4.0"
+version = "0.4.1"
 
 readme = "README.md"
 
@@ -31,7 +31,6 @@ options(
     "codemirror",
     "vscode",
     "internal/shell",
-    "shell",
     "server",
     "moon.work",
     "tests",

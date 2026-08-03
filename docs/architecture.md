@@ -441,7 +441,10 @@ The native server is its own `moon.work` member with
 flags. `shell/workspace` and `shell/remote_protocol` are the shared
 host-shell contracts both the browser workbench and the server module import;
 they live outside `internal/` because workspace members cannot import another
-module's internal packages, and they stay excluded from the published package.
+module's internal packages. They ship in the published package: once
+`moonbitlang/editor-server` is consumed from the registry rather than from
+this workspace, it resolves these two packages through `moonbitlang/editor`,
+so excluding them would leave it unbuildable.
 
 - `workspace` defines host-side source paths, document snapshots, filesystem,
   and tree-provider contracts. Its `DocumentSnapshot` is not the editor model.
