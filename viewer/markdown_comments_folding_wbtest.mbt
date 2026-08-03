@@ -130,10 +130,14 @@ test "foldable Markdown comments start collapsed and preserve state across body 
         same_mounted_test_element(first_preview.element, entry.dom.preview),
       )
 
-      markdown_contribution_test_dispatch(entry.dom.toggle, "click")
+      let toggle = markdown_contribution_test_descendant_with_class(
+        entry.dom.outer,
+        "moonbit-viewer-markdown-comment-toggle",
+      )
+      markdown_contribution_test_dispatch(toggle, "click")
       assert_true(entry.fold_expanded.val)
       assert_eq(
-        markdown_contribution_test_attribute(entry.dom.toggle, "aria-expanded"),
+        markdown_contribution_test_attribute(toggle, "aria-expanded"),
         "true",
       )
 

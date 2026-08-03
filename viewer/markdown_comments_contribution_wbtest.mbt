@@ -263,6 +263,23 @@ extern "js" fn markdown_contribution_test_parent(
 ) -> @rdom.Element = "element => element.parentNode"
 
 ///|
+extern "js" fn markdown_contribution_test_descendant_with_class(
+  root : @rdom.Element,
+  class_name : String,
+) -> @rdom.Element =
+  #| (root, className) => {
+  #|   const pending = Array.from(root.childNodes ?? []);
+  #|   while (pending.length > 0) {
+  #|     const current = pending.shift();
+  #|     const classes = String(current?.getAttribute?.("class") ?? "")
+  #|       .split(/\s+/);
+  #|     if (classes.includes(className)) return current;
+  #|     pending.push(...Array.from(current?.childNodes ?? []));
+  #|   }
+  #|   throw new Error(`Missing descendant with class ${className}`);
+  #| }
+
+///|
 extern "js" fn markdown_contribution_test_dispatch(
   element : @rdom.Element,
   event_type : String,
@@ -405,7 +422,10 @@ test "Markdown comments replace start middle EOF blocks while preserving model t
         )
         assert_true(
           same_mounted_test_element(
-            entry.dom.content,
+            markdown_contribution_test_descendant_with_class(
+              entry.dom.outer,
+              "moonbit-viewer-markdown-comment-content",
+            ),
             markdown_contribution_test_parent(entry.rendered_markdown.element),
           ),
         )
@@ -441,7 +461,10 @@ test "Markdown comments replace start middle EOF blocks while preserving model t
       // Each block owns an independent rendered/source switch; changing one
       // does not alter the model projection or any sibling presentation.
       markdown_contribution_test_dispatch(
-        state.rendered["3:5"].dom.source_toggle,
+        markdown_contribution_test_descendant_with_class(
+          state.rendered["3:5"].dom.outer,
+          "moonbit-viewer-markdown-comment-source-toggle",
+        ),
         "click",
       )
       assert_eq(state.rendered["3:5"].original_source.val, "three\nfour")
@@ -575,7 +598,13 @@ test "same-key Markdown update retains the ViewZone and target identities" {
       let first_zone_id = first.zone_id
       let first_whitespace_id = viewer.test_view_model().get_whitespaces()[0].id
       assert_eq(markdown_contribution_test_disconnect_count(), 0)
-      markdown_contribution_test_dispatch(first.dom.source_toggle, "click")
+      markdown_contribution_test_dispatch(
+        markdown_contribution_test_descendant_with_class(
+          first.dom.outer,
+          "moonbit-viewer-markdown-comment-source-toggle",
+        ),
+        "click",
+      )
       assert_eq(
         markdown_contribution_test_attribute(
           first.dom.outer,
@@ -633,7 +662,13 @@ test "same-key Markdown update retains the ViewZone and target identities" {
       let visible_source_html = markdown_contribution_test_inner_html(
         updated.dom.source,
       )
-      markdown_contribution_test_dispatch(updated.dom.source_toggle, "click")
+      markdown_contribution_test_dispatch(
+        markdown_contribution_test_descendant_with_class(
+          updated.dom.outer,
+          "moonbit-viewer-markdown-comment-source-toggle",
+        ),
+        "click",
+      )
       viewer.set_value(
         (
           #|LATEST
@@ -650,7 +685,13 @@ test "same-key Markdown update retains the ViewZone and target identities" {
         markdown_contribution_test_inner_html(updated.dom.source),
         visible_source_html,
       )
-      markdown_contribution_test_dispatch(updated.dom.source_toggle, "click")
+      markdown_contribution_test_dispatch(
+        markdown_contribution_test_descendant_with_class(
+          updated.dom.outer,
+          "moonbit-viewer-markdown-comment-source-toggle",
+        ),
+        "click",
+      )
       assert_eq(updated.original_source.val, "LATEST TWO\nLATEST THREE")
       assert_true(
         markdown_contribution_test_inner_html(updated.dom.source).contains(
@@ -1142,7 +1183,10 @@ test "Markdown comment height callbacks ignore zero disconnected stale and dispo
     (viewer, provider_blocks) => {
       let state = markdown_contribution_state(viewer)
       let entry = state.rendered["2:3"]
-      let target = entry.dom.content
+      let target = markdown_contribution_test_descendant_with_class(
+        entry.dom.outer,
+        "moonbit-viewer-markdown-comment-content",
+      )
       // Discard the fixture's ordinary pending paint. Executing a live Viewer
       // paint would enter font measurement, which is intentionally outside
       // this narrow observer/generation test DOM.
