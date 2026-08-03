@@ -88,7 +88,7 @@ priv struct RegisteredMarkdownCommentProvider {
 ///|
 /// Raw result plus the registration-level presentation capability captured
 /// from the same winning provider entry.
-pub(all) struct MarkdownCommentProviderResult {
+pub struct MarkdownCommentProviderResult {
   blocks : Array[@language.MarkdownCommentBlock]
   foldable : Bool
 }
@@ -178,7 +178,7 @@ pub fn Languages::language_handle(
 /// Returns the first matching Markdown-comment provider's raw result. `None`
 /// means that no provider matched; `Some([])` is an authoritative empty result
 /// and must not be confused with absence.
-pub fn LanguageHandle::markdown_comment_provider_result(
+fn LanguageHandle::markdown_comment_provider_result(
   self : LanguageHandle,
   model : @model.TextModel,
 ) -> Array[@language.MarkdownCommentBlock]? {
@@ -309,7 +309,7 @@ pub fn Languages::register_markdown_comment_provider(
 ///|
 /// Returns the first matching Markdown-comment provider's raw result. Provider
 /// failure is logged and remains authoritative as `Some([])`.
-pub fn Languages::markdown_comment_provider_result(
+fn Languages::markdown_comment_provider_result(
   self : Languages,
   model : @model.TextModel,
   log_service : @log.LogService,
@@ -348,7 +348,7 @@ fn Languages::markdown_comment_provider_result_with_log_handle(
 
 ///|
 /// Returns the first non-empty hover answer in registry priority.
-pub async fn Languages::hover_at(
+async fn Languages::hover_at(
   self : Languages,
   model : @model.TextModel,
   offset : Int,
@@ -408,7 +408,7 @@ async fn Languages::hover_at_with_log_handle(
 ///|
 /// Returns all live definition answers concatenated in registry priority. An
 /// injected runner must return only after every task has terminated.
-pub async fn Languages::definition_at(
+async fn Languages::definition_at(
   self : Languages,
   model : @model.TextModel,
   offset : Int,
@@ -487,7 +487,7 @@ async fn Languages::definition_at_with_log_handle(
 ///|
 /// Reports whether the model currently has a matching live definition
 /// provider registration.
-pub fn Languages::has_definition_provider(
+fn Languages::has_definition_provider(
   self : Languages,
   model : @model.TextModel,
 ) -> Bool {
@@ -496,7 +496,7 @@ pub fn Languages::has_definition_provider(
 
 ///|
 /// Concatenates document-symbol results from every provider.
-pub async fn Languages::document_symbols(
+async fn Languages::document_symbols(
   self : Languages,
   model : @model.TextModel,
   log_service : @log.LogService,

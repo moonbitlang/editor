@@ -1,6 +1,7 @@
 ///|
+/// White-box marker-handle coverage.
 test "MarkerServiceHandle forwards only borrowed store operations" {
-  let markers = @markers.MarkerService()
+  let markers = MarkerService()
   let handle = markers.marker_service_handle()
   let uri = try! @base_common.Uri::from(
     scheme="inmemory",
@@ -34,15 +35,13 @@ test "MarkerServiceHandle forwards only borrowed store operations" {
 
 ///|
 test "MarkerDecorationsHandle preserves model leases and change events" {
-  let markers = @markers.MarkerService()
+  let markers = MarkerService()
   let marker_service_handle = markers.marker_service_handle()
-  let source : @markers.MarkerDecorationsSource = MarkerStore(
-    marker_service_handle,
-  )
+  let source : MarkerDecorationsSource = MarkerStore(marker_service_handle)
   guard source is MarkerStore(_) else { fail("expected marker store source") }
-  let service = @markers.MarkerDecorationsService(marker_service_handle)
+  let service = MarkerDecorationsService(marker_service_handle)
   let handle = service.marker_decorations_handle()
-  let adapted : @markers.MarkerDecorationsSource = Decorations(handle)
+  let adapted : MarkerDecorationsSource = Decorations(handle)
   guard adapted is Decorations(_) else { fail("expected decorations source") }
   let uri = try! @base_common.Uri::from(
     scheme="inmemory",

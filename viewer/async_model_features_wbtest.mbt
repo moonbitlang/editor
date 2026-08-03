@@ -150,7 +150,10 @@ fn AsyncModelFeatureTestServices::dispose(
 ) -> Unit {
   // The concrete backings remain caller-owned and usable after Viewer
   // teardown; only the omitted defaults inside the bundle need disposal.
-  self.languages.get_language_configuration("moonbit") |> ignore
+  self.languages
+  .language_handle(self.log_service.log_handle())
+  .get_language_configuration("moonbit")
+  |> ignore
   self.log_service.trace("viewer.async-test", "dispose retained backings")
   self.services.dispose()
 }

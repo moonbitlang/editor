@@ -9,23 +9,11 @@ import {
 }
 
 // Values
-pub fn create_decoration_option(Marker) -> @model.ModelDecorationOptions
-
-pub fn create_decoration_range(@model.TextModel, Marker) -> @common.Range
-
-pub fn dotdotdot_svg_data_uri(String) -> String
-
-pub let max_value_column : Int
-
-pub fn squiggly_svg_data_uri(String) -> String
-
 pub fn squiggly_theme_css(SquigglyThemeColors) -> String
 
 // Errors
 
 // Types and methods
-type DoubleResourceMap
-
 pub struct Marker {
   owner : String
   resource : @common.Uri
@@ -42,27 +30,9 @@ pub struct Marker {
   tags : Array[MarkerTag]?
   origin : String?
 } derive(Eq, @debug.Debug)
-pub fn Marker::from_diagnostic(String, @common.Uri, @language.Diagnostic) -> Self
-pub fn Marker::has_tag(Self, MarkerTag) -> Bool
-pub fn Marker::range(Self) -> @common.Range
-pub fn Marker::to_diagnostic(Self) -> @language.Diagnostic
 
-pub(all) struct MarkerData {
-  code : String?
-  severity : MarkerSeverity
-  message : String
-  source : String?
-  start_line_number : Int
-  start_column : Int
-  end_line_number : Int
-  end_column : Int
-  model_version_id : Int?
-  related_information : Array[RelatedInformation]?
-  tags : Array[MarkerTag]?
-  origin : String?
-} derive(Eq, @debug.Debug)
+type MarkerData derive(Eq, @debug.Debug)
 pub fn MarkerData::MarkerData(severity~ : MarkerSeverity, message~ : String, start_line_number~ : Int, start_column~ : Int, end_line_number~ : Int, end_column~ : Int, code? : String, source? : String, model_version_id? : Int, related_information? : Array[RelatedInformation], tags? : Array[MarkerTag], origin? : String) -> Self
-pub fn MarkerData::to_marker(Self, String, @common.Uri) -> Marker?
 
 type MarkerDecorationsHandle
 pub fn MarkerDecorationsHandle::acquire_model(Self, @model.TextModel) -> @common.Disposable
@@ -72,14 +42,8 @@ pub fn MarkerDecorationsHandle::on_did_change_marker_decorations(Self, (@model.T
 
 type MarkerDecorationsService
 pub fn MarkerDecorationsService::MarkerDecorationsService(MarkerServiceHandle) -> Self
-pub fn MarkerDecorationsService::acquire_model(Self, @model.TextModel) -> @common.Disposable
-pub fn MarkerDecorationsService::add_marker_suppression(Self, @common.Uri, @common.Range) -> @common.Disposable
 pub fn MarkerDecorationsService::dispose(Self) -> Unit
-pub fn MarkerDecorationsService::get_live_markers(Self, @common.Uri) -> Array[(@common.Range, Marker)]
-pub fn MarkerDecorationsService::get_live_markers_for_model(Self, @model.TextModel) -> Array[(@common.Range, Marker)]
-pub fn MarkerDecorationsService::get_marker(Self, @common.Uri, String) -> Marker?
 pub fn MarkerDecorationsService::marker_decorations_handle(Self) -> MarkerDecorationsHandle
-pub fn MarkerDecorationsService::on_did_change_marker_decorations(Self, (@model.TextModel) -> Unit) -> @common.Disposable
 pub fn MarkerDecorationsService::on_model_added(Self, @model.TextModel) -> Unit
 pub fn MarkerDecorationsService::on_model_removed(Self, @model.TextModel) -> Unit
 
@@ -88,41 +52,20 @@ pub(all) enum MarkerDecorationsSource {
   Decorations(MarkerDecorationsHandle)
 }
 
-pub(all) struct MarkerReadOptions {
-  owner : String?
-  resource : @common.Uri?
-  severities : Int?
-  take : Int?
-  ignore_resource_filters : Bool
-} derive(Eq, @debug.Debug)
-pub fn MarkerReadOptions::MarkerReadOptions(owner? : String, resource? : @common.Uri, severities? : Int, take? : Int, ignore_resource_filters? : Bool) -> Self
-
-pub struct MarkerService {
-  did_change_markers : @common.MicrotaskEmitter[Array[@common.Uri]]
-  data : DoubleResourceMap
-  filtered_resources : Map[String, Array[String]]
-  mut stats : MarkerStats?
-}
+type MarkerService
 pub fn MarkerService::MarkerService(schedule? : (() -> Unit) -> Unit) -> Self
 pub fn MarkerService::change_all(Self, String, Array[ResourceMarker]) -> Unit
 pub fn MarkerService::change_one(Self, String, @common.Uri, Array[MarkerData]) -> Unit
 pub fn MarkerService::clear_resource(Self, @common.Uri) -> Unit
 pub fn MarkerService::diagnostics_for_resource(Self, @common.Uri) -> Array[@language.Diagnostic]
 pub fn MarkerService::dispose(Self) -> Unit
-pub fn MarkerService::install_resource_filter(Self, @common.Uri, String) -> @common.Disposable
 pub fn MarkerService::marker_service_handle(Self) -> MarkerServiceHandle
 pub fn MarkerService::markers_for_resource(Self, @common.Uri, limit? : Int) -> Array[Marker]
 pub fn MarkerService::on_did_change_markers(Self, (Array[@common.Uri]) -> Unit) -> @common.Disposable
-pub fn MarkerService::read(Self, MarkerReadOptions) -> Array[Marker]
-pub fn MarkerService::remove(Self, String, Array[@common.Uri]) -> Unit
 pub fn MarkerService::remove_owner_resource(Self, String, @common.Uri) -> Unit
 pub fn MarkerService::set_diagnostics(Self, String, @common.Uri, Array[@language.Diagnostic]) -> Unit
-pub fn MarkerService::statistics(Self) -> MarkerStatistics
 
 type MarkerServiceHandle
-pub fn MarkerServiceHandle::on_did_change_markers(Self, (Array[@common.Uri]) -> Unit) -> @common.Disposable
-pub fn MarkerServiceHandle::read(Self, MarkerReadOptions) -> Array[Marker]
-pub fn MarkerServiceHandle::remove(Self, String, Array[@common.Uri]) -> Unit
 
 pub(all) enum MarkerSeverity {
   Hint
@@ -130,29 +73,11 @@ pub(all) enum MarkerSeverity {
   Warning
   Error
 } derive(Eq, @debug.Debug)
-pub fn MarkerSeverity::compare(Self, Self) -> Int
-pub fn MarkerSeverity::from_diagnostic_severity(@language.DiagnosticSeverity) -> Self
-pub fn MarkerSeverity::label(Self) -> String
-pub fn MarkerSeverity::label_plural(Self) -> String
-pub fn MarkerSeverity::to_diagnostic_severity(Self) -> @language.DiagnosticSeverity
-pub fn MarkerSeverity::value(Self) -> Int
-
-pub struct MarkerStatistics {
-  mut errors : Int
-  mut warnings : Int
-  mut infos : Int
-  mut unknowns : Int
-} derive(Eq, @debug.Debug)
-
-type MarkerStats
 
 pub(all) enum MarkerTag {
   Unnecessary
   Deprecated
 } derive(Eq, @debug.Debug)
-pub fn MarkerTag::from_diagnostic_tag(@language.DiagnosticTag) -> Self
-pub fn MarkerTag::to_diagnostic_tag(Self) -> @language.DiagnosticTag
-pub fn MarkerTag::value(Self) -> Int
 
 pub(all) struct RelatedInformation {
   resource : @common.Uri
@@ -163,7 +88,7 @@ pub(all) struct RelatedInformation {
   end_column : Int
 } derive(Eq, @debug.Debug)
 
-pub(all) struct ResolvedMarkerDecoration {
+pub struct ResolvedMarkerDecoration {
   range : @common.Range
   marker : Marker
   options : @model.ModelDecorationOptions

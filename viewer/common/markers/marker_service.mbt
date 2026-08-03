@@ -15,7 +15,7 @@ let unsupported_schemes : Array[String] = [
 /// `DoubleResourceMap` (`markerService.ts:25`): markers indexed both by resource
 /// (→ owner → markers) and by owner (→ resource → markers). Resource keys are
 /// `uri.to_string()`, matching `ResourceMap`'s internal `toString` keying.
-struct DoubleResourceMap {
+priv struct DoubleResourceMap {
   by_resource : Map[String, Map[String, Array[Marker]]]
   by_owner : Map[String, Map[String, Array[Marker]]]
 }
@@ -151,7 +151,7 @@ fn DoubleResourceMap::values_by_owner(
 ///|
 /// Live per-severity statistics, `MarkerStats` (`markerService.ts:80`). Subscribes
 /// to the service's change event and accumulates deltas per resource.
-struct MarkerStats {
+priv struct MarkerStats {
   mut errors : Int
   mut warnings : Int
   mut infos : Int
@@ -256,7 +256,7 @@ fn merge_changed_uris(
 ///|
 /// In-memory marker store keyed by owner/resource pairs, `MarkerService`
 /// (`markerService.ts:150`).
-pub struct MarkerService {
+struct MarkerService {
   did_change_markers : @base_common.MicrotaskEmitter[Array[@base_common.Uri]]
   data : DoubleResourceMap
   filtered_resources : Map[String, Array[String]]
@@ -306,7 +306,7 @@ pub fn MarkerService::dispose(self : MarkerService) -> Unit {
 /// `getStatistics` (`markerService.ts:169`): a snapshot of the live stats. (Monaco
 /// returns the live object; the snapshot reads identically for any caller that
 /// consumes it immediately.)
-pub fn MarkerService::statistics(self : MarkerService) -> MarkerStatistics {
+fn MarkerService::statistics(self : MarkerService) -> MarkerStatistics {
   match self.stats {
     Some(stats) =>
       {
@@ -321,7 +321,7 @@ pub fn MarkerService::statistics(self : MarkerService) -> MarkerStatistics {
 
 ///|
 /// `remove` (`markerService.ts:173`): clears markers for `owner` on each resource.
-pub fn MarkerService::remove(
+fn MarkerService::remove(
   self : MarkerService,
   owner : String,
   resources : Array[@base_common.Uri],
@@ -335,7 +335,7 @@ pub fn MarkerService::remove(
 /// `changeOne` (`markerService.ts:179`): empty data removes the (owner,resource)
 /// entry; otherwise sanitizes and stores. Fires the change event in both cases
 /// when something happened.
-pub fn MarkerService::change_one(
+fn MarkerService::change_one_impl(
   self : MarkerService,
   owner : String,
   resource : @base_common.Uri,
@@ -364,7 +364,7 @@ pub fn MarkerService::change_one(
 ///|
 /// `installResourceFilter` (`markerService.ts:202`): records a filter reason for a
 /// resource and returns a disposable that removes it (D5).
-pub fn MarkerService::install_resource_filter(
+fn MarkerService::install_resource_filter(
   self : MarkerService,
   resource : @base_common.Uri,
   reason : String,
@@ -434,7 +434,7 @@ fn MarkerService::create_filtered_marker(
 /// `read` (`markerService.ts:332`): the owner∧resource fast path and the
 /// owner∨resource (or all) path with `ResourceSet` dedup, severities bitmask
 /// (`_accept`), resource filters, and `take` cap.
-pub fn MarkerService::read(
+fn MarkerService::read(
   self : MarkerService,
   filter : MarkerReadOptions,
 ) -> Array[Marker] {
@@ -616,27 +616,6 @@ pub fn MarkerService::remove_owner_resource(
   resource : @base_common.Uri,
 ) -> Unit {
   self.change_one(owner, resource, [])
-}
-
-///|
-/// Clears markers from every owner for one resource.
-pub fn MarkerService::clear_resource(
-  self : MarkerService,
-  resource : @base_common.Uri,
-) -> Unit {
-  for owner in self.read(MarkerReadOptions(resource~)).map(m => m.owner) {
-    self.remove(owner, [resource])
-  }
-}
-
-///|
-/// Returns markers for one resource, optionally capped by `limit`.
-pub fn MarkerService::markers_for_resource(
-  self : MarkerService,
-  resource : @base_common.Uri,
-  limit? : Int = 0,
-) -> Array[Marker] {
-  self.read(MarkerReadOptions(resource~, take=limit))
 }
 
 ///|

@@ -6,7 +6,7 @@
 /// (`markerDecorationsService.ts:216`). A producer sets a marker's `end_column`
 /// to this to request the full-line first-non-whitespace snap. Int max stands in
 /// for the JS float sentinel.
-pub let max_value_column : Int = 2147483647
+let max_value_column : Int = 2147483647
 
 ///|
 /// Severity of a marker, with Monaco's load-bearing bit values
@@ -24,7 +24,7 @@ pub(all) enum MarkerSeverity {
 ///|
 /// The marker severity's bit value (`Hint=1, Info=2, Warning=4, Error=8`),
 /// `markers.ts:56-61`.
-pub fn MarkerSeverity::value(self : MarkerSeverity) -> Int {
+fn MarkerSeverity::value(self : MarkerSeverity) -> Int {
   match self {
     Hint => 1
     Info => 2
@@ -35,14 +35,14 @@ pub fn MarkerSeverity::value(self : MarkerSeverity) -> Int {
 
 ///|
 /// `b - a`, `MarkerSeverity.compare` (`markers.ts:65`).
-pub fn MarkerSeverity::compare(a : MarkerSeverity, b : MarkerSeverity) -> Int {
+fn MarkerSeverity::compare(a : MarkerSeverity, b : MarkerSeverity) -> Int {
   b.value() - a.value()
 }
 
 ///|
 /// Display string, `MarkerSeverity.toString` (`markers.ts:74`). Only
 /// Error/Warning/Info have one; everything else is empty.
-pub fn MarkerSeverity::label(self : MarkerSeverity) -> String {
+fn MarkerSeverity::label(self : MarkerSeverity) -> String {
   match self {
     Error => "Error"
     Warning => "Warning"
@@ -53,7 +53,7 @@ pub fn MarkerSeverity::label(self : MarkerSeverity) -> String {
 
 ///|
 /// Plural display string, `MarkerSeverity.toStringPlural` (`markers.ts:83`).
-pub fn MarkerSeverity::label_plural(self : MarkerSeverity) -> String {
+fn MarkerSeverity::label_plural(self : MarkerSeverity) -> String {
   match self {
     Error => "Errors"
     Warning => "Warnings"
@@ -66,7 +66,7 @@ pub fn MarkerSeverity::label_plural(self : MarkerSeverity) -> String {
 /// Bridge `@language.DiagnosticSeverity` → `MarkerSeverity`. Replaces Monaco's
 /// `fromSeverity`, whose `base/common/severity` source enum has no viewer
 /// analog (deferred).
-pub fn MarkerSeverity::from_diagnostic_severity(
+fn MarkerSeverity::from_diagnostic_severity(
   severity : @language.DiagnosticSeverity,
 ) -> MarkerSeverity {
   match severity {
@@ -79,7 +79,7 @@ pub fn MarkerSeverity::from_diagnostic_severity(
 
 ///|
 /// Inverse bridge for the `to_diagnostic` shim.
-pub fn MarkerSeverity::to_diagnostic_severity(
+fn MarkerSeverity::to_diagnostic_severity(
   self : MarkerSeverity,
 ) -> @language.DiagnosticSeverity {
   match self {
@@ -100,7 +100,7 @@ pub(all) enum MarkerTag {
 
 ///|
 /// The tag's bit value (`Unnecessary=1, Deprecated=2`), `markers.ts:51`.
-pub fn MarkerTag::value(self : MarkerTag) -> Int {
+fn MarkerTag::value(self : MarkerTag) -> Int {
   match self {
     Unnecessary => 1
     Deprecated => 2
@@ -109,9 +109,7 @@ pub fn MarkerTag::value(self : MarkerTag) -> Int {
 
 ///|
 /// Bridge `@language.DiagnosticTag` → `MarkerTag`.
-pub fn MarkerTag::from_diagnostic_tag(
-  tag : @language.DiagnosticTag,
-) -> MarkerTag {
+fn MarkerTag::from_diagnostic_tag(tag : @language.DiagnosticTag) -> MarkerTag {
   match tag {
     Unnecessary => Unnecessary
     Deprecated => Deprecated
@@ -120,9 +118,7 @@ pub fn MarkerTag::from_diagnostic_tag(
 
 ///|
 /// Inverse bridge for the `to_diagnostic` shim.
-pub fn MarkerTag::to_diagnostic_tag(
-  self : MarkerTag,
-) -> @language.DiagnosticTag {
+fn MarkerTag::to_diagnostic_tag(self : MarkerTag) -> @language.DiagnosticTag {
   match self {
     Unnecessary => Unnecessary
     Deprecated => Deprecated
@@ -130,21 +126,10 @@ pub fn MarkerTag::to_diagnostic_tag(
 }
 
 ///|
-/// Related-information location, `IRelatedInformation` (`markers.ts:42`).
-pub(all) struct RelatedInformation {
-  resource : @base_common.Uri
-  message : String
-  start_line_number : Int
-  start_column : Int
-  end_line_number : Int
-  end_column : Int
-} derive(Eq, Debug)
-
-///|
 /// Pre-sanitize marker input, `IMarkerData` (`markers.ts:109`). Monaco's
 /// `code?: string | { value; target }` object form (code links) is reduced to
 /// `String?` — the link target is out of scope (deviation).
-pub(all) struct MarkerData {
+struct MarkerData {
   code : String?
   severity : MarkerSeverity
   message : String
@@ -162,7 +147,7 @@ pub(all) struct MarkerData {
 ///|
 /// Builds marker input from the required fields, leaving the optional metadata
 /// (`code`, `source`, `tags`, …) defaulted to absent.
-pub fn MarkerData::MarkerData(
+fn new_marker_data(
   severity~ : MarkerSeverity,
   message~ : String,
   start_line_number~ : Int,
@@ -196,7 +181,7 @@ pub fn MarkerData::MarkerData(
 /// `IMarkerData` sanitize, `MarkerService._toMarker` (`markerService.ts:228`):
 /// drops markers with an empty message and clamps the line/column fields. The
 /// owner/resource are bound here as the static does.
-pub fn MarkerData::to_marker(
+fn MarkerData::to_marker(
   self : MarkerData,
   owner : String,
   resource : @base_common.Uri,
@@ -240,14 +225,6 @@ pub fn MarkerData::to_marker(
 }
 
 ///|
-/// A `{resource, marker}` pair for `change_all`, `IResourceMarker`
-/// (`markers.ts:124`).
-pub(all) struct ResourceMarker {
-  resource : @base_common.Uri
-  marker : MarkerData
-} derive(Eq, Debug)
-
-///|
 /// A sanitized marker, `IMarker` (`markers.ts:129`). `range` is derived from the
 /// separate line/column fields (Monaco stores them flat). `start_column` is
 /// mutable because `_createDecorationRange` snaps it for full-line markers
@@ -271,7 +248,7 @@ pub struct Marker {
 
 ///|
 /// The marker's line/column span as a `Range` (Monaco's `Range.lift(marker)`).
-pub fn Marker::range(self : Marker) -> @base_common.Range {
+fn Marker::range(self : Marker) -> @base_common.Range {
   Range(
     self.start_line_number,
     self.start_column,
@@ -283,7 +260,7 @@ pub fn Marker::range(self : Marker) -> @base_common.Range {
 ///|
 /// Whether the marker carries `tag`, `MarkerDecorations._hasMarkerTag`
 /// (`markerDecorationsService.ts:299`).
-pub fn Marker::has_tag(self : Marker, tag : MarkerTag) -> Bool {
+fn Marker::has_tag(self : Marker, tag : MarkerTag) -> Bool {
   match self.tags {
     Some(tags) => tags.contains(tag)
     None => false
@@ -292,7 +269,7 @@ pub fn Marker::has_tag(self : Marker, tag : MarkerTag) -> Bool {
 
 ///|
 /// Aggregate per-severity counts, `MarkerStatistics` (`markers.ts:146`).
-pub struct MarkerStatistics {
+priv struct MarkerStatistics {
   mut errors : Int
   mut warnings : Int
   mut infos : Int
@@ -301,7 +278,7 @@ pub struct MarkerStatistics {
 
 ///|
 /// Read filter, `IMarkerReadOptions` (`markers.ts:13`).
-pub(all) struct MarkerReadOptions {
+priv struct MarkerReadOptions {
   owner : String?
   resource : @base_common.Uri?
   severities : Int?
@@ -312,7 +289,7 @@ pub(all) struct MarkerReadOptions {
 ///|
 /// Builds a read filter; every field is optional, `ignore_resource_filters`
 /// defaults to false.
-pub fn MarkerReadOptions::MarkerReadOptions(
+fn MarkerReadOptions::MarkerReadOptions(
   owner? : String,
   resource? : @base_common.Uri,
   severities? : Int,
@@ -326,7 +303,7 @@ pub fn MarkerReadOptions::MarkerReadOptions(
 /// Converts a language diagnostic into a marker owned by a specific provider.
 /// The shim the diagnostics render path uses; the `Marker` carries no marker-only
 /// metadata (code/source) because diagnostics do not supply it.
-pub fn Marker::from_diagnostic(
+fn Marker::from_diagnostic(
   owner : String,
   resource : @base_common.Uri,
   diagnostic : @language.Diagnostic,
@@ -351,7 +328,7 @@ pub fn Marker::from_diagnostic(
 
 ///|
 /// Converts marker data back to the shared diagnostic shape.
-pub fn Marker::to_diagnostic(self : Marker) -> @language.Diagnostic {
+fn Marker::to_diagnostic(self : Marker) -> @language.Diagnostic {
   {
     range: self.range(),
     severity: self.severity.to_diagnostic_severity(),

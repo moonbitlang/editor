@@ -25,7 +25,7 @@ pub fn MarkerService::marker_service_handle(
 
 ///|
 /// Subscribes to marker-store changes through the borrowed adapter.
-pub fn MarkerServiceHandle::on_did_change_markers(
+fn MarkerServiceHandle::on_did_change_markers(
   self : MarkerServiceHandle,
   listener : (Array[@base_common.Uri]) -> Unit,
 ) -> @base_common.Disposable {
@@ -34,7 +34,7 @@ pub fn MarkerServiceHandle::on_did_change_markers(
 
 ///|
 /// Reads markers through the borrowed adapter.
-pub fn MarkerServiceHandle::read(
+fn MarkerServiceHandle::read(
   self : MarkerServiceHandle,
   options : MarkerReadOptions,
 ) -> Array[Marker] {
@@ -44,7 +44,7 @@ pub fn MarkerServiceHandle::read(
 ///|
 /// Removes the owner's markers for the supplied resources through the borrowed
 /// adapter.
-pub fn MarkerServiceHandle::remove(
+fn MarkerServiceHandle::remove(
   self : MarkerServiceHandle,
   owner : String,
   resources : Array[@base_common.Uri],
@@ -56,7 +56,7 @@ pub fn MarkerServiceHandle::remove(
 /// Production marker-decoration capabilities consumed by Viewer and editor
 /// contributions. The concrete decoration service retains lifecycle ownership;
 /// leases and subscriptions returned here remain independently disposable.
-pub(all) struct ResolvedMarkerDecoration {
+pub struct ResolvedMarkerDecoration {
   range : @base_common.Range
   marker : Marker
   options : @model.ModelDecorationOptions

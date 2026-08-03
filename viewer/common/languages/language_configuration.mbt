@@ -9,15 +9,15 @@
 ///|
 /// Normalized line-comment configuration. `no_indent` corresponds to Monaco's
 /// optional `LineCommentConfig.noIndent` and defaults to false.
-pub(all) struct LineCommentRule {
+pub struct LineCommentRule {
   comment : String
-  no_indent : Bool
+  priv no_indent : Bool
 } derive(Eq, Debug)
 
 ///|
 /// Convenience construction corresponding to Monaco's string line-comment
 /// form, with the object form's `noIndent` flag available when needed.
-pub fn LineCommentRule::LineCommentRule(
+fn new_line_comment_rule(
   comment : String,
   no_indent? : Bool = false,
 ) -> LineCommentRule {
@@ -68,7 +68,7 @@ pub(all) struct LanguageConfiguration {
 ///|
 /// Registers or replaces `language_id`'s configuration — Monaco's
 /// `languages.setLanguageConfiguration` reduced to comment and folding rules.
-pub fn Languages::set_language_configuration(
+fn Languages::set_language_configuration_impl(
   self : Languages,
   language_id : String,
   configuration : LanguageConfiguration,
@@ -103,7 +103,7 @@ pub fn Languages::set_language_configuration(
 /// The configuration registered for `language_id` — Monaco's
 /// `ILanguageConfigurationService.getLanguageConfiguration(languageId)`,
 /// with an empty configuration for unregistered languages.
-pub fn Languages::get_language_configuration(
+fn Languages::get_language_configuration(
   self : Languages,
   language_id : String,
 ) -> LanguageConfiguration {
