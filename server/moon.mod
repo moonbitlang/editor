@@ -13,6 +13,6 @@ preferred_target = "wasm"
 warnings = "+prefer_readonly_array"
 
 import {
-  "moonbitlang/editor@0.4.2",
+  "moonbitlang/editor@0.4.3",
   "moonbitlang/async@0.20.3",
 }
