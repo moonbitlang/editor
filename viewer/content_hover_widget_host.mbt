@@ -14,8 +14,7 @@
 fn Viewer::sync_content_hover_widget(self : Viewer) -> Unit {
   guard self.content_hover_contribution() is Some(state) else { return }
   let hc = state.controller
-  let loading_message = if hc.hover.operation.state
-    is HoverOpWaitingForAsyncShowingLoading {
+  let loading_message = if hc.hover.operation.shows_loading_message() {
     match hc.hover.anchor {
       Some(anchor) => self.make_hover_computer().create_loading_message(anchor)
       None => None

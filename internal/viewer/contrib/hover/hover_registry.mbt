@@ -4,19 +4,19 @@
 /// global that the hover contribution populates, not state the viewer services
 /// own. Each factory builds a participant from the editor-scoped services, like
 /// Monaco's `instantiationService.createInstance(ctor, editor)`.
-pub struct HoverParticipantRegistry {
+priv struct HoverParticipantRegistry {
   entries : Array[(HoverParticipantServices) -> HoverParticipantHandle]
 }
 
 ///|
 /// Creates an empty hover participant registry.
-pub fn HoverParticipantRegistry::HoverParticipantRegistry() -> HoverParticipantRegistry {
+fn HoverParticipantRegistry::HoverParticipantRegistry() -> HoverParticipantRegistry {
   { entries: [] }
 }
 
 ///|
 /// Adds a hover participant factory to the registry.
-pub fn HoverParticipantRegistry::register(
+fn HoverParticipantRegistry::register(
   self : HoverParticipantRegistry,
   factory : (HoverParticipantServices) -> HoverParticipantHandle,
 ) -> Unit {
@@ -26,7 +26,7 @@ pub fn HoverParticipantRegistry::register(
 ///|
 /// Builds one participant instance per registered factory for the given
 /// services — Monaco's per-editor `_initializeHoverParticipants`.
-pub fn HoverParticipantRegistry::build_all(
+fn HoverParticipantRegistry::build_all(
   self : HoverParticipantRegistry,
   services : HoverParticipantServices,
 ) -> Array[HoverParticipantHandle] {
@@ -53,7 +53,7 @@ pub fn HoverParticipantRegistry::build_all(
 /// Returns the mutable backing factory array, matching Monaco's `getAll()`
 /// aliasing contract. `build_all` remains the instance-producing, ordinal-sort
 /// boundary.
-pub fn HoverParticipantRegistry::get_all(
+fn HoverParticipantRegistry::get_all(
   self : HoverParticipantRegistry,
 ) -> Array[(HoverParticipantServices) -> HoverParticipantHandle] {
   self.entries
@@ -64,7 +64,7 @@ pub fn HoverParticipantRegistry::get_all(
 /// participants. The analog of Monaco's module-level `HoverParticipantRegistry`
 /// plus the `HoverParticipantRegistry.register(...)` calls in
 /// `hoverContribution.ts`.
-pub let hover_participant_registry : HoverParticipantRegistry = make_default_hover_participant_registry()
+let hover_participant_registry : HoverParticipantRegistry = make_default_hover_participant_registry()
 
 ///|
 fn make_default_hover_participant_registry() -> HoverParticipantRegistry {
@@ -77,7 +77,7 @@ fn make_default_hover_participant_registry() -> HoverParticipantRegistry {
 /// Registers the built-in marker and markdown hover participants
 /// into `registry`, mirroring `hoverContribution.ts`. Registration lives here,
 /// in the hover feature, never in the viewer services constructor.
-pub fn register_default_hover_participants(
+fn register_default_hover_participants(
   registry : HoverParticipantRegistry,
 ) -> Unit {
   registry.register(services => {

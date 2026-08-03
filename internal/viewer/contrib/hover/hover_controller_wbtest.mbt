@@ -29,6 +29,33 @@ fn HoverController::start_delayed(
 }
 
 ///|
+test "immediate start retains source focus and anchor inputs" {
+  let anchor = HoverRangeAnchor(
+    priority=7,
+    range=Range(1, 3, 1, 5),
+    initial_mouse_pos_x=None,
+    initial_mouse_pos_y=None,
+  )
+  let (effect, started) = HoverController::empty().start_showing_or_update_hover(
+    anchor,
+    false,
+    mode=HoverStartImmediate,
+    source=HoverStartKeyboard,
+    should_focus=true,
+  )
+  assert_true(effect is HoverRunAsyncAndSync(_))
+  assert_true(started.anchor == Some(anchor))
+  match started.operation.options {
+    Some(options) => {
+      assert_true(options.source is HoverStartKeyboard)
+      assert_true(options.should_focus)
+      assert_true(options.anchor == anchor)
+    }
+    None => fail("expected retained start options")
+  }
+}
+
+///|
 test "delayed start arms the operation and suppresses results before the delay" {
   let controller = HoverController::empty()
   let (effect, armed) = controller.start_delayed(3, 7)
