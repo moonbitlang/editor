@@ -5,6 +5,7 @@ import {
   "moonbit-community/rabbita/dom",
   "moonbitlang/core/debug",
   "moonbitlang/editor/base/common",
+  "moonbitlang/editor/language",
   "moonbitlang/editor/platform/log",
   "moonbitlang/editor/viewer/browser",
   "moonbitlang/editor/viewer/common/agent_feedback_api",
@@ -119,6 +120,7 @@ pub fn Viewer::set_scroll_top(Self, Double) -> Unit
 pub fn Viewer::set_selection(Self, @core.Selection, source? : String) -> Unit
 pub fn Viewer::set_selections(Self, Array[@core.Selection], source? : String, reason? : @editor_api.CursorChangeReason) -> Unit
 pub fn Viewer::set_value(Self, String) -> Unit
+pub fn Viewer::show_references(Self, @common.Position, Array[@language.Location]) -> Unit
 pub fn Viewer::toggle_markdown_section_at(Self, Int) -> Bool
 pub fn Viewer::update_options(Self, ViewerOptions) -> Unit
 

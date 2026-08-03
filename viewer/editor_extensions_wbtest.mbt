@@ -3,6 +3,19 @@
 // dispose with it; the keybinding table gates on live preconditions.
 
 ///|
+priv struct EditorExtensionsReferencesProvider {}
+
+///|
+impl @language.ReferencesProvider for EditorExtensionsReferencesProvider with fn provide_references(
+  _self,
+  _model,
+  _position,
+  _token,
+) {
+  []
+}
+
+///|
 test "contributions instantiate centrally in the reviewed order and expose every typed variant" {
   let viewer = Viewer::Viewer()
   let expected = [
@@ -14,6 +27,7 @@ test "contributions instantiate centrally in the reviewed order and expose every
     "quickDiff.decorator",
     context_menu_contribution_id,
     definition_contribution_id,
+    references_contribution_id,
   ]
   let actual : Array[String] = []
   for id, entry in viewer.contributions.instances {
@@ -27,6 +41,7 @@ test "contributions instantiate centrally in the reviewed order and expose every
       ("quickDiff.decorator", QuickDiff(_)) => ()
       ("editor.contrib.contextmenu", ContextMenu(_)) => ()
       ("editor.contrib.definition", Definition(_)) => ()
+      ("editor.contrib.referencesController", References(_)) => ()
       _ => fail("contribution id and concrete variant diverged: \{id}")
     }
   }
@@ -45,6 +60,7 @@ test "contributions instantiate centrally in the reviewed order and expose every
   assert_true(viewer.quick_diff_contribution() is Some(_))
   assert_true(viewer.context_menu_contribution() is Some(_))
   assert_true(viewer.definition_contribution() is Some(_))
+  assert_true(viewer.references_contribution() is Some(_))
 
   // Every typed accessor validates both its fixed id and the enum variant.
   // Temporarily put a valid but mismatched payload under quick diff's id.
@@ -156,7 +172,7 @@ test "direct entry disposal retires typed lookup without removing the row early"
 }
 
 ///|
-test "viewer disposes all eight real rows once in order while the map stays installed" {
+test "viewer disposes all nine real rows once in order while the map stays installed" {
   let viewer = Viewer::Viewer()
   let expected_ids = [
     "agentFeedback.editorInputContribution",
@@ -167,6 +183,7 @@ test "viewer disposes all eight real rows once in order while the map stays inst
     "quickDiff.decorator",
     context_menu_contribution_id,
     definition_contribution_id,
+    references_contribution_id,
   ]
   let order : Array[String] = []
   let map_stayed_installed = Ref(true)
@@ -195,6 +212,7 @@ test "viewer disposes all eight real rows once in order while the map stays inst
         "quickDiff" => viewer.quick_diff_contribution() is Some(_)
         "contextMenu" => viewer.context_menu_contribution() is Some(_)
         "definition" => viewer.definition_contribution() is Some(_)
+        "references" => viewer.references_contribution() is Some(_)
         _ => false
       }
       if !available {
@@ -222,11 +240,14 @@ test "viewer disposes all eight real rows once in order while the map stays inst
   viewer.contributions.instances[definition_contribution_id].listeners.push(
     track("definition"),
   )
+  viewer.contributions.instances[references_contribution_id].listeners.push(
+    track("references"),
+  )
   viewer.dispose()
   viewer.dispose()
   assert_eq(order, [
     "input", "widget", "folding", "markdown", "hover", "quickDiff", "contextMenu",
-    "definition",
+    "definition", "references",
   ])
   assert_true(map_stayed_installed.val)
   assert_true(typed_row_stayed_available.val)
@@ -241,7 +262,7 @@ test "contribution wrapper retires lookup between behavior and retained-resource
   let hover_state = viewer.content_hover_contribution().unwrap()
   viewer.contributions.dispose_behavior(viewer)
   assert_true(viewer.contributions.lifecycle == ContributionsDisposing)
-  assert_eq(viewer.contributions.instances.length(), 8)
+  assert_eq(viewer.contributions.instances.length(), 9)
   assert_true(viewer.content_hover_contribution() is None)
   assert_true(
     viewer.contributions.lookup("editor.contrib.contentHover") is None,
@@ -282,6 +303,8 @@ test "two viewers isolate mutable contribution state and disposal owners" {
   let second_context_menu = second.context_menu_contribution().unwrap()
   let first_definition = first.definition_contribution().unwrap()
   let second_definition = second.definition_contribution().unwrap()
+  let first_references = first.references_contribution().unwrap()
+  let second_references = second.references_contribution().unwrap()
   assert_false(physical_equal(first_input, second_input))
   assert_false(physical_equal(first_widgets, second_widgets))
   assert_false(physical_equal(first_folding, second_folding))
@@ -290,6 +313,7 @@ test "two viewers isolate mutable contribution state and disposal owners" {
   assert_false(physical_equal(first_quick_diff, second_quick_diff))
   assert_false(physical_equal(first_context_menu, second_context_menu))
   assert_false(physical_equal(first_definition, second_definition))
+  assert_false(physical_equal(first_references, second_references))
 
   // Give every concrete controller/state a Viewer-specific mutable witness.
   // These values deliberately differ so an accidental shared carrier or
@@ -308,6 +332,8 @@ test "two viewers isolate mutable contribution state and disposal owners" {
   first_hover.hover_notified_token = 11
   second_hover.hover_ignore_mouse_events = true
   second_hover.hover_notified_token = 22
+  first_references.generation = 303
+  second_references.generation = 404
 
   let first_disposals : Array[String] = []
   let second_disposals : Array[String] = []
@@ -359,6 +385,12 @@ test "two viewers isolate mutable contribution state and disposal owners" {
   second.contributions.instances[definition_contribution_id].listeners.push(
     @base_common.Disposable::from(() => second_disposals.push("definition")),
   )
+  first.contributions.instances[references_contribution_id].listeners.push(
+    @base_common.Disposable::from(() => first_disposals.push("references")),
+  )
+  second.contributions.instances[references_contribution_id].listeners.push(
+    @base_common.Disposable::from(() => second_disposals.push("references")),
+  )
   let second_folding_listener_count = second_folding.local_to_dispose.length()
   let second_markdown_listener_count = second_markdown.listeners.length()
   let second_quick_diff_listener_count = second_quick_diff.listeners.length()
@@ -375,6 +407,8 @@ test "two viewers isolate mutable contribution state and disposal owners" {
   assert_false(second_hover.hover_keep_open)
   assert_false(first_hover.hover_ignore_mouse_events)
   assert_true(second_hover.hover_ignore_mouse_events)
+  assert_eq(first_references.generation, 303)
+  assert_eq(second_references.generation, 404)
 
   first.dispose()
 
@@ -382,7 +416,7 @@ test "two viewers isolate mutable contribution state and disposal owners" {
   // same typed instances, mutable sentinels, and pending disposal handles.
   assert_eq(first_disposals, [
     "input", "widget", "folding", "markdown", "hover", "quickDiff", "contextMenu",
-    "definition",
+    "definition", "references",
   ])
   assert_eq(second_disposals, [])
   // Markdown teardown advances only First's stale-callback generation.
@@ -395,6 +429,7 @@ test "two viewers isolate mutable contribution state and disposal owners" {
   assert_true(first.quick_diff_contribution() is None)
   assert_true(first.context_menu_contribution() is None)
   assert_true(first.definition_contribution() is None)
+  assert_true(first.references_contribution() is None)
   assert_true(
     physical_equal(
       second_input,
@@ -431,6 +466,9 @@ test "two viewers isolate mutable contribution state and disposal owners" {
   assert_true(
     physical_equal(second_definition, second.definition_contribution().unwrap()),
   )
+  assert_true(
+    physical_equal(second_references, second.references_contribution().unwrap()),
+  )
   assert_false(second_input.visible)
   assert_eq(second_input.hover_line_number, 22)
   assert_eq(second_widgets.widget_id_pool, 202)
@@ -463,11 +501,11 @@ test "two viewers isolate mutable contribution state and disposal owners" {
   second.dispose()
   assert_eq(second_disposals, [
     "input", "widget", "folding", "markdown", "hover", "quickDiff", "contextMenu",
-    "definition",
+    "definition", "references",
   ])
   assert_eq(first_disposals, [
     "input", "widget", "folding", "markdown", "hover", "quickDiff", "contextMenu",
-    "definition",
+    "definition", "references",
   ])
 }
 
@@ -482,6 +520,7 @@ test "model removal and reattach preserve central contribution identities" {
   let quick_diff = viewer.quick_diff_contribution().unwrap()
   let context_menu = viewer.context_menu_contribution().unwrap()
   let definition = viewer.definition_contribution().unwrap()
+  let references = viewer.references_contribution().unwrap()
   let markdown_listener_disposed = Ref(false)
   markdown.listeners.push(
     @base_common.Disposable::from(() => markdown_listener_disposed.val = true),
@@ -516,6 +555,9 @@ test "model removal and reattach preserve central contribution identities" {
   )
   assert_true(
     physical_equal(definition, viewer.definition_contribution().unwrap()),
+  )
+  assert_true(
+    physical_equal(references, viewer.references_contribution().unwrap()),
   )
   viewer.dispose()
   assert_true(markdown_listener_disposed.val)
@@ -666,6 +708,75 @@ test "definition context menu resolves both definition actions at the top level"
     peek_keybinding,
     definition_menu_keybinding_label(alt=true, ctrl_cmd=false),
   )
+}
+
+///|
+test "Peek References registers Shift F12 and follows definition menu actions" {
+  install_mounted_test_browser()
+  defer restore_mounted_test_browser()
+  let languages = @languages.Languages()
+  languages.register_definition_provider(LanguageId("moonbit"), DefinitionNavigationTestProvider::{
+    locations: [],
+  })
+  |> ignore
+  languages.register_references_provider(LanguageId("moonbit"), EditorExtensionsReferencesProvider::{
+
+  })
+  |> ignore
+  let log_service = @log.LogService()
+  let services = ViewerServices(
+    languages=languages.language_handle(log_service.log_handle()),
+    log_service=log_service.log_handle(),
+  )
+  defer services.dispose()
+  let viewer = Viewer::Viewer(services~)
+  defer viewer.dispose()
+  let model = definition_navigation_test_model(
+    "file:///references-context-menu.mbt",
+  )
+  defer model.dispose()
+  let host = @rdom.document().create_element("div")
+  viewer.attach(host)
+  viewer.set_model(Some(model))
+  viewer.set_position(Position(1, 5))
+
+  let rules = editor_registry().keybindings.filter(rule => {
+    rule.command_id == "editor.action.referenceSearch.trigger"
+  })
+  assert_eq(rules.length(), 1)
+  assert_eq(rules[0].key, "F12")
+  assert_false(rules[0].alt)
+  assert_false(rules[0].ctrl_cmd)
+  assert_true(rules[0].shift)
+
+  let entries = editor_registry().resolve_editor_menu(viewer, EditorContext)
+  assert_eq(entries.length(), 3)
+  guard entries[2]
+    is ContextMenuAction(
+      id="editor.action.referenceSearch.trigger",
+      label="Peek References",
+      keybinding_label=Some(keybinding)
+    ) else {
+    fail("expected Peek References after the two definition actions")
+  }
+  assert_eq(keybinding, references_menu_keybinding_label())
+
+  let tasks = ManualDefinitionTasks()
+  viewer.set_definition_host_for_test(task => tasks.schedule(task))
+  assert_true(
+    editor_registry().dispatch_keybinding(
+      viewer,
+      "F12",
+      alt=false,
+      ctrl_cmd=false,
+      shift=true,
+    ),
+  )
+  match viewer.definition_peek_phase_for_test() {
+    PeekLoadingReferences(_) => ()
+    _ => fail("registered Shift F12 did not start Peek References")
+  }
+  viewer.close_references_peek(restore_focus=false)
 }
 
 ///|

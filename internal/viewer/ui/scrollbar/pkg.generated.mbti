@@ -38,6 +38,12 @@ type MouseWheelClassifier
 pub fn MouseWheelClassifier::accept_standard_wheel_event(Self, StandardWheelEvent) -> Unit
 pub fn MouseWheelClassifier::is_physical_mouse_wheel(Self) -> Bool
 
+type NativeScrollableElementInput
+#alias(new, deprecated)
+pub fn NativeScrollableElementInput::NativeScrollableElementInput(ScrollableElementDom) -> Self
+pub fn NativeScrollableElementInput::dispose(Self) -> Unit
+pub fn NativeScrollableElementInput::refresh(Self) -> Unit
+
 type ScrollableElementDom
 pub fn ScrollableElementDom::ScrollableElementDom(String, vertical_size? : Double, horizontal_size? : Double, content? : @dom.Element) -> Self
 pub fn ScrollableElementDom::content(Self) -> @dom.Element

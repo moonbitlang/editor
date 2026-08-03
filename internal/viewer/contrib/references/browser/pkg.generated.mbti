@@ -1,0 +1,44 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitlang/editor/internal/viewer/contrib/references/browser"
+
+import {
+  "moonbit-community/rabbita/dom",
+  "moonbitlang/editor/internal/viewer/contrib/references",
+}
+
+// Values
+pub let references_peek_height_in_lines : Int
+
+// Errors
+
+// Types and methods
+pub struct ReferencesPeekWidget {
+  // private fields
+}
+#alias(new, deprecated)
+pub fn ReferencesPeekWidget::ReferencesPeekWidget(@references.ReferencesPeekMode, ReferencesPeekWidgetCallbacks) -> Self
+pub fn ReferencesPeekWidget::dispose(Self) -> Unit
+pub fn ReferencesPeekWidget::focus(Self) -> Unit
+pub fn ReferencesPeekWidget::get_dom_node(Self) -> @dom.Element
+pub fn ReferencesPeekWidget::get_preview_host(Self) -> @dom.Element
+pub fn ReferencesPeekWidget::set_group_previews(Self, Int, Array[@references.ReferenceRowPreview]) -> Unit
+pub fn ReferencesPeekWidget::set_results(Self, @references.ReferencesModel, @references.ReferenceItem?) -> Unit
+pub fn ReferencesPeekWidget::set_selected(Self, @references.ReferenceItem) -> Unit
+pub fn ReferencesPeekWidget::show_empty(Self) -> Unit
+pub fn ReferencesPeekWidget::show_preview_loading(Self) -> Unit
+pub fn ReferencesPeekWidget::show_preview_ready(Self) -> Unit
+pub fn ReferencesPeekWidget::show_preview_unavailable(Self, String) -> Unit
+
+pub(all) struct ReferencesPeekWidgetCallbacks {
+  on_close : () -> Unit
+  on_select : (@references.ReferenceItem) -> Unit
+  on_confirm : (@references.ReferenceItem) -> Unit
+  on_open_side : (@references.ReferenceItem) -> Unit
+  on_next : () -> Unit
+  on_previous : () -> Unit
+  on_expand_group : (@references.ReferenceGroup) -> Unit
+}
+
+// Type aliases
+
+// Traits

@@ -36,6 +36,9 @@ scrollbar.dispose()
 - `update_from_model` paints editor scroll dimensions/position;
   `update_from_native_content` reads a native scrolling element.
   `native_scroll_to`/`native_scroll_by` drive the latter.
+- `NativeScrollableElementInput` gives native-content owners the shared
+  reveal, track, retained-geometry thumb-drag, scroll synchronization, resize,
+  and exactly-once disposal behavior without importing the editor controller.
 - `track`, `slider`, `state`, `desired_position_from_track`, and drag/reveal
   methods expose the geometry needed by
   `internal/viewer/browser/controller`.

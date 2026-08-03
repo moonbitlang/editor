@@ -9,9 +9,9 @@ ownership and lifecycle rules that are not obvious from signatures.
 > The code blocks on this page are `mbt nocheck`. This package is js-only and a
 > `Viewer` needs a live DOM host element, which `moon test` (Node, no DOM)
 > cannot provide. The executable proofs for this surface are the Playwright
-> component scenarios under `tests/browser/component/` and the headless
-> white-box suite in `viewer/test_viewer_wbtest.mbt`; see `docs/harness.md` for
-> how to pick a layer.
+> component scenarios under `tests/browser/component/` and the headless or
+> mounted white-box suites under `viewer/`; see `docs/harness.md` for how to
+> pick a layer.
 
 ## The shortest embedding
 
@@ -135,8 +135,9 @@ viewer.slot.data -> model: borrows readonly
   map is the only per-Viewer instance store. Each central entry owns one
   concrete hover, folding, feedback-input, feedback-widget, quick-diff, or
   Markdown-comment state value, the context-menu shell/source-anchor state, or
-  the definition request/link/Peek state, plus its root listeners; feature
-  packages keep no editor-id-keyed instance table.
+  the Definition request/link state, or the shared Definition/References
+  Peek/query state, plus its root listeners; feature packages keep no
+  editor-id-keyed instance table.
   The content-hover payload additionally
   owns its controller, lazy widget and logical widget view, and timeout/async
   launch policy across model swaps. The Markdown-comment payload owns its
@@ -224,6 +225,8 @@ The API is a readonly subset of Monaco's editor API:
 - position, selection, scroll, reveal, geometry, and read queries;
 - model decorations and `EditorDecorationsCollection`;
 - view zones and null-position overlay widgets;
+- precomputed reference presentation through
+  `show_references(Position, Array[Location])`;
 - model, cursor, scroll, ViewZone, hidden-area, mouse, and disposal events.
 
 Canonical public event values and editor-option enums are owned by
@@ -340,7 +343,7 @@ actions, touch long press, visible disabled actions, icons, mnemonics, and
 deeper submenus remain outside this first surface. Independent Viewers each own
 their menu rather than sharing a process-global context-menu service.
 
-## Definition navigation
+## Definition navigation and References Peek
 
 Definition UI is a behavior port of Monaco standalone. In Code, F12 and the web
 Ctrl/Cmd+F12 fallback request definitions at the current cursor. In semantic
@@ -388,45 +391,110 @@ exact source range as caller-owned spans; ordinary fences and synthetic padding
 stay inert, and projection replacement removes those spans before their DOM
 retires.
 
-Alt+F12 opens Peek only in an outer mounted Viewer. Code reserves up to the
-Monaco-default 18 lines with a blank ViewZone and aligns the interactive shell
-through a Viewer-owned overlay; keeping the two DOM nodes separate prevents
-ViewZone's absolute block styles from collapsing the shell's flex body.
-The anchor-to-following-line range is revealed after insertion so the ViewZone
-height participates in scroll fitting and the shell cannot open clipped below
-the editor.
-Semantic Markdown mounts the shell in the persistent projection overlay and
-stamps the session with the current projection generation. The shell places
-the readonly preview on the left and the result list on the right, labels the
-selected filename/directory and result count, and highlights the selected
-target range. The same model/version/position command toggles the existing Peek
-closed. Results are sorted by URI/range and initially select the location
-nearest the source. A zero-result request retires its loading shell, restores
-outer focus, and reports `No definition found` instead of leaving an empty
-dialog; when the source anchor has a word, the message uses the same
-word-specific form as ordinary goto.
-Same-resource preview reuses the caller-owned model; cross-resource preview
-uses the optional host-owned `TextModelResolverHandle` and retains its
-`TextModelReference` only for the preview lifetime. A current missing, rejected,
-or wrong-URI resolution replaces the installed child with the unavailable
-fallback and releases its reference. Stale, cancelled, or disposed late results
-cannot commit and release any returned reference. A slow replacement retains
-the installed child/reference until the new preview is current and ready to
-commit. Focus is scheduled after the Code ViewZone becomes visible. An
-F4/Shift+F4 replacement restores preview focus only when the retiring preview
-still owns focus at commit time, so a user focus move during resolution wins.
-Enter confirms only from the shell/list focus domain; Enter inside the nested
-preview remains native. Escape closes and restores outer focus. A nested
-preview borrows services but cannot recursively open another Peek. It retains
-raw source presentation: whole-line Markdown-comment replacement remains an
-outer-Viewer contribution so an asynchronously measured comment zone cannot
-shift the selected target out of the compact preview. Teardown
-atomically detaches every session/preview owner slot before any synchronous
-cancellation or disposal callback, then disposes the nested Viewer before its
-reference, the Code overlay and shell, and finally the active ViewZone spacer
-or Markdown overlay.
-Confirmation is stamped with both the source model and latest open intent, so
-a queued confirmation cannot overwrite a newer cursor or navigation action.
+### Shared Peek controller
+
+Alt+F12 and multiple Definition results populate the same per-Viewer
+References controller used by the public precomputed-locations entry. Provider
+requests and Definition-specific no-result/open-rejection messages stay in
+the Definition contribution. References provider requests stay in the
+References contribution. Both feed already-computed locations into the shared
+result session.
+
+Code requests the Monaco-default 18 lines with a blank ViewZone, reduces toward
+80% of the live viewport while retaining the inherited 12-line floor, and
+aligns the interactive shell through a Viewer-owned overlay. The
+anchor-to-following-line range is revealed after insertion so the spacer
+participates in scroll fitting. Semantic Markdown mounts the shell in its
+persistent projection overlay and stamps the session with the current
+projection generation. Both modes place a nested readonly preview on the left
+and a feature-local ARIA result tree on the right.
+
+Locations are copied, sorted by canonical URI string and full range, exactly
+deduplicated, grouped by URI, and retained as one flat circular navigation
+sequence. Multi-resource results render file rows with basename, parent, and
+count; one-resource results omit the redundant file row. The initially nearest
+resource is expanded. Same-resource row snippets use the attached model.
+Another group resolves lazily on first expansion through
+`TextModelResolverHandle`; its lease is independent of the selected-preview
+lease and remains retained until session close. A failed snippet resolution
+keeps the selectable `basename:line:column` fallback.
+
+The selected preview reuses the attached model for the same URI or resolves its
+own `TextModelReference` for another URI. It decorates every result in the
+previewed resource and adds one distinct selected decoration last. A slow
+replacement keeps the installed child/reference until the new preview is
+current and ready. Missing, disposed, or wrong-URI selected models show
+`No preview available`; stale completions cannot mutate the shell and release
+any returned lease exactly once.
+
+Focus is scheduled after the Code ViewZone becomes visible. F4/Shift+F4 cycle
+through the flat result sequence; preview focus is restored only when the
+retiring child still owned it at commit time. Enter or double-click opens
+Current, Ctrl/Command+Enter opens Side, Enter inside the nested preview remains
+native, and Escape closes and restores outer focus. Current opening reveals an
+exact same-resource target locally; Side and cross-resource Current requests go
+through `LocationOpenerHandle`. Definition alone presents opener-rejection
+feedback. A nested preview borrows services but cannot recursively open Peek.
+It retains raw source presentation: whole-line Markdown-comment replacement is
+an outer-Viewer contribution and cannot shift a selected target inside the
+compact preview.
+
+Every widget callback checks its captured session generation. Every async
+completion checks the source model/attachment/content version, session and
+request generations, mount, cancellation source, and exact returned URI. Close
+or replacement first detaches all selected/group owner slots, so cancellation
+or lease-release callbacks can safely open a newer session. Root teardown then
+releases the nested Viewer, selected reference, group references, decorations,
+shell/overlay, and final Code ViewZone or Markdown mount without touching a
+reentrant replacement.
+
+Definition's same model/version/position command toggles its Peek. A
+zero-result Definition request closes its loading shell and reports the
+word-specific `No definition found` feedback rather than retaining an empty
+dialog. Confirmation is stamped with both the source model and latest open
+intent, so queued work cannot overwrite a newer cursor or navigation action.
+
+### Provider-backed Peek References action
+
+Shift+F12 and the top-level `Peek References` editor context-menu row query the
+current Code cursor or most recent valid semantic-Markdown pointer anchor. The
+action is available only on a mounted outer Viewer with a matching References
+provider. It opens the shared shell immediately in `Loading references...`,
+queries every matching live provider, isolates provider failures, and flattens
+results in selector/registration priority regardless of completion order.
+An authoritative empty result remains visible as `No references found`.
+
+The request is stamped with the source model, attachment generation, content
+version, anchor, session generation, and cancellation identity. Cursor or
+semantic-anchor movement, model/content replacement, another navigation or
+Peek intent, close, and disposal all reject stale completion. The reference
+workbench registers its remote language client as the provider; the native
+host executes
+`moon ide find-references --loc <path:line:column> --json`. Moon IDE's result
+includes the declaration, and the shared model applies its existing exact
+sort/dedup/group normalization before rendering.
+
+### Public precomputed References entry
+
+```mbt nocheck
+viewer.show_references(anchor, locations)
+```
+
+`show_references` is available only on a live mounted outer Viewer with a
+current Code or Markdown presentation. It validates the anchor, copies the
+caller array, and displays exactly that set after the shared exact
+deduplication; it never queries a References provider or infers declaration
+semantics. The exact same model/attachment/content version/anchor toggles the
+References session closed; another anchor replaces it. An empty set retains an
+accessible `No references found` dialog.
+
+Opening References retires pending Definition actions, link gestures, and
+feedback so older intent cannot later replace the direct session. This API does
+not register or query a References provider; the provider-backed action above
+is an independent contribution using the same result controller. Go to
+References, CodeLens, document highlights, a Workbench References View,
+filtering, copying, history, virtualization, and a resizable/persisted split
+remain outside the Viewer surface.
 
 `ViewerServices` is an opaque capability aggregate. Its constructor accepts a
 `LanguageHandle`, one closed marker source (`MarkerStore` or `Decorations`), an
@@ -443,8 +511,9 @@ cross-resource opening or preview remains explicit. `ViewerServices::dispose`
 is idempotent and releases only bundle-created defaults, in marker-decoration,
 marker-store, then feedback order; supplied handles and captured backings remain
 caller-owned. A Viewer disposes only a bundle it created implicitly. The
-navigation capabilities are consumed only by definition opening and
-cross-resource Peek preview; same-resource navigation remains Viewer-local.
+navigation capabilities are consumed by Definition/References opening and by
+cross-resource group or selected-preview resolution; same-resource navigation
+and snippets remain Viewer-local.
 
 ## Runtime pipeline
 

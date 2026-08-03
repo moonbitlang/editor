@@ -50,6 +50,27 @@ pub fn Viewer::remove_overlay_widget(
 }
 
 ///|
+/// Removes a registration only while the root still owns this exact handle.
+/// Contribution teardown uses this narrower operation after callbacks that may
+/// synchronously install a replacement under the same Monaco widget id.
+fn Viewer::remove_overlay_widget_if_current(
+  self : Viewer,
+  widget : @editor_browser.OverlayWidget,
+) -> Bool {
+  let widget_id = widget.get_id()
+  guard self.overlay_widgets.get(widget_id) is Some(current) &&
+    physical_equal(current, widget) else {
+    return false
+  }
+  self.overlay_widgets.remove(widget_id)
+  match self.current_code_view() {
+    Some(view) => view.overlay_widgets.remove_widget(widget_id)
+    None => ()
+  }
+  true
+}
+
+///|
 /// Internal id lookup for contribution objects that retain their Monaco id
 /// rather than a second public handle.
 fn Viewer::overlay_widget_for_id(

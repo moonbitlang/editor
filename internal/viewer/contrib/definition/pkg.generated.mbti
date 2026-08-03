@@ -21,14 +21,6 @@ pub(all) enum DefinitionLinkState {
   LinkArmed(DefinitionRequestStamp, Array[@language.Location])
 }
 
-pub(all) enum DefinitionPeekPhase {
-  PeekClosed
-  PeekLoadingDefinitions(Int)
-  PeekLoadingPreview(Int, Int)
-  PeekShown(Int, Int)
-  PeekUnavailable(Int, Int)
-} derive(Eq, @debug.Debug)
-
 pub(all) struct DefinitionRequestStamp {
   sequence : Int
   target : DefinitionTargetFingerprint

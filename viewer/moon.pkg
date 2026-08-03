@@ -21,6 +21,8 @@ import {
   "moonbitlang/editor/internal/viewer/contrib/contextmenu/browser" @contextmenu_browser,
   "moonbitlang/editor/internal/viewer/contrib/definition",
   "moonbitlang/editor/internal/viewer/contrib/definition/browser" @definition_browser,
+  "moonbitlang/editor/internal/viewer/contrib/references",
+  "moonbitlang/editor/internal/viewer/contrib/references/browser" @references_browser,
   "moonbitlang/editor/internal/viewer/contrib/folding/browser" @folding_browser,
   "moonbitlang/editor/internal/viewer/contrib/hover",
   "moonbitlang/editor/internal/viewer/contrib/hover/browser" @hover_browser,

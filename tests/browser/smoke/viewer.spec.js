@@ -434,6 +434,40 @@ test('shows hover through pointer interaction', async ({ page }) => {
   }).toPass({ timeout: 60_000 });
 });
 
+test('opens Peek References from Moon IDE through the workbench', async ({
+  page,
+}) => {
+  test.slow();
+  await page.goto('/');
+  await openMainFixture(page);
+  await unfoldMainBody(page);
+
+  const symbol = page
+    .locator('.view-line span', { hasText: 'startup_event' })
+    .first();
+  await expect(symbol).toBeVisible();
+  await symbol.click();
+  await page.keyboard.press('Shift+F12');
+
+  const references = page.getByRole('dialog', { name: 'Peek References' });
+  await expect(references).toBeVisible({ timeout: 60_000 });
+  await expect(references).toContainText('2 results');
+  await expect(references).toContainText('events.mbt');
+  await expect(references).toContainText('main.mbt');
+  // Two file groups plus the selected group's visible reference. The
+  // collapsed group keeps its child row in the DOM, but out of the
+  // accessibility tree.
+  await expect(references.getByRole('treeitem')).toHaveCount(3);
+  await expect(
+    references.locator(
+      '.moonbit-viewer-references-peek-preview > ' +
+        '.monaco-editor.readonly-editor',
+    ),
+  ).toHaveCount(1);
+  await page.keyboard.press('Escape');
+  await expect(references).toHaveCount(0);
+});
+
 test('lazily expands explorer folders and auto-reveals the active file', async ({ page }) => {
   await page.goto('/');
   const initialHref = await page.evaluate(() => window.location.href);

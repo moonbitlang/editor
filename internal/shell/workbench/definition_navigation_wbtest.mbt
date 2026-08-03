@@ -9,6 +9,11 @@ extend RemoteLanguageClient with @language.DefinitionProvider::{
 }
 
 ///|
+extend RemoteLanguageClient with @language.ReferencesProvider::{
+  provide_references,
+}
+
+///|
 test "preview references share one host model and retire it after the final lease" {
   let uri = definition_navigation_test_uri("lease-target")
   let model = @model.TextModel(
@@ -305,4 +310,110 @@ async test "remote definition provider preserves ordered locations and cancellat
   workbench_dispatch.val = previous_dispatch
   cancelled.dispose()
   source_model.dispose()
+}
+
+///|
+async test "remote references provider preserves locations and cancellation" {
+  let previous_send = protocol_send.val
+  defer {
+    protocol_send.val = previous_send
+  }
+  let source_uri = definition_navigation_test_uri("references-source")
+  let first_uri = definition_navigation_test_uri("references-first")
+  let second_uri = definition_navigation_test_uri("references-second")
+  let source_model = @model.TextModel(
+    source_uri, "references-source.mbt", "moonbit", 2, "rev-references", "let answer = target",
+  )
+  defer source_model.dispose()
+  let markers = @markers.MarkerService()
+  defer markers.dispose()
+  let freshness = RemoteLanguageFreshness(markers)
+  freshness.note_document(source_model)
+  defer freshness.invalidate()
+  let client = RemoteLanguageClient::{
+    log_service: LogService(logger=@log.NullLogger()),
+    freshness,
+  }
+  let observed_uri = Ref("")
+  let observed_revision = Ref("")
+  let observed_offset = Ref(-1)
+  let unexpected_packet = Ref(false)
+  protocol_send.val = Some(packet => {
+    match packet {
+      References(request) => {
+        observed_uri.val = request.uri.to_string()
+        observed_revision.val = request.document_revision
+        observed_offset.val = request.offset
+        resolve_pending_response(
+          ReferencesResult({
+            id: request.id,
+            uri: request.uri,
+            revision: request.document_revision,
+            references: [
+              {
+                uri: first_uri,
+                range: Range(3, 2, 3, 8),
+                line: 3,
+                column: 2,
+                line_text: "let first = target",
+              },
+              {
+                uri: second_uri,
+                range: Range(9, 1, 9, 5),
+                line: 9,
+                column: 1,
+                line_text: "target()",
+              },
+            ],
+          }),
+        )
+        |> ignore
+      }
+      _ => unexpected_packet.val = true
+    }
+  })
+  let locations = client.provide_references(
+    source_model,
+    Position(1, 14),
+    @language.CancellationToken::none(),
+  )
+  assert_false(unexpected_packet.val)
+  assert_eq(observed_uri.val, source_uri.to_string())
+  assert_eq(observed_revision.val, "rev-references")
+  assert_eq(observed_offset.val, source_model.get_offset_at(Position(1, 14)))
+  assert_eq(locations.length(), 2)
+  assert_eq(locations[0].uri.to_string(), first_uri.to_string())
+  assert_eq(locations[0].range, Range(3, 2, 3, 8))
+  assert_eq(locations[1].uri.to_string(), second_uri.to_string())
+  assert_eq(locations[1].range, Range(9, 1, 9, 5))
+
+  let cancelled = @language.CancellationTokenSource()
+  defer cancelled.dispose()
+  let cancelled_request_id = Ref("")
+  protocol_send.val = Some(packet => {
+    match packet {
+      References(request) => {
+        cancelled_request_id.val = request.id
+        cancelled.cancel()
+      }
+      _ => unexpected_packet.val = true
+    }
+  })
+  let cancelled_locations = client.provide_references(
+    source_model,
+    Position(1, 14),
+    cancelled.token(),
+  )
+  assert_true(cancelled_locations.is_empty())
+  assert_true(
+    resolve_pending_response(
+      ReferencesResult({
+        id: cancelled_request_id.val,
+        uri: source_uri,
+        revision: "rev-references",
+        references: [],
+      }),
+    ),
+  )
+  assert_false(unexpected_packet.val)
 }

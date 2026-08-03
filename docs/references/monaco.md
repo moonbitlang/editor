@@ -157,12 +157,12 @@ not use it; this is not a general port of `IContextMenuService`, `Menu`,
 independent Viewer rather than serialized by a process-global context-menu
 service.
 
-## Definition navigation
+## Definition navigation and References Peek
 
 Goto Definition is a behavior port audited against pinned VS Code revision
 `b18492a288de038fbc7643aae6de8247029d11bd`. The Ctrl/Command link gesture and
-Peek request/resource lifetime use algorithm-fidelity ports for the selected
-observable invariants below.
+Peek ordering, selection, async ownership, and teardown use
+algorithm-fidelity ports for the selected observable invariants below.
 
 - `src/vs/editor/contrib/gotoSymbol/browser/goToCommands.ts:105-167,177-248`
   owns request cancellation, no-result feedback, one-result opening through
@@ -170,12 +170,30 @@ observable invariants below.
   and delegation through `ReferencesController`; zero results stop before Peek.
   `DefinitionAction` and the F12/Web CtrlCmd+F12 and Alt+F12 registrations are
   at `:253-312,343-374`.
+- `src/vs/editor/contrib/gotoSymbol/browser/goToCommands.ts:644-727` owns
+  provider-backed References actions. Upstream `Go to References` registers
+  Shift+F12 and queries with `includeDeclaration=true`; `Peek References`
+  registers the Peek-menu action. The local readonly product combines those
+  observable seams into one direct Peek action and keeps it adjacent to
+  Definition in the flattened navigation menu.
+- `src/vs/editor/contrib/gotoSymbol/browser/goToSymbol.ts:23-91` queries every
+  ordered matching References provider, isolates provider failure, observes
+  cancellation, and retains provider order independently of completion order.
+  The local References registry ports those query invariants; Moon IDE owns
+  declaration inclusion.
+- `src/vs/editor/contrib/gotoSymbol/browser/goToCommands.ts:735-825,858-859`
+  supplies the precomputed
+  `peekLocations`/`showReferences` entry. Local
+  `Viewer::show_references(Position, Array[Location])` is the corresponding
+  MoonBit-native display seam; it copies exactly the supplied locations and
+  never invokes a References provider.
 - `src/vs/editor/common/languageFeatureRegistry.ts:171-212` and
   `languageSelector.ts:29-111` order matching providers by selector score
   descending and registration time descending. The local selector surface
   ports exact and wildcard language/scheme scoring, path-match scoring, list
   maxima, zero-score empty filters, and newer-first tie-breaking; definition
-  results retain that priority regardless of concurrent completion order.
+  and References results retain that priority regardless of concurrent
+  completion order.
 - `src/vs/editor/contrib/gotoSymbol/browser/link/goToDefinitionAtPosition.ts:
   47-79,111-224,266-315` resolves only eligible content-text targets, cancels
   prior work, validates position/value/selection/scroll freshness, decorates
@@ -183,15 +201,25 @@ observable invariants below.
   action on execution rather than consuming the preview result. The
   down-before-modifier and mouseup execution state belongs to
   `link/clickLinkGesture.ts:122-235`.
+- `src/vs/editor/contrib/gotoSymbol/browser/referencesModel.ts:22-297` owns
+  URI grouping, deterministic ordering/deduplication, nearest selection,
+  circular navigation, and source previews. Local canonical URI strings retain
+  fragments, and snippets retain three source strings instead of exposing
+  string offsets.
 - `src/vs/editor/contrib/gotoSymbol/browser/peek/referencesController.ts:
-  77-187,201-304,330-405` owns the per-editor Peek request, stale-result
+  36-304,318-420` owns the per-editor Peek request, stale-result
   disposal, model/widget teardown, focus restoration, result switching,
   confirmation, and F4/Shift+F4/Escape/Enter routing.
 - `src/vs/editor/contrib/gotoSymbol/browser/peek/referencesWidget.ts:
-  243-299,338-468,470-537,558-608` supplies the editor-owned zone shell,
+  42-183,243-608` supplies reference decorations, the editor-owned zone shell,
   embedded preview editor, result UI, layout, and model-reference replacement:
   a late reference is released, the previous preview reference is released
   before replacement, and unavailable preview uses a fallback model.
+- `src/vs/editor/contrib/gotoSymbol/browser/peek/referencesTree.ts:
+  29-61,65-103,107-223` supplies lazy group-model resolution, file groups,
+  counts, snippets, match spans, and accessible labels. The local feature owns
+  a closed file/reference ARIA tree instead of importing VS Code's generic
+  Workbench tree/list infrastructure.
 - `src/vs/editor/standalone/browser/standaloneCodeEditorService.ts:25-41,
   63-103` handles same-current-model navigation locally and declines other
   resource URIs. `standaloneEditor.ts:456-497` exposes consumer-owned
@@ -204,13 +232,17 @@ observable invariants below.
   (`standaloneServices.ts:157-183`, registered at `:1192`, with model creation
   at `standaloneEditor.ts:225-235`). The local editor deliberately has no global
   model registry: same-resource Peek reuses the attached caller-owned model;
-  cross-resource Peek uses an optional caller-supplied resolver and an
-  exactly-once model lease.
+  each cross-resource expanded-group snippet request and selected preview uses
+  an optional caller-supplied resolver and its own exactly-once model lease.
 
 Intentional local differences and exclusions:
 
 - The browser-only Viewer uses Alt+F12 on all platforms and CtrlCmd+F12 as a web
-  binding; VS Code overrides Peek to CtrlCmd+Shift+F10 on Linux.
+  Definition binding; VS Code overrides Peek Definition to
+  CtrlCmd+Shift+F10 on Linux. Shift+F12 directly opens Peek References locally:
+  the readonly Viewer has no `multipleReferences` goto preference or editable
+  navigation history through which to route an intermediate Go to References
+  action.
 - The local link trigger is exact platform Ctrl/Command. VS Code can remap it
   from `multiCursorModifier` and also supports side/middle-click variants.
   Local preview caching requires the same model identity, attachment
@@ -223,34 +255,67 @@ Intentional local differences and exclusions:
 - Local selector patterns intentionally support only exact paths or one `*`
   prefix/suffix wildcard. Monaco's full glob surface (`**`, `?`, braces,
   character ranges, and relative-pattern bases) remains deferred.
-- The upstream 350 ms `symbolHighlight` is deferred: the current host opener
-  cannot provide consistent target-model decoration for cross-resource opens.
+- Same-resource Current opening paints the upstream-shaped 350 ms
+  `symbolHighlight`. Cross-resource target decoration remains host policy
+  because `LocationOpenerHandle` reports acceptance without returning an
+  installed target Viewer/model.
 - Workbench navigation history, alternative commands, `gotoAndPeek`, stable
-  Peek, editor-group migration, grouped resource tree, drag-and-drop, sash,
-  persisted Peek layout, and multi-result reference decorations are N-A.
+  Peek, editor-group migration, drag-and-drop, sash, persisted Peek layout, and
+  a general-purpose reusable Tree/List abstraction are N-A.
 - The local Peek uses a blank ViewZone spacer plus Viewer overlay and nested
   readonly Viewer instead of `PeekViewWidget` plus
   `EmbeddedCodeEditorWidget`. The selected fidelity contract includes the
-  default 18-line requested height capped to the current viewport, preview-left
-  and results-right split, filename/directory/result-count title, selected
-  target match decoration, post-insertion anchor-to-next-line reveal,
-  request generation/cancellation, stale-reference release, preview
-  replacement, child teardown, close/focus ordering, and recursive Peek
-  suppression. Upstream unavailable preview uses a fallback text model, while
-  the local shell removes its child/reference and shows an unavailable state.
+  default 18-line requested height, the inherited 80%-of-viewport reduction
+  with a 12-line floor, preview-left and results-right split, grouped
+  file/reference rows, lazy snippets,
+  filename/directory/result counts, one decoration for every reference in the
+  previewed resource plus a distinct selected decoration, post-insertion
+  anchor-to-next-line reveal, request generation/cancellation, stale-reference
+  release, preview replacement, child/group teardown, close/focus ordering,
+  recursive Peek suppression, and the shared Viewer custom scrollbar around
+  the result tree's native scrolling content. Upstream unavailable preview
+  uses a fallback text model, while the local shell removes its child/reference
+  and shows an unavailable state.
   Upstream same-Peek toggle accepts a range containing the widget position; the
-  local readonly anchor is exact
-  model/generation/version/position.
+  local readonly anchor is exact model/generation/version/position. Empty
+  precomputed or provider-backed References locations retain an accessible
+  empty dialog;
+  Definition's zero-result request still stops Peek and uses its existing
+  feedback.
+- Upstream's aliased precomputed action titles its model `Locations`, while the
+  provider-backed action uses `References`. Both the local public entry and
+  provider action use the product-facing `References` title.
+- Upstream F4/Shift+F4 also performs Peek-mode goto and re-anchors the outer
+  editor. The local keys change only tree selection and the nested preview
+  because the host-neutral opener does not expose same-Viewer model transfer.
+- Upstream's generic tree keeps focus on one active-descendant container. The
+  feature-local tree uses roving row `tabindex` plus explicit
+  dialog/tree/treeitem roles and selection/position metadata.
+- Upstream's visible fallback adds one to already 1-based line/column values
+  while its accessible label does not. The local fallback and label both keep
+  the repository's 1-based `Range` coordinates.
+- Local Enter/double-click confirmation closes Peek before Current/Side
+  opening. Keeping and re-anchoring the shell after same-editor movement is
+  N-A for the current host contract. VS Code's Ctrl/Cmd+K F2 focus-switch chord
+  remains deferred because the local keybinding registry has no chord
+  primitive.
 - `IModelService`, `ITextModelContentProvider`, filesystem/network loading, tab
   policy, and HTTP window fallback are N-A. The host resolver owns all loading
-  and model lifetime policy. Opener rejection and unavailable preview produce
-  local non-destructive feedback.
+  and model lifetime policy. Definition opener rejection and unavailable
+  selected preview produce local non-destructive feedback; References opener
+  rejection has no Definition-message side effect.
+- Upstream places Peek References under `EditorContextPeek`; the local HTML
+  menu deliberately keeps it as a top-level navigation row immediately after
+  Peek Definition. The local provider contract has no `ReferenceContext`;
+  Moon IDE's `find-references` result already includes the declaration.
+  Go to References, CodeLens, document highlights, the Workbench References
+  View, filtering, virtualization, and result copy/history actions remain
+  outside this feature.
 - Same-resource goto reveals in the center only when outside the viewport;
   upstream uses `NearTopIfOutsideViewport`. Upstream word-specific no-result
-  text, reference ARIA announcement, and 250 ms action progress are not
-  reproduced by the local generic feedback surface. VS Code internal-scheme
-  filtering in `getLocationLinks` is N-A because local locations have no
-  editor-internal scheme contract.
+  text remains Definition-only, and 250 ms action progress is not reproduced.
+  VS Code internal-scheme filtering in `getLocationLinks` is N-A because local
+  locations have no editor-internal scheme contract.
 
 ## Public editor API ownership
 

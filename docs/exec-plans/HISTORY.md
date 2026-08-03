@@ -12,9 +12,150 @@ Current behavior and ownership live in `docs/architecture.md`, `docs/harness.md`
 `docs/quality.md`, package READMEs, generated interfaces, source, and tests.
 Historical plans are evidence of how a change landed, not current contracts.
 
-As of 2026-07-30 there are no active checked-in execution plans.
+Active checked-in execution plans are the detailed plan files beside this
+history; this index records only completed or obsolete work.
 
 ## Completed Work
+
+### Peek References UI
+
+The reusable Viewer now exposes
+`Viewer::show_references(Position, Array[Location])`, a presentation-only entry
+for already-computed locations. It is available only on a live mounted outer
+Code or Markdown Viewer, validates the source anchor, copies caller input, and
+never registers or invokes a References provider. An exact repeated
+model/attachment/version/anchor toggles Peek closed, another anchor replaces
+the session, and an empty input retains the accessible `No references found`
+dialog.
+
+The behavior port and algorithm-fidelity review used the pinned `vscode`
+gitlink at `b18492a288de038fbc7643aae6de8247029d11bd`. A new multi-target
+`internal/viewer/contrib/references` package owns copied full-URI/range sorting,
+exact deduplication, resource grouping, nearest selection, circular
+next/previous navigation, UTF-16-safe snippet parts, modes, phases, and an
+opaque source-session key. Its JS-only browser sibling owns the detached
+mode-labelled shell and a closed file/reference ARIA tree. Root `viewer` owns
+the one controller shared by Definition and References, presentation mounts,
+lazy group requests, selected preview, nested Viewer, decorations, opening,
+freshness, and teardown. Definition keeps provider/link requests and its
+no-result or rejected-open feedback; Alt+F12 and multiple ordinary results now
+populate the shared controller instead of retaining a second flat Peek owner.
+
+One-resource results omit the redundant file row. Multi-resource results expose
+basename, parent path, count, expansion, `treeitem` position metadata, roving
+focus, and initially expand the nearest group. Rows begin with a stable
+`basename:line:column` fallback and acquire before/match/after snippets lazily
+when their group first expands. Same-resource snippets and previews reuse the
+attached model. Each cross-resource group and selected preview has an
+independent caller-owned `TextModelReference`; group leases remain until close,
+while selected leases retire on replacement. The active preview paints every
+reference in its resource plus a distinct selected decoration. F4/Shift+F4
+wrap selection across groups, Enter/double-click opens Current, Ctrl/Meta+Enter
+opens Side, and Escape restores outer focus. Code retains the blank
+ViewZone/overlay mount and inherited 18-line request, 80%-of-viewport reduction,
+and 12-line floor; semantic Markdown uses its projection-scoped overlay.
+
+Freshness and teardown received the algorithm-fidelity hardening. Close first
+detaches every selected/group owner slot, then releases the child Viewer,
+selected lease, group leases, decorations, exact overlay handle, widget, and
+the ViewZone captured from its owning model-scoped View. Shell construction and
+selected-preview construction are provisional transactions across every
+synchronous ViewZone, cancellation, focus, model, decoration, cursor, reveal,
+initialization, observer, frame, and ready-state callback boundary. Mounted
+regressions cover same-id overlay replacement, a forced 52-instance
+cross-model ViewZone-ID collision, cancellation and group-expansion reentry,
+model-decoration reentry, public ViewZone-add reentry, and stale Definition
+fallback feedback. No stale caller can unregister, dispose, or overwrite a
+newer session.
+
+Intentional differences remain durable in `docs/references/monaco.md`: the
+public entry uses the `References` title; canonical full URI strings define
+group identity; F4 changes selection/preview without upstream Peek-mode goto;
+rows use roving focus instead of active-descendant infrastructure; fallback
+coordinates remain consistently 1-based; confirmation closes before opening;
+and empty precomputed results remain visible. Sash persistence, focus-switch
+chords, generic tree infrastructure, provider/query plumbing, Shift+F12 or
+context-menu commands, declaration policy, CodeLens, document highlights,
+Workbench References View, filtering, copy/history, and virtualization remain
+deferred or N-A.
+
+Focused evidence passed 14 core tests on both JS and native, 9 References
+browser tests, 1 Definition-message browser test, 288 Viewer JS tests, 25
+native server-host tests, and all 17 combined Peek References/Definition
+Playwright scenarios. Final validation passed 1,933 JS, 1,357 native, and 1,210
+Wasm MoonBit tests; wasm-gc has no test entry. The complete browser-smoke gate
+passed 124 of 125 scenarios, with only the existing opt-in live-CDN Mermaid
+diagnostic skipped. `moon info --target all`,
+`moon check --target all --warn-list +73`, `moon fmt --check`, `just test`,
+`just build`, `just test-browser-smoke`, and diff checks passed. An in-app
+browser inspection additionally confirmed grouped counts, lazy cross-resource
+snippets, all/selected decorations, preview replacement, focus, and close
+behavior in the built fixture.
+
+Milestones were `3099fda` (Gate A), `1c84d48` (DOM-free model and shared
+controller), `2bb9b0a` (accessible browser tree), `244422d` (public UI and
+browser integration), and `5da7139` (durable contracts and interface review).
+
+Former artifact: `peek-references-ui.md`.
+
+### Provider-backed Peek References
+
+The later provider-integration slice completed the References action around
+the existing precomputed-locations UI. The behavior port used the pinned
+`vscode` gitlink at `b18492a288de038fbc7643aae6de8247029d11bd`, specifically
+`goToCommands.ts:644-727`, `goToSymbol.ts:23-91`, and
+`referencesController.ts:77-187`. Shift+F12 now directly opens Peek References
+in the readonly Viewer, and the flattened HTML editor menu exposes a top-level
+`Peek References` row immediately after Peek Definition. Code uses the current
+cursor; semantic Markdown uses its most recent still-valid projected pointer
+anchor.
+
+`viewer/common/languages` gained a References registry parallel to Definition.
+It queries every matching live provider, isolates failures, preserves selector
+score/newer-registration order independently of completion order, and rejects
+cancelled or disposed work. The root References contribution opens the shared
+shell immediately in `Loading references...` and stamps each query with model,
+attachment, content version, anchor, session generation, and cancellation
+identity. Cursor or semantic-anchor movement, model/content replacement, newer
+navigation/Peek intent, close, and disposal reject stale completion. Nonempty
+results reuse the grouped ARIA tree, lazy snippets, nested preview, decoration,
+opening, and teardown implementation; an authoritative empty result retains
+the accessible `No references found` dialog. The public
+`Viewer::show_references` entry remains provider-free.
+
+The reference workbench now registers `RemoteLanguageClient` as a
+`ReferencesProvider`, maps the existing ordered protocol payload back to
+language locations, and preserves cancellation tombstones for late replies.
+The native host replaced its stub with exactly
+`moon ide find-references --loc <path:line:column> --json`, reusing the
+Definition JSON-location parser and workspace containment rules. Moon IDE owns
+declaration inclusion; the Viewer applies its existing exact
+sort/dedup/grouping normalization.
+
+Intentional differences remain documented in `docs/references/monaco.md`.
+VS Code routes Shift+F12 through Go to References and a
+`multipleReferences` preference, while this readonly product has no editable
+navigation history and opens Peek directly. VS Code nests Peek References
+under `EditorContextPeek`; the local menu keeps adjacent top-level navigation
+rows. Go to References, CodeLens, document highlights, a Workbench References
+View, result filtering/copy/history, protocol cancellation packets,
+virtualization, and progress notifications remain excluded.
+
+Focused evidence covered provider ordering, failure isolation, cancellation,
+late completion, action availability, loading/populated/empty sessions,
+same-anchor toggling, Code and semantic-Markdown keyboard/menu gestures, remote
+mapping, exact native argv, and the live Moon CLI JSON shape. Final validation
+passed 1,939 JS, 1,362 native, and 1,215 Wasm MoonBit tests; wasm-gc has no test
+entry. The complete browser gate passed 127 of 128 scenarios, with only the
+existing opt-in live-CDN Mermaid diagnostic skipped. `moon info --target all`,
+`moon check --target all --warn-list +73`, `moon fmt --check`, `just test`,
+`just build`, `just test-browser-smoke`, and diff checks passed.
+
+Milestones were `46ec231` (plan and Gate A), `24e205d` (language registry and
+Viewer action), and `c5bb998` (remote/native integration), followed by the
+browser-proof and contract closeout.
+
+Former artifact: `peek-references-provider-integration.md`.
 
 ### HTML editor context menu behavior port
 

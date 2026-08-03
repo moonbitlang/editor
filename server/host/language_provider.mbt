@@ -124,9 +124,10 @@ fn parse_moon_hover_output_impl(
 }
 
 ///|
-/// Parses the ordered JSON array emitted by `moon ide peek-def --json`.
-/// Absolute paths must be contained by `root`; safe root-relative paths are
-/// also accepted. Invalid entries are ignored independently.
+/// Parses the ordered location array emitted by `moon ide peek-def --json` and
+/// `moon ide find-references --json`. Absolute paths must be contained by
+/// `root`; safe root-relative paths are also accepted. Invalid entries are
+/// ignored independently.
 fn parse_moon_definition_output_impl(
   root : String,
   raw : String,

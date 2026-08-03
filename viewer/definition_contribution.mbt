@@ -32,7 +32,7 @@ priv struct DefinitionContributionState {
   mut last_message : String?
   mut message_widget : @definition_browser.DefinitionMessageWidget?
   mut message_hide : @base_common.Disposable?
-  peek : DefinitionPeekState
+  mut peek_source : @language.CancellationTokenSource?
   link_decorations : EditorDecorationsCollection
   mut markdown_link_elements : Array[@rdom.Element]
   mut launch_async_task : (async () -> Unit noraise) -> Unit
@@ -56,7 +56,7 @@ fn DefinitionContributionState::DefinitionContributionState(
     last_message: None,
     message_widget: None,
     message_hide: None,
-    peek: DefinitionPeekState(),
+    peek_source: None,
     link_decorations: viewer.create_decorations_collection(),
     markdown_link_elements: [],
     launch_async_task,
@@ -81,6 +81,23 @@ fn DefinitionContributionState::invalidate_open_feedback(
   self : DefinitionContributionState,
 ) -> Unit {
   self.open_generation += 1
+}
+
+///|
+/// Retires a completed or stale Definition Peek provider request only when it
+/// is still the exact source owned by this state.
+fn DefinitionContributionState::retire_peek_source(
+  self : DefinitionContributionState,
+  source : @language.CancellationTokenSource,
+  cancel~ : Bool,
+) -> Unit {
+  match self.peek_source {
+    Some(current) if physical_equal(current, source) => {
+      self.peek_source = None
+      source.dispose(cancel~)
+    }
+    _ => ()
+  }
 }
 
 ///|
@@ -165,7 +182,7 @@ fn DefinitionContributionState::dispose(
   self.disposed = true
   self.cancel_action()
   self.reset_link_gesture()
-  viewer.close_definition_peek(restore_focus=false)
+  viewer.close_references_peek(restore_focus=false)
   viewer.dispose_definition_message()
 }
 
@@ -258,7 +275,12 @@ fn Viewer::handle_markdown_definition_key_down(
     ((key == "F10" && shift) || (key == "ContextMenu" && !shift)) {
     return self.show_markdown_context_menu_from_keyboard()
   }
-  guard key == "F12" && !shift else { return false }
+  guard key == "F12" else { return false }
+  if shift && !alt && !ctrl_cmd && self.references_action_available() {
+    self.start_peek_references()
+    return true
+  }
+  guard !shift else { return false }
   if alt && !ctrl_cmd && self.definition_peek_available() {
     self.start_peek_definition()
     return true
@@ -312,9 +334,14 @@ fn Viewer::on_definition_cursor_selection_changed(
   } else {
     state.reset_link_gesture()
   }
-  match state.peek.phase {
-    PeekLoadingDefinitions(_) => self.close_definition_peek(restore_focus=false)
-    _ => ()
+  match self.references_contribution() {
+    Some(references) =>
+      match references.phase {
+        PeekLoadingDefinitions(_) | PeekLoadingReferences(_) =>
+          self.close_references_peek(restore_focus=false)
+        _ => ()
+      }
+    None => ()
   }
   self.clear_definition_message()
 }
@@ -334,7 +361,7 @@ fn Viewer::reset_definition_requests(self : Viewer) -> Unit {
     Some(state) => {
       state.cancel_action()
       state.reset_link_gesture()
-      self.close_definition_peek(restore_focus=false)
+      self.close_references_peek(restore_focus=false)
       self.dispose_definition_message()
     }
     None => ()
@@ -371,9 +398,14 @@ fn Viewer::start_goto_definition_at(
   // An ordinary Definition action is a newer navigation intent than a Peek
   // request that is still resolving its definition list. Retire only that
   // loading shell: an already populated Peek remains independently usable.
-  match state.peek.phase {
-    PeekLoadingDefinitions(_) => self.close_definition_peek(restore_focus=false)
-    _ => ()
+  match self.references_contribution() {
+    Some(references) =>
+      match references.phase {
+        PeekLoadingDefinitions(_) | PeekLoadingReferences(_) =>
+          self.close_references_peek(restore_focus=false)
+        _ => ()
+      }
+    None => ()
   }
   // A new navigation intent immediately supersedes feedback from any opener
   // that is still awaiting its host, even before this provider request
@@ -550,9 +582,14 @@ fn Viewer::commit_plain_definition_pointer_target(
   guard self.definition_contribution() is Some(state) else { return }
   state.invalidate_open_feedback()
   state.cancel_action()
-  match state.peek.phase {
-    PeekLoadingDefinitions(_) => self.close_definition_peek(restore_focus=false)
-    _ => ()
+  match self.references_contribution() {
+    Some(references) =>
+      match references.phase {
+        PeekLoadingDefinitions(_) | PeekLoadingReferences(_) =>
+          self.close_references_peek(restore_focus=false)
+        _ => ()
+      }
+    None => ()
   }
   state.last_pointer_target = match target {
     Some(target) if self.definition_link_target_is_current(target) =>
@@ -844,32 +881,7 @@ async fn Viewer::open_definition_location(
     model_generation: self.model_slot.generation,
     model_version_id: source_model.get_version_id(),
   }
-  if mode == Current {
-    match source_model {
-      model if model.uri.to_string() == location.uri.to_string() => {
-        let range = source_model.validate_range(location.range)
-        let start = range.get_start_position()
-        self.set_position(start, source="gotoDefinition")
-        self.reveal_range_in_center_if_outside_viewport(
-          Range(
-            start.line_number,
-            start.column,
-            start.line_number,
-            start.column,
-          ),
-        )
-        self.focus()
-        self.show_definition_target_highlight(source_model, range)
-        return true
-      }
-      _ => ()
-    }
-  }
-  let accepted = match self.services.location_opener {
-    Some(opener) =>
-      opener.open({ source_viewer_id: self.get_id(), location, mode })
-    None => false
-  }
+  let accepted = self.open_peek_location(location, mode, "gotoDefinition")
   if !accepted && self.definition_open_is_current(stamp) {
     self.show_definition_message(
       "Unable to open definition",
@@ -880,10 +892,10 @@ async fn Viewer::open_definition_location(
 }
 
 ///|
-/// VS Code's `_openReference` target feedback: retain the full target range
-/// for 350ms, and clear it only if the Viewer still owns the exact model that
-/// received the decoration.
-fn Viewer::show_definition_target_highlight(
+/// VS Code's `_openReference` target feedback shared by Definition and
+/// References navigation: retain the full target range for 350ms, and clear it
+/// only if the Viewer still owns the exact model that received the decoration.
+fn Viewer::show_navigation_target_highlight(
   self : Viewer,
   target_model : @model.TextModel,
   range : @base_common.Range,
@@ -1107,6 +1119,10 @@ fn Viewer::set_definition_host_for_test(
   launch : (async () -> Unit noraise) -> Unit,
 ) -> Unit {
   match self.definition_contribution() {
+    Some(state) => state.launch_async_task = launch
+    None => ()
+  }
+  match self.references_contribution() {
     Some(state) => state.launch_async_task = launch
     None => ()
   }

@@ -2,9 +2,9 @@
 
 Native effect adapter and executable backend for the reference shell.
 
-## The two pure adapters
+## The pure adapters
 
-Almost everything in this package is an effect. The two exceptions are the
+Almost everything in this package is an effect. The exceptions are the
 parsers that turn `moon` CLI output into `language` values, and because they are
 pure they are the part worth reading first — they define exactly what the
 backend understands.
@@ -13,6 +13,8 @@ backend understands.
 flowchart LR
   MI["moon ide hover<br>--output-json"] --> PH["parse_moon_hover_output"]
   PH --> HV["language.Hover?"]
+  ML["moon ide peek-def / find-references<br>--json"] --> PL["parse_moon_definition_output"]
+  PL --> LC["language.Location[]"]
   MC["moon check<br>--output-json"] --> PC["parse_moon_check_diagnostics"]
   PC --> DG["Map[remote URI, Diagnostic[]]"]
 ```
@@ -139,12 +141,15 @@ test "diagnostics are grouped by remote URI and clipped to the root" {
   another's watches and concurrent watch/diagnostic pushes cannot interleave
   frames.
 - `MoonWorkspaceLanguageProvider` implements hover with ordinary
-  `moon ide hover --output-json` and ordered definitions with exactly
-  `moon ide peek-def --loc <path:line:column> --json`. It requires normalized
-  disk text and the provider signature to match the request model before each
-  command and to stay unchanged after it. Definition paths are normalized back
-  to contained remote-workspace URIs; malformed or out-of-root entries are
-  dropped. References and document symbols currently return no result.
+  `moon ide hover --output-json`, ordered definitions with exactly
+  `moon ide peek-def --loc <path:line:column> --json`, and
+  declaration-inclusive references with exactly
+  `moon ide find-references --loc <path:line:column> --json`. Hover requires
+  normalized disk text and the provider signature to match the request model
+  before the command and to stay unchanged after it. Definition/reference
+  paths are normalized back to contained remote-workspace URIs; malformed or
+  out-of-root entries are dropped. Document symbols currently return no
+  result.
 - `MoonCheckDiagnostics` coalesces document syncs into single-flight
   `moon check --output-json` runs. Each run captures synced document revisions,
   normalized text, and disk signatures; raced output is discarded and causes

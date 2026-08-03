@@ -225,6 +225,7 @@ fn register_remote_language_providers(services : WorkbenchServices) -> Unit {
   )
   services.languages.register_hover_provider(selector, client) |> ignore
   services.languages.register_definition_provider(selector, client) |> ignore
+  services.languages.register_references_provider(selector, client) |> ignore
   services.languages.register_document_symbol_provider(selector, client)
   |> ignore
 }
@@ -316,6 +317,45 @@ impl @language.DefinitionProvider for RemoteLanguageClient with fn provide_defin
     DefinitionResult(payload) => payload.locations
     packet => {
       self.emit_remote_error("definition", model, packet)
+      []
+    }
+  }
+}
+
+///|
+impl @language.ReferencesProvider for RemoteLanguageClient with fn provide_references(
+  self,
+  model,
+  position,
+  token,
+) {
+  if token.is_cancellation_requested() {
+    return []
+  }
+  let offset = model.get_offset_at(position)
+  let response = protocol_request(
+    "references",
+    id => {
+      References({
+        id,
+        uri: model.uri,
+        document_revision: model.revision,
+        offset,
+      })
+    },
+    token~,
+  )
+  if token.is_cancellation_requested() {
+    return []
+  }
+  match response {
+    ReferencesResult(payload) =>
+      payload.references.map(item => {
+        let location : @language.Location = { uri: item.uri, range: item.range }
+        location
+      })
+    packet => {
+      self.emit_remote_error("references", model, packet)
       []
     }
   }

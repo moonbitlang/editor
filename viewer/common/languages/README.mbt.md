@@ -19,22 +19,22 @@ flowchart TB
 
 ## Registered features
 
-Ordered, disposable registries exist for hover, definitions, document symbols,
-and whole-line Markdown comments. Hover and definition requests snapshot
-matching registrations before their first await, forward the caller's exact
-cancellation token, reject a result from a registration disposed during the
-await, and keep cancellation silent; ordinary provider failures are logged and
-contained. `hover_at` returns the first non-empty live result. Definition
-requests build one task per matching provider and concatenate every still-live
-result in Monaco registry priority: selector score descending, then newest
-registration first. Exact language/scheme/path matches score above
-language/scheme wildcards; an unconstrained filter does not match. The
-runtime-neutral default runner is sequential; browser hosts inject their
-Promise-backed concurrent runner without coupling this package to a specific
-async runtime.
+Ordered, disposable registries exist for hover, definitions, references,
+document symbols, and whole-line Markdown comments. Hover, definition, and
+reference requests snapshot matching registrations before their first await,
+forward the caller's exact cancellation token, reject a result from a
+registration disposed during the await, and keep cancellation silent; ordinary
+provider failures are logged and contained. `hover_at` returns the first
+non-empty live result. Definition and reference requests build one task per
+matching provider and concatenate every still-live result in Monaco registry
+priority: selector score descending, then newest registration first. Exact
+language/scheme/path matches score above language/scheme wildcards; an
+unconstrained filter does not match. The runtime-neutral default runner is
+sequential; browser hosts inject their Promise-backed concurrent runner without
+coupling this package to a specific async runtime.
 
-Definition-provider presence can be queried without launching a provider, both
-from `Languages` and the borrowed `LanguageHandle`.
+Definition- and references-provider presence can be queried without launching a
+provider, both from `Languages` and the borrowed `LanguageHandle`.
 
 ```mbt check
 ///|
@@ -432,7 +432,7 @@ contribution, DOM, or host dependency.
 `Languages::language_handle(log_handle)` returns the opaque capability consumed
 by `ViewerServices`. It exposes configuration lookup, raw Markdown-comment
 provider selection (including its registration-level presentation result),
-contained hover/definition resolution, and definition-provider presence;
+contained hover/definition/reference resolution, and provider presence;
 registrations, tokenizer mutation, document-symbol queries, and the concrete
 registry lifecycle stay on the caller-retained `Languages` value. The handle
 borrows its backing and never disposes it.

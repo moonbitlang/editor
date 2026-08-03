@@ -5,11 +5,9 @@ import {
   "moonbit-community/rabbita/dom",
   "moonbitlang/editor/base/common",
   "moonbitlang/editor/internal/viewer/browser/view",
-  "moonbitlang/editor/language",
 }
 
 // Values
-pub let definition_peek_height_in_lines : Int
 
 // Errors
 
@@ -22,26 +20,6 @@ pub fn DefinitionMessageWidget::get_dom_node(Self) -> @dom.Element
 pub fn DefinitionMessageWidget::hide(Self) -> Unit
 pub fn DefinitionMessageWidget::set_message(Self, String) -> Unit
 pub fn DefinitionMessageWidget::show_at(Self, @common.Position) -> Unit
-
-type DefinitionPeekWidget
-pub fn DefinitionPeekWidget::DefinitionPeekWidget(DefinitionPeekWidgetCallbacks) -> Self
-pub fn DefinitionPeekWidget::dispose(Self) -> Unit
-pub fn DefinitionPeekWidget::focus(Self) -> Unit
-pub fn DefinitionPeekWidget::get_dom_node(Self) -> @dom.Element
-pub fn DefinitionPeekWidget::get_preview_host(Self) -> @dom.Element
-pub fn DefinitionPeekWidget::set_locations(Self, Array[@language.Location], Int) -> Unit
-pub fn DefinitionPeekWidget::set_selected_index(Self, Int) -> Unit
-pub fn DefinitionPeekWidget::show_preview_loading(Self) -> Unit
-pub fn DefinitionPeekWidget::show_preview_ready(Self) -> Unit
-pub fn DefinitionPeekWidget::show_preview_unavailable(Self, String) -> Unit
-
-pub(all) struct DefinitionPeekWidgetCallbacks {
-  on_close : () -> Unit
-  on_select : (Int) -> Unit
-  on_confirm : (Int) -> Unit
-  on_next : () -> Unit
-  on_previous : () -> Unit
-}
 
 // Type aliases
 

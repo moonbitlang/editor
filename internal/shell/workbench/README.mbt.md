@@ -42,8 +42,8 @@ if accepts(payload, current_model_identity) {
 - `start_app` creates and retains concrete language, marker, feedback,
   quick-diff, and logging backings, derives their narrow handles into an opaque
   `ViewerServices`, installs MoonBit/JSON/JavaScript tokenizers (TypeScript
-  reuses JavaScript), remote hover/definition/document-symbol providers, the
-  location opener and Peek model resolver, the private MoonBit
+  reuses JavaScript), remote hover/definition/references/document-symbol
+  providers, the location opener and Peek model resolver, the private MoonBit
   Markdown-comment provider, and agent-feedback persistence; then it calls
   `mount_app`. The MoonBit adapter treats a `///|` marker line — bare, or
   carrying file-header text (`///| Summary …`) — as an item anchor and always

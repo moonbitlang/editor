@@ -74,14 +74,42 @@ pub impl @language.DefinitionProvider for MoonWorkspaceLanguageProvider with fn 
 }
 
 ///|
-/// `moon` has no machine-readable references query.
+/// Runs `moon ide find-references --loc <path:line:column> --json`.
 pub impl @language.ReferencesProvider for MoonWorkspaceLanguageProvider with fn provide_references(
-  _self,
-  _model,
-  _position,
-  _token,
+  self,
+  model,
+  position,
+  token,
 ) {
-  []
+  if token.is_cancellation_requested() {
+    return []
+  }
+  match @server.resolve_remote_document_uri(model.uri) {
+    ParsedRemotePath(path) => {
+      let root = self.current_root()
+      let loc = "\{path.to_string()}:\{position.line_number}:\{position.column}"
+      let output = Some(
+        @process.collect_stdout(
+          self.moon_command,
+          ["ide", "find-references", "--loc", loc, "--json"],
+          cwd=root,
+        ),
+      ) catch {
+        _ => None
+      }
+      if token.is_cancellation_requested() {
+        return []
+      }
+      match output {
+        Some((0, data)) =>
+          parse_moon_definition_output(root, data.text()) catch {
+            _ => []
+          }
+        _ => []
+      }
+    }
+    RemotePathError(_) => []
+  }
 }
 
 ///|

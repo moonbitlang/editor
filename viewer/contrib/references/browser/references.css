@@ -1,0 +1,349 @@
+/* Shared Peek Definition/References shell and reference-results tree. */
+
+.moonbit-viewer-references-peek {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  overflow: hidden;
+  color: var(--vscode-editor-foreground, inherit);
+  background: var(
+    --vscode-peekViewEditor-background,
+    var(--vscode-editor-background)
+  );
+  border-top: 1px solid var(--vscode-peekView-border, #007acc);
+  border-bottom: 1px solid var(--vscode-peekView-border, #007acc);
+  box-shadow: var(--vscode-shadow-lg, 0 2px 8px rgba(0, 0, 0, 0.35));
+  pointer-events: auto;
+}
+
+.moonbit-viewer-references-peek-zone {
+  overflow: hidden;
+}
+
+.moonbit-viewer-references-peek-overlay {
+  position: absolute;
+  inset: clamp(12px, 4vw, 32px);
+  width: auto;
+  height: auto;
+  min-height: 220px;
+}
+
+.moonbit-viewer-references-peek-header {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  min-height: 28px;
+  box-sizing: border-box;
+  padding-right: 2px;
+  color: var(--vscode-peekViewTitleLabel-foreground, inherit);
+  background: var(
+    --vscode-peekViewTitle-background,
+    rgba(128, 128, 128, 0.12)
+  );
+}
+
+.moonbit-viewer-references-peek-title {
+  display: flex;
+  flex: 1;
+  align-items: baseline;
+  min-width: 0;
+  margin-left: 20px;
+  overflow: hidden;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.moonbit-viewer-references-peek-title-filename,
+.moonbit-viewer-references-peek-title-dirname,
+.moonbit-viewer-references-peek-title-meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.moonbit-viewer-references-peek-title-filename {
+  flex: 0 1 auto;
+}
+
+.moonbit-viewer-references-peek-title-dirname {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-left: 0.5em;
+  color: var(--vscode-peekViewTitleDescription-foreground, inherit);
+  font-size: 0.9em;
+}
+
+.moonbit-viewer-references-peek-title-meta {
+  flex: 0 1 auto;
+  color: var(--vscode-peekViewTitleDescription-foreground, inherit);
+}
+
+.moonbit-viewer-references-peek-title-meta:not(:empty)::before {
+  padding: 0 0.3em;
+  content: "-";
+}
+
+.moonbit-viewer-references-peek-close {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  font-size: 20px;
+  line-height: 20px;
+  cursor: pointer;
+}
+
+.moonbit-viewer-references-peek-close:hover,
+.moonbit-viewer-references-peek-close:focus-visible {
+  background: var(--vscode-toolbar-hoverBackground, rgba(128, 128, 128, 0.25));
+  outline: 1px solid var(--vscode-focusBorder, #007acc);
+  outline-offset: -1px;
+}
+
+.moonbit-viewer-references-peek-body {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 72%) minmax(150px, 28%);
+  flex: 1;
+  min-height: 0;
+  border-top: 1px solid var(--vscode-peekView-border, #007acc);
+}
+
+.moonbit-viewer-reference-results-scrollable {
+  min-width: 0;
+  min-height: 0;
+  border-left: 1px solid
+    var(--vscode-peekView-border, rgba(128, 128, 128, 0.25));
+  color: var(--vscode-peekViewResult-lineForeground, inherit);
+  background: var(
+    --vscode-peekViewResult-background,
+    var(--vscode-editor-background)
+  );
+}
+
+.moonbit-viewer-reference-results-scrollable[hidden] {
+  display: none;
+}
+
+.moonbit-viewer-reference-results-tree {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  overflow: auto;
+  scrollbar-width: none;
+}
+
+.moonbit-viewer-reference-results-tree::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.moonbit-viewer-reference-results-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 23px;
+  box-sizing: border-box;
+  overflow: hidden;
+  padding: 0 8px;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  line-height: 23px;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.moonbit-viewer-reference-results-row:hover {
+  background: var(--vscode-list-hoverBackground, rgba(128, 128, 128, 0.16));
+}
+
+.moonbit-viewer-reference-results-row[aria-selected="true"] {
+  color: var(--vscode-peekViewResult-selectionForeground, inherit);
+  background: var(
+    --vscode-peekViewResult-selectionBackground,
+    rgba(51, 153, 255, 0.2)
+  );
+}
+
+.moonbit-viewer-reference-results-row[tabindex="0"]:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder, #007acc);
+  outline-offset: -1px;
+}
+
+.moonbit-viewer-reference-results-file {
+  color: var(--vscode-peekViewResult-fileForeground, inherit);
+}
+
+.moonbit-viewer-reference-results-twistie {
+  flex: 0 0 auto;
+  width: 16px;
+  margin-right: 2px;
+  color: var(--vscode-icon-foreground, inherit);
+  text-align: center;
+  transform-origin: center;
+}
+
+.moonbit-viewer-reference-results-row[aria-expanded="true"]
+  .moonbit-viewer-reference-results-twistie {
+  transform: rotate(90deg);
+}
+
+.moonbit-viewer-reference-results-file-name,
+.moonbit-viewer-reference-results-file-parent,
+.moonbit-viewer-reference-results-reference,
+.moonbit-viewer-reference-results-snippet,
+.moonbit-viewer-reference-results-fallback {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.moonbit-viewer-reference-results-file-name {
+  flex: 0 1 auto;
+  color: var(--vscode-peekViewResult-fileForeground, inherit);
+}
+
+.moonbit-viewer-reference-results-file-parent {
+  flex: 1 1 auto;
+  margin-left: 0.5em;
+  color: var(--vscode-descriptionForeground, inherit);
+}
+
+.moonbit-viewer-reference-results-file-count {
+  flex: 0 0 auto;
+  min-width: 18px;
+  margin-left: auto;
+  padding: 0 5px;
+  border-radius: 9px;
+  color: var(--vscode-badge-foreground, #fff);
+  background: var(--vscode-badge-background, #4d4d4d);
+  line-height: 18px;
+  text-align: center;
+}
+
+.moonbit-viewer-reference-results-reference {
+  padding-left: 26px;
+}
+
+.moonbit-viewer-reference-results-snippet {
+  flex: 1;
+}
+
+.moonbit-viewer-reference-results-snippet-before,
+.moonbit-viewer-reference-results-snippet-after {
+  color: inherit;
+}
+
+.moonbit-viewer-reference-results-snippet-match {
+  color: var(--vscode-peekViewResult-fileForeground, inherit);
+  background: var(
+    --vscode-peekViewResult-matchHighlightBackground,
+    rgba(234, 92, 0, 0.3)
+  );
+}
+
+.moonbit-viewer-reference-results-fallback {
+  flex: 1;
+  color: var(--vscode-peekViewResult-lineForeground, inherit);
+}
+
+.moonbit-viewer-references-peek-preview {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(
+    --vscode-peekViewEditor-background,
+    var(--vscode-editor-background)
+  );
+}
+
+.moonbit-viewer-references-peek-preview > * {
+  width: 100%;
+  height: 100%;
+}
+
+.moonbit-viewer-references-peek-preview .moonbit-viewer,
+.moonbit-viewer-references-peek-preview .overflow-guard,
+.moonbit-viewer-references-peek-preview .monaco-editor-background {
+  background: var(
+    --vscode-peekViewEditor-background,
+    var(--vscode-editor-background)
+  );
+}
+
+.moonbit-viewer-references-peek-preview .margin {
+  background: var(
+    --vscode-peekViewEditorGutter-background,
+    var(--vscode-peekViewEditor-background, var(--vscode-editor-background))
+  );
+}
+
+.moonbit-viewer-references-peek-preview
+  .moonbit-viewer-references-peek-reference-match {
+  background-color: var(
+    --vscode-peekViewEditor-matchHighlightBackground,
+    rgba(255, 143, 0, 0.35)
+  );
+  box-shadow: inset 0 0 0 1px
+    var(--vscode-peekViewEditor-matchHighlightBorder, transparent);
+}
+
+.moonbit-viewer-references-peek-preview
+  .moonbit-viewer-references-peek-reference-match-selected {
+  background-color: var(
+    --vscode-editor-findMatchBackground,
+    var(--vscode-peekViewEditor-matchHighlightBackground, rgba(255, 143, 0, 0.6))
+  );
+  box-shadow: inset 0 0 0 2px
+    var(
+      --vscode-editor-findMatchBorder,
+      var(--vscode-peekViewEditor-matchHighlightBorder, #007acc)
+    );
+}
+
+.moonbit-viewer-references-peek-status {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  box-sizing: border-box;
+  color: var(--vscode-descriptionForeground, rgba(180, 180, 180, 0.9));
+  background: var(
+    --vscode-peekViewEditor-background,
+    var(--vscode-editor-background)
+  );
+  font-size: 12px;
+  text-align: center;
+}
+
+.moonbit-viewer-references-peek-status[hidden] {
+  display: none;
+}
+
+.moonbit-viewer-reference-results-scrollable:not([hidden]) ~
+  .moonbit-viewer-references-peek-status {
+  right: 28%;
+}
+
+@media (max-width: 520px) {
+  .moonbit-viewer-references-peek-body {
+    grid-template-columns: minmax(0, 62%) minmax(110px, 38%);
+  }
+
+  .moonbit-viewer-reference-results-scrollable:not([hidden]) ~
+    .moonbit-viewer-references-peek-status {
+    right: 38%;
+  }
+}

@@ -152,10 +152,13 @@ common -> foundations
   consumers.
 - `agent_feedback_api`, `navigation_api`, and `quick_diff_api`: host-facing
   DTO/callback handles. Navigation exposes only location-opening intent and
-  caller-owned target-model leases; concrete feature implementations remain
+  caller-owned target-model leases. Current/Side opening, resource loading, and
+  model lifetime remain host policy; concrete feature implementations remain
   contributions below their callers.
 - `languages` and `markers`: runtime provider registration and
-  diagnostics-to-decoration flow. Their opaque `LanguageHandle`,
+  diagnostics-to-decoration flow. Definition and References providers share
+  selector scoring, newer-first ties, ordered aggregation, failure isolation,
+  and cancellation. Their opaque `LanguageHandle`,
   `MarkerServiceHandle`, and `MarkerDecorationsHandle` expose only the reviewed
   Viewer capability floor while hosts retain the concrete registries/stores.
   The marker-decoration handle can resolve the live, exact-model occurrences
@@ -186,9 +189,13 @@ js-only. Concrete browser runtime packages live below the module-private
 
 - `viewer` is the opaque public facade, the Monaco `CodeEditorWidget` and
   `editor.api.ts` role. Public browser construction is only `Viewer::create`;
-  `ViewerOptions`, `ViewerServices`, and `ViewerViewState` expose no public
-  layout. Root generated interfaces may reference browser contracts and common
-  capability handles, never private view or contribution implementations.
+  precomputed reference locations enter only through
+  `Viewer::show_references`, while the provider-backed References contribution
+  consumes only the opaque `LanguageHandle`; `ViewerOptions`,
+  `ViewerServices`, and `ViewerViewState` expose no public layout. Root
+  generated interfaces may reference language/common values, browser
+  contracts, and common capability handles, never private view or contribution
+  implementations.
 - `viewer/browser` owns canonical editor mouse events, target kinds, DOM
   coordinates, the mutable live ViewZone descriptor/opaque accessor contract, and
   the opaque unmanaged overlay-widget handle.
@@ -278,17 +285,32 @@ editor common/browser layers; editor common never depends on them.
   because they mutate source glyphs; the overlay does not approximate them.
   The emitted hover stylesheet remains at
   `viewer/contrib/hover/hover.css`.
-- `internal/viewer/contrib/definition` owns DOM-free result normalization,
-  token fingerprints, and the Ctrl/Cmd-link and Peek generation states.
-  `internal/viewer/contrib/definition/browser` owns only the Peek and
-  non-destructive-message DOM shells. Root `viewer` owns provider requests,
-  cancellation, Code decorations or projected Markdown link spans, Code
-  ViewZone spacers plus overlay registrations or the projection-scoped
-  Markdown overlay, nested Viewer composition, opener dispatch, and
-  target-model reference release. The
-  Markdown adapter resolves native pointer geometry through the document-owned
-  source map and never creates a virtual model. The emitted stylesheet remains
-  at `viewer/contrib/definition/browser/definition.css`.
+- `internal/viewer/contrib/definition` owns DOM-free definition-result
+  normalization, token fingerprints, and Ctrl/Cmd-link/request state.
+  `internal/viewer/contrib/definition/browser` owns only Definition's
+  non-destructive-message DOM shell. Root Definition composition owns provider
+  requests, cancellation, Definition-specific no-result/open-rejection
+  feedback, and Code decorations or projected Markdown link spans. It
+  populates the shared References controller after an Alt+F12 result set or
+  multiple ordinary results are already known. The Markdown adapter resolves
+  native pointer geometry through the document-owned source map and never
+  creates a virtual model. The emitted
+  stylesheet remains at `viewer/contrib/definition/browser/definition.css`.
+- `internal/viewer/contrib/references` owns the DOM-free grouped result,
+  snippet, navigation, mode, phase, and exact source-session values shared by
+  Definition and References Peek. Its browser sibling owns only the detached
+  mode-labelled shell and feature-local ARIA tree. The tree is native content
+  inside the shared `internal/viewer/ui/scrollbar` DOM/input lifetime, while
+  retaining tree focus and keyboard ownership. Root `viewer` owns the one
+  shared per-Viewer controller, the Shift+F12/context-menu provider action,
+  provider-query cancellation and freshness, `Viewer::show_references`,
+  per-group lazy cancellation/reference slots, the selected nested
+  Viewer/reference and decorations, presentation mounts, Current/Side opener
+  dispatch, and atomic teardown. Browser callbacks carry typed result
+  identities upward; neither internal package imports the root facade or
+  resolves a model.
+  The shared Peek/tree stylesheet remains at
+  `viewer/contrib/references/browser/references.css`.
 - `internal/viewer/contrib/contextmenu/browser` owns the reusable detached HTML
   menu shell, focus return, temporary document/window listeners, submenu
   timers, ARIA state, and viewport fitting. Root `viewer` owns the per-Viewer
@@ -451,9 +473,11 @@ module's internal packages, and they stay excluded from the published package.
   Each protocol connection owns one session-local document cache and watch map;
   host/provider services and document-sync delivery remain server-scoped.
 - `server_host_native` provides filesystem/watch/HTTP/WebSocket effects and the
-  current `moon ide hover`/`moon check` backend.
-- `workbench` adapts protocol payloads into `TextModel`, language providers,
-  markers, the file tree, theme, and harness events. Its private MoonBit
+  current `moon ide hover`, `moon ide find-references`, and `moon check`
+  backend.
+- `workbench` adapts protocol payloads into `TextModel`, Definition,
+  References, and Hover providers, markers, the file tree, theme, and harness
+  events. Its private MoonBit
   Markdown-comment provider adapts exact `///|` item anchors and their following
   `///` documentation into the Viewer's language-neutral provider contract.
   It installs every document through the same `Viewer::set_model` path; `.md`
