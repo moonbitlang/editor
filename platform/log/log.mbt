@@ -10,14 +10,6 @@ pub(all) enum LogLevel {
 } derive(Eq, Debug)
 
 ///|
-/// Minimal logger sink abstraction. Methods are `noraise` so logging cannot
-/// fail a workflow.
-pub(open) trait Logger {
-  fn log(Self, LogEntry) -> Unit noraise
-  fn flush(Self) -> Unit noraise
-}
-
-///|
 /// Structured log event emitted by app and viewer services.
 pub(all) struct LogEntry {
   level : LogLevel

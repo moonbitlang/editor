@@ -1,4 +1,13 @@
 ///|
+/// Minimal logger sink abstraction. Methods are `noraise` so logging cannot
+/// fail a workflow. Dynamic trait dispatch is a live host-extension contract,
+/// even though direct member references appear unused to the API analyzer.
+pub(open) trait Logger {
+  fn log(Self, LogEntry) -> Unit noraise
+  fn flush(Self) -> Unit noraise
+}
+
+///|
 /// Logger sink that drops every entry.
 struct NullLogger {}
 
