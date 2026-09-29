@@ -345,7 +345,14 @@ extern "js" fn record_view_layer_mutation(kind : String) -> Unit =
 /// Rabbita's `get_children` exposes the live `HTMLCollection`; renderer
 /// binding moves those nodes, so take the same stable snapshot that an
 /// ordinary `HTMLElement[]` supplies in Monaco's loops.
-extern "js" fn snapshot_element_children(
+extern "js" fn snapshot_element_children_ffi(
   element : @rdom.Element,
-) -> Array[@rdom.Element] =
+) -> FixedArray[@rdom.Element] =
   #| (element) => Array.from(element.children)
+
+fn snapshot_element_children(
+  element : @rdom.Element,
+) -> Array[@rdom.Element] {
+  Array::from_fixed_array(snapshot_element_children_ffi(element))
+}
+
