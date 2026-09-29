@@ -54,8 +54,12 @@ extern "js" fn record_view_zones_geometry_event(value : String) -> Unit =
   #| value => { globalThis.__viewZonesGeometryEvents.push(value); }
 
 ///|
-extern "js" fn view_zones_geometry_events() -> Array[String] =
+extern "js" fn view_zones_geometry_events_ffi() -> FixedArray[String] =
   #| () => [...globalThis.__viewZonesGeometryEvents]
+
+fn view_zones_geometry_events() -> Array[String] {
+  Array::from_fixed_array(view_zones_geometry_events_ffi())
+}
 
 ///|
 extern "js" fn view_zones_geometry_style(
